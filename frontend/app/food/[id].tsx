@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
+import LogoHeader from '../../components/LogoHeader';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { Card } from '../../components/GradientCard';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
 import { useTheme } from '../../hooks/useTheme';
@@ -172,6 +174,7 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <AppScreenHeader centerContent={<LogoHeader />} />
       <ChronometerSuccessModal
         visible={successModal.visible}
         message={successModal.message}

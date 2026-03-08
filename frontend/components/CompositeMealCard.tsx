@@ -104,6 +104,8 @@ export function SingleMealRow({
   const sourceIcon =
     log.source_type === 'recipe' ? 'restaurant-outline' :
     log.source_type === 'meal_plan' ? 'calendar-outline' : 'create-outline';
+  const resolvedSourceIcon =
+    log.source_type === 'scan' ? 'scan-outline' : sourceIcon;
   const badgeScore =
     recipeScoreOverride?.score ??
     mealScore?.score?.display_score ??
@@ -136,7 +138,7 @@ export function SingleMealRow({
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={sourceIcon as any} size={compact ? 13 : 16} color={theme.primary} />
+        <Ionicons name={resolvedSourceIcon as any} size={compact ? 13 : 16} color={theme.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

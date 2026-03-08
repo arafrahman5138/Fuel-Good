@@ -7,13 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.routers import auth, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan
+from app.routers import auth, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan
 from app.db import init_db
 
 # Import all models so they register with Base.metadata
 from app.models import user, meal_plan as mp_model, recipe, grocery as g_model, gamification as gm_model  # noqa: F401
 from app.models import saved_recipe as sr_model, nutrition as nt_model, local_food as lf_model  # noqa: F401
-from app.models import metabolic as met_model, metabolic_profile as met_profile_model  # noqa: F401
+from app.models import metabolic as met_model, metabolic_profile as met_profile_model, scanned_meal as scanned_meal_model  # noqa: F401
 
 settings = get_settings()
 DEFAULT_DEV_SECRET = "dev-secret-key-change-in-production"
@@ -119,6 +119,7 @@ app.include_router(meal_plan.router, prefix="/api/meal-plans", tags=["Meal Plans
 app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Lists"])
 app.include_router(recipes.router, prefix="/api/recipes", tags=["Recipes"])
 app.include_router(food_db.router, prefix="/api/foods", tags=["Food Database"])
+app.include_router(scan.router, prefix="/api/scan", tags=["Scan"])
 app.include_router(whole_food_scan.router, prefix="/api/whole-food-scan", tags=["Whole Food Scan"])
 app.include_router(gamification.router, prefix="/api/game", tags=["Gamification"])
 app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Chronometer"])

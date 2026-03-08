@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
 import { useTheme } from '../../hooks/useTheme';
@@ -88,6 +89,7 @@ export default function FoodSearchScreen() {
 
   return (
     <ScreenContainer>
+      <AppScreenHeader title="Food Search" />
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>Food Database</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Search whole and packaged foods instantly</Text>

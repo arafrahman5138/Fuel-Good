@@ -1,5 +1,5 @@
 export const API_URL = __DEV__
-  ? 'http://localhost:8000/api'
+  ? 'http://192.168.0.193:8000/api'
   : 'https://api.wholefoodlabs.com/api';
 
 export const APP_NAME = 'WholeFoodLabs';

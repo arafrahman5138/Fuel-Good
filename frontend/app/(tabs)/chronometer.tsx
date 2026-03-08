@@ -14,6 +14,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
 import { MetabolicRing } from '../../components/MetabolicRing';
@@ -60,6 +62,13 @@ interface DailySummary {
   comparison: Record<string, NutrientComparison>;
   logs: DailyLog[];
 }
+
+const toDateKey = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, '0');
+  const d = `${date.getDate()}`.padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 interface RecommendedFood {
   food_id?: string;
@@ -200,6 +209,8 @@ function NutritionRing({ score, size = 140, strokeWidth = 8 }: {
 
 export default function ChronometerScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const todayKey = toDateKey(new Date());
   const [daily, setDaily] = useState<DailySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [gaps, setGaps] = useState<NutritionGaps | null>(null);
@@ -223,6 +234,11 @@ export default function ChronometerScreen() {
   const metabolicProfile = useMetabolicBudgetStore((s) => s.profile);
   const fetchProfile = useMetabolicBudgetStore((s) => s.fetchProfile);
   const fetchMetabolic = useMetabolicBudgetStore((s) => s.fetchAll);
+  const nutritionStreak = useGamificationStore((s) => s.nutritionStreak);
+  const nutritionLongestStreak = useGamificationStore((s) => s.nutritionLongestStreak);
+  const scoreHistory = useGamificationStore((s) => s.scoreHistory);
+  const fetchNutritionStreak = useGamificationStore((s) => s.fetchNutritionStreak);
+  const fetchScoreHistory = useGamificationStore((s) => s.fetchScoreHistory);
   const hasCoreProfileSetup = !!(
     metabolicProfile
     && metabolicProfile.sex
@@ -241,14 +257,14 @@ export default function ChronometerScreen() {
     setRefreshing(false);
   }, []);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [data, gapData, , mesSuggestionsData] = await Promise.all([
-        nutritionApi.getDaily(),
+        nutritionApi.getDaily(todayKey),
         nutritionApi.getGaps(),
-        fetchMetabolic(),
+        fetchMetabolic(todayKey),
         metabolicApi.getMealSuggestions(undefined, 4).catch(() => [] as MealSuggestion[]),
         fetchProfile(),
       ]);
@@ -263,20 +279,19 @@ export default function ChronometerScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchMetabolic, fetchProfile, fetchNutritionStreak, fetchScoreHistory, todayKey]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const score = daily?.daily_score ?? 0;
-
-  // Nutrition streaks & score history from gamification store
-  const nutritionStreak = useGamificationStore((s) => s.nutritionStreak);
-  const nutritionLongestStreak = useGamificationStore((s) => s.nutritionLongestStreak);
-  const scoreHistory = useGamificationStore((s) => s.scoreHistory);
-  const fetchNutritionStreak = useGamificationStore((s) => s.fetchNutritionStreak);
-  const fetchScoreHistory = useGamificationStore((s) => s.fetchScoreHistory);
 
   // Determine today's tier
   const todayTier = score >= NUTRITION_TIERS.GOLD.min ? NUTRITION_TIERS.GOLD
@@ -461,18 +476,19 @@ export default function ChronometerScreen() {
   }, [logs]);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer safeArea={false} padded={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: Math.max(insets.top, 10), paddingBottom: 120 }}
+        contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
-        <View style={styles.titleRow}>
-          <View>
+        <View style={[styles.titleRow, { paddingRight: Math.max(insets.right, 4) + 4 }]}>
+          <View style={styles.titleBlock}>
             <Text style={[styles.title, { color: theme.text }]}>Chronometer</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Track macros, essential micronutrients, and daily score.</Text>
           </View>
-          <View>
+          <View style={styles.titleActionWrap}>
             <TouchableOpacity
               style={[styles.addIconBtn, { backgroundColor: theme.primaryMuted }]}
               onPress={() => setShowAddMenu(!showAddMenu)}
@@ -874,7 +890,12 @@ export default function ChronometerScreen() {
                               recipeScoreOverride={
                                 item.log.source_type === 'recipe' && item.log.source_id
                                   ? (currentRecipeMesMap[String(item.log.source_id)] || null)
-                                  : null
+                                  : item.log.source_type === 'scan' && item.log.nutrition_snapshot?.scan_mes_score != null
+                                    ? {
+                                        score: Number(item.log.nutrition_snapshot?.scan_mes_score || 0),
+                                        tier: String(item.log.nutrition_snapshot?.scan_mes_tier || 'critical'),
+                                      }
+                                    : null
                               }
                               isLast={isLast}
                             />
@@ -1241,6 +1262,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: Spacing.md,
   },
+  titleBlock: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: Spacing.md,
+  },
+  titleActionWrap: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+  },
   title: { fontSize: FontSize.xxl, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { marginTop: 2, fontSize: FontSize.sm },
   addIconBtn: {
@@ -1401,6 +1431,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 4,
     marginBottom: Spacing.lg,
+    width: '96%',
+    alignSelf: 'center',
   },
   toggleBtn: {
     flex: 1,

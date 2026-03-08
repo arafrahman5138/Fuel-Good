@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { CompositeMealCard, SingleMealRow } from '../../components/CompositeMealCard';
 import { MealMESBadge } from '../../components/MealMESBadge';
@@ -220,6 +221,7 @@ export default function TodaysMealsScreen() {
 
   return (
     <ScreenContainer safeArea={false} padded={false}>
+      <AppScreenHeader title="Today's Meals" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Spacing.huge }}

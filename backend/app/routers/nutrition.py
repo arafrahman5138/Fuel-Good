@@ -9,6 +9,7 @@ from app.models.recipe import Recipe
 from app.models.local_food import LocalFood
 from app.models.meal_plan import MealPlanItem
 from app.models.nutrition import NutritionTarget, FoodLog, DailyNutritionSummary
+from app.models.scanned_meal import ScannedMealLog
 from app.schemas.nutrition import (
     NutritionTargetsResponse,
     NutritionTargetsUpdate,
@@ -134,6 +135,14 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
             recipe = db.query(Recipe).filter(Recipe.id == item.recipe_id).first()
             nutrition = recipe.nutrition_info if recipe else {}
         return title, nutrition or {}
+
+    if source_type == "scan":
+        if not payload.source_id:
+            raise HTTPException(status_code=400, detail="source_id is required for scan")
+        scan = db.query(ScannedMealLog).filter(ScannedMealLog.id == payload.source_id).first()
+        if not scan:
+            raise HTTPException(status_code=404, detail="Scanned meal not found")
+        return scan.meal_label, scan.nutrition_estimate or {}
 
     raise HTTPException(status_code=400, detail="Unsupported source_type")
 

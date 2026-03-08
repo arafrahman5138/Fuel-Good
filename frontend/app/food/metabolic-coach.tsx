@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { MetabolicRing } from '../../components/MetabolicRing';
@@ -457,12 +458,13 @@ export default function MetabolicCoachScreen() {
     : ['#8B5CF6', '#6D28D9'] as const;
 
   return (
-    <ScreenContainer safeArea={false}>
+    <ScreenContainer safeArea={false} padded={false}>
+      <AppScreenHeader title="Metabolic Coach" />
       <ScrollView
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: Spacing.sm, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.sm, paddingTop: Spacing.sm, paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
         }

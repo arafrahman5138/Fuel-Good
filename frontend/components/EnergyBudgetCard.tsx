@@ -1,15 +1,13 @@
 /**
- * EnergyBudgetCard — Hero card combining MetabolicRing + GuardrailQuad + ScoreBreakdown + remaining budget text.
- * Modern glassmorphic design with gradient header accent.
+ * EnergyBudgetCard — Hero card combining MetabolicRing + macro guardrails + score breakdown CTA.
  */
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
 import { MetabolicRing } from './MetabolicRing';
-import { GuardrailQuad } from './GuardrailQuad';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MESScore, MetabolicBudget, RemainingBudget, MEAScore } from '../stores/metabolicBudgetStore';
 import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
@@ -23,11 +21,81 @@ interface EnergyBudgetCardProps {
   fatConsumedOverride?: number | null;
 }
 
+function GoalRing({
+  label,
+  icon,
+  color,
+  consumed,
+  target,
+  unit = 'g',
+  stateLabel,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  consumed: number;
+  target: number;
+  unit?: string;
+  stateLabel: string;
+}) {
+  const theme = useTheme();
+  const safeTarget = target > 0 ? target : 1;
+  const pct = Math.max(0, Math.min(100, Math.round((consumed / safeTarget) * 100)));
+  const segmentCount = 24;
+  const filledSegments = Math.max(0, Math.min(segmentCount, Math.round((pct / 100) * segmentCount)));
+
+  return (
+    <View style={[styles.goalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={styles.goalTopRow}>
+        <View style={[styles.goalIconWrap, { backgroundColor: color + '14' }]}>
+          <Ionicons name={icon} size={13} color={color} />
+        </View>
+        <Text style={[styles.goalState, { color }]} numberOfLines={1}>
+          {stateLabel}
+        </Text>
+      </View>
+
+      <View style={styles.goalMainRow}>
+        <View style={styles.goalRingWrap}>
+          {Array.from({ length: segmentCount }).map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.goalRingSegment,
+                {
+                  backgroundColor: index < filledSegments ? color : theme.surfaceHighlight,
+                  transform: [
+                    { rotate: `${(index / segmentCount) * 360}deg` },
+                    { translateY: -20 },
+                  ],
+                },
+              ]}
+            />
+          ))}
+          <View style={styles.goalRingCenter}>
+            <Text style={[styles.goalPct, { color }]}>{pct}%</Text>
+          </View>
+        </View>
+        <View style={styles.goalTextBlock}>
+          <Text style={[styles.goalLabel, { color: theme.text }]}>{label}</Text>
+          <Text style={[styles.goalValue, { color: theme.text }]}>
+            {Math.round(consumed)}
+            <Text style={[styles.goalValueMuted, { color: theme.textSecondary }]}>
+              /{Math.round(target)}{unit}
+            </Text>
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverride, fatConsumedOverride }: EnergyBudgetCardProps) {
   const theme = useTheme();
   const displayTier = (score.display_tier || score.tier) as any;
   const displayScore = score.display_score || score.total_score;
   const tierCfg = getTierConfig(displayTier);
+  const entrance = useRef(new Animated.Value(0)).current;
 
   const proteinLeft = remaining ? Math.round(remaining.protein_remaining_g) : 0;
   const fiberLeft = remaining ? Math.round(remaining.fiber_remaining_g) : 0;
@@ -43,8 +111,93 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       ? fatConsumedOverride
       : (score.fat_g ?? 0);
 
+  useEffect(() => {
+    entrance.setValue(0);
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 340,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [entrance, displayScore]);
+
+  const goalItems = useMemo(() => {
+    const carbTarget = budget.carb_ceiling_g ?? budget.sugar_ceiling_g;
+    const proteinPct = budget.protein_target_g > 0 ? (score.protein_g / budget.protein_target_g) * 100 : 0;
+    const fatPct = fatTarget > 0 ? (fatConsumed / fatTarget) * 100 : 0;
+    const fiberPct = budget.fiber_floor_g > 0 ? (score.fiber_g / budget.fiber_floor_g) * 100 : 0;
+    const carbConsumed = score.carbs_g ?? score.sugar_g ?? 0;
+    const carbPct = carbTarget > 0 ? (carbConsumed / carbTarget) * 100 : 0;
+
+    return [
+      {
+        key: 'protein',
+        label: 'Protein',
+        icon: 'barbell-outline' as const,
+        color: '#22C55E',
+        consumed: score.protein_g,
+        target: budget.protein_target_g,
+        stateLabel: proteinPct >= 100 ? 'Hit' : 'Needs more',
+      },
+      {
+        key: 'fat',
+        label: 'Fat',
+        icon: 'water-outline' as const,
+        color: '#A855F7',
+        consumed: fatConsumed,
+        target: fatTarget,
+        stateLabel: fatPct >= 100 ? 'Hit' : 'Needs more',
+      },
+      {
+        key: 'fiber',
+        label: 'Fiber',
+        icon: 'leaf-outline' as const,
+        color: '#3B82F6',
+        consumed: score.fiber_g,
+        target: budget.fiber_floor_g,
+        stateLabel: fiberPct >= 100 ? 'Hit' : 'Needs more',
+      },
+      {
+        key: 'carbs',
+        label: 'Carbs',
+        icon: 'shield-checkmark-outline' as const,
+        color: '#F59E0B',
+        consumed: carbConsumed,
+        target: carbTarget,
+        stateLabel: carbPct > 100 ? 'Over' : carbPct >= 85 ? 'Watch it' : 'Good',
+      },
+    ];
+  }, [
+    budget.carb_ceiling_g,
+    budget.fiber_floor_g,
+    budget.protein_target_g,
+    budget.sugar_ceiling_g,
+    fatConsumed,
+    fatTarget,
+    score.carbs_g,
+    score.fiber_g,
+    score.protein_g,
+    score.sugar_g,
+  ]);
+
   return (
-    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <Animated.View
+      style={[
+        styles.card,
+        { backgroundColor: theme.surface, borderColor: theme.border },
+        {
+          opacity: entrance,
+          transform: [
+            {
+              translateY: entrance.interpolate({
+                inputRange: [0, 1],
+                outputRange: [10, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
       {/* ── Branded header ── */}
       <View style={styles.header}>
         <LinearGradient
@@ -123,18 +276,19 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {/* ── Divider ── */}
       <View style={[styles.divider, { backgroundColor: theme.surfaceHighlight }]} />
 
-      {/* ── Guardrail bars ── */}
-      <View style={{ paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm }}>
-        <GuardrailQuad
-          proteinG={score.protein_g}
-          fatG={fatConsumed}
-          fiberG={score.fiber_g}
-          carbsG={score.carbs_g ?? score.sugar_g}
-          proteinTarget={budget.protein_target_g}
-          fatTarget={fatTarget}
-          fiberFloor={budget.fiber_floor_g}
-          carbCeiling={budget.carb_ceiling_g ?? budget.sugar_ceiling_g}
-        />
+      {/* ── Macro rings ── */}
+      <View style={styles.goalGrid}>
+        {goalItems.map((item) => (
+          <GoalRing
+            key={item.key}
+            label={item.label}
+            icon={item.icon}
+            color={item.color}
+            consumed={item.consumed}
+            target={item.target}
+            stateLabel={item.stateLabel}
+          />
+        ))}
       </View>
 
       {/* ── Score Breakdown CTA ── */}
@@ -153,7 +307,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
           <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
         </TouchableOpacity>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -250,10 +404,84 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
 
-  // Guardrails now inside card padding
-  guardrails: {
+  goalGrid: {
     paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  goalCard: {
+    width: '48%',
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  goalTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  goalIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalState: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  goalMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  goalRingWrap: {
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalRingSegment: {
+    position: 'absolute',
+    width: 4,
+    height: 9,
+    borderRadius: 999,
+  },
+  goalRingCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalPct: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  goalTextBlock: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  goalLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  goalValue: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  goalValueMuted: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   breakdownLink: {
     marginHorizontal: Spacing.md,

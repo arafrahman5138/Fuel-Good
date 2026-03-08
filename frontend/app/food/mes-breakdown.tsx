@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { MetabolicRing } from '../../components/MetabolicRing';
 import { ScoreBreakdown } from '../../components/ScoreBreakdown';
@@ -55,7 +56,8 @@ export default function MESBreakdownScreen() {
 
   if (!dailyMES?.score || !budget) {
     return (
-      <ScreenContainer safeArea={false}>
+      <ScreenContainer safeArea={false} padded={false}>
+        <AppScreenHeader title="MES Breakdown" />
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
@@ -82,7 +84,8 @@ export default function MESBreakdownScreen() {
     : [];
 
   return (
-    <ScreenContainer safeArea={false}>
+    <ScreenContainer safeArea={false} padded={false}>
+      <AppScreenHeader title="MES Breakdown" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: Spacing.xl * 2 }]}
@@ -188,7 +191,7 @@ export default function MESBreakdownScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: 10,
     paddingTop: Spacing.sm,
     gap: 0,
   },

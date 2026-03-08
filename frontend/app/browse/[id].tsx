@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import LogoHeader from '../../components/LogoHeader';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
@@ -159,6 +160,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingMeal, setLoggingMeal] = useState(false);
@@ -647,55 +649,58 @@ export default function RecipeDetailScreen() {
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
       <Stack.Screen options={{
-        headerTitle: () => (
-          <View style={styles.navTitleWrap}>
-            <LogoHeader />
-          </View>
-        ),
-        headerTitleAlign: 'center',
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: theme.background },
-        headerLeft: () => (
+        headerShown: false,
+      }} />
+      <View
+        style={[
+          styles.pageHeader,
+          {
+            backgroundColor: theme.surface,
+            borderBottomColor: theme.border,
+            paddingTop: Math.max(insets.top, 12),
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.navBackBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.primary}
+            style={styles.navBackIcon}
+          />
+        </TouchableOpacity>
+        <View style={styles.pageHeaderTitle}>
+          <LogoHeader />
+        </View>
+        <View style={[styles.headerActionCapsule, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <TouchableOpacity
-            style={[styles.navBackBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-            onPress={() => router.back()}
+            onPress={openPlusMenu}
             activeOpacity={0.7}
+            style={[styles.headerIconBtn, { backgroundColor: isOnPlate ? theme.primaryMuted : logSuccess ? theme.primaryMuted : theme.infoMuted }]}
           >
             <Ionicons
-              name="chevron-back"
-              size={24}
-              color={theme.primary}
-              style={styles.navBackIcon}
+              name={isOnPlate ? 'checkmark-circle' : loggingMeal ? 'time-outline' : logSuccess ? 'checkmark-circle' : 'add-circle-outline'}
+              size={22}
+              color={isOnPlate ? theme.primary : logSuccess ? theme.primary : theme.info}
             />
           </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <View style={[styles.headerActionCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-            <TouchableOpacity
-              onPress={openPlusMenu}
-              activeOpacity={0.7}
-              style={[styles.headerIconBtn, { backgroundColor: isOnPlate ? theme.primaryMuted : logSuccess ? theme.primaryMuted : theme.infoMuted }]}
-            >
-              <Ionicons
-                name={isOnPlate ? 'checkmark-circle' : loggingMeal ? 'time-outline' : logSuccess ? 'checkmark-circle' : 'add-circle-outline'}
-                size={22}
-                color={isOnPlate ? theme.primary : logSuccess ? theme.primary : theme.info}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => (saved ? removeRecipe(id!) : saveRecipe(id!))}
-              activeOpacity={0.7}
-              style={[styles.headerIconBtn, { backgroundColor: saved ? theme.primaryMuted : theme.surface }]}
-            >
-              <Ionicons
-                name={saved ? 'bookmark' : 'bookmark-outline'}
-                size={19}
-                color={saved ? theme.primary : theme.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-      }} />
+          <TouchableOpacity
+            onPress={() => (saved ? removeRecipe(id!) : saveRecipe(id!))}
+            activeOpacity={0.7}
+            style={[styles.headerIconBtn, { backgroundColor: saved ? theme.primaryMuted : theme.surface }]}
+          >
+            <Ionicons
+              name={saved ? 'bookmark' : 'bookmark-outline'}
+              size={19}
+              color={saved ? theme.primary : theme.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
       <ScrollView
         style={[styles.container, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.scrollContent}
@@ -1265,7 +1270,7 @@ export default function RecipeDetailScreen() {
             style={[
               styles.popoverMenu,
               {
-                top: 8,
+                top: Math.max(insets.top, 12) + 54,
                 right: Spacing.lg,
                 backgroundColor: theme.surface,
                 borderColor: theme.border,
@@ -1512,9 +1517,9 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
   },
   navBackBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1522,8 +1527,19 @@ const styles = StyleSheet.create({
   navBackIcon: {
     transform: [{ translateX: 0 }],
   },
-  navTitleWrap: {
-    transform: [{ translateX: -10 }],
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  pageHeaderTitle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -8,
   },
   headerActionCapsule: {
     flexDirection: 'row',
@@ -1532,12 +1548,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: BorderRadius.full,
     paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   headerIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },

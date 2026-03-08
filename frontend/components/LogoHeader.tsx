@@ -22,15 +22,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconWrap: {
-    width: 26,
-    height: 26,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     backgroundColor: '#E8F5E9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.3,
   },

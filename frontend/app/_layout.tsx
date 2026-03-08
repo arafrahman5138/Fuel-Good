@@ -73,151 +73,37 @@ export default function RootLayout() {
         <Stack.Screen
           name="food/[id]"
           options={{
-            headerShown: true,
-            headerTitle: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Food Details</Text>
-              </View>
-            ),
-            headerTitleAlign: 'center',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="food/meals"
           options={{
-            headerShown: true,
-            headerTitle: '',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerRight: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Today's Meals</Text>
-              </View>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="food/search"
           options={{
-            headerShown: true,
-            headerTitle: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Food Search</Text>
-              </View>
-            ),
-            headerTitleAlign: 'center',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="food/metabolic-coach"
           options={{
-            headerShown: true,
-            headerTitle: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Metabolic Coach</Text>
-              </View>
-            ),
-            headerTitleAlign: 'center',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="food/mes-breakdown"
           options={{
-            headerShown: true,
-            headerTitle: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>MES Breakdown</Text>
-              </View>
-            ),
-            headerTitleAlign: 'center',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="scan/index"
           options={{
-            headerShown: true,
-            headerTitle: () => (
-              <View style={[styles.headerCapsule, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Whole Food Scan</Text>
-              </View>
-            ),
-            headerTitleAlign: 'center',
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: theme.background },
-            headerLeft: () => (
-              <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-back" size={24} color={theme.primary} />
-              </TouchableOpacity>
-            ),
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -232,10 +118,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="browse/[id]"
           options={{
-            headerShown: true,
-            headerTitle: () => <LogoHeader />,
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -278,31 +161,4 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  backBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  headerCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    minHeight: 42,
-  },
-  headerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  headerTitle: {
-    fontSize: 28 / 1.75,
-    fontWeight: '700',
-  },
-});
+const styles = StyleSheet.create({});

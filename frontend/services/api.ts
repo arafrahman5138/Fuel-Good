@@ -25,10 +25,19 @@ class ApiClient {
 
   private getTimeout(endpoint: string): number {
     // AI endpoints get longer timeout
-    if (endpoint.includes('/chat/') || endpoint.includes('/meal-plans/generate') || endpoint.includes('/healthify')) {
+    if (endpoint.includes('/chat/') || endpoint.includes('/meal-plans/generate') || endpoint.includes('/healthify') || endpoint.includes('/scan/meal')) {
       return this.aiTimeout;
     }
     return this.defaultTimeout;
+  }
+
+  private getUploadHeaders(): Record<string, string> {
+    const token = useAuthStore.getState().token;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   private isRetryable(status: number): boolean {
@@ -186,6 +195,30 @@ class ApiClient {
     return this.requestWithRefresh<T>('DELETE', endpoint);
   }
 
+  async upload<T>(endpoint: string, formData: FormData): Promise<T> {
+    const doFetch = () =>
+      this.fetchWithRetry(
+        `${this.baseUrl}${endpoint}`,
+        {
+          method: 'POST',
+          headers: this.getUploadHeaders(),
+          body: formData,
+        },
+        endpoint,
+      );
+
+    let response = await doFetch();
+    if (response.status === 401) {
+      const refreshed = await this.tryRefresh();
+      if (refreshed) {
+        response = await doFetch();
+      }
+    }
+
+    if (!response.ok) await this.parseAndThrow(response);
+    return response.json();
+  }
+
   async stream(
     endpoint: string,
     body: unknown,
@@ -302,7 +335,7 @@ export const foodApi = {
 
 export const wholeFoodScanApi = {
   analyzeBarcode: (barcode: string) =>
-    api.get<any>(`/whole-food-scan/barcode/${encodeURIComponent(barcode)}`),
+    api.get<any>(`/scan/product/barcode/${encodeURIComponent(barcode)}`),
   analyzeLabel: (data: {
     product_name?: string;
     brand?: string;
@@ -315,7 +348,37 @@ export const wholeFoodScanApi = {
     carbs_g?: number;
     sodium_mg?: number;
     source?: string;
-  }) => api.post<any>('/whole-food-scan/analyze', data),
+  }) => api.post<any>('/scan/product/analyze', data),
+  analyzeMeal: (data: {
+    imageUri: string;
+    meal_type?: string;
+    portion_size?: string;
+    source_context?: string;
+  }) => {
+    const form = new FormData();
+    form.append('image', {
+      uri: data.imageUri,
+      name: 'meal-scan.jpg',
+      type: 'image/jpeg',
+    } as any);
+    if (data.meal_type) form.append('meal_type', data.meal_type);
+    if (data.portion_size) form.append('portion_size', data.portion_size);
+    if (data.source_context) form.append('source_context', data.source_context);
+    return api.upload<any>('/scan/meal', form);
+  },
+  updateMeal: (scanId: string, data: {
+    meal_label: string;
+    meal_type: string;
+    portion_size: string;
+    source_context: string;
+    ingredients: string[];
+  }) => api.patch<any>(`/scan/meal/${scanId}`, data),
+  logMeal: (scanId: string, data?: {
+    date?: string;
+    meal_type?: string;
+    servings?: number;
+    quantity?: number;
+  }) => api.post<any>(`/scan/meal/${scanId}/log`, data || {}),
 };
 
 export const recipeApi = {

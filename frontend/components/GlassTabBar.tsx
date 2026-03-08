@@ -20,9 +20,10 @@ import { useThemeStore } from '../stores/themeStore';
 
 /** Route names to exclude from the visible pill. */
 const HIDDEN_ROUTES = new Set(['profile']);
-const FLOATING_BAR_HEIGHT = 68;
+const FLOATING_BAR_HEIGHT = 64;
+const PLUS_BUTTON_SIZE = 62;
 const CHARCOAL = '#26282B';
-const BUBBLE_SLOT_INSET = 7;
+const BUBBLE_SLOT_INSET = 5;
 
 /**
  * Glassmorphic floating tab bar inspired by Oura Ring.
@@ -47,14 +48,14 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
 
   // Theme-adaptive colours
   const blurTint = isDark ? 'dark' : 'light';
-  const tintBg = isDark ? 'rgba(18, 18, 26, 0.68)' : 'rgba(248, 248, 248, 0.78)';
-  const borderCol = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
-  const inactiveColor = CHARCOAL;
+  const tintBg = isDark ? 'rgba(10, 10, 15, 0.42)' : 'rgba(248, 248, 248, 0.68)';
+  const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const inactiveColor = isDark ? 'rgba(255,255,255,0.82)' : CHARCOAL;
   const shadowOpacity = isDark ? 0.25 : 0.12;
-  const plusBg = isDark ? 'rgba(30,30,40,0.68)' : 'rgba(248, 248, 248, 0.78)';
-  const plusBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)';
-  const plusIconColor = showAddMenu ? theme.primary : CHARCOAL;
-  const menuBg = isDark ? 'rgba(22,22,30,0.94)' : 'rgba(255,255,255,0.96)';
+  const plusBg = isDark ? 'rgba(10,10,15,0.36)' : 'rgba(248, 248, 248, 0.68)';
+  const plusBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const plusIconColor = showAddMenu ? theme.primary : inactiveColor;
+  const menuBg = isDark ? 'rgba(20,20,26,0.94)' : 'rgba(255,255,255,0.96)';
   const activeVisibleIndex = Math.max(
     0,
     visibleRoutes.findIndex((route) => state.index === state.routes.indexOf(route))
@@ -64,6 +65,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const tabCount = Math.max(visibleRoutes.length, 1);
   const slotWidth = tabRowWidth > 0 ? tabRowWidth / tabCount : 0;
   const bubbleWidth = Math.max(0, slotWidth - BUBBLE_SLOT_INSET * 2);
+  const compactTabs = slotWidth > 0 && slotWidth < 86;
 
   useEffect(() => {
     if (slotWidth <= 0) return;
@@ -80,7 +82,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
     <View
       style={[
         styles.outer,
-        { paddingBottom: Math.max(insets.bottom, 12) },
+        { paddingBottom: Math.max(insets.bottom - 6, 0) },
       ]}
       pointerEvents="box-none"
     >
@@ -108,8 +110,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   {
                     width: bubbleWidth,
                     left: bubbleLeft,
-                    backgroundColor: isDark ? theme.primary + '24' : theme.primary + '16',
-                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    backgroundColor: isDark ? theme.primary + '1C' : theme.primary + '16',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
                   },
                 ]}
               />
@@ -120,6 +122,10 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               const isFocused = state.index === realIndex;
 
               const label = (options.title ?? route.name) as string;
+              const displayLabel =
+                compactTabs && label === 'Healthify'
+                  ? 'Health'
+                  : label;
               const iconColor = isFocused ? theme.primary : inactiveColor;
 
               const onPress = () => {
@@ -154,7 +160,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   {options.tabBarIcon?.({
                     focused: isFocused,
                     color: iconColor,
-                    size: 24,
+                    size: compactTabs ? 22 : 24,
                   })}
                   <Text
                     style={[
@@ -162,11 +168,14 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                       {
                         color: iconColor,
                         fontWeight: '400',
+                        fontSize: compactTabs ? 10 : 11,
                       },
                     ]}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
                   >
-                    {label}
+                    {displayLabel}
                   </Text>
                 </TouchableOpacity>
               );
@@ -218,8 +227,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               },
               {
                 icon: 'scan-outline' as const,
-                label: 'Whole Food Scan',
-                sub: 'Check packaged foods',
+                label: 'Scan',
+                sub: 'Meal or product',
                 onPress: () => {
                   setShowAddMenu(false);
                   router.push('/scan' as any);
@@ -279,12 +288,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     width: '100%',
   },
   pillWrapper: {
@@ -311,16 +320,16 @@ const styles = StyleSheet.create({
   },
   activeBubble: {
     position: 'absolute',
-    top: 8,
-    bottom: 8,
-    borderRadius: 24,
+    top: 6,
+    bottom: 6,
+    borderRadius: 22,
     borderWidth: 1,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     position: 'relative',
     zIndex: 1,
@@ -334,9 +343,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   plusButton: {
-    width: FLOATING_BAR_HEIGHT,
-    height: FLOATING_BAR_HEIGHT,
-    borderRadius: FLOATING_BAR_HEIGHT / 2,
+    width: PLUS_BUTTON_SIZE,
+    height: PLUS_BUTTON_SIZE,
+    borderRadius: PLUS_BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
