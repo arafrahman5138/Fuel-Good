@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Image,
   Modal,
   ScrollView,
@@ -196,6 +198,12 @@ export default function ScanScreen() {
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null);
   const [showModesInfo, setShowModesInfo] = useState(false);
 
+  const analyzePulseAnim = useRef(new Animated.Value(0.4)).current;
+  const analyzeSpinAnim = useRef(new Animated.Value(0)).current;
+  const analyzeDotAnim1 = useRef(new Animated.Value(0.3)).current;
+  const analyzeDotAnim2 = useRef(new Animated.Value(0.3)).current;
+  const analyzeDotAnim3 = useRef(new Animated.Value(0.3)).current;
+
   const mealStatusMeta = mealResult ? MEAL_STATUS_META[mealResult.whole_food_status] : null;
   const productTierMeta = productResult ? PRODUCT_TIER_META[productResult.tier] : null;
 
@@ -227,6 +235,83 @@ export default function ScanScreen() {
       cancelled = true;
     };
   }, [scanStep]);
+
+  useEffect(() => {
+    const shouldAnimate = scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult;
+    if (!shouldAnimate) {
+      analyzePulseAnim.stopAnimation();
+      analyzeSpinAnim.stopAnimation();
+      analyzeDotAnim1.stopAnimation();
+      analyzeDotAnim2.stopAnimation();
+      analyzeDotAnim3.stopAnimation();
+      analyzePulseAnim.setValue(0.4);
+      analyzeSpinAnim.setValue(0);
+      analyzeDotAnim1.setValue(0.3);
+      analyzeDotAnim2.setValue(0.3);
+      analyzeDotAnim3.setValue(0.3);
+      return undefined;
+    }
+
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(analyzePulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(analyzePulseAnim, {
+          toValue: 0.4,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    const spinLoop = Animated.loop(
+      Animated.timing(analyzeSpinAnim, {
+        toValue: 1,
+        duration: 3000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    const makeDotLoop = (anim: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        ])
+      );
+    const dotLoop1 = makeDotLoop(analyzeDotAnim1, 0);
+    const dotLoop2 = makeDotLoop(analyzeDotAnim2, 200);
+    const dotLoop3 = makeDotLoop(analyzeDotAnim3, 400);
+
+    pulseLoop.start();
+    spinLoop.start();
+    dotLoop1.start();
+    dotLoop2.start();
+    dotLoop3.start();
+
+    return () => {
+      pulseLoop.stop();
+      spinLoop.stop();
+      dotLoop1.stop();
+      dotLoop2.stop();
+      dotLoop3.stop();
+    };
+  }, [
+    analyzeDotAnim1,
+    analyzeDotAnim2,
+    analyzeDotAnim3,
+    analyzePulseAnim,
+    analyzeSpinAnim,
+    isLoading,
+    mealResult,
+    scanMode,
+    scanStep,
+  ]);
 
   const resetProductState = () => {
     setProductResult(null);
@@ -269,8 +354,10 @@ export default function ScanScreen() {
       setScanStep('capture');
       return;
     }
+    // result step: meal goes back to capture (no review step), others go to review
     if (scanMode === 'meal') {
-      setScanStep('review');
+      resetMealState();
+      setScanStep('capture');
     } else {
       setScanStep('review');
     }
@@ -298,24 +385,22 @@ export default function ScanScreen() {
           ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] })
           : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
-      setMealImageUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setMealImageUri(uri);
       setMealResult(null);
-      setScanStep('review');
+      await analyzeMealWithUri(uri);
     } catch (err: any) {
       Alert.alert('Unable to open camera', err?.message || 'Camera or photo permissions are missing.');
     }
   };
 
-  const analyzeMeal = async () => {
-    if (!mealImageUri) {
-      Alert.alert('Meal photo required', 'Take a photo or choose one from your library first.');
-      return;
-    }
+  const analyzeMealWithUri = async (uri: string) => {
     setIsLoading(true);
+    setScanStep('result');
     try {
       const next = normalizeMealResult(
         await wholeFoodScanApi.analyzeMeal({
-          imageUri: mealImageUri,
+          imageUri: uri,
           meal_type: mealType,
           portion_size: portionSize,
           source_context: sourceContext,
@@ -324,12 +409,20 @@ export default function ScanScreen() {
       setMealResult(next);
       setMealLabelDraft(next.meal_label);
       setIngredientDrafts(next.estimated_ingredients || []);
-      setScanStep('result');
     } catch (err: any) {
       Alert.alert('Meal scan failed', err?.message || 'Unable to analyze that meal right now.');
+      setScanStep('capture');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const analyzeMeal = async () => {
+    if (!mealImageUri) {
+      Alert.alert('Meal photo required', 'Take a photo or choose one from your library first.');
+      return;
+    }
+    await analyzeMealWithUri(mealImageUri);
   };
 
   const recomputeMeal = async () => {
@@ -424,147 +517,141 @@ export default function ScanScreen() {
     setAddIngredientText('');
   };
 
-  const renderModeRail = () => {
+  const renderCaptureStep = () => {
     const modes: Array<{ key: ScanMode; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
       { key: 'meal', label: 'Scan Food', icon: 'scan-outline' },
       { key: 'barcode', label: 'Barcode', icon: 'barcode-outline' },
       { key: 'label', label: 'Food Label', icon: 'reader-outline' },
     ];
     return (
-      <View style={styles.captureBottomContent}>
-        <View style={styles.captureInfoWrap}>
-          <View style={styles.captureInfoPill}>
-            <View style={styles.captureInfoDot} />
-            <Text style={styles.captureInfoPillText}>WholeFoodLabs Scan</Text>
+      <View style={[styles.captureRoot, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        {CameraView && cameraGranted ? (
+          <CameraView style={styles.cameraPreview} facing="back" autofocus="on" />
+        ) : (
+          <LinearGradient
+            colors={['#0A1914', '#0D2018', '#132B1F']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.cameraPreview}
+          />
+        )}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.65)']}
+          locations={[0, 0.35, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.captureOverlay}
+        />
+
+        <View style={styles.captureTopRow}>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8} style={styles.captureCloseBtn}>
+            <Ionicons name="close" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.captureBrandPill}>
+            <View style={styles.captureBrandDot} />
+            <Text style={styles.captureBrandText}>Scan</Text>
           </View>
-          <Text style={styles.captureHeadline}>
-            {scanMode === 'meal'
-              ? 'Capture a meal'
-              : scanMode === 'barcode'
-                ? 'Check a barcode'
-                : 'Read a food label'}
-          </Text>
-          <Text style={styles.captureSubhead}>
-            {scanMode === 'meal'
-              ? 'Frame the dish clearly. You can refine context before analysis.'
-              : scanMode === 'barcode'
-                ? 'Use the scan flow, then jump into a quick barcode check.'
-                : 'Label mode lets you review packaged foods with ingredient context.'}
-          </Text>
+          <TouchableOpacity onPress={() => setShowModesInfo(true)} activeOpacity={0.8} style={styles.captureCloseBtn}>
+            <Ionicons name="help" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-        <View style={[styles.modeRail, { backgroundColor: 'rgba(11, 28, 21, 0.62)' }]}>
-          {modes.map((item) => {
-            const active = scanMode === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                onPress={() => handleModeChange(item.key)}
-                activeOpacity={0.85}
-                style={[
-                  styles.modePill,
-                  { backgroundColor: active ? '#F4FBF7' : 'rgba(255,255,255,0.05)' },
-                ]}
-              >
-                <Ionicons name={item.icon} size={18} color={active ? '#0F8A43' : '#FFFFFF'} />
-                <Text style={[styles.modePillText, { color: active ? '#111111' : '#FFFFFF' }]}>{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+
+        <View style={styles.captureCenter}>
+          <View style={styles.viewfinderWrap}>
+            <View style={[styles.viewfinderCorner, styles.viewfinderTopLeft]} />
+            <View style={[styles.viewfinderCorner, styles.viewfinderTopRight]} />
+            <View style={[styles.viewfinderCorner, styles.viewfinderBottomLeft]} />
+            <View style={[styles.viewfinderCorner, styles.viewfinderBottomRight]} />
+            <View style={styles.viewfinderGuide} />
+          </View>
+
+          <View style={styles.captureInfoBlock}>
+            <View style={styles.captureBadge}>
+              <View style={styles.captureInfoDot} />
+              <Text style={styles.captureBadgeText}>WholeFoodLabs Scan</Text>
+            </View>
+            <Text style={styles.captureHeadline}>
+              {scanMode === 'meal' ? 'Capture a meal' : scanMode === 'barcode' ? 'Scan a barcode' : 'Capture a food label'}
+            </Text>
+            <Text style={styles.captureSubhead}>
+              {scanMode === 'meal'
+                ? 'Frame the dish clearly, then refine context before analysis.'
+                : scanMode === 'barcode'
+                  ? 'Center the product code or use manual entry in the next step.'
+                  : 'Capture the label straight-on so ingredients stay readable.'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.captureActionRow}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => {
-              if (scanMode === 'meal') {
-                pickMealImage('library');
-              } else {
-                setScanStep('review');
-              }
-            }}
-            style={[styles.captureSecondaryButton, { backgroundColor: 'rgba(30, 14, 18, 0.48)' }]}
-          >
-            <Ionicons
-              name={scanMode === 'meal' ? 'images-outline' : scanMode === 'barcode' ? 'barcode-outline' : 'reader-outline'}
-              size={22}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              if (scanMode === 'meal') {
-                pickMealImage('camera');
-              } else {
-                setScanStep('review');
-              }
-            }}
-            style={styles.capturePrimaryButton}
-          >
-            {isLoading ? <ActivityIndicator color="#111111" /> : <View style={styles.capturePrimaryDot} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => setShowModesInfo(true)}
-            style={[styles.captureSecondaryButton, { backgroundColor: 'rgba(30, 14, 18, 0.48)' }]}
-          >
-            <Ionicons name="options-outline" size={22} color="#FFFFFF" />
-          </TouchableOpacity>
+
+        <View style={styles.captureControls}>
+          <View style={styles.modeRail}>
+            {modes.map((item) => {
+              const active = scanMode === item.key;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => handleModeChange(item.key)}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.modePill,
+                    active && styles.modePillActive,
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={15} color={active ? '#16A34A' : 'rgba(255,255,255,0.78)'} />
+                  <Text style={[styles.modePillText, active && styles.modePillTextActive]}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.shutterRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                if (scanMode === 'meal') {
+                  pickMealImage('library');
+                } else {
+                  setScanStep('review');
+                }
+              }}
+              style={styles.shutterSideBtn}
+            >
+              <Ionicons name="images-outline" size={18} color="rgba(255,255,255,0.86)" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                if (scanMode === 'meal') {
+                  pickMealImage('camera');
+                } else {
+                  setScanStep('review');
+                }
+              }}
+              style={styles.shutterBtn}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#16A34A" />
+              ) : (
+                <View style={styles.shutterBtnInner} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowModesInfo(true)}
+              style={styles.shutterSideBtn}
+            >
+              <Ionicons name="options-outline" size={18} color="rgba(255,255,255,0.86)" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   };
 
-  const renderCaptureStep = () => (
-    <View style={[styles.captureRoot, { paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 18) }]}>
-      {CameraView && cameraGranted ? (
-        <CameraView style={styles.cameraPreview} facing="back" autofocus="on" />
-      ) : (
-        <LinearGradient
-          colors={['#0A1914', '#0E241A', '#123021']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.cameraPreview}
-        />
-      )}
-      <LinearGradient
-        colors={['rgba(2,12,9,0.62)', 'rgba(2,12,9,0.18)', 'rgba(2,12,9,0.72)']}
-        locations={[0, 0.46, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.captureOverlay}
-      />
-      <View style={styles.captureTopRow}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} style={styles.captureHeaderButton}>
-          <Ionicons name="close" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setShowModesInfo(true)}
-          activeOpacity={0.85}
-          style={styles.captureHeaderButton}
-        >
-          <Ionicons name="help" size={26} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.grabber} />
-
-      <View style={styles.viewfinderWrap}>
-        <View style={styles.viewfinder}>
-          <View style={[styles.corner, styles.cornerTopLeft]} />
-          <View style={[styles.corner, styles.cornerTopRight]} />
-          <View style={[styles.corner, styles.cornerBottomLeft]} />
-          <View style={[styles.corner, styles.cornerBottomRight]} />
-        </View>
-      </View>
-
-      {renderModeRail()}
-    </View>
-  );
-
   const renderReviewHeader = () => (
     <View style={[styles.reviewHeader, { paddingTop: insets.top + 6 }]}>
       <TouchableOpacity onPress={handleBack} activeOpacity={0.85} style={[styles.headerCircle, { borderColor: theme.border }]}>
-        <Ionicons name="chevron-back" size={24} color={theme.primary} />
+        <Ionicons name="chevron-back" size={20} color={theme.primary} />
       </TouchableOpacity>
       <View style={[styles.headerCapsule, { borderColor: theme.border, backgroundColor: '#FFFFFF' }]}>
         <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
@@ -607,7 +694,7 @@ export default function ScanScreen() {
             activeOpacity={0.85}
             style={[styles.reviewActionButton, { backgroundColor: theme.primaryMuted }]}
           >
-            <Ionicons name="camera-outline" size={22} color={theme.primary} />
+            <Ionicons name="camera-outline" size={18} color={theme.primary} />
             <Text style={[styles.reviewActionText, { color: theme.primary }]}>Camera</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -615,7 +702,7 @@ export default function ScanScreen() {
             activeOpacity={0.85}
             style={[styles.reviewActionButton, { backgroundColor: theme.surfaceElevated, borderColor: theme.border, borderWidth: 1 }]}
           >
-            <Ionicons name="images-outline" size={22} color={theme.textSecondary} />
+            <Ionicons name="images-outline" size={18} color={theme.textSecondary} />
             <Text style={[styles.reviewActionText, { color: theme.textSecondary }]}>Library</Text>
           </TouchableOpacity>
         </View>
@@ -770,8 +857,92 @@ export default function ScanScreen() {
     </ScrollView>
   );
 
+  const renderAnalyzingScreen = () => {
+    const spin = analyzeSpinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+    const steps = [
+      { icon: 'eye-outline' as const, label: 'Identifying ingredients' },
+      { icon: 'nutrition-outline' as const, label: 'Estimating nutrition' },
+      { icon: 'shield-checkmark-outline' as const, label: 'Scoring whole-food fit' },
+    ];
+
+    return (
+      <View style={analyzeStyles.container}>
+        {/* Meal image background */}
+        {mealImageUri && (
+          <>
+            <Image source={{ uri: mealImageUri }} style={analyzeStyles.bgImage} blurRadius={20} />
+            <View style={analyzeStyles.bgOverlay} />
+          </>
+        )}
+
+        <View style={analyzeStyles.content}>
+          <View style={analyzeStyles.ringWrap}>
+            <Animated.View
+              style={[
+                analyzeStyles.pulseRing,
+                {
+                  opacity: analyzePulseAnim,
+                  transform: [
+                    {
+                      scale: analyzePulseAnim.interpolate({
+                        inputRange: [0.4, 1],
+                        outputRange: [0.85, 1.15],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+            <Animated.View style={[analyzeStyles.spinRing, { transform: [{ rotate: spin }] }]}>
+              <LinearGradient
+                colors={['#22C55E', '#16A34A', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={analyzeStyles.spinGradient}
+              />
+            </Animated.View>
+            <View style={analyzeStyles.innerCircle}>
+              <Ionicons name="scan-outline" size={32} color="#22C55E" />
+            </View>
+          </View>
+
+          <View style={analyzeStyles.titleRow}>
+            <Text style={analyzeStyles.title}>Analyzing your meal</Text>
+            <View style={analyzeStyles.dotsRow}>
+              {[analyzeDotAnim1, analyzeDotAnim2, analyzeDotAnim3].map((anim, i) => (
+                <Animated.View key={i} style={[analyzeStyles.dot, { opacity: anim }]} />
+              ))}
+            </View>
+          </View>
+          <Text style={analyzeStyles.subtitle}>Our AI is breaking down what's on your plate</Text>
+
+          <View style={analyzeStyles.stepsWrap}>
+            {steps.map((step, i) => (
+              <View key={i} style={analyzeStyles.stepRow}>
+                <View style={analyzeStyles.stepIcon}>
+                  <Ionicons name={step.icon} size={16} color="#22C55E" />
+                </View>
+                <Text style={analyzeStyles.stepLabel}>{step.label}</Text>
+                <ActivityIndicator size="small" color="#22C55E80" style={{ marginLeft: 'auto' }} />
+              </View>
+            ))}
+          </View>
+
+          <View style={analyzeStyles.brandPill}>
+            <View style={analyzeStyles.brandDot} />
+            <Text style={analyzeStyles.brandText}>Powered by WholeFoodLabs AI</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderMealResultStep = () => {
-    if (!mealResult || !mealStatusMeta) return null;
+    if (!mealResult || !mealStatusMeta) {
+      if (isLoading) return renderAnalyzingScreen();
+      return null;
+    }
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
@@ -945,7 +1116,7 @@ export default function ScanScreen() {
         renderCaptureStep()
       ) : (
         <View style={{ flex: 1, backgroundColor: theme.background }}>
-          {renderReviewHeader()}
+          {!(scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult) && renderReviewHeader()}
           {scanStep === 'review'
             ? scanMode === 'meal'
               ? renderMealReviewStep()
@@ -953,7 +1124,7 @@ export default function ScanScreen() {
             : scanMode === 'meal'
               ? renderMealResultStep()
               : renderProductResultStep()}
-          {scanStep === 'result' && scanMode === 'meal' && (
+          {scanStep === 'result' && scanMode === 'meal' && mealResult && (
             <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 12, backgroundColor: 'rgba(252, 252, 250, 0.96)', borderTopColor: theme.border }]}>
               <TouchableOpacity
                 onPress={recomputeMeal}
@@ -1026,9 +1197,7 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   captureRoot: {
     flex: 1,
-    backgroundColor: '#0C1D16',
-    position: 'relative',
-    justifyContent: 'space-between',
+    backgroundColor: '#0A1914',
   },
   cameraPreview: {
     ...StyleSheet.absoluteFillObject,
@@ -1038,175 +1207,205 @@ const styles = StyleSheet.create({
   },
   captureTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingTop: 4,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
     zIndex: 2,
   },
-  captureHeaderButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  captureCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(8, 18, 14, 0.42)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  grabber: {
-    width: 70,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.44)',
-    alignSelf: 'center',
-    marginTop: 6,
+  captureBrandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(3, 20, 13, 0.72)',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: BorderRadius.full,
+  },
+  captureBrandDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#22C55E',
+  },
+  captureBrandText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  captureCenter: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
   },
   viewfinderWrap: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 1,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    zIndex: 1,
-  },
-  viewfinder: {
-    width: '88%',
+    alignSelf: 'center',
+    width: '84%',
     aspectRatio: 0.82,
     maxHeight: 360,
     position: 'relative',
     marginBottom: Spacing.lg,
   },
-  corner: {
+  viewfinderCorner: {
     position: 'absolute',
-    width: 92,
-    height: 92,
-    borderColor: '#FFFFFF',
-    shadowColor: '#34D399',
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
+    width: 72,
+    height: 72,
+    borderColor: 'rgba(255,255,255,0.94)',
   },
-  cornerTopLeft: {
+  viewfinderTopLeft: {
     top: 0,
     left: 0,
-    borderTopWidth: 7,
-    borderLeftWidth: 7,
+    borderTopWidth: 8,
+    borderLeftWidth: 8,
     borderTopLeftRadius: 28,
   },
-  cornerTopRight: {
+  viewfinderTopRight: {
     top: 0,
     right: 0,
-    borderTopWidth: 7,
-    borderRightWidth: 7,
+    borderTopWidth: 8,
+    borderRightWidth: 8,
     borderTopRightRadius: 28,
   },
-  cornerBottomLeft: {
+  viewfinderBottomLeft: {
     bottom: 0,
     left: 0,
-    borderBottomWidth: 7,
-    borderLeftWidth: 7,
+    borderBottomWidth: 8,
+    borderLeftWidth: 8,
     borderBottomLeftRadius: 28,
   },
-  cornerBottomRight: {
+  viewfinderBottomRight: {
     bottom: 0,
     right: 0,
-    borderBottomWidth: 7,
-    borderRightWidth: 7,
+    borderBottomWidth: 8,
+    borderRightWidth: 8,
     borderBottomRightRadius: 28,
   },
-  captureHeadline: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '800',
-    textAlign: 'left',
-    letterSpacing: -0.7,
+  viewfinderGuide: {
+    position: 'absolute',
+    top: 34,
+    left: '50%',
+    marginLeft: -46,
+    width: 92,
+    height: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.62)',
   },
-  captureSubhead: {
-    marginTop: Spacing.sm,
-    color: 'rgba(235,255,244,0.78)',
-    fontSize: 15,
-    lineHeight: 21,
-    textAlign: 'left',
-    maxWidth: 340,
+  captureInfoBlock: {
+    gap: 10,
   },
-  captureBottomContent: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    zIndex: 2,
-  },
-  captureInfoWrap: {
-    marginBottom: Spacing.md,
-    paddingHorizontal: 4,
-  },
-  captureInfoPill: {
+  captureBadge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(8, 24, 18, 0.72)',
+    backgroundColor: 'rgba(2, 18, 12, 0.74)',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
-    marginBottom: 10,
+  },
+  captureBadgeText: {
+    color: '#E8FFF1',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.25,
+  },
+  captureHeadline: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    lineHeight: 36,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+  },
+  captureSubhead: {
+    color: 'rgba(237, 247, 241, 0.82)',
+    fontSize: 17,
+    lineHeight: 25,
+    maxWidth: 320,
+  },
+  captureControls: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.sm,
+    gap: Spacing.md,
+    zIndex: 2,
   },
   captureInfoDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#34D399',
-  },
-  captureInfoPillText: {
-    color: '#D9FBE8',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    backgroundColor: '#22C55E',
   },
   modeRail: {
-    borderRadius: 24,
-    padding: 6,
     flexDirection: 'row',
-    gap: 6,
+    backgroundColor: 'rgba(4, 18, 13, 0.74)',
+    borderRadius: 18,
+    padding: 4,
+    gap: 4,
   },
   modePill: {
     flex: 1,
-    minHeight: 62,
-    borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
+    gap: 6,
+    minHeight: 72,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+  },
+  modePillActive: {
+    backgroundColor: '#F6FBF8',
   },
   modePillText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.82)',
     textAlign: 'center',
   },
-  captureActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.md,
-    paddingHorizontal: 10,
+  modePillTextActive: {
+    color: '#15803D',
   },
-  capturePrimaryButton: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: '#FFFFFF',
+  shutterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.xxl,
   },
-  capturePrimaryDot: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F4F7F5',
-  },
-  captureSecondaryButton: {
+  shutterSideBtn: {
     width: 54,
     height: 54,
     borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(8, 20, 15, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  shutterBtn: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(22, 163, 74, 0.26)',
+  },
+  shutterBtnInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E7E5E4',
   },
   infoModalBackdrop: {
     flex: 1,
@@ -1300,16 +1499,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   reviewHeader: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FCFCFA',
   },
   headerCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1318,56 +1517,56 @@ const styles = StyleSheet.create({
   headerCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 24,
-    height: 64,
-    borderRadius: 32,
+    gap: 8,
+    paddingHorizontal: 16,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     marginLeft: 'auto',
     marginRight: 'auto',
   },
   headerDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 17,
     fontWeight: '700',
-    letterSpacing: -0.6,
+    letterSpacing: -0.3,
   },
   headerSpacer: {
-    width: 64,
+    width: 44,
   },
   sheetCard: {
-    borderRadius: 28,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
   },
   sheetTitle: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '800',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   sheetSub: {
-    marginTop: Spacing.sm,
-    fontSize: FontSize.lg,
-    lineHeight: 24,
+    marginTop: 4,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   previewShell: {
-    marginTop: Spacing.lg,
-    borderRadius: 28,
+    marginTop: Spacing.md,
+    borderRadius: 16,
     overflow: 'hidden',
-    minHeight: 320,
+    minHeight: 200,
   },
   reviewImage: {
     width: '100%',
-    height: 420,
+    height: 260,
     resizeMode: 'cover',
   },
   previewFallback: {
-    minHeight: 320,
+    minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1377,79 +1576,79 @@ const styles = StyleSheet.create({
   },
   reviewButtonRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
   reviewActionButton: {
     flex: 1,
-    minHeight: 74,
-    borderRadius: 28,
+    minHeight: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   reviewActionText: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   contextTitle: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.md,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   choiceRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   choiceChip: {
-    minHeight: 56,
-    paddingHorizontal: 22,
-    borderRadius: 28,
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   choiceText: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    fontSize: FontSize.sm,
+    fontWeight: '600',
     textTransform: 'capitalize',
   },
   primaryButton: {
-    minHeight: 86,
-    borderRadius: 28,
+    minHeight: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.7,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   formInput: {
     borderWidth: 1,
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 15,
-    fontSize: FontSize.md,
-    marginBottom: Spacing.md,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.sm,
   },
   textArea: {
     borderWidth: 1,
-    borderRadius: 24,
-    minHeight: 140,
+    borderRadius: 14,
+    minHeight: 100,
     textAlignVertical: 'top',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    fontSize: FontSize.md,
-    marginBottom: Spacing.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.sm,
   },
   inputGrid: {
     flexDirection: 'row',
@@ -1460,134 +1659,135 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   resultHero: {
-    borderRadius: 28,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: Spacing.xl,
-    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   resultHeroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: Spacing.md,
   },
   resultTitleInput: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '800',
-    letterSpacing: -0.8,
+    letterSpacing: -0.5,
     padding: 0,
     margin: 0,
   },
   resultTitleText: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '800',
-    letterSpacing: -0.8,
+    letterSpacing: -0.5,
   },
   resultMeta: {
-    marginTop: 6,
-    fontSize: FontSize.lg,
-    lineHeight: 24,
+    marginTop: 4,
+    fontSize: FontSize.sm,
+    lineHeight: 18,
   },
   statusChip: {
     alignSelf: 'flex-start',
-    marginTop: Spacing.md,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    marginTop: Spacing.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: BorderRadius.full,
   },
   statusChipText: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.xs,
     fontWeight: '700',
   },
   resultRing: {
-    width: 146,
-    height: 146,
-    borderRadius: 73,
-    borderWidth: 6,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   resultRingValue: {
-    fontSize: 64,
-    lineHeight: 68,
+    fontSize: 28,
+    lineHeight: 32,
     fontWeight: '800',
-    letterSpacing: -2,
+    letterSpacing: -1,
   },
   resultRingLabel: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.xs,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   resultRingFallback: {
-    fontSize: 20,
+    fontSize: 13,
     fontWeight: '700',
   },
   resultSummary: {
-    marginTop: Spacing.md,
-    fontSize: FontSize.md,
-    lineHeight: 24,
+    marginTop: Spacing.sm,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   macroGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: Spacing.lg,
+    gap: 8,
+    marginTop: Spacing.md,
   },
   macroCard: {
-    width: '48%',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    minHeight: 90,
+    flexBasis: '47%',
+    flexGrow: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   macroCardValue: {
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 26,
     fontWeight: '800',
-    letterSpacing: -0.8,
+    letterSpacing: -0.5,
   },
   macroCardLabel: {
-    marginTop: 4,
-    fontSize: FontSize.sm,
+    marginTop: 2,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   resultSection: {
-    borderRadius: 28,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: Spacing.xl,
-    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   sectionHeading: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   ingredientsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: Spacing.md,
+    gap: 8,
+    marginTop: Spacing.sm,
   },
   ingredientChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
     borderRadius: BorderRadius.full,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   ingredientChipText: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '600',
   },
   ingredientInputRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: Spacing.md,
+    gap: 8,
+    marginTop: Spacing.sm,
     alignItems: 'center',
   },
   addIngredientInput: {
@@ -1595,63 +1795,204 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   squareButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   guidanceRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 10,
   },
   guidanceText: {
     flex: 1,
-    fontSize: FontSize.md,
-    lineHeight: 23,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   emptyCopy: {
-    marginTop: Spacing.md,
-    fontSize: FontSize.md,
-    lineHeight: 23,
+    marginTop: Spacing.sm,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   resultFooter: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     borderTopWidth: 1,
   },
   footerButtonSecondary: {
-    flex: 1,
-    minHeight: 76,
-    borderRadius: 26,
+    flex: 0,
+    minHeight: 50,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: 6,
   },
   footerButtonPrimary: {
     flex: 1,
-    minHeight: 76,
-    borderRadius: 26,
+    minHeight: 50,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerButtonSecondaryText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: FontSize.sm,
+    fontWeight: '600',
   },
   footerButtonPrimaryText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+});
+
+const analyzeStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0F0D',
+  },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.3,
+  },
+  bgOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 12, 8, 0.75)',
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xxxl,
+  },
+  ringWrap: {
+    width: 100,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xxl,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: '#22C55E40',
+  },
+  spinRing: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  spinGradient: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  innerCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.2)',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 22,
     fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 3,
+    marginLeft: 2,
+    paddingTop: 4,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#22C55E',
+  },
+  subtitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: FontSize.sm,
+    fontWeight: '500',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  stepsWrap: {
+    width: '100%',
+    marginTop: Spacing.xxxl,
+    gap: Spacing.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  stepIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepLabel: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    flex: 1,
+  },
+  brandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing.xxxl,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+  },
+  brandDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22C55E',
+  },
+  brandText: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });

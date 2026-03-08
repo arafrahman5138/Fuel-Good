@@ -450,61 +450,61 @@ export default function TodaysMealsScreen() {
                             key={log.id}
                             style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                           >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                            <View style={s.mealCardRow}>
                               <LinearGradient
-                                colors={[theme.primary + '25', theme.primary + '10'] as any}
+                                colors={[theme.primary + '22', theme.primary + '0A'] as any}
                                 style={s.mealIcon}
                               >
-                                <Ionicons name={sourceIcon as any} size={18} color={theme.primary} />
+                                <Ionicons name={sourceIcon as any} size={17} color={theme.primary} />
                               </LinearGradient>
-                              <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                  <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={2}>
-                                    {log.title || 'Untitled'}
-                                  </Text>
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
+                                  {log.title || 'Untitled'}
+                                </Text>
+                                <View style={s.mealMetaRow}>
+                                  {log.meal_type && (
+                                    <Text style={[s.mealType, { color: theme.textTertiary }]}>
+                                      {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
+                                    </Text>
+                                  )}
                                   {mealMes && (
                                     mealMes.score
                                       ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
                                       : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
                                   )}
                                 </View>
-                                {log.meal_type && (
-                                  <Text style={[s.mealType, { color: theme.textTertiary }]}>
-                                    {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
-                                  </Text>
-                                )}
                               </View>
                               <TouchableOpacity
                                 onPress={() => handleDelete(log.id, log.title || 'Untitled')}
                                 disabled={isDeleting}
-                                style={[s.deleteBtn, { backgroundColor: theme.error + '12' }]}
+                                style={s.deleteBtn}
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               >
                                 {isDeleting ? (
                                   <ActivityIndicator size="small" color={theme.error} />
                                 ) : (
-                                  <Ionicons name="trash-outline" size={16} color={theme.error} />
+                                  <Ionicons name="trash-outline" size={15} color={theme.error} />
                                 )}
                               </TouchableOpacity>
                             </View>
                             <View style={s.macroPills}>
-                              <View style={[s.macroPill, { backgroundColor: theme.text + '0A' }]}>
-                                <Ionicons name="flame-outline" size={12} color={theme.text} />
-                                <Text style={[s.macroPillText, { color: theme.text }]}>{cal.toFixed(0)} calories</Text>
+                              <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
+                                <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
+                                <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
                               </View>
                               {pro > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.primary + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.primary }]}>P {pro.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
+                                  <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
                                 </View>
                               )}
                               {carb > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.accent + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.accent }]}>C {carb.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
+                                  <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
                                 </View>
                               )}
                               {fat > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.info + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.info }]}>F {fat.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
+                                  <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
                                 </View>
                               )}
                             </View>
@@ -571,77 +571,64 @@ export default function TodaysMealsScreen() {
                             style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                           >
                             {/* Main meal row */}
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                            <View style={s.mealCardRow}>
                               <LinearGradient
-                                colors={[theme.primary + '25', theme.primary + '10'] as any}
+                                colors={[theme.primary + '22', theme.primary + '0A'] as any}
                                 style={s.mealIcon}
                               >
-                                <Ionicons name="restaurant-outline" size={18} color={theme.primary} />
+                                <Ionicons name="restaurant-outline" size={17} color={theme.primary} />
                               </LinearGradient>
-                              <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                  <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={2}>
-                                    {item.main.title || 'Untitled'}
-                                  </Text>
-                                  {displayScore != null && displayTier && (
-                                    <MealMESBadge
-                                      score={displayScore}
-                                      tier={displayTier}
-                                      compact
-                                    />
-                                  )}
-                                </View>
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
+                                  {item.main.title || 'Untitled'}
+                                </Text>
+                                {displayScore != null && displayTier && (
+                                  <View style={s.mealMetaRow}>
+                                    <MealMESBadge score={displayScore} tier={displayTier} compact />
+                                  </View>
+                                )}
                               </View>
                               <TouchableOpacity
                                 onPress={() => handleDelete(item.main.id, item.main.title || 'Untitled', item.main.group_id)}
                                 disabled={isDeletingGroup}
-                                style={[s.deleteBtn, { backgroundColor: theme.error + '12' }]}
+                                style={s.deleteBtn}
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               >
                                 {isDeletingGroup ? (
                                   <ActivityIndicator size="small" color={theme.error} />
                                 ) : (
-                                  <Ionicons name="trash-outline" size={16} color={theme.error} />
+                                  <Ionicons name="trash-outline" size={15} color={theme.error} />
                                 )}
                               </TouchableOpacity>
                             </View>
 
-                            {/* Side row (indented with green leaf) */}
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingLeft: 42 + Spacing.md }}>
-                              <View style={{
-                                width: 6, height: 6,
-                                borderRadius: 3,
-                                backgroundColor: '#22C55E',
-                                marginRight: 8,
-                              }} />
-                              <Ionicons name="leaf-outline" size={13} color="#22C55E" style={{ marginRight: 5 }} />
-                              <Text
-                                style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '500', flex: 1 }}
-                                numberOfLines={1}
-                              >
+                            {/* Side row */}
+                            <View style={s.sideRow}>
+                              <Ionicons name="leaf-outline" size={12} color={theme.primary} />
+                              <Text style={[s.sideRowText, { color: theme.textSecondary }]} numberOfLines={1}>
                                 {item.side.title || 'Side'}
                               </Text>
                             </View>
 
                             {/* Combined macros */}
-                            <View style={[s.macroPills, { marginTop: Spacing.sm }]}>
-                              <View style={[s.macroPill, { backgroundColor: theme.text + '0A' }]}>
-                                <Ionicons name="flame-outline" size={12} color={theme.text} />
-                                <Text style={[s.macroPillText, { color: theme.text }]}>{cal.toFixed(0)} calories</Text>
+                            <View style={s.macroPills}>
+                              <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
+                                <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
+                                <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
                               </View>
                               {pro > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.primary + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.primary }]}>P {pro.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
+                                  <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
                                 </View>
                               )}
                               {carb > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.accent + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.accent }]}>C {carb.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
+                                  <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
                                 </View>
                               )}
                               {fat > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: theme.info + '12' }]}>
-                                  <Text style={[s.macroPillText, { color: theme.info }]}>F {fat.toFixed(0)}g</Text>
+                                <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
+                                  <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
                                 </View>
                               )}
                             </View>
@@ -667,61 +654,61 @@ export default function TodaysMealsScreen() {
                           key={log.id}
                           style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                          <View style={s.mealCardRow}>
                             <LinearGradient
-                              colors={[theme.primary + '25', theme.primary + '10'] as any}
+                              colors={[theme.primary + '22', theme.primary + '0A'] as any}
                               style={s.mealIcon}
                             >
-                              <Ionicons name={sourceIcon as any} size={18} color={theme.primary} />
+                              <Ionicons name={sourceIcon as any} size={17} color={theme.primary} />
                             </LinearGradient>
-                            <View style={{ flex: 1 }}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={2}>
-                                  {log.title || 'Untitled'}
-                                </Text>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
+                                {log.title || 'Untitled'}
+                              </Text>
+                              <View style={s.mealMetaRow}>
+                                {log.meal_type && (
+                                  <Text style={[s.mealType, { color: theme.textTertiary }]}>
+                                    {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
+                                  </Text>
+                                )}
                                 {mealMes && (
                                   mealMes.score
                                     ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
                                     : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
                                 )}
                               </View>
-                              {log.meal_type && (
-                                <Text style={[s.mealType, { color: theme.textTertiary }]}>
-                                  {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
-                                </Text>
-                              )}
                             </View>
                             <TouchableOpacity
                               onPress={() => handleDelete(log.id, log.title || 'Untitled')}
                               disabled={isDeleting}
-                              style={[s.deleteBtn, { backgroundColor: theme.error + '12' }]}
+                              style={s.deleteBtn}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                               {isDeleting ? (
                                 <ActivityIndicator size="small" color={theme.error} />
                               ) : (
-                                <Ionicons name="trash-outline" size={16} color={theme.error} />
+                                <Ionicons name="trash-outline" size={15} color={theme.error} />
                               )}
                             </TouchableOpacity>
                           </View>
                           <View style={s.macroPills}>
-                            <View style={[s.macroPill, { backgroundColor: theme.text + '0A' }]}>
-                              <Ionicons name="flame-outline" size={12} color={theme.text} />
-                              <Text style={[s.macroPillText, { color: theme.text }]}>{cal.toFixed(0)} calories</Text>
+                            <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
+                              <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
+                              <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
                             </View>
                             {pro > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: theme.primary + '12' }]}>
-                                <Text style={[s.macroPillText, { color: theme.primary }]}>P {pro.toFixed(0)}g</Text>
+                              <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
+                                <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
                               </View>
                             )}
                             {carb > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: theme.accent + '12' }]}>
-                                <Text style={[s.macroPillText, { color: theme.accent }]}>C {carb.toFixed(0)}g</Text>
+                              <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
+                                <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
                               </View>
                             )}
                             {fat > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: theme.info + '12' }]}>
-                                <Text style={[s.macroPillText, { color: theme.info }]}>F {fat.toFixed(0)}g</Text>
+                              <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
+                                <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
                               </View>
                             )}
                           </View>
@@ -928,45 +915,69 @@ const s = StyleSheet.create({
   },
   mealCard: {
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  mealCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.md,
   },
   mealIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   mealTitle: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '700',
   },
+  mealMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 3,
+    flexWrap: 'wrap',
+  },
   mealType: {
-    fontSize: FontSize.xs,
+    fontSize: 11,
     fontWeight: '500',
-    marginTop: 1,
     textTransform: 'capitalize',
   },
+  sideRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingLeft: 40 + Spacing.md,
+  },
+  sideRowText: {
+    fontSize: 11,
+    fontWeight: '500',
+    flex: 1,
+  },
   deleteBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   macroPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
   },
   macroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: BorderRadius.full,
   },
   macroPillText: {
