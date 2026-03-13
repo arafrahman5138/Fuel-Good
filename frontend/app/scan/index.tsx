@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,6 +23,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
+import { useThemeStore } from '../../stores/themeStore';
 import { wholeFoodScanApi } from '../../services/api';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
 
@@ -37,18 +40,21 @@ const CameraModule: {
 
 const CameraView = CameraModule?.CameraView;
 
-type ScanMode = 'meal' | 'barcode' | 'label';
+type ScanMode = 'meal' | 'product';
 type ScanStep = 'capture' | 'review' | 'result';
 type PortionSize = 'small' | 'medium' | 'large';
 type MealKind = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type SourceContext = 'home' | 'restaurant';
+type ProductSource = 'label_image' | 'barcode' | 'label_manual';
+type ProductCaptureType = 'ingredients' | 'nutrition' | 'front_label';
 
 interface ProductResult {
   product_name: string;
   brand?: string | null;
   barcode?: string | null;
   image_url?: string | null;
-  source: string;
+  source: ProductSource;
+  capture_type?: ProductCaptureType;
   score: number;
   tier: 'whole_food' | 'solid' | 'mixed' | 'ultra_processed';
   verdict: string;
@@ -56,10 +62,30 @@ interface ProductResult {
   recommended_action: string;
   highlights: string[];
   concerns: string[];
+  reasoning?: string[];
   ingredient_count: number;
+  ingredients_text: string;
+  confidence: number;
+  confidence_breakdown: {
+    ocr?: number;
+    ingredients?: number;
+    nutrition?: number;
+    metadata?: number;
+  };
+  recoverable?: boolean;
+  notes?: string[];
+  processing_flags?: {
+    seed_oils?: string[];
+    added_sugars?: string[];
+    refined_flours?: string[];
+    artificial_additives?: string[];
+    gums_or_emulsifiers?: string[];
+    protein_isolates?: string[];
+  };
   nutrition_snapshot: {
     calories: number;
     protein_g: number;
+    fat_g: number;
     fiber_g: number;
     sugar_g: number;
     carbs_g: number;
@@ -95,6 +121,11 @@ interface MealResult {
     tier: string;
     sub_scores: Record<string, number>;
   } | null;
+  snack_profile?: {
+    is_snack: boolean;
+    is_healthy_snack: boolean;
+    label: string;
+  } | null;
   confidence: number;
   confidence_breakdown: {
     extraction: number;
@@ -104,6 +135,13 @@ interface MealResult {
   upgrade_suggestions: string[];
   recovery_plan: string[];
   logged_to_chronometer?: boolean;
+  pairing_opportunity?: boolean;
+  pairing_recommended_recipe_id?: string | null;
+  pairing_recommended_title?: string | null;
+  pairing_projected_mes?: number | null;
+  pairing_projected_delta?: number | null;
+  pairing_reasons?: string[];
+  pairing_timing?: 'with_meal' | 'before_meal' | string | null;
 }
 
 const PRODUCT_TIER_META: Record<ProductResult['tier'], { color: string; bg: string; label: string }> = {
@@ -133,6 +171,11 @@ function confidenceBand(value: number): string {
   return 'Low confidence';
 }
 
+function formatNumericDraft(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '';
+  return Number.isInteger(value) ? `${value}` : `${value.toFixed(1)}`;
+}
+
 function cleanMealLabel(raw: string | undefined, ingredients: string[]): string {
   const source = (raw || '').replace(/\s+/g, ' ').trim();
   const stripped = source
@@ -158,6 +201,42 @@ function normalizeMealResult(result: MealResult): MealResult {
     whole_food_flags: result.whole_food_flags || [],
     upgrade_suggestions: result.upgrade_suggestions || [],
     recovery_plan: result.recovery_plan || [],
+    snack_profile: result.snack_profile || null,
+    pairing_opportunity: Boolean(result.pairing_opportunity),
+    pairing_recommended_recipe_id: result.pairing_recommended_recipe_id || null,
+    pairing_recommended_title: result.pairing_recommended_title || null,
+    pairing_projected_mes: result.pairing_projected_mes != null ? Number(result.pairing_projected_mes) : null,
+    pairing_projected_delta: result.pairing_projected_delta != null ? Number(result.pairing_projected_delta) : null,
+    pairing_reasons: result.pairing_reasons || [],
+    pairing_timing: result.pairing_timing || null,
+  };
+}
+
+function normalizeProductResult(result: ProductResult): ProductResult {
+  return {
+    ...result,
+    brand: result.brand || null,
+    barcode: result.barcode || null,
+    source: result.source || 'label_manual',
+    capture_type: result.capture_type || 'front_label',
+    highlights: result.highlights || [],
+    concerns: result.concerns || [],
+    reasoning: result.reasoning || [],
+    ingredients_text: result.ingredients_text || '',
+    confidence: Number(result.confidence || 0),
+    confidence_breakdown: result.confidence_breakdown || {},
+    recoverable: Boolean(result.recoverable),
+    notes: result.notes || [],
+    processing_flags: result.processing_flags || {},
+    nutrition_snapshot: {
+      calories: Number(result.nutrition_snapshot?.calories || 0),
+      protein_g: Number(result.nutrition_snapshot?.protein_g || 0),
+      fat_g: Number(result.nutrition_snapshot?.fat_g || 0),
+      fiber_g: Number(result.nutrition_snapshot?.fiber_g || 0),
+      sugar_g: Number(result.nutrition_snapshot?.sugar_g || 0),
+      carbs_g: Number(result.nutrition_snapshot?.carbs_g || 0),
+      sodium_mg: Number(result.nutrition_snapshot?.sodium_mg || 0),
+    },
   };
 }
 
@@ -165,6 +244,19 @@ export default function ScanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
+  const cameraRef = useRef<any>(null);
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const dotAnim1 = useRef(new Animated.Value(0.3)).current;
+  const dotAnim2 = useRef(new Animated.Value(0.3)).current;
+  const dotAnim3 = useRef(new Animated.Value(0.3)).current;
+
+  // Scan result entrance animation
+  const resultScale = useRef(new Animated.Value(0.88)).current;
+  const resultOpacity = useRef(new Animated.Value(0)).current;
 
   const [scanMode, setScanMode] = useState<ScanMode>('meal');
   const [scanStep, setScanStep] = useState<ScanStep>('capture');
@@ -180,12 +272,16 @@ export default function ScanScreen() {
   const [sugar, setSugar] = useState('');
   const [carbs, setCarbs] = useState('');
   const [sodium, setSodium] = useState('');
+  const [productImageUri, setProductImageUri] = useState<string | null>(null);
+  const [showBarcodeSheet, setShowBarcodeSheet] = useState(false);
+  const [showProductEditSheet, setShowProductEditSheet] = useState(false);
 
   const [mealImageUri, setMealImageUri] = useState<string | null>(null);
   const [mealType, setMealType] = useState<MealKind>('lunch');
   const [portionSize, setPortionSize] = useState<PortionSize>('medium');
   const [sourceContext, setSourceContext] = useState<SourceContext>('home');
   const [mealResult, setMealResult] = useState<MealResult | null>(null);
+  const [notFoodReason, setNotFoodReason] = useState<string | null>(null);
   const [mealLabelDraft, setMealLabelDraft] = useState('');
   const [ingredientDrafts, setIngredientDrafts] = useState<string[]>([]);
   const [addIngredientText, setAddIngredientText] = useState('');
@@ -198,14 +294,10 @@ export default function ScanScreen() {
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null);
   const [showModesInfo, setShowModesInfo] = useState(false);
 
-  const analyzePulseAnim = useRef(new Animated.Value(0.4)).current;
-  const analyzeSpinAnim = useRef(new Animated.Value(0)).current;
-  const analyzeDotAnim1 = useRef(new Animated.Value(0.3)).current;
-  const analyzeDotAnim2 = useRef(new Animated.Value(0.3)).current;
-  const analyzeDotAnim3 = useRef(new Animated.Value(0.3)).current;
-
   const mealStatusMeta = mealResult ? MEAL_STATUS_META[mealResult.whole_food_status] : null;
   const productTierMeta = productResult ? PRODUCT_TIER_META[productResult.tier] : null;
+  const isAnalyzingMeal = scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult;
+  const isAnalyzingProduct = scanStep === 'result' && scanMode === 'product' && isLoading && !productResult;
 
   const nutritionRows = useMemo(() => {
     if (!mealResult) return [];
@@ -218,6 +310,27 @@ export default function ScanScreen() {
       { key: 'fiber', label: 'Fiber', value: `${Math.round(Number(n.fiber || 0))}g`, accent: MACRO_ACCENTS.fiber },
     ];
   }, [mealResult]);
+
+  // Animate result entrance when scan result arrives
+  useEffect(() => {
+    if (mealResult || productResult) {
+      resultScale.setValue(0.88);
+      resultOpacity.setValue(0);
+      Animated.parallel([
+        Animated.spring(resultScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 20,
+          bounciness: 6,
+        }),
+        Animated.timing(resultOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [mealResult, productResult, resultScale, resultOpacity]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,46 +350,30 @@ export default function ScanScreen() {
   }, [scanStep]);
 
   useEffect(() => {
-    const shouldAnimate = scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult;
-    if (!shouldAnimate) {
-      analyzePulseAnim.stopAnimation();
-      analyzeSpinAnim.stopAnimation();
-      analyzeDotAnim1.stopAnimation();
-      analyzeDotAnim2.stopAnimation();
-      analyzeDotAnim3.stopAnimation();
-      analyzePulseAnim.setValue(0.4);
-      analyzeSpinAnim.setValue(0);
-      analyzeDotAnim1.setValue(0.3);
-      analyzeDotAnim2.setValue(0.3);
-      analyzeDotAnim3.setValue(0.3);
+    if (!isAnalyzingMeal) {
+      pulseAnim.stopAnimation();
+      spinAnim.stopAnimation();
+      dotAnim1.stopAnimation();
+      dotAnim2.stopAnimation();
+      dotAnim3.stopAnimation();
+      pulseAnim.setValue(0.4);
+      spinAnim.setValue(0);
+      dotAnim1.setValue(0.3);
+      dotAnim2.setValue(0.3);
+      dotAnim3.setValue(0.3);
       return undefined;
     }
 
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(analyzePulseAnim, {
-          toValue: 1,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(analyzePulseAnim, {
-          toValue: 0.4,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
     const spinLoop = Animated.loop(
-      Animated.timing(analyzeSpinAnim, {
-        toValue: 1,
-        duration: 3000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
+      Animated.timing(spinAnim, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })
     );
-    const makeDotLoop = (anim: Animated.Value, delay: number) =>
+    const buildDotLoop = (anim: Animated.Value, delay: number) =>
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
@@ -284,9 +381,10 @@ export default function ScanScreen() {
           Animated.timing(anim, { toValue: 0.3, duration: 400, useNativeDriver: true }),
         ])
       );
-    const dotLoop1 = makeDotLoop(analyzeDotAnim1, 0);
-    const dotLoop2 = makeDotLoop(analyzeDotAnim2, 200);
-    const dotLoop3 = makeDotLoop(analyzeDotAnim3, 400);
+
+    const dotLoop1 = buildDotLoop(dotAnim1, 0);
+    const dotLoop2 = buildDotLoop(dotAnim2, 200);
+    const dotLoop3 = buildDotLoop(dotAnim3, 400);
 
     pulseLoop.start();
     spinLoop.start();
@@ -301,20 +399,11 @@ export default function ScanScreen() {
       dotLoop2.stop();
       dotLoop3.stop();
     };
-  }, [
-    analyzeDotAnim1,
-    analyzeDotAnim2,
-    analyzeDotAnim3,
-    analyzePulseAnim,
-    analyzeSpinAnim,
-    isLoading,
-    mealResult,
-    scanMode,
-    scanStep,
-  ]);
+  }, [dotAnim1, dotAnim2, dotAnim3, isAnalyzingMeal, pulseAnim, spinAnim]);
 
   const resetProductState = () => {
     setProductResult(null);
+    setProductImageUri(null);
     setBarcodeValue('');
     setProductName('');
     setBrand('');
@@ -325,11 +414,14 @@ export default function ScanScreen() {
     setSugar('');
     setCarbs('');
     setSodium('');
+    setShowBarcodeSheet(false);
+    setShowProductEditSheet(false);
   };
 
   const resetMealState = () => {
     setMealImageUri(null);
     setMealResult(null);
+    setNotFoodReason(null);
     setMealLabelDraft('');
     setIngredientDrafts([]);
     setAddIngredientText('');
@@ -354,13 +446,32 @@ export default function ScanScreen() {
       setScanStep('capture');
       return;
     }
-    // result step: meal goes back to capture (no review step), others go to review
     if (scanMode === 'meal') {
       resetMealState();
-      setScanStep('capture');
     } else {
-      setScanStep('review');
+      resetProductState();
     }
+    setScanStep('capture');
+  };
+
+  const handleExitToHome = () => {
+    resetMealState();
+    resetProductState();
+    setScanMode('meal');
+    setScanStep('capture');
+    router.dismiss();
+  };
+
+  const syncProductDrafts = (result: ProductResult) => {
+    setProductName(result.product_name || '');
+    setBrand(result.brand || '');
+    setIngredientsText(result.ingredients_text || '');
+    setCalories(formatNumericDraft(result.nutrition_snapshot?.calories || 0));
+    setProtein(formatNumericDraft(result.nutrition_snapshot?.protein_g || 0));
+    setFiber(formatNumericDraft(result.nutrition_snapshot?.fiber_g || 0));
+    setSugar(formatNumericDraft(result.nutrition_snapshot?.sugar_g || 0));
+    setCarbs(formatNumericDraft(result.nutrition_snapshot?.carbs_g || 0));
+    setSodium(formatNumericDraft(result.nutrition_snapshot?.sodium_mg || 0));
   };
 
   const pickMealImage = async (source: 'camera' | 'library') => {
@@ -394,23 +505,136 @@ export default function ScanScreen() {
     }
   };
 
+  const captureMealPhoto = async () => {
+    if (!CameraView || !cameraGranted || !cameraRef.current?.takePictureAsync) {
+      await pickMealImage('camera');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        skipProcessing: false,
+      });
+
+      if (!photo?.uri) {
+        setIsLoading(false);
+        return;
+      }
+
+      const uri = photo.uri;
+      setMealImageUri(uri);
+      setMealResult(null);
+      await analyzeMealWithUri(uri);
+    } catch (err: any) {
+      setIsLoading(false);
+      Alert.alert('Unable to capture photo', err?.message || 'Could not take a photo right now.');
+    }
+  };
+
   const analyzeMealWithUri = async (uri: string) => {
     setIsLoading(true);
     setScanStep('result');
+    setNotFoodReason(null);
     try {
-      const next = normalizeMealResult(
-        await wholeFoodScanApi.analyzeMeal({
-          imageUri: uri,
-          meal_type: mealType,
-          portion_size: portionSize,
-          source_context: sourceContext,
-        })
-      );
+      const raw = await wholeFoodScanApi.analyzeMeal({
+        imageUri: uri,
+        meal_type: mealType,
+        portion_size: portionSize,
+        source_context: sourceContext,
+      });
+      if (raw?.is_not_food) {
+        setNotFoodReason(raw.not_food_reason || "That doesn't look like food.");
+        return;
+      }
+      const next = normalizeMealResult(raw);
       setMealResult(next);
       setMealLabelDraft(next.meal_label);
       setIngredientDrafts(next.estimated_ingredients || []);
     } catch (err: any) {
       Alert.alert('Meal scan failed', err?.message || 'Unable to analyze that meal right now.');
+      setScanStep('capture');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const pickProductImage = async (source: 'camera' | 'library') => {
+    try {
+      if (source === 'camera') {
+        const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+        const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!cameraPermission.granted || !mediaPermission.granted) {
+          Alert.alert('Permission needed', 'Camera and photo permissions are required to capture a label photo.');
+          return;
+        }
+      } else {
+        const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!mediaPermission.granted) {
+          Alert.alert('Permission needed', 'Photo library permission is required to choose a label photo.');
+          return;
+        }
+      }
+
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const uri = result.assets[0].uri;
+      setProductImageUri(uri);
+      setProductResult(null);
+      await analyzeProductImageWithUri(uri);
+    } catch (err: any) {
+      Alert.alert('Unable to open camera', err?.message || 'Camera or photo permissions are missing.');
+    }
+  };
+
+  const captureProductPhoto = async () => {
+    if (!CameraView || !cameraGranted || !cameraRef.current?.takePictureAsync) {
+      await pickProductImage('camera');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        skipProcessing: false,
+      });
+
+      if (!photo?.uri) {
+        setIsLoading(false);
+        return;
+      }
+
+      const uri = photo.uri;
+      setProductImageUri(uri);
+      setProductResult(null);
+      await analyzeProductImageWithUri(uri);
+    } catch (err: any) {
+      setIsLoading(false);
+      Alert.alert('Unable to capture photo', err?.message || 'Could not take a label photo right now.');
+    }
+  };
+
+  const analyzeProductImageWithUri = async (uri: string) => {
+    setIsLoading(true);
+    setScanStep('result');
+    try {
+      const next = normalizeProductResult(
+        await wholeFoodScanApi.analyzeProductImage({
+          imageUri: uri,
+          capture_type: 'front_label',
+        })
+      );
+      setProductResult(next);
+      syncProductDrafts(next);
+      setShowBarcodeSheet(false);
+      setShowProductEditSheet(Boolean(next.recoverable || next.confidence < 0.6));
+    } catch (err: any) {
+      Alert.alert('Label scan failed', err?.message || 'Unable to analyze that label photo right now.');
       setScanStep('capture');
     } finally {
       setIsLoading(false);
@@ -452,10 +676,16 @@ export default function ScanScreen() {
     if (!mealResult) return;
     setIsLoading(true);
     try {
-      await wholeFoodScanApi.logMeal(mealResult.id, { meal_type: mealType });
+      await wholeFoodScanApi.logMeal(mealResult.id, {
+        meal_type: mealType,
+        include_recommended_pairing: Boolean(mealResult.pairing_opportunity && mealResult.pairing_recommended_recipe_id),
+      });
+      const pairingLabel = mealResult.pairing_opportunity && mealResult.pairing_recommended_title
+        ? ` + ${mealResult.pairing_recommended_title}`
+        : '';
       setSuccessModal({
         visible: true,
-        message: `"${mealResult.meal_label}" has been added to today's nutrition log.`,
+        message: `"${mealResult.meal_label}"${pairingLabel} has been added to today's nutrition log.`,
       });
       setMealResult({ ...mealResult, logged_to_chronometer: true });
     } catch (err: any) {
@@ -471,12 +701,16 @@ export default function ScanScreen() {
       return;
     }
     setIsLoading(true);
+    setProductResult(null);
+    setScanStep('result');
     try {
-      const next = await wholeFoodScanApi.analyzeBarcode(barcodeValue.trim());
+      const next = normalizeProductResult(await wholeFoodScanApi.analyzeBarcode(barcodeValue.trim()));
       setProductResult(next);
-      setScanStep('result');
+      syncProductDrafts(next);
+      setShowBarcodeSheet(false);
     } catch (err: any) {
       Alert.alert('Scan failed', err?.message || 'Unable to analyze that barcode right now.');
+      setScanStep('capture');
     } finally {
       setIsLoading(false);
     }
@@ -488,8 +722,10 @@ export default function ScanScreen() {
       return;
     }
     setIsLoading(true);
+    setProductResult(null);
+    setScanStep('result');
     try {
-      const next = await wholeFoodScanApi.analyzeLabel({
+      const next = normalizeProductResult(await wholeFoodScanApi.analyzeLabel({
         product_name: productName || undefined,
         brand: brand || undefined,
         ingredients_text: ingredientsText,
@@ -500,14 +736,23 @@ export default function ScanScreen() {
         carbs_g: carbs ? Number(carbs) : undefined,
         sodium_mg: sodium ? Number(sodium) : undefined,
         source: 'label_manual',
-      });
+      }));
       setProductResult(next);
-      setScanStep('result');
+      syncProductDrafts(next);
+      setShowProductEditSheet(false);
+      setShowBarcodeSheet(false);
     } catch (err: any) {
       Alert.alert('Analysis failed', err?.message || 'Unable to score this product right now.');
+      setScanStep(productResult ? 'result' : 'capture');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const scanAnotherProduct = () => {
+    resetProductState();
+    setScanMode('product');
+    setScanStep('capture');
   };
 
   const addIngredient = () => {
@@ -520,13 +765,12 @@ export default function ScanScreen() {
   const renderCaptureStep = () => {
     const modes: Array<{ key: ScanMode; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
       { key: 'meal', label: 'Scan Food', icon: 'scan-outline' },
-      { key: 'barcode', label: 'Barcode', icon: 'barcode-outline' },
-      { key: 'label', label: 'Food Label', icon: 'reader-outline' },
+      { key: 'product', label: 'Packaged Food', icon: 'reader-outline' },
     ];
     return (
       <View style={[styles.captureRoot, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
         {CameraView && cameraGranted ? (
-          <CameraView style={styles.cameraPreview} facing="back" autofocus="on" />
+          <CameraView ref={cameraRef} style={styles.cameraPreview} facing="back" autofocus="on" />
         ) : (
           <LinearGradient
             colors={['#0A1914', '#0D2018', '#132B1F']}
@@ -543,47 +787,24 @@ export default function ScanScreen() {
           style={styles.captureOverlay}
         />
 
+        {/* Top bar: close + branding pill */}
         <View style={styles.captureTopRow}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8} style={styles.captureCloseBtn}>
             <Ionicons name="close" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.captureBrandPill}>
             <View style={styles.captureBrandDot} />
-            <Text style={styles.captureBrandText}>Scan</Text>
+            <Text style={styles.captureBrandText}>Fuel Good</Text>
           </View>
-          <TouchableOpacity onPress={() => setShowModesInfo(true)} activeOpacity={0.8} style={styles.captureCloseBtn}>
-            <Ionicons name="help" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.captureCenter}>
-          <View style={styles.viewfinderWrap}>
-            <View style={[styles.viewfinderCorner, styles.viewfinderTopLeft]} />
-            <View style={[styles.viewfinderCorner, styles.viewfinderTopRight]} />
-            <View style={[styles.viewfinderCorner, styles.viewfinderBottomLeft]} />
-            <View style={[styles.viewfinderCorner, styles.viewfinderBottomRight]} />
-            <View style={styles.viewfinderGuide} />
-          </View>
+        {/* Spacer — camera area fills the middle naturally */}
+        <View style={{ flex: 1 }} />
 
-          <View style={styles.captureInfoBlock}>
-            <View style={styles.captureBadge}>
-              <View style={styles.captureInfoDot} />
-              <Text style={styles.captureBadgeText}>WholeFoodLabs Scan</Text>
-            </View>
-            <Text style={styles.captureHeadline}>
-              {scanMode === 'meal' ? 'Capture a meal' : scanMode === 'barcode' ? 'Scan a barcode' : 'Capture a food label'}
-            </Text>
-            <Text style={styles.captureSubhead}>
-              {scanMode === 'meal'
-                ? 'Frame the dish clearly, then refine context before analysis.'
-                : scanMode === 'barcode'
-                  ? 'Center the product code or use manual entry in the next step.'
-                  : 'Capture the label straight-on so ingredients stay readable.'}
-            </Text>
-          </View>
-        </View>
-
+          {/* Bottom controls */}
         <View style={styles.captureControls}>
+          {/* Mode switcher */}
           <View style={styles.modeRail}>
             {modes.map((item) => {
               const active = scanMode === item.key;
@@ -597,13 +818,44 @@ export default function ScanScreen() {
                     active && styles.modePillActive,
                   ]}
                 >
-                  <Ionicons name={item.icon} size={15} color={active ? '#16A34A' : 'rgba(255,255,255,0.78)'} />
+                  <Ionicons name={item.icon} size={16} color={active ? '#16A34A' : 'rgba(255,255,255,0.7)'} />
                   <Text style={[styles.modePillText, active && styles.modePillTextActive]}>{item.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
+          {scanMode === 'product' && (
+            <View style={styles.captureHintCard}>
+              <View style={styles.captureHintHeader}>
+                <Ionicons name="sparkles-outline" size={16} color="#34D399" />
+                <Text style={styles.captureHintTitle}>Packaged food</Text>
+              </View>
+              <Text style={styles.captureHintCopy}>
+                Snap the ingredients label for an instant verdict, or use barcode if the package is easy to scan.
+              </Text>
+              <View style={styles.captureHintActions}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setShowBarcodeSheet(true)}
+                  style={styles.captureHintButton}
+                >
+                  <Ionicons name="barcode-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.captureHintButtonText}>Use barcode</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => pickProductImage('library')}
+                  style={[styles.captureHintButton, styles.captureHintButtonMuted]}
+                >
+                  <Ionicons name="images-outline" size={16} color="#D1FAE5" />
+                  <Text style={styles.captureHintButtonText}>Photo library</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Shutter row */}
           <View style={styles.shutterRow}>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -611,20 +863,20 @@ export default function ScanScreen() {
                 if (scanMode === 'meal') {
                   pickMealImage('library');
                 } else {
-                  setScanStep('review');
+                  pickProductImage('library');
                 }
               }}
               style={styles.shutterSideBtn}
             >
-              <Ionicons name="images-outline" size={18} color="rgba(255,255,255,0.86)" />
+              <Ionicons name="images-outline" size={20} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => {
                 if (scanMode === 'meal') {
-                  pickMealImage('camera');
+                  captureMealPhoto();
                 } else {
-                  setScanStep('review');
+                  captureProductPhoto();
                 }
               }}
               style={styles.shutterBtn}
@@ -635,25 +887,29 @@ export default function ScanScreen() {
                 <View style={styles.shutterBtnInner} />
               )}
             </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setShowModesInfo(true)}
-              style={styles.shutterSideBtn}
-            >
-              <Ionicons name="options-outline" size={18} color="rgba(255,255,255,0.86)" />
-            </TouchableOpacity>
+            {scanMode === 'product' ? (
+              <TouchableOpacity activeOpacity={0.8} onPress={() => setShowBarcodeSheet(true)} style={styles.shutterSideBtn}>
+                <Ionicons name="barcode-outline" size={20} color="rgba(255,255,255,0.8)" />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 44 }} />
+            )}
           </View>
         </View>
       </View>
     );
   };
 
-  const renderReviewHeader = () => (
+  const renderReviewHeader = (showExit = false) => (
     <View style={[styles.reviewHeader, { paddingTop: insets.top + 6 }]}>
-      <TouchableOpacity onPress={handleBack} activeOpacity={0.85} style={[styles.headerCircle, { borderColor: theme.border }]}>
-        <Ionicons name="chevron-back" size={20} color={theme.primary} />
+      <TouchableOpacity
+        onPress={showExit ? handleExitToHome : handleBack}
+        activeOpacity={0.85}
+        style={[styles.headerCircle, { borderColor: theme.border }]}
+      >
+        <Ionicons name={showExit ? 'close' : 'chevron-back'} size={showExit ? 18 : 20} color={showExit ? theme.textSecondary : theme.primary} />
       </TouchableOpacity>
-      <View style={[styles.headerCapsule, { borderColor: theme.border, backgroundColor: '#FFFFFF' }]}>
+      <View style={[styles.headerCapsule, { borderColor: theme.border, backgroundColor: theme.surface }]}>
         <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
         <Text style={[styles.headerTitle, { color: theme.text }]}>Scan</Text>
       </View>
@@ -770,130 +1026,66 @@ export default function ScanScreen() {
     </ScrollView>
   );
 
-  const renderProductReviewStep = () => (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={{
-        paddingHorizontal: Spacing.xl,
-        paddingBottom: Spacing.xxxl,
-        paddingTop: Spacing.md,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={[styles.sheetCard, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
-        <Text style={[styles.sheetTitle, { color: theme.text }]}>
-          {scanMode === 'barcode' ? 'Scan a barcode' : 'Check a food label'}
-        </Text>
-        <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
-          {scanMode === 'barcode'
-            ? 'Enter a barcode manually to score a packaged food.'
-            : 'Paste the ingredient list and optional nutrition facts.'}
-        </Text>
-
-        {scanMode === 'barcode' ? (
-          <>
-            <TextInput
-              value={barcodeValue}
-              onChangeText={setBarcodeValue}
-              placeholder="Enter barcode"
-              placeholderTextColor={theme.textTertiary}
-              keyboardType="number-pad"
-              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-            />
-            <TouchableOpacity onPress={analyzeBarcode} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
-              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Analyze Barcode</Text>}
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <TextInput
-              value={productName}
-              onChangeText={setProductName}
-              placeholder="Product name"
-              placeholderTextColor={theme.textTertiary}
-              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-            />
-            <TextInput
-              value={brand}
-              onChangeText={setBrand}
-              placeholder="Brand"
-              placeholderTextColor={theme.textTertiary}
-              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-            />
-            <TextInput
-              value={ingredientsText}
-              onChangeText={setIngredientsText}
-              placeholder="Ingredients"
-              placeholderTextColor={theme.textTertiary}
-              multiline
-              style={[styles.textArea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-            />
-            <View style={styles.inputGrid}>
-              {[
-                { label: 'Calories', value: calories, setter: setCalories },
-                { label: 'Protein (g)', value: protein, setter: setProtein },
-                { label: 'Fiber (g)', value: fiber, setter: setFiber },
-                { label: 'Sugar (g)', value: sugar, setter: setSugar },
-                { label: 'Carbs (g)', value: carbs, setter: setCarbs },
-                { label: 'Sodium (mg)', value: sodium, setter: setSodium },
-              ].map((field) => (
-                <TextInput
-                  key={field.label}
-                  value={field.value}
-                  onChangeText={field.setter}
-                  placeholder={field.label}
-                  placeholderTextColor={theme.textTertiary}
-                  keyboardType="decimal-pad"
-                  style={[styles.formInput, styles.gridField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-                />
-              ))}
-            </View>
-            <TouchableOpacity onPress={analyzeLabel} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
-              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Score Product</Text>}
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </ScrollView>
-  );
-
   const renderAnalyzingScreen = () => {
-    const spin = analyzeSpinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    const isDark = theme.text === '#FFFFFF';
+    const isMealScan = scanMode === 'meal';
+    const ui = isDark
+      ? {
+          background: '#0A0F0D',
+          overlay: 'rgba(5, 12, 8, 0.75)',
+          title: '#FFFFFF',
+          subtitle: 'rgba(255,255,255,0.5)',
+          stepBg: 'rgba(255,255,255,0.06)',
+          stepBorder: 'rgba(255,255,255,0.06)',
+          stepText: 'rgba(255,255,255,0.75)',
+          brandBg: 'rgba(255,255,255,0.06)',
+          brandText: 'rgba(255,255,255,0.45)',
+          innerBg: 'rgba(34, 197, 94, 0.12)',
+          innerBorder: 'rgba(34, 197, 94, 0.2)',
+          pulseBorder: '#22C55E40',
+        }
+      : {
+          background: '#F6FBF7',
+          overlay: 'rgba(248, 252, 249, 0.86)',
+          title: '#111827',
+          subtitle: '#5F6B63',
+          stepBg: 'rgba(255,255,255,0.84)',
+          stepBorder: 'rgba(22, 163, 74, 0.10)',
+          stepText: '#2F3A34',
+          brandBg: 'rgba(22, 163, 74, 0.08)',
+          brandText: '#527062',
+          innerBg: 'rgba(34, 197, 94, 0.10)',
+          innerBorder: 'rgba(34, 197, 94, 0.16)',
+          pulseBorder: 'rgba(34, 197, 94, 0.26)',
+        };
 
     const steps = [
-      { icon: 'eye-outline' as const, label: 'Identifying ingredients' },
-      { icon: 'nutrition-outline' as const, label: 'Estimating nutrition' },
-      { icon: 'shield-checkmark-outline' as const, label: 'Scoring whole-food fit' },
+      isMealScan
+        ? { icon: 'eye-outline' as const, label: 'Identifying ingredients' }
+        : { icon: 'reader-outline' as const, label: 'Reading label text' },
+      isMealScan
+        ? { icon: 'nutrition-outline' as const, label: 'Estimating nutrition' }
+        : { icon: 'nutrition-outline' as const, label: 'Extracting nutrition facts' },
+      isMealScan
+        ? { icon: 'shield-checkmark-outline' as const, label: 'Scoring whole-food fit' }
+        : { icon: 'shield-checkmark-outline' as const, label: 'Scoring whole-food fit' },
     ];
 
     return (
-      <View style={analyzeStyles.container}>
+      <View style={[analyzeStyles.container, { backgroundColor: ui.background }]}>
         {/* Meal image background */}
-        {mealImageUri && (
+        {(isMealScan ? mealImageUri : productImageUri) && (
           <>
-            <Image source={{ uri: mealImageUri }} style={analyzeStyles.bgImage} blurRadius={20} />
-            <View style={analyzeStyles.bgOverlay} />
+            <Image source={{ uri: (isMealScan ? mealImageUri : productImageUri) || '' }} style={analyzeStyles.bgImage} blurRadius={20} />
+            <View style={[analyzeStyles.bgOverlay, { backgroundColor: ui.overlay }]} />
           </>
         )}
 
         <View style={analyzeStyles.content}>
+          {/* Pulsing ring around icon */}
           <View style={analyzeStyles.ringWrap}>
-            <Animated.View
-              style={[
-                analyzeStyles.pulseRing,
-                {
-                  opacity: analyzePulseAnim,
-                  transform: [
-                    {
-                      scale: analyzePulseAnim.interpolate({
-                        inputRange: [0.4, 1],
-                        outputRange: [0.85, 1.15],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            />
+            <Animated.View style={[analyzeStyles.pulseRing, { borderColor: ui.pulseBorder, opacity: pulseAnim, transform: [{ scale: pulseAnim.interpolate({ inputRange: [0.4, 1], outputRange: [0.85, 1.15] }) }] }]} />
             <Animated.View style={[analyzeStyles.spinRing, { transform: [{ rotate: spin }] }]}>
               <LinearGradient
                 colors={['#22C55E', '#16A34A', 'transparent']}
@@ -902,36 +1094,43 @@ export default function ScanScreen() {
                 style={analyzeStyles.spinGradient}
               />
             </Animated.View>
-            <View style={analyzeStyles.innerCircle}>
+            <View style={[analyzeStyles.innerCircle, { backgroundColor: ui.innerBg, borderColor: ui.innerBorder }]}>
               <Ionicons name="scan-outline" size={32} color="#22C55E" />
             </View>
           </View>
 
+          {/* Title + animated dots */}
           <View style={analyzeStyles.titleRow}>
-            <Text style={analyzeStyles.title}>Analyzing your meal</Text>
+            <Text style={[analyzeStyles.title, { color: ui.title }]}>
+              {isMealScan ? 'Analyzing your meal' : 'Reading your label'}
+            </Text>
             <View style={analyzeStyles.dotsRow}>
-              {[analyzeDotAnim1, analyzeDotAnim2, analyzeDotAnim3].map((anim, i) => (
+              {[dotAnim1, dotAnim2, dotAnim3].map((anim, i) => (
                 <Animated.View key={i} style={[analyzeStyles.dot, { opacity: anim }]} />
               ))}
             </View>
           </View>
-          <Text style={analyzeStyles.subtitle}>Our AI is breaking down what's on your plate</Text>
+          <Text style={[analyzeStyles.subtitle, { color: ui.subtitle }]}>
+            {isMealScan ? "Our AI is breaking down what's on your plate" : 'Fuel Good is extracting the label so you do not have to.'}
+          </Text>
 
+          {/* Step indicators */}
           <View style={analyzeStyles.stepsWrap}>
             {steps.map((step, i) => (
-              <View key={i} style={analyzeStyles.stepRow}>
+              <View key={i} style={[analyzeStyles.stepRow, { backgroundColor: ui.stepBg, borderColor: ui.stepBorder, borderLeftWidth: 2, borderLeftColor: '#22C55E50' }]}>
                 <View style={analyzeStyles.stepIcon}>
                   <Ionicons name={step.icon} size={16} color="#22C55E" />
                 </View>
-                <Text style={analyzeStyles.stepLabel}>{step.label}</Text>
-                <ActivityIndicator size="small" color="#22C55E80" style={{ marginLeft: 'auto' }} />
+                <Text style={[analyzeStyles.stepLabel, { color: ui.stepText }]}>{step.label}</Text>
+                <ActivityIndicator size="small" color="#22C55E" style={{ marginLeft: 'auto' }} />
               </View>
             ))}
           </View>
 
-          <View style={analyzeStyles.brandPill}>
+          {/* Brand pill */}
+          <View style={[analyzeStyles.brandPill, { backgroundColor: ui.brandBg }]}>
             <View style={analyzeStyles.brandDot} />
-            <Text style={analyzeStyles.brandText}>Powered by WholeFoodLabs AI</Text>
+            <Text style={[analyzeStyles.brandText, { color: ui.brandText }]}>Powered by Fuel Good AI</Text>
           </View>
         </View>
       </View>
@@ -941,8 +1140,37 @@ export default function ScanScreen() {
   const renderMealResultStep = () => {
     if (!mealResult || !mealStatusMeta) {
       if (isLoading) return renderAnalyzingScreen();
+      if (notFoodReason) {
+        return (
+          <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl }}>
+            <View style={[styles.notFoodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.notFoodIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="ban-outline" size={36} color="#D97706" />
+              </View>
+              <Text style={[styles.notFoodTitle, { color: theme.text }]}>That's not food</Text>
+              <Text style={[styles.notFoodBody, { color: theme.textSecondary }]}>
+                {notFoodReason}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setNotFoodReason(null); setScanStep('capture'); }}
+                style={[styles.notFoodRetakeBtn, { backgroundColor: theme.primary }]}
+              >
+                <Ionicons name="camera-outline" size={18} color="#FFF" />
+                <Text style={styles.notFoodRetakeBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      }
       return null;
     }
+    const displayBadgeText = mealResult.snack_profile?.label || mealStatusMeta.label;
+    const displayBadgeColor = mealResult.snack_profile?.is_healthy_snack ? '#16A34A' : mealStatusMeta.color;
+    const displayBadgeBg = mealResult.snack_profile ? '#DCFCE7' : mealStatusMeta.bg;
+    const mealContextCopy = mealResult.snack_profile
+      ? `${confidenceBand(mealResult.confidence)} · ${mealResult.snack_profile.label}`
+      : `${confidenceBand(mealResult.confidence)} · ${mealResult.meal_context === 'full_meal' ? 'Full meal' : 'Not scored as a full meal'}`;
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
@@ -962,11 +1190,9 @@ export default function ScanScreen() {
                 style={[styles.resultTitleInput, { color: theme.text }]}
                 placeholderTextColor={theme.textTertiary}
               />
-              <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>
-                {confidenceBand(mealResult.confidence)} · {mealResult.meal_context === 'full_meal' ? 'Full meal' : 'Not scored as a full meal'}
-              </Text>
-              <View style={[styles.statusChip, { backgroundColor: mealStatusMeta.bg }]}>
-                <Text style={[styles.statusChipText, { color: mealStatusMeta.color }]}>{mealStatusMeta.label}</Text>
+              <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>{mealContextCopy}</Text>
+              <View style={[styles.statusChip, { backgroundColor: displayBadgeBg }]}>
+                <Text style={[styles.statusChipText, { color: displayBadgeColor }]}>{displayBadgeText}</Text>
               </View>
             </View>
             {mealResult.mes ? (
@@ -974,12 +1200,41 @@ export default function ScanScreen() {
                 <Text style={[styles.resultRingValue, { color: theme.primary }]}>{Math.round(mealResult.mes.score)}</Text>
                 <Text style={[styles.resultRingLabel, { color: theme.textSecondary }]}>MES</Text>
               </View>
+            ) : mealResult.snack_profile ? (
+              <View style={[styles.snackSummaryCard, { backgroundColor: '#F7FFF9', borderColor: '#D6F5E1' }]}>
+                <Ionicons name="leaf-outline" size={18} color="#16A34A" />
+                <Text style={styles.snackSummaryTitle}>{mealResult.snack_profile.label}</Text>
+                <Text style={[styles.snackSummaryCopy, { color: theme.textSecondary }]}>No MES for snacks</Text>
+              </View>
             ) : (
               <View style={[styles.resultRing, { borderColor: theme.border }]}>
                 <Text style={[styles.resultRingFallback, { color: theme.textSecondary }]}>No MES</Text>
               </View>
             )}
           </View>
+          {mealResult.confidence < 0.6 && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => { setMealResult(null); setScanStep('capture'); }}
+              style={[styles.lowConfidenceBanner, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}
+            >
+              <Ionicons name="warning-outline" size={16} color="#D97706" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#92400E', fontSize: FontSize.sm, fontWeight: '600' }}>
+                  Low confidence result
+                </Text>
+                <Text style={{ color: '#B45309', fontSize: FontSize.xs, marginTop: 1 }}>
+                  Try retaking with better lighting or a closer angle
+                </Text>
+              </View>
+              <Ionicons name="camera-outline" size={18} color="#D97706" />
+            </TouchableOpacity>
+          )}
+          {mealImageUri ? (
+            <View style={[styles.resultImageShell, { backgroundColor: theme.surfaceElevated }]}>
+              <Image source={{ uri: mealImageUri }} style={styles.resultImage} />
+            </View>
+          ) : null}
           <View style={styles.macroGrid}>
             {nutritionRows.map((row) => (
               <View key={row.key} style={[styles.macroCard, { backgroundColor: row.accent.bg }]}>
@@ -1018,6 +1273,35 @@ export default function ScanScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {mealResult.pairing_opportunity && mealResult.pairing_recommended_title && mealResult.pairing_projected_mes != null && (
+          <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Recommended pairing</Text>
+            <View style={[styles.pairingPreviewCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+              <View style={styles.pairingPreviewHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pairingPreviewTitle, { color: theme.text }]}>{mealResult.pairing_recommended_title}</Text>
+                  <Text style={[styles.pairingPreviewCopy, { color: theme.textSecondary }]}>
+                    {mealResult.pairing_timing === 'before_meal' ? 'Best before the meal' : 'Best with the meal'}
+                  </Text>
+                </View>
+                <View style={[styles.pairingDeltaPill, { backgroundColor: theme.primaryMuted }]}>
+                  <Text style={[styles.pairingDeltaText, { color: theme.primary }]}>
+                    +{Math.round(mealResult.pairing_projected_delta || 0)} MES
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.pairingPreviewMes, { color: theme.text }]}>
+                {mealResult.mes ? Math.round(mealResult.mes.score) : '--'} {'->'} {Math.round(mealResult.pairing_projected_mes)}
+              </Text>
+              {!!mealResult.pairing_reasons?.length && (
+                <Text style={[styles.pairingPreviewCopy, { color: theme.textSecondary }]}>
+                  {mealResult.pairing_reasons.join(' • ')}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
 
         <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Upgrade next time</Text>
@@ -1066,36 +1350,93 @@ export default function ScanScreen() {
   };
 
   const renderProductResultStep = () => {
-    if (!productResult || !productTierMeta) return null;
+    if (!productResult || !productTierMeta) {
+      if (isLoading) return renderAnalyzingScreen();
+      return null;
+    }
+    const confidenceCopy = confidenceBand(productResult.confidence);
+    const flagGroups = productResult.processing_flags || {};
+    const flaggedRows = [
+      { label: 'Seed oils', values: flagGroups.seed_oils || [] },
+      { label: 'Added sugars', values: flagGroups.added_sugars || [] },
+      { label: 'Refined flours', values: flagGroups.refined_flours || [] },
+      { label: 'Artificial additives', values: flagGroups.artificial_additives || [] },
+      { label: 'Gums and emulsifiers', values: flagGroups.gums_or_emulsifiers || [] },
+      { label: 'Protein isolates', values: flagGroups.protein_isolates || [] },
+    ].filter((item) => item.values.length > 0);
+    const topReasons = (productResult.concerns.length ? productResult.concerns : productResult.highlights).slice(0, 4);
+
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
         contentContainerStyle={{
           paddingHorizontal: Spacing.xl,
           paddingTop: Spacing.md,
-          paddingBottom: insets.bottom + 48,
+          paddingBottom: insets.bottom + 32,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.resultHero, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultHero, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.resultHeroTop}>
             <View style={{ flex: 1, paddingRight: Spacing.md }}>
+              <Text style={[styles.verdictEyebrow, { color: productTierMeta.color }]}>{productResult.verdict}</Text>
               <Text style={[styles.resultTitleText, { color: theme.text }]}>{productResult.product_name}</Text>
               {!!productResult.brand && <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>{productResult.brand}</Text>}
               <View style={[styles.statusChip, { backgroundColor: productTierMeta.bg }]}>
                 <Text style={[styles.statusChipText, { color: productTierMeta.color }]}>{productTierMeta.label}</Text>
               </View>
             </View>
-            <View style={[styles.resultRing, { borderColor: productTierMeta.color + '40' }]}>
+            <View style={[styles.resultRing, { borderColor: productTierMeta.color + '40' }, productResult.tier === 'whole_food' ? Shadows.interactive(theme.background === '#0A0A0F') : {}]}>
               <Text style={[styles.resultRingValue, { color: productTierMeta.color }]}>{Math.round(productResult.score)}</Text>
               <Text style={[styles.resultRingLabel, { color: theme.textSecondary }]}>Score</Text>
             </View>
           </View>
+          {productImageUri ? (
+            <View style={[styles.resultImageShell, { backgroundColor: theme.surfaceElevated }]}>
+              <Image source={{ uri: productImageUri }} style={styles.resultImage} />
+            </View>
+          ) : null}
           <Text style={[styles.resultSummary, { color: theme.textSecondary }]}>{productResult.summary}</Text>
+          <View style={[styles.productActionCard, { backgroundColor: productTierMeta.bg }]}>
+            <Ionicons name="leaf-outline" size={18} color={productTierMeta.color} />
+            <Text style={[styles.productActionCopy, { color: theme.text }]}>{productResult.recommended_action}</Text>
+          </View>
+          {(productResult.recoverable || productResult.confidence < 0.8) && (
+            <View style={[styles.productConfidenceCard, { borderColor: theme.border, backgroundColor: '#FFFFFF' }]}>
+              <Ionicons name="scan-outline" size={16} color={theme.primary} />
+              <Text style={[styles.productConfidenceText, { color: theme.textSecondary }]}>
+                {confidenceCopy}. Review the extracted text if anything looks off.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Decision in a glance</Text>
+          {topReasons.length > 0 ? (
+            topReasons.map((item) => (
+              <View key={item} style={styles.guidanceRow}>
+                <Ionicons
+                  name={productResult.concerns.length ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                  size={16}
+                  color={productResult.concerns.length ? productTierMeta.color : theme.primary}
+                />
+                <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={[styles.emptyCopy, { color: theme.textSecondary }]}>No major flags surfaced from this scan.</Text>
+          )}
+        </View>
+
+        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
           <View style={styles.macroGrid}>
             {[
               { label: 'Calories', value: `${productResult.nutrition_snapshot.calories}`, accent: MACRO_ACCENTS.calories },
               { label: 'Protein', value: `${productResult.nutrition_snapshot.protein_g}g`, accent: MACRO_ACCENTS.protein },
+              { label: 'Carbs', value: `${productResult.nutrition_snapshot.carbs_g}g`, accent: MACRO_ACCENTS.carbs },
+              { label: 'Fat', value: `${Math.round(productResult.nutrition_snapshot.fat_g)}g`, accent: MACRO_ACCENTS.fat },
               { label: 'Fiber', value: `${productResult.nutrition_snapshot.fiber_g}g`, accent: MACRO_ACCENTS.fiber },
               { label: 'Sugar', value: `${productResult.nutrition_snapshot.sugar_g}g`, accent: MACRO_ACCENTS.carbs },
             ].map((row) => (
@@ -1104,6 +1445,61 @@ export default function ScanScreen() {
                 <Text style={[styles.macroCardLabel, { color: theme.textSecondary }]}>{row.label}</Text>
               </View>
             ))}
+          </View>
+        </View>
+
+        {flaggedRows.length > 0 && (
+          <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Flagged ingredients</Text>
+            {flaggedRows.map((row) => (
+              <View key={row.label} style={styles.guidanceRow}>
+                <Ionicons name="warning-outline" size={16} color={productTierMeta.color} />
+                <Text style={[styles.guidanceText, { color: theme.text }]}>
+                  {row.label}: {row.values.slice(0, 3).join(', ')}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>Extracted label</Text>
+          <Text style={[styles.productLabelText, { color: theme.textSecondary }]}>
+            {productResult.ingredients_text || 'No ingredient text was extracted from this scan yet.'}
+          </Text>
+          {(productResult.notes || []).length > 0 && (
+            <View style={styles.productNotesWrap}>
+              {(productResult.notes || []).map((item) => (
+                <View key={item} style={styles.guidanceRow}>
+                  <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
+                  <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.productResultActions}>
+          <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+            <Text style={styles.primaryButtonText}>Looks good</Text>
+          </TouchableOpacity>
+          <View style={styles.productSecondaryActions}>
+            <TouchableOpacity
+              onPress={() => setShowProductEditSheet(true)}
+              activeOpacity={0.85}
+              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+            >
+              <Ionicons name="create-outline" size={18} color={theme.textSecondary} />
+              <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Fix details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={scanAnotherProduct}
+              activeOpacity={0.85}
+              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+            >
+              <Ionicons name="camera-outline" size={18} color={theme.textSecondary} />
+              <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Scan another</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -1116,14 +1512,19 @@ export default function ScanScreen() {
         renderCaptureStep()
       ) : (
         <View style={{ flex: 1, backgroundColor: theme.background }}>
-          {!(scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult) && renderReviewHeader()}
+          {!(scanStep === 'result' && ((scanMode === 'meal' && isLoading && !mealResult) || (scanMode === 'product' && isLoading && !productResult))) &&
+            renderReviewHeader(scanStep === 'result')}
           {scanStep === 'review'
-            ? scanMode === 'meal'
-              ? renderMealReviewStep()
-              : renderProductReviewStep()
-            : scanMode === 'meal'
-              ? renderMealResultStep()
-              : renderProductResultStep()}
+            ? renderMealReviewStep()
+            : (isLoading && (scanMode === 'meal' ? !mealResult : !productResult))
+              ? renderAnalyzingScreen()
+              : (
+                <Animated.View style={{ flex: 1, opacity: resultOpacity, transform: [{ scale: resultScale }] }}>
+                  {scanMode === 'meal'
+                    ? renderMealResultStep()
+                    : renderProductResultStep()}
+                </Animated.View>
+              )}
           {scanStep === 'result' && scanMode === 'meal' && mealResult && (
             <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 12, backgroundColor: 'rgba(252, 252, 250, 0.96)', borderTopColor: theme.border }]}>
               <TouchableOpacity
@@ -1149,17 +1550,116 @@ export default function ScanScreen() {
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
 
+      <Modal visible={showBarcodeSheet} transparent animationType="slide" onRequestClose={() => setShowBarcodeSheet(false)}>
+        <View style={styles.sheetModalBackdrop}>
+          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowBarcodeSheet(false)} />
+          <View style={[styles.sheetModalCard, { backgroundColor: '#FFFFFF' }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Use barcode</Text>
+            <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
+              Paste or type the barcode if the package is easier to scan that way.
+            </Text>
+            <TextInput
+              value={barcodeValue}
+              onChangeText={setBarcodeValue}
+              placeholder="Enter barcode"
+              placeholderTextColor={theme.textTertiary}
+              keyboardType="number-pad"
+              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+            />
+            <TouchableOpacity onPress={analyzeBarcode} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Analyze barcode</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showProductEditSheet} transparent animationType="slide" onRequestClose={() => setShowProductEditSheet(false)}>
+        <View style={styles.sheetModalBackdrop}>
+          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowProductEditSheet(false)} />
+          <ScrollView
+            style={[styles.sheetModalCard, { backgroundColor: '#FFFFFF' }]}
+            contentContainerStyle={styles.sheetModalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Fix label details</Text>
+            <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
+              Correct anything the scan missed, then rescore without leaving this result.
+            </Text>
+            <TextInput
+              value={productName}
+              onChangeText={setProductName}
+              placeholder="Product name"
+              placeholderTextColor={theme.textTertiary}
+              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+            />
+            <TextInput
+              value={brand}
+              onChangeText={setBrand}
+              placeholder="Brand"
+              placeholderTextColor={theme.textTertiary}
+              style={[styles.formInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+            />
+            <TextInput
+              value={ingredientsText}
+              onChangeText={setIngredientsText}
+              placeholder="Ingredients"
+              placeholderTextColor={theme.textTertiary}
+              multiline
+              style={[styles.textArea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+            />
+            <View style={styles.inputGrid}>
+              {[
+                { label: 'Calories', value: calories, setter: setCalories },
+                { label: 'Protein (g)', value: protein, setter: setProtein },
+                { label: 'Fiber (g)', value: fiber, setter: setFiber },
+                { label: 'Sugar (g)', value: sugar, setter: setSugar },
+                { label: 'Carbs (g)', value: carbs, setter: setCarbs },
+                { label: 'Sodium (mg)', value: sodium, setter: setSodium },
+              ].map((field) => (
+                <TextInput
+                  key={field.label}
+                  value={field.value}
+                  onChangeText={field.setter}
+                  placeholder={field.label}
+                  placeholderTextColor={theme.textTertiary}
+                  keyboardType="decimal-pad"
+                  style={[styles.formInput, styles.gridField, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+                />
+              ))}
+            </View>
+            <View style={styles.productSecondaryActions}>
+              <TouchableOpacity
+                onPress={() => setShowProductEditSheet(false)}
+                activeOpacity={0.85}
+                style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+              >
+                <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={analyzeLabel}
+                activeOpacity={0.9}
+                style={[styles.footerButtonPrimary, styles.productSecondaryAction, { backgroundColor: theme.primary }]}
+              >
+                {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Re-score</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
       <Modal visible={showModesInfo} transparent animationType="fade" onRequestClose={() => setShowModesInfo(false)}>
         <View style={styles.infoModalBackdrop}>
           <View style={styles.infoModalScrim} />
-          <View style={styles.infoModalCard}>
+          <View style={[styles.infoModalCard, Shadows.lg(isDark)]}>
             <View style={styles.infoModalBadge}>
               <View style={styles.captureInfoDot} />
               <Text style={styles.infoModalBadgeText}>Scan modes</Text>
             </View>
             <Text style={styles.infoModalTitle}>Choose the right scan for the job.</Text>
             <Text style={styles.infoModalBody}>
-              Scan Food estimates macros, whole-food fit, and MES. Barcode and Food Label are for packaged foods.
+              Scan Food estimates macros, whole-food fit, and MES. Packaged Food reads labels or barcodes for quick whole-food decisions.
             </Text>
             <View style={styles.infoModeList}>
               <View style={styles.infoModeRow}>
@@ -1170,17 +1670,10 @@ export default function ScanScreen() {
                 </View>
               </View>
               <View style={styles.infoModeRow}>
-                <Ionicons name="barcode-outline" size={18} color="#34D399" />
-                <View style={styles.infoModeCopyWrap}>
-                  <Text style={styles.infoModeTitle}>Barcode</Text>
-                  <Text style={styles.infoModeCopy}>Fast lookup for packaged food products.</Text>
-                </View>
-              </View>
-              <View style={styles.infoModeRow}>
                 <Ionicons name="reader-outline" size={18} color="#34D399" />
                 <View style={styles.infoModeCopyWrap}>
-                  <Text style={styles.infoModeTitle}>Food Label</Text>
-                  <Text style={styles.infoModeCopy}>Ingredient and macro review for packaged foods.</Text>
+                  <Text style={styles.infoModeTitle}>Packaged Food</Text>
+                  <Text style={styles.infoModeCopy}>Photo-first ingredient analysis with barcode fallback and quick fixes when needed.</Text>
                 </View>
               </View>
             </View>
@@ -1216,7 +1709,7 @@ const styles = StyleSheet.create({
   captureCloseBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -1225,9 +1718,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(3, 20, 13, 0.72)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
   },
   captureBrandDot: {
@@ -1242,100 +1735,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
   },
-  captureCenter: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.xl,
-  },
-  viewfinderWrap: {
-    alignSelf: 'center',
-    width: '84%',
-    aspectRatio: 0.82,
-    maxHeight: 360,
-    position: 'relative',
-    marginBottom: Spacing.lg,
-  },
-  viewfinderCorner: {
-    position: 'absolute',
-    width: 72,
-    height: 72,
-    borderColor: 'rgba(255,255,255,0.94)',
-  },
-  viewfinderTopLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 8,
-    borderLeftWidth: 8,
-    borderTopLeftRadius: 28,
-  },
-  viewfinderTopRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 8,
-    borderRightWidth: 8,
-    borderTopRightRadius: 28,
-  },
-  viewfinderBottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 8,
-    borderLeftWidth: 8,
-    borderBottomLeftRadius: 28,
-  },
-  viewfinderBottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 8,
-    borderRightWidth: 8,
-    borderBottomRightRadius: 28,
-  },
-  viewfinderGuide: {
-    position: 'absolute',
-    top: 34,
-    left: '50%',
-    marginLeft: -46,
-    width: 92,
-    height: 8,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.62)',
-  },
-  captureInfoBlock: {
-    gap: 10,
-  },
-  captureBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(2, 18, 12, 0.74)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-  },
-  captureBadgeText: {
-    color: '#E8FFF1',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.25,
-  },
-  captureHeadline: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    lineHeight: 36,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-  },
-  captureSubhead: {
-    color: 'rgba(237, 247, 241, 0.82)',
-    fontSize: 17,
-    lineHeight: 25,
-    maxWidth: 320,
-  },
   captureControls: {
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.sm,
-    gap: Spacing.md,
+    gap: Spacing.lg,
     zIndex: 2,
   },
   captureInfoDot: {
@@ -1344,10 +1747,56 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#22C55E',
   },
+  captureHintCard: {
+    backgroundColor: 'rgba(6, 18, 13, 0.72)',
+    borderRadius: 18,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    gap: 8,
+  },
+  captureHintHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  captureHintTitle: {
+    color: '#ECFDF5',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  captureHintCopy: {
+    color: 'rgba(236, 253, 245, 0.78)',
+    fontSize: FontSize.xs,
+    lineHeight: 18,
+  },
+  captureHintActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  captureHintButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(22, 163, 74, 0.28)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  captureHintButtonMuted: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  captureHintButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   modeRail: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(4, 18, 13, 0.74)',
-    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 14,
     padding: 4,
     gap: 4,
   },
@@ -1357,18 +1806,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 11,
   },
   modePillActive: {
-    backgroundColor: '#F6FBF8',
+    backgroundColor: 'rgba(255,255,255,0.95)',
   },
   modePillText: {
-    fontSize: 12,
+    fontSize: FontSize.xs,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.82)',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.7)',
   },
   modePillTextActive: {
     color: '#15803D',
@@ -1377,32 +1824,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xxl,
+    gap: Spacing.xxxl,
   },
   shutterSideBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(8, 20, 15, 0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   shutterBtn: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(22, 163, 74, 0.26)',
+    borderColor: 'rgba(22, 163, 74, 0.3)',
   },
   shutterBtnInner: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#E7E5E4',
@@ -1420,15 +1865,11 @@ const styles = StyleSheet.create({
   infoModalCard: {
     width: '100%',
     maxWidth: 360,
-    borderRadius: 28,
+    borderRadius: BorderRadius.pill,
     backgroundColor: 'rgba(8, 18, 14, 0.94)',
     padding: Spacing.xl,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 14 },
   },
   infoModalBadge: {
     alignSelf: 'flex-start',
@@ -1468,7 +1909,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     padding: Spacing.md,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   infoModeCopyWrap: {
@@ -1487,7 +1928,7 @@ const styles = StyleSheet.create({
   },
   infoModalButton: {
     minHeight: 56,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     backgroundColor: '#F4FBF7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1539,7 +1980,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   sheetCard: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.lg,
   },
@@ -1556,7 +1997,7 @@ const styles = StyleSheet.create({
   },
   previewShell: {
     marginTop: Spacing.md,
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     minHeight: 200,
   },
@@ -1609,7 +2050,7 @@ const styles = StyleSheet.create({
   choiceChip: {
     minHeight: 40,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1621,7 +2062,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 52,
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.md,
@@ -1659,7 +2100,7 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   resultHero: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
@@ -1683,6 +2124,13 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
+  },
+  verdictEyebrow: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   resultMeta: {
     marginTop: 4,
@@ -1724,10 +2172,122 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  snackSummaryCard: {
+    minWidth: 104,
+    minHeight: 80,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  snackSummaryTitle: {
+    fontSize: FontSize.sm,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: '#16A34A',
+    textAlign: 'center',
+  },
+  snackSummaryCopy: {
+    fontSize: FontSize.xs,
+    lineHeight: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   resultSummary: {
     marginTop: Spacing.sm,
     fontSize: FontSize.sm,
     lineHeight: 20,
+  },
+  productActionCard: {
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  productActionCopy: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  productConfidenceCard: {
+    marginTop: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  productConfidenceText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  lowConfidenceBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  notFoodCard: {
+    width: '100%',
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  notFoodIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notFoodTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  notFoodBody: {
+    fontSize: FontSize.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  notFoodRetakeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.xs,
+  },
+  notFoodRetakeBtnText: {
+    color: '#FFFFFF',
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  resultImageShell: {
+    marginTop: Spacing.md,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  resultImage: {
+    width: '100%',
+    height: 184,
+    resizeMode: 'cover',
   },
   macroGrid: {
     flexDirection: 'row',
@@ -1754,7 +2314,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultSection: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
@@ -1801,6 +2361,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  pairingPreviewCard: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    gap: 8,
+    marginTop: Spacing.sm,
+  },
+  pairingPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pairingPreviewTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  pairingPreviewCopy: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+  },
+  pairingPreviewMes: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+  },
+  pairingDeltaPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+  },
+  pairingDeltaText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+  },
   guidanceRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1817,6 +2410,25 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     lineHeight: 20,
   },
+  productLabelText: {
+    marginTop: Spacing.sm,
+    fontSize: FontSize.sm,
+    lineHeight: 22,
+  },
+  productNotesWrap: {
+    marginTop: Spacing.sm,
+  },
+  productResultActions: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  productSecondaryActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  productSecondaryAction: {
+    flex: 1,
+  },
   resultFooter: {
     position: 'absolute',
     left: 0,
@@ -1832,7 +2444,7 @@ const styles = StyleSheet.create({
     flex: 0,
     minHeight: 50,
     paddingHorizontal: Spacing.lg,
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1842,7 +2454,7 @@ const styles = StyleSheet.create({
   footerButtonPrimary: {
     flex: 1,
     minHeight: 50,
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1854,6 +2466,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: FontSize.md,
     fontWeight: '700',
+  },
+  sheetModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheetModalScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 10, 7, 0.42)',
+  },
+  sheetModalCard: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl,
+    maxHeight: '82%',
+  },
+  sheetModalContent: {
+    paddingBottom: Spacing.xl,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#D6D3D1',
+    marginBottom: Spacing.md,
   },
 });
 

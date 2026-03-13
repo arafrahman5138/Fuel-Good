@@ -25,7 +25,7 @@ import {
   type RemainingBudget,
   type MetabolicBudget,
 } from '../../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 
 // ── Types ──
 
@@ -435,7 +435,8 @@ export default function MetabolicCoachScreen() {
     setRefreshing(true);
     await Promise.all([fetchAll(), fetchSuggestions()]);
     setRefreshing(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchAll]);
 
   useFocusEffect(
     useCallback(() => {
@@ -464,7 +465,7 @@ export default function MetabolicCoachScreen() {
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.sm, paddingTop: Spacing.sm, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.sm, paddingTop: Spacing.sm, paddingBottom: Layout.scrollBottomPadding }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
         }

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,11 +18,13 @@ import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTheme } from '../../hooks/useTheme';
+import { useThemeStore } from '../../stores/themeStore';
 import { Button } from '../../components/Button';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../services/api';
-import { GOOGLE_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../../constants/Config';
+import { APP_NAME, GOOGLE_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, IS_GOOGLE_AUTH_CONFIGURED } from '../../constants/Config';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,12 +35,14 @@ const redirectUri = AuthSession.makeRedirectUri({
 
 export default function LoginScreen() {
   const theme = useTheme();
+  const isDark = theme.background === '#0A0A0F';
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const { setTokens, setUser } = useAuthStore();
 
@@ -82,7 +87,7 @@ export default function LoginScreen() {
       setUser(profile);
       const needsOnboarding =
         !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/(tabs)') as any);
+      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
     } finally {
@@ -104,14 +109,14 @@ export default function LoginScreen() {
       const firstName = credential.fullName?.givenName || '';
       const lastName = credential.fullName?.familyName || '';
       const name = `${firstName} ${lastName}`.trim() || 'Apple User';
-      const email = credential.email || `${credential.user}@privaterelay.appleid.com`;
 
       // Send to backend
       const result = await authApi.socialAuth({
         provider: 'apple',
         token: credential.identityToken || '',
         name,
-        email,
+        email: credential.email || undefined,
+        provider_subject: credential.user,
       });
 
       setTokens(result.access_token, result.refresh_token);
@@ -119,7 +124,7 @@ export default function LoginScreen() {
       setUser(profile);
       const needsOnboarding =
         !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/(tabs)') as any);
+      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
     } catch (err: any) {
       if (err.code === 'ERR_CANCELED') {
         // User canceled the sign-in flow
@@ -154,7 +159,7 @@ export default function LoginScreen() {
       setUser(profile);
       const needsOnboarding =
         !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/(tabs)') as any);
+      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -166,15 +171,17 @@ export default function LoginScreen() {
     if (provider === 'google') {
       // Check if Google OAuth is configured
       const clientId = Platform.OS === 'ios' ? GOOGLE_IOS_CLIENT_ID : GOOGLE_CLIENT_ID;
-      if (clientId.includes('YOUR_DEV') || clientId.includes('YOUR_PROD')) {
+      if (!IS_GOOGLE_AUTH_CONFIGURED || !clientId) {
         Alert.alert(
           'OAuth Not Configured',
-          'Google OAuth credentials are not configured. Please follow the OAUTH_SETUP.md guide to set up Google Sign-In.',
+          'Google OAuth credentials are not configured. Set EXPO_PUBLIC_GOOGLE_CLIENT_ID and EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID before shipping this build.',
           [{ text: 'OK' }]
         );
         return;
       }
-      googlePromptAsync();
+      googlePromptAsync().catch(() => {
+        setError('Google sign-in failed');
+      });
     } else if (provider === 'apple') {
       // Check if running on iOS
       if (Platform.OS !== 'ios') {
@@ -190,8 +197,9 @@ export default function LoginScreen() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -199,15 +207,17 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.heroSection}>
-          <LinearGradient
-            colors={theme.gradient.hero}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroGradient}
-          >
-            <Ionicons name="leaf" size={48} color="#FFFFFF" />
-          </LinearGradient>
-          <Text style={[styles.appName, { color: theme.text }]}>WholeFoodLabs</Text>
+          <View style={Shadows.interactive(isDark)}>
+            <LinearGradient
+              colors={['#16A34A', '#0D9488', '#0891B2'] as const}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.heroGradient, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]}
+            >
+              <Ionicons name="leaf" size={48} color="#FFFFFF" />
+            </LinearGradient>
+          </View>
+          <Text style={[styles.appName, { color: theme.text }]}>{APP_NAME}</Text>
           <Text style={[styles.tagline, { color: theme.textSecondary }]}>
             Eat real. Feel amazing.
           </Text>
@@ -233,11 +243,14 @@ export default function LoginScreen() {
                   {
                     backgroundColor: theme.surfaceElevated,
                     color: theme.text,
-                    borderColor: theme.border,
+                    borderColor: focusedField === 'name' ? theme.primary : theme.border,
+                    borderWidth: focusedField === 'name' ? 1.5 : 1,
                   },
                 ]}
                 value={name}
                 onChangeText={(v) => { setName(v); setFieldErrors((p) => ({ ...p, name: undefined })); }}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
                 placeholder="Your name"
                 placeholderTextColor={theme.textTertiary}
                 autoCapitalize="words"
@@ -254,11 +267,14 @@ export default function LoginScreen() {
                 {
                   backgroundColor: theme.surfaceElevated,
                   color: theme.text,
-                  borderColor: theme.border,
+                  borderColor: focusedField === 'email' ? theme.primary : theme.border,
+                  borderWidth: focusedField === 'email' ? 1.5 : 1,
                 },
               ]}
               value={email}
               onChangeText={(v) => { setEmail(v); setFieldErrors((p) => ({ ...p, email: undefined })); }}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
               placeholder="you@example.com"
               placeholderTextColor={theme.textTertiary}
               keyboardType="email-address"
@@ -275,11 +291,14 @@ export default function LoginScreen() {
                 {
                   backgroundColor: theme.surfaceElevated,
                   color: theme.text,
-                  borderColor: theme.border,
+                  borderColor: focusedField === 'password' ? theme.primary : theme.border,
+                  borderWidth: focusedField === 'password' ? 1.5 : 1,
                 },
               ]}
               value={password}
               onChangeText={(v) => { setPassword(v); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
               placeholder="Enter password"
               placeholderTextColor={theme.textTertiary}
               secureTextEntry
@@ -304,8 +323,17 @@ export default function LoginScreen() {
 
           <View style={styles.socialRow}>
             <TouchableOpacity
-              style={[styles.socialButton, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+              style={[
+                styles.socialButton,
+                {
+                  backgroundColor: theme.surfaceElevated,
+                  borderColor: theme.border,
+                  opacity: IS_GOOGLE_AUTH_CONFIGURED ? 1 : 0.5,
+                  ...Shadows.sm(isDark),
+                },
+              ]}
               onPress={() => handleSocialAuth('google')}
+              disabled={!IS_GOOGLE_AUTH_CONFIGURED}
               activeOpacity={0.7}
             >
               <Ionicons name="logo-google" size={20} color={theme.text} />
@@ -313,7 +341,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
             {Platform.OS === 'ios' && (
               <TouchableOpacity
-                style={[styles.socialButton, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                style={[styles.socialButton, { backgroundColor: theme.surfaceElevated, borderColor: theme.border, ...Shadows.sm(isDark) }]}
                 onPress={() => handleSocialAuth('apple')}
                 activeOpacity={0.7}
               >
@@ -334,6 +362,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -341,12 +370,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.xxl,
+    paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.huge,
   },
   heroSection: {
     alignItems: 'center',
-    marginBottom: Spacing.xxxl + 8,
+    marginBottom: Spacing.huge,
   },
   heroGradient: {
     width: 88,
@@ -357,13 +386,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   appName: {
-    fontSize: FontSize.xxxl,
+    fontSize: 36,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -1.2,
   },
   tagline: {
-    fontSize: FontSize.md,
-    marginTop: Spacing.xs,
+    fontSize: FontSize.xs,
+    marginTop: Spacing.sm,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   formSection: {
     gap: Spacing.md,
@@ -395,7 +426,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 52,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     paddingHorizontal: Spacing.lg,
     fontSize: FontSize.md,
@@ -411,7 +442,9 @@ const styles = StyleSheet.create({
     height: 1,
   },
   dividerText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   socialRow: {
     flexDirection: 'row',
@@ -423,8 +456,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 52,
-    borderRadius: BorderRadius.md,
+    height: 56,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
   },
   socialText: {

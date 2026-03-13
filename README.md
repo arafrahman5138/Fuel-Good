@@ -55,10 +55,12 @@ We are adding a **Metabolic Energy Score (MES)** system to make metabolic health
 - LangGraph + LangChain (AI agent workflows)
 - SQLAlchemy + Alembic (ORM + migrations)
 - PostgreSQL (database)
+- Render deployment target with separate API and notification worker roles in hosted environments
 
 ### AI
-- Configurable: OpenAI GPT-4o or Anthropic Claude
+- Configurable: Gemini, OpenAI GPT, or Anthropic Claude
 - LangGraph agents for healthify chatbot and meal plan generation
+- Production default: Gemini
 
 ## Getting Started
 
@@ -107,9 +109,12 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SECRET_KEY` | JWT signing key |
+| `GOOGLE_API_KEY` | Gemini / Google AI API key |
 | `OPENAI_API_KEY` | OpenAI API key (if using GPT) |
 | `ANTHROPIC_API_KEY` | Anthropic API key (if using Claude) |
-| `LLM_PROVIDER` | `openai` or `anthropic` |
+| `LLM_PROVIDER` | `gemini`, `openai`, `anthropic`, or `ollama` |
+| `RUN_NOTIFICATION_SCHEDULER` | Enable only on the dedicated notification worker |
+| `RUN_STARTUP_SEEDING` | Keep `false` in hosted environments |
 | `USDA_API_KEY` | USDA FoodData Central API key |
 
 ## Project Structure
@@ -136,3 +141,14 @@ wholefoodlabs/
 │   └── alembic/            # Database migrations
 └── README.md
 ```
+
+## Production Docs
+
+Production readiness and release material lives in [`docs/production-readiness-checklist.md`](docs/production-readiness-checklist.md).
+
+Supporting documents:
+- [`docs/ops/release-runbook.md`](docs/ops/release-runbook.md)
+- [`docs/ops/render-deployment.md`](docs/ops/render-deployment.md)
+- [`docs/qa/testflight-qa-checklist.md`](docs/qa/testflight-qa-checklist.md)
+- [`docs/app-store/metadata.md`](docs/app-store/metadata.md)
+- [`docs/legal/privacy-policy.md`](docs/legal/privacy-policy.md)

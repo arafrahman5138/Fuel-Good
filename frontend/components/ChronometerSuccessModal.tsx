@@ -1,8 +1,10 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { useThemeStore } from '../stores/themeStore';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { Shadows } from '../constants/Shadows';
 
 interface ChronometerSuccessModalProps {
   visible: boolean;
@@ -24,12 +26,15 @@ export function ChronometerSuccessModal({
   onSecondary,
 }: ChronometerSuccessModalProps) {
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSecondary}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onSecondary} />
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={[styles.card, Shadows.overlay(isDark), { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={[styles.iconWrap, { backgroundColor: theme.primaryMuted }]}>
             <Ionicons name="checkmark" size={18} color={theme.primary} />
           </View>
@@ -70,16 +75,11 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 360,
-    borderRadius: 26,
+    borderRadius: BorderRadius.xxl,
     borderWidth: 1,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
   },
   iconWrap: {
     width: 40,

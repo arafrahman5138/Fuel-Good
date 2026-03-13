@@ -1,12 +1,13 @@
 /**
  * EnergyBudgetCard — Hero card combining MetabolicRing + macro guardrails + score breakdown CTA.
  */
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
+import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { MetabolicRing } from './MetabolicRing';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MESScore, MetabolicBudget, RemainingBudget, MEAScore } from '../stores/metabolicBudgetStore';
@@ -29,6 +30,7 @@ function GoalRing({
   target,
   unit = 'g',
   stateLabel,
+  animDelay = 0,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -37,12 +39,46 @@ function GoalRing({
   target: number;
   unit?: string;
   stateLabel: string;
+  animDelay?: number;
 }) {
   const theme = useTheme();
   const safeTarget = target > 0 ? target : 1;
   const pct = Math.max(0, Math.min(100, Math.round((consumed / safeTarget) * 100)));
   const segmentCount = 24;
-  const filledSegments = Math.max(0, Math.min(segmentCount, Math.round((pct / 100) * segmentCount)));
+  const targetFilled = Math.max(0, Math.min(segmentCount, Math.round((pct / 100) * segmentCount)));
+
+  // Animated fill
+  const fillAnim = useRef(new Animated.Value(0)).current;
+  const [animFilled, setAnimFilled] = useState(0);
+
+  useEffect(() => {
+    if (isReduceMotionEnabled()) {
+      setAnimFilled(targetFilled);
+      fillAnim.setValue(targetFilled);
+      return;
+    }
+
+    fillAnim.setValue(0);
+    setAnimFilled(0);
+
+    const listener = fillAnim.addListener(({ value }) => {
+      setAnimFilled(Math.round(value));
+    });
+
+    const timeout = setTimeout(() => {
+      Animated.timing(fillAnim, {
+        toValue: targetFilled,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }, animDelay);
+
+    return () => {
+      clearTimeout(timeout);
+      fillAnim.removeListener(listener);
+    };
+  }, [targetFilled, animDelay, fillAnim]);
 
   return (
     <View style={[styles.goalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -63,7 +99,7 @@ function GoalRing({
               style={[
                 styles.goalRingSegment,
                 {
-                  backgroundColor: index < filledSegments ? color : theme.surfaceHighlight,
+                  backgroundColor: index < animFilled ? color : theme.surfaceHighlight,
                   transform: [
                     { rotate: `${(index / segmentCount) * 360}deg` },
                     { translateY: -20 },
@@ -228,7 +264,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
 
           {/* MEA mini badge */}
           {mea && mea.mea_score > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 }}>
               <View style={[styles.statPill, { backgroundColor: meaColor + '12' }]}>
                 <Ionicons name="pulse-outline" size={11} color={meaColor} />
                 <Text style={[styles.statPillText, { color: meaColor }]}>
@@ -278,7 +314,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
 
       {/* ── Macro rings ── */}
       <View style={styles.goalGrid}>
-        {goalItems.map((item) => (
+        {goalItems.map((item, idx) => (
           <GoalRing
             key={item.key}
             label={item.label}
@@ -287,6 +323,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
             consumed={item.consumed}
             target={item.target}
             stateLabel={item.stateLabel}
+            animDelay={idx * 80}
           />
         ))}
       </View>
@@ -325,24 +362,25 @@ const styles = StyleSheet.create({
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
   },
   headerIcon: {
     width: 26,
     height: 26,
-    borderRadius: 8,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
+    minWidth: 0,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
   headerPill: {
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
   },
@@ -362,16 +400,17 @@ const styles = StyleSheet.create({
   },
   tierInfo: {
     flex: 1,
+    minWidth: 0,
     gap: Spacing.sm,
   },
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 5,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: BorderRadius.xs,
+    borderRadius: BorderRadius.sm,
+    gap: Spacing.xs,
   },
   tierLabel: {
     fontWeight: '700',
@@ -382,14 +421,14 @@ const styles = StyleSheet.create({
   statPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: Spacing.xs + 2,
   },
   statPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: BorderRadius.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: BorderRadius.xs,
     borderRadius: BorderRadius.full,
   },
   statPillText: {
@@ -410,39 +449,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 10,
+    rowGap: Spacing.sm + 2,
   },
   goalCard: {
     width: '48%',
-    borderRadius: 18,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 10,
-    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm + 2,
+    gap: Spacing.sm,
   },
   goalTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: Spacing.sm,
   },
   goalIconWrap: {
     width: 22,
     height: 22,
-    borderRadius: 8,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   goalState: {
     flexShrink: 1,
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   goalMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm + 2,
   },
   goalRingWrap: {
     width: 52,
@@ -454,7 +493,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 4,
     height: 9,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
   },
   goalRingCenter: {
     alignItems: 'center',
@@ -475,7 +514,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   goalValue: {
-    fontSize: 17,
+    fontSize: FontSize.lg,
     fontWeight: '700',
     letterSpacing: -0.3,
   },

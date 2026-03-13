@@ -1,10 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 import { useTheme } from '../hooks/useTheme';
+import { useThemeStore } from '../stores/themeStore';
+import { useInfinitePulse } from '../hooks/useAnimations';
 
 interface AppScreenHeaderProps {
   title?: string;
@@ -14,7 +17,11 @@ interface AppScreenHeaderProps {
 
 export function AppScreenHeader({ title, centerContent, rightContent }: AppScreenHeaderProps) {
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const insets = useSafeAreaInsets();
+  const { animatedStyle: dotStyle } = useInfinitePulse(1.0, 1.6, 900);
 
   return (
     <View
@@ -22,7 +29,7 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
         styles.header,
         {
           backgroundColor: 'transparent',
-          paddingTop: Math.max(insets.top, 12),
+          paddingTop: Math.max(insets.top, Spacing.md),
         },
       ]}
     >
@@ -36,8 +43,21 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
 
       <View style={styles.center}>
         {centerContent || (
-          <View style={[styles.titleCapsule, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.dot, { backgroundColor: theme.primary }]} />
+          <View style={[styles.titleCapsule, { borderColor: theme.border, overflow: 'hidden' }]}>
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 40 : 80}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+            />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: isDark ? 'rgba(20,20,26,0.72)' : 'rgba(255,255,255,0.82)' },
+              ]}
+            />
+            <Animated.View
+              style={[styles.dot, { backgroundColor: theme.primary }, dotStyle]}
+            />
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
           </View>
         )}
@@ -59,7 +79,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -81,16 +101,16 @@ const styles = StyleSheet.create({
   titleCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     borderWidth: 1,
     borderRadius: BorderRadius.full,
-    paddingHorizontal: 14,
-    minHeight: 40,
+    paddingHorizontal: Spacing.xl,
+    minHeight: 44,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   title: {
     fontSize: FontSize.md,

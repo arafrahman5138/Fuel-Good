@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 import { useTheme } from '../hooks/useTheme';
 import { XP_PER_LEVEL } from '../constants/Config';
+import { isReduceMotionEnabled } from '../hooks/useAnimations';
 
 interface XPBarProps {
   xp: number;
@@ -16,19 +17,64 @@ export function XPBar({ xp, compact = false }: XPBarProps) {
   const xpInLevel = xp % XP_PER_LEVEL;
   const progress = xpInLevel / XP_PER_LEVEL;
 
+  // Compact bar
+  const compactBarWidth = useRef(0);
+  const compactFillAnim = useRef(new Animated.Value(0)).current;
+
+  // Full bar
+  const fullBarWidth = useRef(0);
+  const fullFillAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const targetCompact = compactBarWidth.current * progress;
+    if (isReduceMotionEnabled()) {
+      compactFillAnim.setValue(targetCompact);
+    } else {
+      Animated.timing(compactFillAnim, {
+        toValue: targetCompact,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [progress, compactFillAnim]);
+
+  useEffect(() => {
+    const targetFull = fullBarWidth.current * progress;
+    if (isReduceMotionEnabled()) {
+      fullFillAnim.setValue(targetFull);
+    } else {
+      Animated.timing(fullFillAnim, {
+        toValue: targetFull,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [progress, fullFillAnim]);
+
   if (compact) {
     return (
       <View style={styles.compactRow}>
         <View style={[styles.levelBadge, { backgroundColor: theme.primaryMuted }]}>
           <Text style={[styles.levelText, { color: theme.primary }]}>Lvl {level}</Text>
         </View>
-        <View style={[styles.barBg, { backgroundColor: theme.surfaceElevated }]}>
-          <LinearGradient
-            colors={theme.gradient.primary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.barFill, { width: `${progress * 100}%` }]}
-          />
+        <View
+          style={[styles.barBg, { backgroundColor: theme.surfaceElevated }]}
+          onLayout={(e) => {
+            compactBarWidth.current = e.nativeEvent.layout.width;
+            // Set initial position without animation on first layout
+            compactFillAnim.setValue(e.nativeEvent.layout.width * progress);
+          }}
+        >
+          <Animated.View style={[styles.barFill, { width: compactFillAnim, overflow: 'hidden' }]}>
+            <LinearGradient
+              colors={theme.gradient.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
         </View>
         <Text style={[styles.xpText, { color: theme.textTertiary }]}>
           {xpInLevel}/{XP_PER_LEVEL}
@@ -47,13 +93,21 @@ export function XPBar({ xp, compact = false }: XPBarProps) {
           {xpInLevel} / {XP_PER_LEVEL} XP
         </Text>
       </View>
-      <View style={[styles.barBgLarge, { backgroundColor: theme.surfaceElevated }]}>
-        <LinearGradient
-          colors={theme.gradient.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.barFillLarge, { width: `${progress * 100}%` }]}
-        />
+      <View
+        style={[styles.barBgLarge, { backgroundColor: theme.surfaceElevated }]}
+        onLayout={(e) => {
+          fullBarWidth.current = e.nativeEvent.layout.width;
+          fullFillAnim.setValue(e.nativeEvent.layout.width * progress);
+        }}
+      >
+        <Animated.View style={[styles.barFillLarge, { width: fullFillAnim, overflow: 'hidden' }]}>
+          <LinearGradient
+            colors={theme.gradient.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
       </View>
     </View>
   );
@@ -94,21 +148,21 @@ const styles = StyleSheet.create({
   barBg: {
     flex: 1,
     height: 6,
-    borderRadius: 3,
+    borderRadius: BorderRadius.xs,
     overflow: 'hidden',
   },
   barBgLarge: {
     height: 10,
-    borderRadius: 5,
+    borderRadius: BorderRadius.xs + 1,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: BorderRadius.xs,
   },
   barFillLarge: {
     height: '100%',
-    borderRadius: 5,
+    borderRadius: BorderRadius.xs + 1,
   },
   xpText: {
     fontSize: FontSize.xs,

@@ -134,11 +134,14 @@ async def generate_meal_plan_agent(preferences: dict, db=None, user_id: str | No
     """Generate a meal plan, injecting metabolic budget constraints if user available."""
     # Inject metabolic budget from DB if available
     if db and user_id:
-        from app.services.metabolic_engine import get_or_create_budget
-        budget = get_or_create_budget(db, user_id)
-        preferences.setdefault("metabolic_protein_target_g", budget.protein_target_g)
-        preferences.setdefault("metabolic_fiber_floor_g", budget.fiber_floor_g)
-        preferences.setdefault("metabolic_sugar_ceiling_g", budget.sugar_ceiling_g)
+        from app.services.metabolic_engine import load_budget_for_user
+        computed = load_budget_for_user(db, user_id)
+        preferences.setdefault("metabolic_protein_target_g", computed.protein_g)
+        preferences.setdefault("metabolic_fiber_floor_g", computed.fiber_g)
+        preferences.setdefault("metabolic_sugar_ceiling_g", computed.carb_ceiling_g)
+        preferences.setdefault("metabolic_fat_target_g", computed.fat_g)
+        preferences.setdefault("metabolic_tdee", computed.tdee)
+        preferences.setdefault("metabolic_calorie_target_kcal", computed.calorie_target_kcal)
 
     MAX_ATTEMPTS = 3
     MIN_WEEKLY_MES = 80

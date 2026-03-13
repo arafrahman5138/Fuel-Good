@@ -1,11 +1,13 @@
 /**
  * MetabolicRing — Circular MES display (0-100) with tier coloring.
  * Primary score ring for the Home and Chronometer screens.
+ * Score counts up from 0 to the target value on mount/change.
  */
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { getTierConfig, TierKey } from '../stores/metabolicBudgetStore';
 import { FontSize, Spacing } from '../constants/Colors';
 
@@ -29,8 +31,43 @@ export function MetabolicRing({
   const borderWidth = Math.max(6, size * 0.06);
   const innerSize = size - borderWidth * 2;
 
-  // Progress ring using border trick: full border in muted color, then
-  // overlay partial colored border via rotation (simplified: full ring colored)
+  // Count-up animation
+  const animValue = useRef(new Animated.Value(0)).current;
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    if (isReduceMotionEnabled()) {
+      setDisplayScore(Math.round(score));
+      animValue.setValue(score);
+      return;
+    }
+
+    animValue.setValue(0);
+    setDisplayScore(0);
+
+    const listener = animValue.addListener(({ value }) => {
+      setDisplayScore(Math.round(value));
+    });
+
+    Animated.timing(animValue, {
+      toValue: score,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // needed for listener-driven state updates
+    }).start();
+
+    return () => {
+      animValue.removeListener(listener);
+    };
+  }, [score, animValue]);
+
+  // Animated ring opacity
+  const ringOpacity = animValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
   const ringColor = tierCfg.color;
   const bgRingColor = theme.surfaceHighlight;
 
@@ -50,7 +87,7 @@ export function MetabolicRing({
         ]}
       />
       {/* Colored ring overlay */}
-      <View
+      <Animated.View
         style={[
           styles.ring,
           {
@@ -59,7 +96,7 @@ export function MetabolicRing({
             borderRadius: size / 2,
             borderWidth,
             borderColor: ringColor,
-            opacity: Math.min(score / 100, 1),
+            opacity: ringOpacity,
           },
         ]}
       />
@@ -74,7 +111,7 @@ export function MetabolicRing({
           />
         )}
         <Text style={[styles.score, { color: tierCfg.color, fontSize: Math.max(18, size * 0.22) }]}>
-          {Math.round(score)}
+          {displayScore}
         </Text>
         {showLabel && (
           <Text style={[styles.label, { color: theme.textSecondary, fontSize: Math.max(9, size * 0.085) }]}>

@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
   Pressable,
   RefreshControl,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,11 +30,13 @@ import { MetabolicStreakBadge } from '../../components/MetabolicStreakBadge';
 import { MetabolicCoach } from '../../components/MetabolicCoach';
 import { NutriScoreHeroCard } from '../../components/NutriScoreHeroCard';
 import { useTheme } from '../../hooks/useTheme';
+import { useThemeStore } from '../../stores/themeStore';
+import { Shadows } from '../../constants/Shadows';
 import { nutritionApi, metabolicApi, recipeApi } from '../../services/api';
 import type { MealSuggestion } from '../../components/MetabolicCoach';
 import { useGamificationStore, type ScoreHistoryEntry } from '../../stores/gamificationStore';
 import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { NUTRITION_TIERS } from '../../constants/Config';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -209,8 +213,19 @@ function NutritionRing({ score, size = 140, strokeWidth = 8 }: {
 
 export default function ChronometerScreen() {
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const insets = useSafeAreaInsets();
-  const todayKey = toDateKey(new Date());
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const [selectedDayKey, setSelectedDayKey] = useState(todayKey);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [daily, setDaily] = useState<DailySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [gaps, setGaps] = useState<NutritionGaps | null>(null);
@@ -262,9 +277,9 @@ export default function ChronometerScreen() {
     setError(null);
     try {
       const [data, gapData, , mesSuggestionsData] = await Promise.all([
-        nutritionApi.getDaily(todayKey),
+        nutritionApi.getDaily(selectedDayKey),
         nutritionApi.getGaps(),
-        fetchMetabolic(todayKey),
+        fetchMetabolic(selectedDayKey),
         metabolicApi.getMealSuggestions(undefined, 4).catch(() => [] as MealSuggestion[]),
         fetchProfile(),
       ]);
@@ -279,7 +294,7 @@ export default function ChronometerScreen() {
     } finally {
       setLoading(false);
     }
-  }, [fetchMetabolic, fetchProfile, fetchNutritionStreak, fetchScoreHistory, todayKey]);
+  }, [fetchMetabolic, fetchProfile, fetchNutritionStreak, fetchScoreHistory, selectedDayKey]);
 
   useEffect(() => {
     refresh();
@@ -290,6 +305,99 @@ export default function ChronometerScreen() {
       refresh();
     }, [refresh])
   );
+
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      const shouldShow = value > 48;
+      setShowStickyHeader((prev) => (prev === shouldShow ? prev : shouldShow));
+    });
+    return () => {
+      scrollY.removeListener(id);
+    };
+  }, [scrollY]);
+
+  const selectedDate = useMemo(() => {
+    const [year, month, day] = selectedDayKey.split('-').map(Number);
+    return new Date(year || 0, (month || 1) - 1, day || 1);
+  }, [selectedDayKey]);
+
+  useEffect(() => {
+    setCalendarMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+  }, [selectedDate]);
+
+  const isSelectedToday = selectedDayKey === todayKey;
+  const largeDateLabel = isSelectedToday
+    ? 'Today'
+    : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const smallDateLabel = isSelectedToday
+    ? 'Today'
+    : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const selectedDateSubLabel = selectedDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+  const mealsSectionTitle = isSelectedToday
+    ? "Today's Meals"
+    : `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })} Meals`;
+  const mealsSectionSubLabel = isSelectedToday
+    ? 'today'
+    : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  const calendarDays = useMemo(() => {
+    const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+    const startWeekday = monthStart.getDay();
+    const totalDays = monthEnd.getDate();
+    const cells: Array<{ key: string; label: string; dayKey?: string; isCurrentMonth: boolean }> = [];
+
+    for (let i = 0; i < startWeekday; i += 1) {
+      cells.push({ key: `empty-start-${i}`, label: '', isCurrentMonth: false });
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      const date = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day);
+      cells.push({
+        key: `day-${day}`,
+        label: `${day}`,
+        dayKey: toDateKey(date),
+        isCurrentMonth: true,
+      });
+    }
+
+    while (cells.length % 7 !== 0) {
+      cells.push({ key: `empty-end-${cells.length}`, label: '', isCurrentMonth: false });
+    }
+
+    return cells;
+  }, [calendarMonth]);
+
+  const jumpDay = useCallback((offset: number) => {
+    const next = new Date(selectedDate);
+    next.setDate(selectedDate.getDate() + offset);
+    setSelectedDayKey(toDateKey(next));
+  }, [selectedDate]);
+
+  const heroHeaderScale = scrollY.interpolate({
+    inputRange: [0, 72],
+    outputRange: [1, 0.76],
+    extrapolate: 'clamp',
+  });
+  const heroHeaderOpacity = scrollY.interpolate({
+    inputRange: [0, 72],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  const stickyHeaderOpacity = scrollY.interpolate({
+    inputRange: [36, 84],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  const stickyHeaderTranslateY = scrollY.interpolate({
+    inputRange: [36, 84],
+    outputRange: [-10, 0],
+    extrapolate: 'clamp',
+  });
 
   const score = daily?.daily_score ?? 0;
 
@@ -396,12 +504,12 @@ export default function ChronometerScreen() {
             const matchedPair = pairings.find((p: any) => String(p.recipe_id) === sideRecipeId);
             if (!matchedPair) return null;
 
-            // Use same formula as detail page: min(100, storedRawMes + mes_delta)
-            const storedRawMes = Number(mainRecipe?.nutrition_info?.mes_score ?? 0);
-            const hasStoredRawMes = Number.isFinite(storedRawMes) && storedRawMes > 0;
-            const score = hasStoredRawMes
-              ? Math.min(100, Number((storedRawMes + (matchedPair.mes_delta ?? 0)).toFixed(1)))
-              : Number(matchedPair.combined_display_score ?? matchedPair.combined_mes_score ?? 0);
+            const score = Number(
+              matchedPair.pairing_adjusted_score
+              ?? matchedPair.combined_display_score
+              ?? matchedPair.combined_mes_score
+              ?? 0
+            );
             if (!(score > 0)) return null;
             const tier = score >= 80 ? 'optimal' : score >= 60 ? 'stable' : score >= 40 ? 'shaky' : 'crash_risk';
             return { groupId, groupLogs, score, tier };
@@ -451,8 +559,15 @@ export default function ChronometerScreen() {
           try {
             const recipe = await recipeApi.getDetail(recipeId);
             const nutrition = recipe?.nutrition_info || {};
-            const score = Number(nutrition.mes_display_score ?? nutrition.mes_score ?? 0);
-            const tier = typeof nutrition.mes_display_tier === 'string' ? nutrition.mes_display_tier : 'critical';
+            const shouldUseComposite = recipe?.needs_default_pairing === true && typeof recipe?.composite_display_score === 'number';
+            const score = Number(
+              shouldUseComposite
+                ? recipe?.composite_display_score
+                : (nutrition.mes_display_score ?? nutrition.mes_score ?? 0)
+            );
+            const tier = shouldUseComposite
+              ? String(recipe?.composite_display_tier || 'critical')
+              : (typeof nutrition.mes_display_tier === 'string' ? nutrition.mes_display_tier : 'critical');
             if (!(score > 0)) return null;
             return { recipeId, score, tier };
           } catch {
@@ -477,16 +592,112 @@ export default function ChronometerScreen() {
 
   return (
     <ScreenContainer safeArea={false} padded={false}>
-      <ScrollView
+      {showStickyHeader ? (
+        <Animated.View
+          style={[
+            styles.stickyChronoHeader,
+            {
+              paddingTop: Math.max(insets.top, 10),
+              backgroundColor: theme.background,
+              borderBottomColor: theme.border + '66',
+              opacity: stickyHeaderOpacity,
+              transform: [{ translateY: stickyHeaderTranslateY }],
+            },
+          ]}
+        >
+          <View style={styles.chronoHeaderInner}>
+            <View style={styles.chronoHeaderLeft}>
+              <View style={styles.chronoDateCluster}>
+                <TouchableOpacity
+                  activeOpacity={0.4}
+                  onPress={() => jumpDay(-1)}
+                  style={styles.chronoNavButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                >
+                  <Ionicons name="chevron-back" size={19} color={theme.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  onPress={() => {
+                    setCalendarMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+                    setShowCalendar(true);
+                  }}
+                  style={styles.chronoDatePill}
+                >
+                  <Text style={[styles.chronoDateTitleSticky, { color: theme.text }]}>{smallDateLabel}</Text>
+                  <Ionicons name="chevron-down" size={12} color={theme.textTertiary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.4}
+                  onPress={() => jumpDay(1)}
+                  style={styles.chronoNavButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                >
+                  <Ionicons name="chevron-forward" size={19} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.addIconBtn, { backgroundColor: theme.primaryMuted }]}
+              onPress={() => setShowAddMenu(!showAddMenu)}
+            >
+              <Ionicons name="add" size={22} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      ) : null}
+
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: Math.max(insets.top, 10), paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingTop: Math.max(insets.top, 10), paddingBottom: Layout.scrollBottomPadding }}
         contentInsetAdjustmentBehavior="never"
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
-        <View style={[styles.titleRow, { paddingRight: Math.max(insets.right, 4) + 4 }]}>
-          <View style={styles.titleBlock}>
-            <Text style={[styles.title, { color: theme.text }]}>Chronometer</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Track macros, essential micronutrients, and daily score.</Text>
+        <Animated.View
+          style={[
+            styles.chronoHeroHeader,
+            {
+              opacity: heroHeaderOpacity,
+              transform: [{ scale: heroHeaderScale }],
+            },
+          ]}
+        >
+          <View style={styles.chronoHeaderLeft}>
+            <View style={styles.chronoDateCluster}>
+              <TouchableOpacity
+                activeOpacity={0.4}
+                onPress={() => jumpDay(-1)}
+                style={styles.chronoNavButton}
+                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-back" size={22} color={theme.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.6}
+                onPress={() => {
+                  setCalendarMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+                  setShowCalendar(true);
+                }}
+                style={styles.chronoDatePillHero}
+              >
+                <Text style={[styles.chronoDateTitleHero, { color: theme.text }]}>{largeDateLabel}</Text>
+                <Ionicons name="chevron-down" size={14} color={theme.textTertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.4}
+                onPress={() => jumpDay(1)}
+                style={styles.chronoNavButton}
+                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.chronoDateSubtitle, { color: theme.textSecondary }]}>{selectedDateSubLabel}</Text>
           </View>
           <View style={styles.titleActionWrap}>
             <TouchableOpacity
@@ -496,42 +707,8 @@ export default function ChronometerScreen() {
               <Ionicons name="add" size={22} color={theme.primary} />
             </TouchableOpacity>
 
-            {/* ── Add Menu Popover ── */}
-            {showAddMenu && (
-              <>
-                <Pressable
-                  style={{ position: 'absolute', top: -1000, left: -1000, right: -1000, bottom: -1000, width: 9999, height: 9999 }}
-                  onPress={() => setShowAddMenu(false)}
-                />
-                <View style={[styles.addMenu, { backgroundColor: theme.surface, borderColor: theme.border, shadowColor: theme.text }]}>
-                  {[
-                    { icon: 'restaurant-outline' as const, label: 'Log Meal', sub: 'From recipes', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/meals?tab=browse' as any); } },
-                    { icon: 'nutrition-outline' as const, label: 'Log Food', sub: 'Search database', onPress: () => { setShowAddMenu(false); router.push('/food/search' as any); } },
-                    { icon: 'camera-outline' as const, label: 'Scan Photo', sub: 'Coming soon', onPress: () => { setShowAddMenu(false); Alert.alert('Coming Soon', 'Photo scanning will be available in a future update.'); } },
-                  ].map((item, idx) => (
-                    <TouchableOpacity
-                      key={item.label}
-                      onPress={item.onPress}
-                      style={[
-                        styles.addMenuItem,
-                        idx < 2 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
-                      ]}
-                    >
-                      <View style={[styles.addMenuIcon, { backgroundColor: theme.primaryMuted }]}>
-                        <Ionicons name={item.icon} size={18} color={theme.primary} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.addMenuLabel, { color: theme.text }]}>{item.label}</Text>
-                        <Text style={[styles.addMenuSub, { color: theme.textTertiary }]}>{item.sub}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
           </View>
-        </View>
+        </Animated.View>
 
         {/* ── View Toggle ── */}
         <View style={[styles.toggleContainer, { backgroundColor: theme.card.background, borderColor: theme.card.border }]}>
@@ -544,7 +721,7 @@ export default function ChronometerScreen() {
                 key={mode}
                 activeOpacity={0.8}
                 onPress={() => setViewMode(mode)}
-                style={[styles.toggleBtn, active && styles.toggleBtnActive]}
+                style={[styles.toggleBtn, active && styles.toggleBtnActive, active && Shadows.sm(isDark)]}
               >
                 {active ? (
                   <LinearGradient
@@ -735,9 +912,11 @@ export default function ChronometerScreen() {
                           <Ionicons name="restaurant" size={16} color="#fff" />
                         </LinearGradient>
                         <View>
-                          <Text style={{ color: theme.text, fontSize: FontSize.md, fontWeight: '700' }}>Today's Meals</Text>
+                          <Text style={{ color: theme.text, fontSize: FontSize.md, fontWeight: '700' }}>{mealsSectionTitle}</Text>
                           <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '500', marginTop: 1 }}>
-                            {mealCount === 0 ? 'No meals logged' : `${mealCount} meal${mealCount > 1 ? 's' : ''} logged`}
+                            {mealCount === 0
+                              ? `No meals logged for ${mealsSectionSubLabel}`
+                              : `${mealCount} meal${mealCount > 1 ? 's' : ''} logged`}
                           </Text>
                         </View>
                       </View>
@@ -758,7 +937,9 @@ export default function ChronometerScreen() {
                         <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: theme.primaryMuted, alignItems: 'center', justifyContent: 'center' }}>
                           <Ionicons name="fast-food-outline" size={24} color={theme.primary} />
                         </View>
-                        <Text style={{ color: theme.textSecondary, fontSize: FontSize.sm, fontWeight: '600' }}>No meals logged yet today</Text>
+                        <Text style={{ color: theme.textSecondary, fontSize: FontSize.sm, fontWeight: '600' }}>
+                          {isSelectedToday ? 'No meals logged yet today' : `No meals logged for ${mealsSectionSubLabel}`}
+                        </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full, marginTop: Spacing.xs }}>
                           <Ionicons name="add" size={14} color="#fff" />
                           <Text style={{ color: '#fff', fontSize: FontSize.xs, fontWeight: '700' }}>Log a Meal</Text>
@@ -1215,7 +1396,7 @@ export default function ChronometerScreen() {
 
           </>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       <Modal visible={!!selectedNutrient} transparent animationType="slide" onRequestClose={() => setSelectedNutrient(null)}>
         <View style={styles.modalBackdrop}>
@@ -1251,11 +1432,215 @@ export default function ChronometerScreen() {
           proteinTarget={mesBudget ? Math.round(mesBudget.protein_target_g / 3) : undefined}
         />
       )}
+
+      <Modal visible={showCalendar} transparent animationType="fade" onRequestClose={() => setShowCalendar(false)}>
+        <View style={styles.calendarBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCalendar(false)} />
+          <View style={[styles.calendarCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }, Shadows.lg(isDark)]}>
+            <View style={styles.calendarHeader}>
+              <Text style={[styles.calendarMonthTitle, { color: theme.text }]}>
+                {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <View style={styles.calendarHeaderActions}>
+                {selectedDayKey !== todayKey && (
+                  <TouchableOpacity
+                    activeOpacity={0.78}
+                    onPress={() => {
+                      const today = new Date();
+                      setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                      setSelectedDayKey(todayKey);
+                      setShowCalendar(false);
+                    }}
+                    style={[styles.calendarTodayBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '40' }]}
+                  >
+                    <Text style={[styles.calendarTodayBtnText, { color: theme.primary }]}>Today</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  activeOpacity={0.78}
+                  onPress={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                  style={[styles.calendarArrow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <Ionicons name="chevron-back" size={18} color={theme.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.78}
+                  onPress={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                  style={[styles.calendarArrow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <Ionicons name="chevron-forward" size={18} color={theme.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.calendarWeekdays}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+                <Text key={label} style={[styles.calendarWeekdayText, { color: theme.textTertiary }]}>
+                  {label}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day) => {
+                const isSelected = day.dayKey === selectedDayKey;
+                const isToday = day.dayKey === todayKey;
+                return (
+                  <TouchableOpacity
+                    key={day.key}
+                    disabled={!day.isCurrentMonth}
+                    activeOpacity={0.78}
+                    onPress={() => {
+                      if (!day.dayKey) return;
+                      setSelectedDayKey(day.dayKey);
+                      setShowCalendar(false);
+                    }}
+                    style={styles.calendarDayCell}
+                  >
+                    <View
+                      style={[
+                        styles.calendarDayCircle,
+                        isSelected && { backgroundColor: theme.primary },
+                        !isSelected && isToday && { borderColor: theme.primary + '88', backgroundColor: theme.primary + '10', borderWidth: 1 },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.calendarDayText,
+                          { color: day.isCurrentMonth ? theme.text : theme.textTertiary },
+                          isSelected && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        {day.label}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Add Menu Overlay (screen-level, always visible regardless of scroll) ── */}
+      {showAddMenu && (
+        <>
+          <Pressable
+            style={[StyleSheet.absoluteFill, { zIndex: 119 }]}
+            onPress={() => setShowAddMenu(false)}
+          />
+          <View
+            style={[
+              styles.addMenu,
+              {
+                position: 'absolute',
+                top: Math.max(insets.top, 10) + 58,
+                right: 12,
+                zIndex: 120,
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+              },
+              Shadows.lg(isDark),
+            ]}
+          >
+            {[
+              { icon: 'restaurant-outline' as const, label: 'Log Meal', sub: 'From recipes', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/meals?tab=browse' as any); } },
+              { icon: 'nutrition-outline' as const, label: 'Log Food', sub: 'Search database', onPress: () => { setShowAddMenu(false); router.push('/food/search' as any); } },
+              { icon: 'camera-outline' as const, label: 'Scan Photo', sub: 'Coming soon', onPress: () => { setShowAddMenu(false); Alert.alert('Coming Soon', 'Photo scanning will be available in a future update.'); } },
+            ].map((item, idx) => (
+              <TouchableOpacity
+                key={item.label}
+                onPress={item.onPress}
+                style={[
+                  styles.addMenuItem,
+                  idx < 2 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
+                ]}
+              >
+                <View style={[styles.addMenuIcon, { backgroundColor: theme.primaryMuted }]}>
+                  <Ionicons name={item.icon} size={18} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.addMenuLabel, { color: theme.text }]}>{item.label}</Text>
+                  <Text style={[styles.addMenuSub, { color: theme.textTertiary }]}>{item.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  stickyChronoHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  chronoHeaderInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: Spacing.md,
+    zIndex: 40,
+  },
+  chronoHeroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.lg,
+    zIndex: 30,
+  },
+  chronoHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: Spacing.md,
+  },
+  chronoDateCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  chronoNavButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chronoDatePillHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  chronoDatePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  chronoDateTitleHero: {
+    fontSize: FontSize.xxl,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  chronoDateTitleSticky: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  chronoDateSubtitle: {
+    marginTop: 6,
+    marginLeft: 36,
+    fontSize: FontSize.sm,
+    fontWeight: '500',
+  },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1270,6 +1655,7 @@ const styles = StyleSheet.create({
   titleActionWrap: {
     flexShrink: 0,
     alignItems: 'flex-end',
+    zIndex: 60,
   },
   title: { fontSize: FontSize.xxl, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { marginTop: 2, fontSize: FontSize.sm },
@@ -1284,14 +1670,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 46,
     right: 0,
-    width: 220,
+    width: 240,
     borderRadius: 16,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    zIndex: 100,
+    zIndex: 120,
     overflow: 'hidden',
   },
   addMenuItem: {
@@ -1313,7 +1695,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addMenuSub: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     marginTop: 1,
   },
@@ -1338,14 +1720,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
   },
   nutriLabel: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     marginTop: 6,
     letterSpacing: 0.2,
@@ -1396,7 +1773,7 @@ const styles = StyleSheet.create({
   microLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, marginRight: Spacing.sm },
   microName: { flex: 1, fontSize: FontSize.xs, fontWeight: '600' },
   microMetaRow: { marginTop: 2, marginBottom: 2 },
-  microDetail: { fontSize: 11, fontWeight: '500' },
+  microDetail: { fontSize: FontSize.xs, fontWeight: '500' },
   /* ── Gap Coach ── */
   modalBackdrop: {
     flex: 1,
@@ -1440,11 +1817,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   toggleBtnActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 4,
   },
   toggleGradient: {
     flexDirection: 'row',
@@ -1471,5 +1843,90 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: '600',
     letterSpacing: -0.1,
+  },
+  calendarBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xxl,
+  },
+  calendarCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    padding: 18,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+  },
+  calendarMonthTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  calendarHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  calendarArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  calendarTodayBtn: {
+    height: 34,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  calendarTodayBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  calendarWeekdays: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  calendarWeekdayText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 10,
+  },
+  calendarDayCell: {
+    width: `${100 / 7}%`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  calendarDayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarDayText: {
+    fontSize: FontSize.md,
+    fontWeight: '600',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
 });

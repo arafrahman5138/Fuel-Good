@@ -1,29 +1,59 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     app_name: str = "WholeFoodLabs API"
     environment: str = "development"  # development | staging | production
-    database_url: str = "sqlite:///./wholefoodlabs.db"
+    database_url: str = "postgresql://realfood:realfood_local@localhost:5432/wholefoodlabs"
     secret_key: str = "dev-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 365
+    refresh_token_expire_days: int = 90
 
     # Security / network hardening
     cors_allowed_origins: str = "http://localhost:8081,http://localhost:3000"
     rate_limit_per_minute: int = 120
     auth_rate_limit_per_minute: int = 20
+    social_auth_enabled: bool = True
+    apple_bundle_id: str = "com.wholefoodlabs.app"
+    google_userinfo_url: str = "https://openidconnect.googleapis.com/v1/userinfo"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    apple_jwks_url: str = "https://appleid.apple.com/auth/keys"
+    social_request_timeout_seconds: float = Field(default=10.0, ge=1.0, le=30.0)
+    log_level: str = "INFO"
+    enable_structured_logging: bool = True
+    run_notification_scheduler: bool = False
+    run_startup_seeding: bool = False
+    support_email: str = "support@wholefoodlabs.com"
+    privacy_policy_url: str = ""
+    terms_url: str = ""
+    support_url: str = ""
+    expo_push_access_token: str = ""
+    revenuecat_secret_api_key: str = ""
+    revenuecat_ios_api_key: str = ""
+    revenuecat_webhook_authorization: str = ""
+    revenuecat_api_base_url: str = "https://api.revenuecat.com/v1"
+    revenuecat_entitlement_id: str = "premium"
+    revenuecat_offering_id: str = "default"
+    revenuecat_monthly_product_id: str = "premium_monthly_999"
+    revenuecat_annual_product_id: str = "premium_annual_4999"
+    revenuecat_trial_days: int = 7
+    app_store_manage_subscriptions_url: str = "https://apps.apple.com/account/subscriptions"
 
     openai_api_key: str = ""
+    openai_embedding_model: str = "text-embedding-3-small"
     anthropic_api_key: str = ""
     google_api_key: str = ""
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "text-embedding-004"
     llm_provider: str = "gemini"  # "gemini", "openai", "anthropic", or "ollama"
-    ollama_host: str = "127.0.0.1:11434"
+    ollama_host: str = ""
     ollama_model: str = "qwen2.5-coder:14b"
+    ollama_embedding_model: str = "nomic-embed-text"
     usda_api_key: str = ""
     spoonacular_api_key: str = ""
 

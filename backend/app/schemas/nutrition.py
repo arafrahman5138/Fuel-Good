@@ -25,6 +25,8 @@ class FoodLogCreate(BaseModel):
     meal_type: str = "meal"
     source_type: str = "manual"
     source_id: Optional[str] = None
+    serving_option_id: Optional[str] = None
+    grams: Optional[float] = None
     group_id: Optional[str] = None
     group_mes_score: Optional[float] = None
     group_mes_tier: Optional[str] = None

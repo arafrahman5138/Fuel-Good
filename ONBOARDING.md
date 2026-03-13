@@ -1,0 +1,13 @@
+Your onboarding is without a doubt the MOST IMPORTANT part of your app, if you're reading this and still haven't shipped an app try to get this right the first time around, don't wait. 
+The only reason I mention it as the third step is to try to get your hands dirty with marketing as soon as possible. 
+Here is everything that matters when designing your onboarding, follow these steps and you will get a killer conversion rate: 
+Think of your onboarding as a story with three acts: an introduction that paints the problem, a climax where the user experiences your app, and a conclusion that prepares them for the paywall
+Don't design your onboarding from scratch, study the best onboardings in your niche and outside it, find what works and make it your own
+You need at least one aha moment, a screen that stops the user in their tracks and makes them feel the weight of their problem, and it should hit within the first minute
+Most founders use onboarding questions to learn about their users, but the real purpose is the opposite, you want the user to reflect on their own answers and slowly convince themselves that they have a problem worth solving
+After every few questions, mirror the user's answers back to them so they feel like the experience is being built specifically for them
+The longer your onboarding, the better it converts, as long as every screen is adding value, people hate losing something they already invested, so after 10 to 15 minutes in your onboarding they will think twice before leaving at the paywall
+Let the user actually use your core feature during the onboarding, don't just describe what the app does, make them do it
+Show your review modal right after the user completes your core feature, when they are at their most excited, this is the most important thing you can do for your ASO and social proof, most users will not pay, but they can still leave a review, and that review compounds over time and brings you more organic downloads for free
+Ask Claude about Robert Cialdini's principles of influence and apply them to your onboarding, especially the principle of commitment, getting users to actively state they are committed before hitting the paywall significantly increases conversion, read the book too if you want to go deeper
+Don't do anything else at this point other than getting your onboarding right, iterate it until you have a conversion rate that is good for you, i would say at least 10%.

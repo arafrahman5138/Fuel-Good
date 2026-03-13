@@ -11,9 +11,13 @@ from app.db import get_db
 from app.auth import get_current_user
 from app.models.user import User
 from app.models.meal_plan import ChatSession
+from app.models.metabolic_profile import MetabolicProfile
 from app.schemas.chat import ChatRequest, ChatResponse, ChatSessionSummary
 from app.agents.healthify import healthify_agent
+from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
 from typing import List
+from datetime import date
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -71,10 +75,17 @@ async def healthify_food(
 
     messages = session.messages or []
     messages.append({"role": "user", "content": request.message})
+    record_notification_event(
+        db,
+        current_user.id,
+        "healthify_started",
+        properties={"session_id": str(session.id), "message_preview": _message_preview(request.message, 60)},
+        source="server",
+    )
 
     try:
         result = await asyncio.wait_for(
-            healthify_agent(request.message, messages[:-1]),
+            healthify_agent(db, request.message, messages[:-1], user_id=current_user.id),
             timeout=20,
         )
     except asyncio.TimeoutError:
@@ -125,10 +136,19 @@ async def healthify_food(
     messages.append(assistant_message)
     session.messages = messages
     db.commit()
+    record_notification_event(
+        db,
+        current_user.id,
+        "healthify_completed",
+        properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     logger.info(
-        "healthify.request.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s has_recipe=%s swaps=%s has_nutrition=%s",
+        "healthify.request.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s has_recipe=%s swaps=%s has_nutrition=%s mode=%s matched_recipe_id=%s retrieval_confidence=%s",
         request_id,
         current_user.id,
         session.id,
@@ -136,6 +156,9 @@ async def healthify_food(
         bool(result.get("recipe")),
         len(result.get("swaps") or []),
         bool(result.get("nutrition")),
+        result.get("response_mode"),
+        result.get("matched_recipe_id"),
+        result.get("retrieval_confidence"),
     )
 
     return ChatResponse(
@@ -144,6 +167,7 @@ async def healthify_food(
         healthified_recipe=result.get("recipe"),
         ingredient_swaps=result.get("swaps"),
         nutrition_comparison=result.get("nutrition"),
+        mes_score=result.get("mes_score"),
     )
 
 
@@ -198,7 +222,7 @@ async def healthify_food_stream(
         chunk_count = 0
         try:
             async with asyncio.timeout(20):
-                async for chunk in healthify_agent(request.message, messages[:-1], stream=True):
+                async for chunk in healthify_agent(db, request.message, messages[:-1], stream=True, user_id=current_user.id):
                     full_response += chunk
                     chunk_count += 1
                     yield f"data: {json.dumps({'content': chunk})}\n\n"
@@ -314,3 +338,104 @@ async def get_session(
         "messages": session.messages or [],
         "created_at": session.created_at.isoformat(),
     }
+
+
+# ── Suggestion pools by category ──
+
+_BASE_FUN = [
+    "Mac and Cheese", "Pizza", "Burger and Fries",
+    "Chocolate Cake", "Fried Chicken", "Ice Cream",
+]
+
+_LOW_CARB_FUN = [
+    "Cauliflower Fried Rice", "Zucchini Lasagna",
+    "Lettuce Wrap Tacos", "Eggplant Parmesan",
+    "Stuffed Bell Peppers", "Chicken Crust Pizza",
+]
+
+_FAT_LOSS = [
+    "Grilled Chicken Caesar Salad", "Turkey Lettuce Wraps",
+    "Shrimp Stir Fry", "Salmon with Roasted Veggies",
+    "Greek Yogurt Parfait", "Egg White Veggie Omelette",
+]
+
+_MUSCLE_GAIN = [
+    "Steak and Eggs", "Chicken Stir Fry with Rice",
+    "Protein Overnight Oats", "Salmon Power Bowl",
+    "Turkey Meatballs", "Beef and Broccoli",
+]
+
+_METABOLIC_RESET = [
+    "Mediterranean Salmon Bowl", "Lentil Soup",
+    "Grilled Fish with Greens", "Chickpea Buddha Bowl",
+    "Herb-Crusted Chicken", "Veggie Frittata",
+]
+
+
+@router.get("/suggestions")
+async def get_chat_suggestions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return 8 profile-aware meal suggestions for the chat quick-start chips."""
+    import random
+
+    profile = db.query(MetabolicProfile).filter(
+        MetabolicProfile.user_id == current_user.id,
+    ).first()
+
+    # Default: generic fun suggestions
+    if not profile or not profile.goal:
+        suggestions = list(_BASE_FUN)
+        random.shuffle(suggestions)
+        return [{"label": s, "query": s} for s in suggestions[:8]]
+
+    is_ir = bool(profile.insulin_resistant or profile.type_2_diabetes)
+    goal = (profile.goal or "").lower()
+
+    # Pick goal-specific pool
+    if goal in ("fat_loss",):
+        goal_pool = list(_FAT_LOSS)
+    elif goal in ("muscle_gain",):
+        goal_pool = list(_MUSCLE_GAIN)
+    elif goal in ("metabolic_reset",):
+        goal_pool = list(_METABOLIC_RESET)
+    else:
+        goal_pool = list(_FAT_LOSS[:2] + _MUSCLE_GAIN[:2])
+
+    # Pick fun/discovery pool (low-carb if IR/T2D)
+    fun_pool = list(_LOW_CARB_FUN) if is_ir else list(_BASE_FUN)
+
+    # Budget-aware adjustments
+    try:
+        budget = load_budget_for_user(db, current_user.id)
+        totals = aggregate_daily_totals(db, current_user.id, date.today())
+        rem = remaining_budget(totals, budget)
+        protein_left = rem.get("protein_remaining_g", 0)
+        carb_left = rem.get("carb_headroom_g", rem.get("sugar_headroom_g", 999))
+
+        if carb_left < 30 and not is_ir:
+            # Switch to low-carb fun even for non-IR users with tight budget
+            fun_pool = list(_LOW_CARB_FUN)
+        if protein_left > 50:
+            # Boost protein-forward options
+            goal_pool = list(_MUSCLE_GAIN) + goal_pool[:2]
+    except Exception:
+        pass
+
+    random.shuffle(goal_pool)
+    random.shuffle(fun_pool)
+
+    # 5 goal-specific + 3 fun/discovery
+    combined = goal_pool[:5] + fun_pool[:3]
+    # Deduplicate while preserving order
+    seen = set()
+    result = []
+    for s in combined:
+        if s not in seen:
+            seen.add(s)
+            result.append(s)
+        if len(result) >= 8:
+            break
+
+    return [{"label": s, "query": s} for s in result]

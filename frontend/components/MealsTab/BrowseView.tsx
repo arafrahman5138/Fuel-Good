@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { recipeApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTIONS } from '../../constants/Config';
 import { MealMESBadge } from '../MealMESBadge';
 import { PlateComposer } from '../PlateComposer';
@@ -192,7 +192,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
   );
 
   useEffect(() => {
-    recipeApi.getFilters().then(setFilterOptions).catch(console.error);
+    recipeApi.getFilters().then(setFilterOptions).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -433,9 +433,11 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
       )}
 
       {item.nutrition_info?.calories && (
-        <Text style={[styles.cardCalories, { color: theme.textTertiary }]}>
-          {item.nutrition_info.calories} cal
-        </Text>
+        <View style={{ backgroundColor: theme.surfaceHighlight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.full, alignSelf: 'flex-start' }}>
+          <Text style={[styles.cardCalories, { color: theme.text }]}>
+            {item.nutrition_info.calories} cal
+          </Text>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -964,6 +966,10 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         showsVerticalScrollIndicator={false}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        removeClippedSubviews
         refreshing={refreshing}
         onRefresh={async () => {
           setRefreshing(true);
@@ -1150,7 +1156,7 @@ const styles = StyleSheet.create({
   },
   gridContent: {
     paddingHorizontal: Spacing.xl,
-    paddingBottom: 120,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   gridRow: {
     gap: Spacing.md,
@@ -1166,7 +1172,8 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 20,
+    letterSpacing: -0.2,
   },
   cardMeta: {
     flexDirection: 'row',

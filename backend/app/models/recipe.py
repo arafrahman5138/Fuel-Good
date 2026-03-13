@@ -41,3 +41,4 @@ class Recipe(Base):
     needs_default_pairing = Column(Boolean, nullable=True, default=None)
     component_composition = Column(JSON, nullable=True)     # for composed meals: expected roles/ids
     is_mes_scoreable = Column(Boolean, default=True)
+    pairing_synergy_profile = Column(JSON, nullable=True)

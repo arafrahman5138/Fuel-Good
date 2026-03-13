@@ -13,11 +13,13 @@ import {
   Pressable,
   Animated,
   Modal,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useThemeStore } from '../../stores/themeStore';
 import LogoHeader from '../../components/LogoHeader';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
 import { nutritionApi, recipeApi, metabolicApi, gameApi } from '../../services/api';
@@ -29,6 +31,7 @@ import { getTierConfig } from '../../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { HEALTH_BENEFIT_OPTIONS } from '../../constants/Config';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
+import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 
 
 interface Ingredient {
@@ -71,6 +74,7 @@ interface RecipeDetail {
   is_mes_scoreable?: boolean;
   components?: ComponentDetail[];
   component_composition?: Record<string, any> | null;
+  pairing_synergy_profile?: Record<string, any> | null;
 }
 
 interface PairingSuggestion {
@@ -85,6 +89,13 @@ interface PairingSuggestion {
   combined_tier: string;
   mes_delta: number;
   is_default_pairing: boolean;
+  macro_only_combined_score?: number;
+  pairing_adjusted_score?: number;
+  pairing_gis_bonus?: number;
+  pairing_synergy_bonus?: number;
+  pairing_reasons?: string[];
+  pairing_applied?: boolean;
+  pairing_timing?: string;
 }
 
 interface MESPreviewResult {
@@ -123,14 +134,14 @@ const INGREDIENT_CATEGORIES: Record<string, { label: string; icon: string; color
   other:   { label: 'Other', icon: 'cube-outline', color: '#6B7280', order: 7 },
 };
 
-const ROLE_BADGE_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
-  full_meal:    { label: 'Meal',    icon: 'restaurant-outline', color: '#2563EB', bg: '#DBEAFE' },
-  protein_base: { label: 'Protein', icon: 'flame-outline',    color: '#DC2626', bg: '#FEE2E2' },
-  carb_base:    { label: 'Carb',    icon: 'nutrition-outline', color: '#D97706', bg: '#FEF3C7' },
-  veg_side:     { label: 'Veggie',  icon: 'leaf-outline',      color: '#16A34A', bg: '#DCFCE7' },
-  sauce:        { label: 'Sauce',   icon: 'water-outline',     color: '#7C3AED', bg: '#EDE9FE' },
-  dessert:      { label: 'Dessert', icon: 'ice-cream-outline', color: '#DB2777', bg: '#FCE7F3' },
-  default:      { label: 'Item',    icon: 'cube-outline',      color: '#6B7280', bg: '#F3F4F6' },
+const ROLE_BADGE_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string; bgDark: string; colorDark: string }> = {
+  full_meal:    { label: 'Meal',    icon: 'restaurant-outline', color: '#2563EB', bg: '#DBEAFE', bgDark: 'rgba(59,130,246,0.2)',  colorDark: '#60A5FA' },
+  protein_base: { label: 'Protein', icon: 'flame-outline',      color: '#DC2626', bg: '#FEE2E2', bgDark: 'rgba(239,68,68,0.2)',   colorDark: '#F87171' },
+  carb_base:    { label: 'Carb',    icon: 'nutrition-outline',  color: '#D97706', bg: '#FEF3C7', bgDark: 'rgba(245,158,11,0.2)',  colorDark: '#FCD34D' },
+  veg_side:     { label: 'Veggie',  icon: 'leaf-outline',       color: '#16A34A', bg: '#DCFCE7', bgDark: 'rgba(34,197,94,0.2)',   colorDark: '#4ADE80' },
+  sauce:        { label: 'Sauce',   icon: 'water-outline',      color: '#7C3AED', bg: '#EDE9FE', bgDark: 'rgba(139,92,246,0.2)',  colorDark: '#A78BFA' },
+  dessert:      { label: 'Dessert', icon: 'ice-cream-outline',  color: '#DB2777', bg: '#FCE7F3', bgDark: 'rgba(236,72,153,0.2)',  colorDark: '#F472B6' },
+  default:      { label: 'Item',    icon: 'cube-outline',       color: '#6B7280', bg: '#F3F4F6', bgDark: 'rgba(107,114,128,0.2)', colorDark: '#9CA3AF' },
 };
 
 const DEFAULT_SERVINGS_OVERRIDES: Record<string, number> = {
@@ -160,6 +171,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const insets = useSafeAreaInsets();
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -208,7 +222,7 @@ export default function RecipeDetailScreen() {
           // Award XP for browsing a recipe detail (fire-and-forget)
           gameApi.awardXP(5, 'browse_recipe').catch(() => {});
         })
-        .catch(console.error)
+        .catch(() => {})
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -247,14 +261,14 @@ export default function RecipeDetailScreen() {
             .previewCompositeMES([id])
             .then((preview: any) => {
               setBaseMES({
-                score: preview.total_score,
-                display: preview.display_score,
-                tier: preview.tier,
+                score: preview?.score?.total_score ?? preview?.display_score ?? 0,
+                display: preview?.score?.display_score ?? preview?.display_score ?? 0,
+                tier: preview?.score?.display_tier ?? preview?.display_tier ?? 'critical',
               });
             })
             .catch(() => {});
         })
-        .catch(console.error)
+        .catch(() => {})
         .finally(() => setLoadingPairings(false));
     } else {
       setPairings([]);
@@ -399,9 +413,7 @@ export default function RecipeDetailScreen() {
       let combinedTier: string | undefined;
       if (hasSide) {
         combinedScore = selectedSide!.combined_display_score ?? selectedSide!.combined_mes_score ?? undefined;
-        combinedTier = combinedScore != null
-          ? (combinedScore >= 80 ? 'optimal' : combinedScore >= 60 ? 'stable' : combinedScore >= 40 ? 'shaky' : 'crash_risk')
-          : undefined;
+        combinedTier = selectedSide!.combined_tier ?? undefined;
       }
 
       await nutritionApi.createLog({
@@ -438,7 +450,6 @@ export default function RecipeDetailScreen() {
         message: `"${target.title}"${sideLabel}${servingsLabel} has been added to today's nutrition log.`,
       });
     } catch (e) {
-      console.error('Log meal failed', e);
       Alert.alert('Error', 'Failed to log meal. Please try again.');
     } finally {
       setLoggingMeal(false);
@@ -493,6 +504,13 @@ export default function RecipeDetailScreen() {
     | { protein_score?: number; fiber_score?: number; sugar_score?: number }
     | undefined;
 
+  const storedPairedMesRaw = Number(
+    (nutrition as any).mes_default_pairing_adjusted_score
+      ?? (nutrition as any).mes_score_with_default_pairing
+  );
+  const hasStoredPairedMes = Number.isFinite(storedPairedMesRaw);
+  const defaultToPairedMes = !!activeRecipe.needs_default_pairing && hasStoredPairedMes;
+
   const mesBaseScore = storedDisplayMes ?? mesPreview?.meal_score.display_score ?? mesPreview?.meal_score.total_score ?? null;
   const mesBreakdown = hasStoredDisplayMes && storedBreakdown
     ? [
@@ -511,13 +529,23 @@ export default function RecipeDetailScreen() {
   const selectedSideImpactScore = selectedSide
     ? (selectedSide.combined_display_score ?? selectedSide.combined_mes_score)
     : null;
-  const mesDisplayScore = selectedSideImpactScore ?? mesBaseScore;
+  const defaultPairedImpactScore = defaultToPairedMes ? storedPairedMesRaw : null;
+  const mesDisplayScore = selectedSideImpactScore ?? defaultPairedImpactScore ?? mesBaseScore;
   const mesTier = mesDisplayScore !== null
     ? tierFromDisplayScore(mesDisplayScore)
     : 'crash_risk';
   const mesTierConfig = getTierConfig(mesTier);
   const baseComponents = activeRecipe.components || [];
   const baseVegComponent = baseComponents.find((component) => component.recipe_role === 'veg_side');
+  const inferredSimpleMealPairing =
+    !activeRecipe.is_component &&
+    !activeRecipe.component_composition &&
+    baseComponents.length > 0 &&
+    baseComponents.every((component) => component.recipe_role === 'veg_side');
+  const showMealPlusPairing = showDefaultPairingForMeal || inferredSimpleMealPairing;
+  const fallbackDefaultPairingComponent = showMealPlusPairing
+    ? (baseVegComponent || null)
+    : null;
   const replacementVegTitle = selectedSideDetail?.title || selectedSide?.title;
   const canSwapVegComponent =
     !!selectedSide &&
@@ -561,14 +589,14 @@ export default function RecipeDetailScreen() {
               ingredients: [],
             }
       )
-    : null;
+    : fallbackDefaultPairingComponent;
   const hasStructuredComponents =
     displayedComponents.length > 0 &&
     (
       !!activeRecipe.component_composition
       || displayedComponents.some((component) => component.recipe_role !== 'veg_side')
     );
-  const pairingSections = showDefaultPairingForMeal && selectedSideComponent && !hasStructuredComponents
+  const pairingSections = showMealPlusPairing && selectedSideComponent && !hasStructuredComponents
     ? [
         {
           id: activeRecipe.id,
@@ -582,10 +610,10 @@ export default function RecipeDetailScreen() {
     : [];
   const stepSections = hasStructuredComponents
     ? displayedComponents
-    : (pairingSections.length > 0 ? pairingSections : displayedComponents);
+    : pairingSections;
   const displayedIngredients = pairingSections.length > 0
     ? pairingSections.flatMap((section) => section.ingredients || [])
-    : displayedComponents.length > 0
+    : hasStructuredComponents
       ? displayedComponents.flatMap((component) => component.ingredients || [])
       : activeRecipe.ingredients;
   const ingredientGroups = (() => {
@@ -878,7 +906,7 @@ export default function RecipeDetailScreen() {
         ) : null}
 
         {/* ── Default Pairing Card (full_meal with pairings) ── */}
-        {showDefaultPairingForMeal && pairings.length > 0 && (
+        {showMealPlusPairing && (pairings.length > 0 || !!selectedSideComponent) && (
           <View style={[styles.section, styles.pairingSection, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
             <View style={styles.pairingSectionHeader}>
               <View style={{ flex: 1 }}>
@@ -889,40 +917,43 @@ export default function RecipeDetailScreen() {
                   Paired side to boost your MES score
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[styles.swapSideBtn, { backgroundColor: theme.primary + '14', borderColor: theme.primary + '30' }]}
-                onPress={() => setShowSwapSheet(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="swap-horizontal" size={14} color={theme.primary} />
-                <Text style={[styles.swapSideBtnText, { color: theme.primary }]}>Swap Side</Text>
-              </TouchableOpacity>
+              {pairings.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.swapSideBtn, { backgroundColor: theme.primary + '14', borderColor: theme.primary + '30' }]}
+                  onPress={() => setShowSwapSheet(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="swap-horizontal" size={14} color={theme.primary} />
+                  <Text style={[styles.swapSideBtnText, { color: theme.primary }]}>Swap Side</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            {selectedSide ? (
+            {selectedSideComponent ? (
               <TouchableOpacity
                 style={[styles.pairingCard, { backgroundColor: theme.background, borderColor: theme.border }]}
                 activeOpacity={0.7}
-                onPress={() => router.push(`/browse/${selectedSide.recipe_id}`)}
+                onPress={() => router.push(`/browse/${selectedSide?.recipe_id || selectedSideComponent.id}`)}
               >
                 <View style={styles.pairingCardTop}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.pairingCardTitle, { color: theme.text }]} numberOfLines={1}>
-                      {selectedSide.title}
+                      {selectedSide?.title || selectedSideComponent.title}
                     </Text>
                     <View style={styles.pairingCardMeta}>
                       <Text style={{ fontSize: FontSize.xs, color: theme.textTertiary }}>
-                        {selectedSide.recipe_role === 'veg_side' ? '🥗 Veggie Side' :
-                         selectedSide.recipe_role === 'carb_base' ? '🍚 Carb Base' :
-                         selectedSide.recipe_role === 'protein_base' ? '🥩 Protein' :
-                         selectedSide.recipe_role === 'sauce' ? '🫙 Sauce' : selectedSide.recipe_role}
+                        {(selectedSide?.recipe_role || selectedSideComponent.recipe_role) === 'veg_side' ? '🥗 Veggie Side' :
+                         (selectedSide?.recipe_role || selectedSideComponent.recipe_role) === 'carb_base' ? '🍚 Carb Base' :
+                         (selectedSide?.recipe_role || selectedSideComponent.recipe_role) === 'protein_base' ? '🥩 Protein' :
+                         (selectedSide?.recipe_role || selectedSideComponent.recipe_role) === 'sauce' ? '🫙 Sauce' :
+                         (selectedSide?.recipe_role || selectedSideComponent.recipe_role)}
                       </Text>
-                      {selectedSide.total_time_min > 0 && (
+                      {(selectedSide?.total_time_min || 0) > 0 && (
                         <Text style={{ fontSize: FontSize.xs, color: theme.textTertiary }}>
-                          · {selectedSide.total_time_min}m
+                          · {selectedSide?.total_time_min}m
                         </Text>
                       )}
-                      {selectedSide.is_default_pairing && (
+                      {(selectedSide?.is_default_pairing || !!fallbackDefaultPairingComponent) && (
                         <View style={[styles.defaultBadge, { backgroundColor: theme.primaryMuted }]}>
                           <Text style={{ fontSize: 8, fontWeight: '800', color: theme.primary, letterSpacing: 0.3 }}>DEFAULT</Text>
                         </View>
@@ -932,7 +963,7 @@ export default function RecipeDetailScreen() {
                 </View>
 
                 {/* MES Delta */}
-                {baseMesImpactScore !== null && selectedSideImpactScore !== null && (
+                {selectedSide && baseMesImpactScore !== null && selectedSideImpactScore !== null && (
                   <View style={[styles.mesDeltaRow, { backgroundColor: theme.primary + '0A' }]}>
                     <Text style={{ fontSize: FontSize.xs, fontWeight: '600', color: theme.textSecondary }}>MES Impact</Text>
                     <View style={styles.mesDeltaValues}>
@@ -953,6 +984,11 @@ export default function RecipeDetailScreen() {
                       )}
                     </View>
                   </View>
+                )}
+                {!!selectedSide?.pairing_reasons?.length && (
+                  <Text style={[styles.pairingExplanation, { color: theme.textSecondary }]}>
+                    {selectedSide.pairing_reasons.join(' • ')}
+                  </Text>
                 )}
               </TouchableOpacity>
             ) : loadingPairings ? (
@@ -1096,9 +1132,13 @@ export default function RecipeDetailScreen() {
                             if (!isNaN(rawQty) && baseServings > 0) {
                               const scaled = (rawQty / baseServings) * servings;
                               const display = scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1).replace(/\.0$/, '');
-                              return `${display} ${ing.unit} ${ing.name}`;
+                              return formatIngredientDisplayLine({
+                                quantity: display,
+                                unit: ing.unit,
+                                name: ing.name,
+                              });
                             }
-                            return `${ing.quantity} ${ing.unit} ${ing.name}`;
+                            return formatIngredientDisplayLine(ing);
                           })()}
                         </Text>
                       </TouchableOpacity>
@@ -1145,14 +1185,14 @@ export default function RecipeDetailScreen() {
                       style={styles.componentHeader}
                     >
                       <View style={styles.componentHeaderLeft}>
-                        <View style={[styles.componentIndex, { backgroundColor: roleConfig.bg }]}>
-                          <Text style={[styles.componentIndexText, { color: roleConfig.color }]}>{compIdx + 1}</Text>
+                        <View style={[styles.componentIndex, { backgroundColor: isDark ? roleConfig.bgDark : roleConfig.bg }]}>
+                          <Text style={[styles.componentIndexText, { color: isDark ? roleConfig.colorDark : roleConfig.color }]}>{compIdx + 1}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.componentTitle, { color: theme.text }]}>{comp.title}</Text>
-                          <View style={[styles.roleBadge, { backgroundColor: roleConfig.bg }]}>
-                            <Ionicons name={roleConfig.icon as any} size={10} color={roleConfig.color} />
-                            <Text style={[styles.roleBadgeText, { color: roleConfig.color }]}>{roleConfig.label}</Text>
+                          <View style={[styles.roleBadge, { backgroundColor: isDark ? roleConfig.bgDark : roleConfig.bg }]}>
+                            <Ionicons name={roleConfig.icon as any} size={10} color={isDark ? roleConfig.colorDark : roleConfig.color} />
+                            <Text style={[styles.roleBadgeText, { color: isDark ? roleConfig.colorDark : roleConfig.color }]}>{roleConfig.label}</Text>
                           </View>
                         </View>
                       </View>
@@ -1171,8 +1211,8 @@ export default function RecipeDetailScreen() {
                       <View style={styles.componentSteps}>
                         {comp.steps.map((step, stepIdx) => (
                           <View key={stepIdx} style={styles.stepRow}>
-                            <View style={[styles.stepNumber, { backgroundColor: roleConfig.bg }]}>
-                              <Text style={[styles.stepNumberText, { color: roleConfig.color }]}>{stepIdx + 1}</Text>
+                            <View style={[styles.stepNumber, { backgroundColor: isDark ? roleConfig.bgDark : roleConfig.bg }]}>
+                              <Text style={[styles.stepNumberText, { color: isDark ? roleConfig.colorDark : roleConfig.color }]}>{stepIdx + 1}</Text>
                             </View>
                             <Text style={[styles.stepText, { color: theme.text }]}>
                               {step.replace(/^Step\s*\d+\s*:\s*/i, '')}
@@ -1539,7 +1579,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: -8,
+    marginLeft: 6,
   },
   headerActionCapsule: {
     flexDirection: 'row',
@@ -2128,6 +2168,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.sm,
+  },
+  pairingExplanation: {
+    fontSize: FontSize.xs,
+    lineHeight: 18,
   },
   mesDeltaValues: {
     flexDirection: 'row',

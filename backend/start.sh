@@ -55,5 +55,5 @@ echo "Starting WholeFoodLabs API..."
 echo "Docs: http://localhost:8000/docs"
 echo ""
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
-"$VENV_PYTHON" -m alembic upgrade head 2>/dev/null || true
+"$VENV_PYTHON" -m alembic upgrade heads || true
 "$VENV_PYTHON" -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

@@ -6,10 +6,16 @@ EMAIL="smoke_$(date +%s)@example.com"
 PASSWORD="TestPass123!"
 NAME="Smoke Tester"
 CURL="curl -sS --max-time 60"
+MODE="${MODE:-full}"
 
 echo "[1/7] Health check"
 $CURL "$BASE_URL/health"
 echo ""
+
+if [ "$MODE" = "health" ]; then
+  echo "Health-only smoke test complete."
+  exit 0
+fi
 
 echo "[2/7] Register"
 REGISTER_RESPONSE=$($CURL -X POST "$BASE_URL/api/auth/register" \

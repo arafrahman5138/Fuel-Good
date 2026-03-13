@@ -81,8 +81,8 @@ export const usePlateStore = create<PlateState>((set, get) => ({
           tier: score.tier,
         },
       });
-    } catch (e) {
-      console.warn('[Plate] preview failed:', e);
+    } catch {
+      // silent
     } finally {
       set({ previewLoading: false });
     }

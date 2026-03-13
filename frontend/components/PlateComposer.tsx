@@ -75,8 +75,7 @@ export function PlateComposer({ visible, onClose }: Props) {
         visible: true,
         message: `${items.length} item${items.length > 1 ? 's have' : ' has'} been logged: ${names}`,
       });
-    } catch (e) {
-      console.error('Log plate failed', e);
+    } catch {
       Alert.alert('Error', 'Failed to log plate items. Please try again.');
     } finally {
       setLoggingPlate(false);

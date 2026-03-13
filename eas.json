@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "version": ">= 16.13.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "developmentClient": false,
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "staging",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "preview",
+        "EXPO_PUBLIC_ENABLE_ERROR_REPORTING": "true",
+        "EXPO_PUBLIC_ENABLE_ANALYTICS": "false"
+      },
+      "ios": {
+        "simulator": false,
+        "image": "latest",
+        "autoIncrement": true
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_ENABLE_ERROR_REPORTING": "true",
+        "EXPO_PUBLIC_ENABLE_ANALYTICS": "true"
+      },
+      "ios": {
+        "image": "latest",
+        "autoIncrement": true
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {}
+    }
+  }
+}

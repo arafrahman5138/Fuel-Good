@@ -23,6 +23,7 @@ import { Button } from '../../components/Button';
 import { useTheme } from '../../hooks/useTheme';
 import { nutritionApi, recipeApi, gameApi } from '../../services/api';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 
 
 type Ingredient = {
@@ -312,8 +313,8 @@ export default function CookModeScreen() {
                               setLoggedCook(true);
                               // Award XP for completing cook mode
                               gameApi.awardXP(50, 'cook_complete').catch(() => {});
-                            } catch (e) {
-                              console.error('cook log failed', e);
+                            } catch {
+                              // silent
                             }
                           }
                           router.back();
@@ -381,7 +382,7 @@ export default function CookModeScreen() {
                         {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
                       </View>
                       <Text style={[styles.ingredientName, { color: checked ? theme.textTertiary : theme.text, textDecorationLine: checked ? 'line-through' : 'none' }]}>
-                        {ing.quantity || ''} {ing.unit || ''} {ing.name}
+                        {formatIngredientDisplayLine(ing)}
                       </Text>
                     </TouchableOpacity>
                   );

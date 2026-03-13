@@ -7,6 +7,7 @@ interface ChatMessage {
   recipe?: any;
   swaps?: any[];
   nutrition?: any;
+  mes_score?: { meal_score: number; meal_tier: string; projected_daily_score?: number; projected_daily_tier?: string } | null;
 }
 
 interface ChatSession {

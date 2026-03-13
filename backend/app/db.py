@@ -1,24 +1,19 @@
 import uuid
-from sqlalchemy import create_engine, String, TypeDecorator
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+
+from sqlalchemy import String, TypeDecorator, create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
 from app.config import get_settings
 
 settings = get_settings()
 
-connect_args = {}
-if settings.database_url.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
-    # Give SQLite time to resolve short-lived write locks during startup/seed.
-    connect_args["timeout"] = 30
-
-engine = create_engine(settings.database_url, connect_args=connect_args)
+engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class GUID(TypeDecorator):
-    """Platform-independent UUID type.
-    Uses String(36) for SQLite, native UUID for PostgreSQL.
-    """
+    """Platform-independent UUID type backed by strings."""
+
     impl = String(36)
     cache_ok = True
 
@@ -46,30 +41,60 @@ def get_db():
 
 
 def init_db():
-    """Create all tables. Call this on startup for SQLite dev environments."""
+    """Create tables for local bootstrap scripts and backfill legacy Postgres columns."""
     Base.metadata.create_all(bind=engine)
-    _migrate_add_columns()
     _migrate_pg_columns()
 
 
 def _migrate_pg_columns():
-    """Add missing columns in PostgreSQL (lightweight startup migration)."""
-    if settings.database_url.startswith("sqlite"):
-        return
+    """Add missing columns in PostgreSQL for legacy environments."""
     from sqlalchemy import text
+
     migrations = [
-        # metabolic_scores
         ("metabolic_scores", "display_score", "ALTER TABLE metabolic_scores ADD COLUMN display_score FLOAT DEFAULT 0"),
         ("metabolic_scores", "display_tier", "ALTER TABLE metabolic_scores ADD COLUMN display_tier VARCHAR DEFAULT 'crash_risk'"),
         ("metabolic_scores", "meal_context", "ALTER TABLE metabolic_scores ADD COLUMN meal_context VARCHAR DEFAULT 'full_meal'"),
+        ("users", "provider_subject", "ALTER TABLE users ADD COLUMN provider_subject VARCHAR"),
+        ("users", "revenuecat_customer_id", "ALTER TABLE users ADD COLUMN revenuecat_customer_id VARCHAR"),
+        ("users", "subscription_product_id", "ALTER TABLE users ADD COLUMN subscription_product_id VARCHAR"),
+        ("users", "subscription_store", "ALTER TABLE users ADD COLUMN subscription_store VARCHAR"),
+        ("users", "subscription_status", "ALTER TABLE users ADD COLUMN subscription_status VARCHAR DEFAULT 'inactive'"),
+        ("users", "subscription_trial_started_at", "ALTER TABLE users ADD COLUMN subscription_trial_started_at TIMESTAMP"),
+        ("users", "subscription_trial_ends_at", "ALTER TABLE users ADD COLUMN subscription_trial_ends_at TIMESTAMP"),
+        ("users", "subscription_current_period_ends_at", "ALTER TABLE users ADD COLUMN subscription_current_period_ends_at TIMESTAMP"),
+        ("users", "subscription_will_renew", "ALTER TABLE users ADD COLUMN subscription_will_renew BOOLEAN DEFAULT FALSE"),
+        ("users", "subscription_manage_url", "ALTER TABLE users ADD COLUMN subscription_manage_url VARCHAR"),
+        ("users", "subscription_last_synced_at", "ALTER TABLE users ADD COLUMN subscription_last_synced_at TIMESTAMP"),
+        ("users", "access_override_level", "ALTER TABLE users ADD COLUMN access_override_level VARCHAR"),
+        ("users", "access_override_reason", "ALTER TABLE users ADD COLUMN access_override_reason VARCHAR"),
+        ("users", "access_override_expires_at", "ALTER TABLE users ADD COLUMN access_override_expires_at TIMESTAMP"),
+        ("users", "access_override_updated_at", "ALTER TABLE users ADD COLUMN access_override_updated_at TIMESTAMP"),
+        ("local_foods", "brand", "ALTER TABLE local_foods ADD COLUMN brand VARCHAR"),
+        ("local_foods", "source_kind", "ALTER TABLE local_foods ADD COLUMN source_kind VARCHAR DEFAULT 'whole_food'"),
+        ("local_foods", "aliases", "ALTER TABLE local_foods ADD COLUMN aliases JSON"),
+        ("local_foods", "default_serving_label", "ALTER TABLE local_foods ADD COLUMN default_serving_label VARCHAR DEFAULT '1 serving'"),
+        ("local_foods", "default_serving_grams", "ALTER TABLE local_foods ADD COLUMN default_serving_grams FLOAT DEFAULT 100"),
+        ("local_foods", "serving_options", "ALTER TABLE local_foods ADD COLUMN serving_options JSON"),
+        ("local_foods", "nutrition_per_100g", "ALTER TABLE local_foods ADD COLUMN nutrition_per_100g JSON"),
+        ("local_foods", "nutrition_per_serving", "ALTER TABLE local_foods ADD COLUMN nutrition_per_serving JSON"),
+        ("local_foods", "mes_ready_nutrition", "ALTER TABLE local_foods ADD COLUMN mes_ready_nutrition JSON"),
+        ("local_foods", "micronutrients", "ALTER TABLE local_foods ADD COLUMN micronutrients JSON"),
+        ("local_foods", "is_active", "ALTER TABLE local_foods ADD COLUMN is_active BOOLEAN DEFAULT TRUE"),
+        ("recipes", "recipe_role", "ALTER TABLE recipes ADD COLUMN recipe_role VARCHAR DEFAULT 'full_meal'"),
+        ("recipes", "is_component", "ALTER TABLE recipes ADD COLUMN is_component BOOLEAN DEFAULT FALSE"),
+        ("recipes", "meal_group_id", "ALTER TABLE recipes ADD COLUMN meal_group_id VARCHAR"),
+        ("recipes", "default_pairing_ids", "ALTER TABLE recipes ADD COLUMN default_pairing_ids JSON"),
+        ("recipes", "needs_default_pairing", "ALTER TABLE recipes ADD COLUMN needs_default_pairing BOOLEAN"),
+        ("recipes", "component_composition", "ALTER TABLE recipes ADD COLUMN component_composition JSON"),
+        ("recipes", "is_mes_scoreable", "ALTER TABLE recipes ADD COLUMN is_mes_scoreable BOOLEAN DEFAULT TRUE"),
+        ("scanned_meal_logs", "grounding_source", "ALTER TABLE scanned_meal_logs ADD COLUMN grounding_source VARCHAR"),
+        ("scanned_meal_logs", "grounding_candidates", "ALTER TABLE scanned_meal_logs ADD COLUMN grounding_candidates JSON"),
+        ("scanned_meal_logs", "prompt_version", "ALTER TABLE scanned_meal_logs ADD COLUMN prompt_version VARCHAR"),
+        ("scanned_meal_logs", "matched_recipe_confidence", "ALTER TABLE scanned_meal_logs ADD COLUMN matched_recipe_confidence FLOAT DEFAULT 0"),
     ]
     with engine.begin() as conn:
         for table, col, ddl in migrations:
             try:
-                conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_name='{table}' AND column_name='{col}'"
-                ))
                 rows = conn.execute(text(
                     "SELECT column_name FROM information_schema.columns "
                     f"WHERE table_name='{table}' AND column_name='{col}'"
@@ -78,69 +103,11 @@ def _migrate_pg_columns():
                     conn.execute(text(ddl))
             except Exception:
                 pass
-
-
-def _migrate_add_columns():
-    """Add any missing columns to existing tables (lightweight dev migration)."""
-    if not settings.database_url.startswith("sqlite"):
-        return
-    import sqlite3
-    db_path = settings.database_url.replace("sqlite:///", "")
-    try:
-        conn = sqlite3.connect(db_path)
-        cols = [row[1] for row in conn.execute("PRAGMA table_info(recipes)").fetchall()]
-        if "cuisine" not in cols:
-            conn.execute('ALTER TABLE recipes ADD COLUMN cuisine TEXT DEFAULT "american"')
-        if "health_benefits" not in cols:
-            conn.execute('ALTER TABLE recipes ADD COLUMN health_benefits TEXT DEFAULT "[]"')
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
-
-    try:
-        conn = sqlite3.connect(db_path)
-        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-        if "saved_recipes" not in tables:
-            conn.execute("""
-                CREATE TABLE saved_recipes (
-                    id VARCHAR(36) PRIMARY KEY,
-                    user_id VARCHAR(36) NOT NULL REFERENCES users(id),
-                    recipe_id VARCHAR(36) NOT NULL REFERENCES recipes(id),
-                    saved_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.execute("CREATE INDEX ix_saved_recipes_user_id ON saved_recipes(user_id)")
-            conn.commit()
-        conn.close()
-    except Exception:
-        pass
-
-    try:
-        conn = sqlite3.connect(db_path)
-        user_cols = [row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
-        if "liked_ingredients" not in user_cols:
-            conn.execute('ALTER TABLE users ADD COLUMN liked_ingredients TEXT DEFAULT "[]"')
-        if "disliked_ingredients" not in user_cols:
-            conn.execute('ALTER TABLE users ADD COLUMN disliked_ingredients TEXT DEFAULT "[]"')
-        if "protein_preferences" not in user_cols:
-            conn.execute('ALTER TABLE users ADD COLUMN protein_preferences TEXT DEFAULT "{}"')
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
-
-    # ── Metabolic scores – display_score, display_tier, meal_context columns ──
-    try:
-        conn = sqlite3.connect(db_path)
-        ms_cols = [row[1] for row in conn.execute("PRAGMA table_info(metabolic_scores)").fetchall()]
-        if "display_score" not in ms_cols:
-            conn.execute("ALTER TABLE metabolic_scores ADD COLUMN display_score FLOAT DEFAULT 0")
-        if "display_tier" not in ms_cols:
-            conn.execute("ALTER TABLE metabolic_scores ADD COLUMN display_tier TEXT DEFAULT 'crash_risk'")
-        if "meal_context" not in ms_cols:
-            conn.execute("ALTER TABLE metabolic_scores ADD COLUMN meal_context TEXT DEFAULT 'full_meal'")
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
+        try:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_provider_subject ON users(provider_subject)"))
+        except Exception:
+            pass
+        try:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_revenuecat_customer_id ON users(revenuecat_customer_id)"))
+        except Exception:
+            pass

@@ -32,6 +32,7 @@ from app.services.metabolic_engine import (
     DEFAULT_COMPUTED_BUDGET,
     classify_meal_context,
     compute_meal_mes,
+    compute_meal_mes_with_pairing,
 )
 
 ROLE_PRIORITY = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
@@ -45,6 +46,9 @@ MES_FIELDS_TO_CLEAR = (
     "mes_gate_pass",
     "mes_score_with_default_pairing",
     "mes_default_pairing_delta",
+    "mes_default_pairing_synergy_bonus",
+    "mes_default_pairing_gis_bonus",
+    "mes_default_pairing_explanation",
     "mes_default_pairing_id",
     "mes_default_pairing_title",
     "mes_default_pairing_role",
@@ -153,15 +157,19 @@ def backfill(apply: bool = False) -> None:
                     default_pair = _preferred_default_pairing(db, recipe)
                     if default_pair is not None:
                         paired_count += 1
-                        combined = _combined_nutrition(
+                        combined_mes = compute_meal_mes_with_pairing(
                             original_nutrition,
-                            default_pair.nutrition_info or {},
+                            pairing_recipe=default_pair,
+                            budget=DEFAULT_COMPUTED_BUDGET,
+                            pairing_nutrition=default_pair.nutrition_info or {},
                         )
-                        combined_mes = compute_meal_mes(combined, DEFAULT_COMPUTED_BUDGET)
-                        combined_score = round(float(combined_mes.get("display_score", 0) or 0), 1)
+                        combined_score = round(float((combined_mes.get("score") or {}).get("display_score", 0) or 0), 1)
                         base_score = round(float(mes.get("display_score", 0) or 0), 1)
                         new_nutrition["mes_score_with_default_pairing"] = combined_score
                         new_nutrition["mes_default_pairing_delta"] = round(combined_score - base_score, 1)
+                        new_nutrition["mes_default_pairing_synergy_bonus"] = round(float(combined_mes.get("pairing_synergy_bonus", 0) or 0), 2)
+                        new_nutrition["mes_default_pairing_gis_bonus"] = round(float(combined_mes.get("pairing_gis_bonus", 0) or 0), 1)
+                        new_nutrition["mes_default_pairing_explanation"] = list(combined_mes.get("pairing_reasons") or [])
                         new_nutrition["mes_default_pairing_id"] = str(default_pair.id)
                         new_nutrition["mes_default_pairing_title"] = default_pair.title
                         new_nutrition["mes_default_pairing_role"] = (

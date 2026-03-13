@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
+import { Animated, View, Text, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
+import { useStaggeredEntrance } from '../hooks/useAnimations';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 import type { MESScore, RemainingBudget, MetabolicBudget} from '../stores/metabolicBudgetStore';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
@@ -206,6 +207,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
     [score, remaining, budget, mealsLogged],
   );
   const suggestedFoods = useMemo(() => getSuggestedFoods(remaining), [remaining]);
+  const insightStagger = useStaggeredEntrance(insights.length, 60);
 
   // Show top 2 meal suggestions in the card preview
   const previewMeals = mealSuggestions.slice(0, 2);
@@ -236,7 +238,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
           >
             <Ionicons name="pulse" size={14} color="#fff" />
           </LinearGradient>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.headerTitle, { color: theme.text }]}>Metabolic Coach</Text>
             <Text style={[styles.headerSub, { color: theme.textTertiary }]}>Personalized insights</Text>
           </View>
@@ -248,8 +250,8 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
           {insights.map((insight, idx) => {
             const isLast = idx === insights.length - 1;
             return (
+              <Animated.View key={idx} style={insightStagger[idx]}>
               <View
-                key={idx}
                 style={[
                   styles.insightRow,
                   !isLast && { borderBottomWidth: 1, borderBottomColor: theme.surfaceHighlight },
@@ -257,18 +259,19 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
               >
                 {/* Colored accent bar */}
                 <View style={[styles.accentBar, { backgroundColor: insight.accent }]} />
-                <View style={{ flex: 1, gap: 3 }}>
+                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name={insight.icon as any} size={14} color={insight.accent} />
-                    <Text style={[styles.insightTitle, { color: theme.text }]}>
+                    <Text style={[styles.insightTitle, { color: theme.text }]} numberOfLines={1}>
                       {insight.title}
                     </Text>
                   </View>
-                  <Text style={[styles.insightBody, { color: theme.textSecondary }]}>
+                  <Text style={[styles.insightBody, { color: theme.textSecondary }]} numberOfLines={2}>
                     {insight.body}
                   </Text>
                 </View>
               </View>
+              </Animated.View>
             );
           })}
         </View>
@@ -299,7 +302,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
                   <View style={[styles.mealPreviewIcon, { backgroundColor: theme.surfaceHighlight }]}>
                     <Ionicons name="restaurant-outline" size={14} color={theme.primary} />
                   </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.mealPreviewTitle, { color: theme.text }]} numberOfLines={1}>{meal.title}</Text>
                     <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500', marginTop: 1 }}>
                       {Math.round(meal.calories)} calories · P {Math.round(meal.protein_g)}g · F {Math.round(meal.fiber_g)}g
@@ -333,7 +336,13 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
               {suggestedFoods.map((food, idx) => (
                 <View
                   key={`food-${idx}`}
-                  style={[styles.foodChip, { backgroundColor: '#FFFFFF', borderColor: food.color + '26' }]}
+                  style={[
+                    styles.foodChip,
+                    {
+                      backgroundColor: theme.surfaceElevated,
+                      borderColor: theme.border,
+                    },
+                  ]}
                 >
                   <Ionicons name={food.icon as any} size={12} color={food.color} />
                   <Text style={[styles.foodChipText, { color: theme.text }]}>{food.name}</Text>

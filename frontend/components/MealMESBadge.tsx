@@ -4,9 +4,11 @@
  * Supports null score for unscored items (components, desserts, sauces).
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Animated, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
+import { BorderRadius, Spacing } from '../constants/Colors';
+import { useScaleReveal } from '../hooks/useAnimations';
 
 interface MealMESBadgeProps {
   /** Display score (use display_score when available). Null = unscored item. */
@@ -20,6 +22,9 @@ interface MealMESBadgeProps {
 }
 
 export function MealMESBadge({ score, tier, unscoredHint, compact = false, onPress }: MealMESBadgeProps) {
+  // Hook must be called before any early returns
+  const { animatedStyle } = useScaleReveal(score != null, 0.7);
+
   // Unscored items (components, desserts, sauces) — show a muted label instead
   if (score == null) {
     const hint = unscoredHint || 'Not scored';
@@ -37,18 +42,22 @@ export function MealMESBadge({ score, tier, unscoredHint, compact = false, onPre
 
   if (compact) {
     return (
-      <Wrapper {...wrapperProps} style={[styles.compactBadge, { backgroundColor: tierCfg.color + '25' }]}>
-        <Ionicons name={tierCfg.icon} size={10} color={tierCfg.color} />
-        <Text style={[styles.compactText, { color: tierCfg.color }]}>{Math.round(score)}</Text>
-      </Wrapper>
+      <Animated.View style={animatedStyle}>
+        <Wrapper {...wrapperProps} style={[styles.compactBadge, { backgroundColor: tierCfg.color + '25' }]}>
+          <Ionicons name={tierCfg.icon} size={10} color={tierCfg.color} />
+          <Text style={[styles.compactText, { color: tierCfg.color }]}>{Math.round(score)}</Text>
+        </Wrapper>
+      </Animated.View>
     );
   }
 
   return (
-    <Wrapper {...wrapperProps} style={[styles.badge, { backgroundColor: tierCfg.color + '20' }]}>
-      <Ionicons name={tierCfg.icon} size={12} color={tierCfg.color} />
-      <Text style={[styles.text, { color: tierCfg.color }]}>{Math.round(score)}</Text>
-    </Wrapper>
+    <Animated.View style={animatedStyle}>
+      <Wrapper {...wrapperProps} style={[styles.badge, { backgroundColor: tierCfg.color + '20' }]}>
+        <Ionicons name={tierCfg.icon} size={12} color={tierCfg.color} />
+        <Text style={[styles.text, { color: tierCfg.color }]}>{Math.round(score)}</Text>
+      </Wrapper>
+    </Animated.View>
   );
 }
 
@@ -57,9 +66,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm,
     gap: 3,
   },
   text: {
@@ -70,9 +79,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 5,
+    paddingHorizontal: Spacing.xs + 1,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: BorderRadius.sm,
     gap: 2,
   },
   compactText: {

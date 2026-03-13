@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
+import { useThemeStore } from '../stores/themeStore';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { Shadows } from '../constants/Shadows';
 
 interface XPToastProps {
   message: string | null;
@@ -12,20 +15,28 @@ interface XPToastProps {
 
 export function XPToast({ message, icon = 'flash', onDismissed }: XPToastProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const anim = useRef(new Animated.Value(0)).current;
 
+  const onDismissedRef = useRef(onDismissed);
+  onDismissedRef.current = onDismissed;
+
   useEffect(() => {
-    if (message) {
-      anim.setValue(0);
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 250, useNativeDriver: true }),
-        Animated.delay(2200),
-        Animated.timing(anim, { toValue: 0, duration: 250, useNativeDriver: true }),
-      ]).start(() => {
-        onDismissed?.();
-      });
-    }
-  }, [message]);
+    if (!message) return;
+    anim.setValue(0);
+    const sequence = Animated.sequence([
+      Animated.timing(anim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.delay(2200),
+      Animated.timing(anim, { toValue: 0, duration: 250, useNativeDriver: true }),
+    ]);
+    sequence.start(() => {
+      onDismissedRef.current?.();
+    });
+    return () => sequence.stop();
+  }, [message, anim]);
 
   if (!message) return null;
 
@@ -33,10 +44,11 @@ export function XPToast({ message, icon = 'flash', onDismissed }: XPToastProps) 
     <Animated.View
       style={[
         styles.container,
+        Shadows.md(isDark),
         {
+          top: Math.max(insets.top, 20) + Spacing.sm,
           backgroundColor: theme.surface,
           borderColor: theme.primary + '30',
-          shadowColor: theme.primary,
           opacity: anim,
           transform: [
             {
@@ -60,7 +72,6 @@ export function XPToast({ message, icon = 'flash', onDismissed }: XPToastProps) 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60,
     left: Spacing.lg,
     right: Spacing.lg,
     flexDirection: 'row',
@@ -69,21 +80,18 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
     zIndex: 999,
   },
   iconWrap: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
     flex: 1,
+    minWidth: 0,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },

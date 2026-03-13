@@ -1,13 +1,133 @@
+from datetime import datetime
+from typing import Any
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime
+
+from app.config import get_settings
 from app.db import get_db
-from app.auth import get_password_hash, verify_password, create_access_token, create_token_pair, verify_refresh_token, get_current_user
+from app.auth import get_password_hash, verify_password, create_token_pair, verify_refresh_token, get_current_user
 from app.models.user import User
+from app.schemas.billing import EntitlementInfo
 from app.schemas.auth import UserRegister, UserLogin, Token, UserProfile, UserPreferencesUpdate, SocialAuthRequest
+from app.services.billing import build_entitlement_info
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
+settings = get_settings()
+APPLE_ISSUER = "https://appleid.apple.com"
+_apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+async def _fetch_apple_jwks() -> list[dict[str, Any]]:
+    now = datetime.utcnow().timestamp()
+    cached_keys = _apple_jwks_cache.get("keys")
+    if cached_keys and now - float(_apple_jwks_cache.get("fetched_at") or 0) < 3600:
+        return cached_keys
+
+    async with httpx.AsyncClient(timeout=settings.social_request_timeout_seconds) as client:
+        response = await client.get(settings.apple_jwks_url)
+        response.raise_for_status()
+        data = response.json()
+
+    keys = data.get("keys") or []
+    _apple_jwks_cache["keys"] = keys
+    _apple_jwks_cache["fetched_at"] = now
+    return keys
+
+
+async def _verify_google_access_token(access_token: str) -> dict[str, str]:
+    if not access_token.strip():
+        raise HTTPException(status_code=400, detail="Missing Google access token.")
+
+    async with httpx.AsyncClient(timeout=settings.social_request_timeout_seconds) as client:
+        response = await client.get(
+            settings.google_userinfo_url,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid Google sign-in token.")
+
+    profile = response.json()
+    email = _normalize_email(str(profile.get("email") or ""))
+    if not email:
+        raise HTTPException(status_code=401, detail="Google account did not provide an email address.")
+    if not profile.get("email_verified", False):
+        raise HTTPException(status_code=401, detail="Google account email is not verified.")
+
+    return {
+        "email": email,
+        "name": str(profile.get("name") or "").strip(),
+        "provider_subject": str(profile.get("sub") or email),
+    }
+
+
+async def _verify_apple_identity_token(identity_token: str) -> dict[str, str]:
+    if not identity_token.strip():
+        raise HTTPException(status_code=400, detail="Missing Apple identity token.")
+
+    try:
+        header = jwt.get_unverified_header(identity_token)
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid Apple identity token.") from exc
+
+    kid = header.get("kid")
+    keys = await _fetch_apple_jwks()
+    key = next((candidate for candidate in keys if candidate.get("kid") == kid), None)
+    if not key:
+        raise HTTPException(status_code=401, detail="Unable to verify Apple identity token.")
+
+    try:
+        claims = jwt.decode(
+            identity_token,
+            key,
+            algorithms=[header.get("alg", "RS256")],
+            audience=settings.apple_bundle_id,
+            issuer=APPLE_ISSUER,
+        )
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid Apple identity token.") from exc
+
+    provider_subject = str(claims.get("sub") or "").strip()
+    if not provider_subject:
+        raise HTTPException(status_code=401, detail="Apple identity token is missing a subject.")
+
+    email = _normalize_email(str(claims.get("email") or ""))
+    return {
+        "email": email,
+        "name": "",
+        "provider_subject": provider_subject,
+    }
+
+
+def _serialize_profile(current_user: User) -> UserProfile:
+    return UserProfile(
+        id=str(current_user.id),
+        email=current_user.email,
+        name=current_user.name,
+        auth_provider=current_user.auth_provider,
+        dietary_preferences=current_user.dietary_preferences or [],
+        flavor_preferences=current_user.flavor_preferences or [],
+        allergies=current_user.allergies or [],
+        liked_ingredients=current_user.liked_ingredients or [],
+        disliked_ingredients=current_user.disliked_ingredients or [],
+        protein_preferences=current_user.protein_preferences or {},
+        cooking_time_budget=current_user.cooking_time_budget or {},
+        household_size=current_user.household_size,
+        budget_level=current_user.budget_level,
+        xp_points=current_user.xp_points,
+        current_streak=current_user.current_streak,
+        longest_streak=current_user.longest_streak,
+        entitlement=build_entitlement_info(current_user),
+    )
 
 
 def _auto_update_streak(user: User, db: Session):
@@ -28,14 +148,15 @@ def _auto_update_streak(user: User, db: Session):
 
 @router.post("/register", response_model=Token)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == user_data.email).first()
+    normalized_email = _normalize_email(user_data.email)
+    existing = db.query(User).filter(User.email == normalized_email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
-        email=user_data.email,
+        email=normalized_email,
         hashed_password=get_password_hash(user_data.password),
-        name=user_data.name,
+        name=user_data.name.strip(),
     )
     db.add(user)
     db.commit()
@@ -47,7 +168,7 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_data.email).first()
+    user = db.query(User).filter(User.email == _normalize_email(user_data.email)).first()
     if not user or not user.hashed_password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not verify_password(user_data.password, user.hashed_password):
@@ -59,16 +180,64 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
 @router.post("/social", response_model=Token)
 async def social_auth(auth_data: SocialAuthRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == auth_data.email).first()
+    if not settings.social_auth_enabled:
+        raise HTTPException(status_code=503, detail="Social sign-in is disabled.")
+
+    provider = (auth_data.provider or "").strip().lower()
+    if provider not in {"google", "apple"}:
+        raise HTTPException(status_code=400, detail="Unsupported social auth provider.")
+
+    identity: dict[str, str]
+    if provider == "google":
+        identity = await _verify_google_access_token(auth_data.token)
+    else:
+        identity = await _verify_apple_identity_token(auth_data.token)
+
+    provider_subject = identity["provider_subject"]
+    email = identity.get("email") or _normalize_email(auth_data.email or "")
+    name = (auth_data.name or identity.get("name") or "").strip()
+
+    user = (
+        db.query(User)
+        .filter(User.auth_provider == provider, User.provider_subject == provider_subject)
+        .first()
+    )
+
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+        if user and user.provider_subject and user.provider_subject != provider_subject:
+            raise HTTPException(status_code=409, detail="That email is already linked to another sign-in method.")
+
+    if not user and not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Apple sign-in did not provide an email. Complete first sign-in with email sharing enabled.",
+        )
+
     if not user:
         user = User(
-            email=auth_data.email,
-            name=auth_data.name or auth_data.email.split("@")[0],
-            auth_provider=auth_data.provider,
+            email=email,
+            name=name or email.split("@")[0],
+            auth_provider=provider,
+            provider_subject=provider_subject,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+    else:
+        updated = False
+        if not user.provider_subject:
+            user.provider_subject = provider_subject
+            updated = True
+        if user.auth_provider == "email" and not user.hashed_password:
+            user.auth_provider = provider
+            updated = True
+        if name and user.name != name:
+            user.name = name
+            updated = True
+        if updated:
+            db.commit()
+            db.refresh(user)
 
     token = create_token_pair(str(user.id))
     return token
@@ -98,24 +267,10 @@ async def get_profile(
     db: Session = Depends(get_db),
 ):
     _auto_update_streak(current_user, db)
-    return UserProfile(
-        id=str(current_user.id),
-        email=current_user.email,
-        name=current_user.name,
-        auth_provider=current_user.auth_provider,
-        dietary_preferences=current_user.dietary_preferences or [],
-        flavor_preferences=current_user.flavor_preferences or [],
-        allergies=current_user.allergies or [],
-        liked_ingredients=current_user.liked_ingredients or [],
-        disliked_ingredients=current_user.disliked_ingredients or [],
-        protein_preferences=current_user.protein_preferences or {},
-        cooking_time_budget=current_user.cooking_time_budget or {},
-        household_size=current_user.household_size,
-        budget_level=current_user.budget_level,
-        xp_points=current_user.xp_points,
-        current_streak=current_user.current_streak,
-        longest_streak=current_user.longest_streak,
-    )
+    record_notification_event(db, current_user.id, "app_opened", source="server")
+    process_user_notifications(db, current_user.id)
+    db.commit()
+    return _serialize_profile(current_user)
 
 
 @router.put("/preferences")

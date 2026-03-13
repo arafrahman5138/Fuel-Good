@@ -17,7 +17,7 @@ import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { groceryApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 
 interface GroceryItem {
   name: string;
@@ -233,8 +233,11 @@ export function GroceryView() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => `${item.category}-${item.name}-${item.originalIndex}`}
-        contentContainerStyle={{ paddingHorizontal: Spacing.xl, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.xl, paddingBottom: Layout.scrollBottomPadding }}
         stickySectionHeadersEnabled={false}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

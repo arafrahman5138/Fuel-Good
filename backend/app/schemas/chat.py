@@ -18,6 +18,7 @@ class ChatResponse(BaseModel):
     healthified_recipe: Optional[dict] = None
     ingredient_swaps: Optional[List[dict]] = None
     nutrition_comparison: Optional[dict] = None
+    mes_score: Optional[dict] = None
 
 
 class ChatSessionSummary(BaseModel):

@@ -1,6 +1,7 @@
 import { API_URL } from '../constants/Config';
 import { useAuthStore } from '../stores/authStore';
 import * as SecureStore from 'expo-secure-store';
+import { reportClientError } from './errorReporting';
 
 class ApiClient {
   private baseUrl: string;
@@ -25,7 +26,13 @@ class ApiClient {
 
   private getTimeout(endpoint: string): number {
     // AI endpoints get longer timeout
-    if (endpoint.includes('/chat/') || endpoint.includes('/meal-plans/generate') || endpoint.includes('/healthify') || endpoint.includes('/scan/meal')) {
+    if (
+      endpoint.includes('/chat/')
+      || endpoint.includes('/meal-plans/generate')
+      || endpoint.includes('/healthify')
+      || endpoint.includes('/scan/meal')
+      || endpoint.includes('/scan/product/image')
+    ) {
       return this.aiTimeout;
     }
     return this.defaultTimeout;
@@ -107,7 +114,10 @@ class ApiClient {
     this.refreshPromise = (async () => {
       try {
         const refreshToken = useAuthStore.getState().refreshToken
-          || await SecureStore.getItemAsync('refresh_token');
+          || await SecureStore.getItemAsync('refresh_token', {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            keychainService: 'com.wholefoodlabs.auth',
+          });
         if (!refreshToken) return false;
 
         const response = await fetch(`${this.baseUrl}/auth/refresh`, {
@@ -137,6 +147,17 @@ class ApiClient {
     if (response.status === 401) {
       useAuthStore.getState().logout();
       throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    if (response.status >= 500) {
+      void reportClientError({
+        source: 'api',
+        message: `Server error ${response.status}`,
+        context: {
+          detail: error.detail || null,
+          status: response.status,
+        },
+      });
     }
 
     throw new Error(error.detail || `Request failed: ${response.status}`);
@@ -280,6 +301,12 @@ class ApiClient {
       if (err?.name === 'AbortError') {
         throw new Error('Streaming request timed out.');
       }
+      void reportClientError({
+        source: 'api',
+        message: err?.message || 'Streaming request failed',
+        stack: err?.stack,
+        context: { endpoint },
+      });
       throw err;
     } finally {
       clearTimeout(timer);
@@ -294,12 +321,18 @@ export const authApi = {
     api.post<{ access_token: string; refresh_token: string }>('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/login', data),
-  socialAuth: (data: { provider: string; token: string; name?: string; email?: string }) =>
+  socialAuth: (data: { provider: string; token: string; name?: string; email?: string; provider_subject?: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/social', data),
   refresh: (refreshToken: string) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/refresh', { refresh_token: refreshToken }),
   getProfile: () => api.get<any>('/auth/me'),
   updatePreferences: (data: any) => api.put('/auth/preferences', data),
+};
+
+export const billingApi = {
+  getConfig: () => api.get<any>('/billing/config'),
+  getStatus: () => api.get<{ entitlement: any }>('/billing/status'),
+  sync: (force = true) => api.post<{ entitlement: any }>('/billing/sync', { force }),
 };
 
 export const chatApi = {
@@ -310,6 +343,7 @@ export const chatApi = {
   getSessions: () => api.get<any[]>('/chat/sessions'),
   getSession: (id: string) => api.get<any>(`/chat/sessions/${id}`),
   deleteSession: (id: string) => api.delete(`/chat/sessions/${id}`),
+  getSuggestions: () => api.get<{ label: string; query: string }[]>('/chat/suggestions'),
 };
 
 export const mealPlanApi = {
@@ -336,6 +370,19 @@ export const foodApi = {
 export const wholeFoodScanApi = {
   analyzeBarcode: (barcode: string) =>
     api.get<any>(`/scan/product/barcode/${encodeURIComponent(barcode)}`),
+  analyzeProductImage: (data: {
+    imageUri: string;
+    capture_type?: 'ingredients' | 'nutrition' | 'front_label';
+  }) => {
+    const form = new FormData();
+    form.append('image', {
+      uri: data.imageUri,
+      name: 'product-scan.jpg',
+      type: 'image/jpeg',
+    } as any);
+    if (data.capture_type) form.append('capture_type', data.capture_type);
+    return api.upload<any>('/scan/product/image', form);
+  },
   analyzeLabel: (data: {
     product_name?: string;
     brand?: string;
@@ -378,7 +425,12 @@ export const wholeFoodScanApi = {
     meal_type?: string;
     servings?: number;
     quantity?: number;
-  }) => api.post<any>(`/scan/meal/${scanId}/log`, data || {}),
+    include_recommended_pairing?: boolean;
+  }) => {
+    const d = new Date();
+    const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return api.post<any>(`/scan/meal/${scanId}/log`, { date: localDate, ...(data || {}) });
+  },
 };
 
 export const recipeApi = {
@@ -442,7 +494,13 @@ export const nutritionApi = {
     api.get<any>(`/nutrition/gaps${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getLogs: (date?: string) =>
     api.get<any[]>(`/nutrition/logs${date ? `?date=${encodeURIComponent(date)}` : ''}`),
-  createLog: (data: any) => api.post<any>('/nutrition/logs', data),
+  createLog: (data: any) => {
+    if (!data.date) {
+      const d = new Date();
+      data = { ...data, date: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` };
+    }
+    return api.post<any>('/nutrition/logs', data);
+  },
   updateLog: (id: string, data: any) => api.patch<any>(`/nutrition/logs/${id}`, data),
   deleteLog: (id: string) => api.delete<any>(`/nutrition/logs/${id}`),
   deleteGroupLogs: (groupId: string) => api.delete<any>(`/nutrition/logs/group/${groupId}`),
@@ -464,6 +522,18 @@ export const gameApi = {
   getDailyQuests: () => api.get<any[]>('/game/daily-quests'),
   updateQuestProgress: (questId: string, amount?: number) =>
     api.post<any>(`/game/daily-quests/${questId}/progress${amount ? `?amount=${amount}` : ''}`),
+};
+
+export const notificationsApi = {
+  registerPushToken: (data: { expo_push_token: string; device_id?: string; platform: string; app_version: string }) =>
+    api.post<any>('/notifications/push-token', data),
+  removePushToken: (tokenId: string) =>
+    api.delete<any>(`/notifications/push-token/${tokenId}`),
+  getPreferences: () => api.get<any>('/notifications/preferences'),
+  updatePreferences: (data: any) => api.patch<any>('/notifications/preferences', data),
+  test: (data?: any) => api.post<any>('/notifications/test', data || {}),
+  ingestEvent: (event_type: string, properties?: Record<string, any>, source = 'client') =>
+    api.post<any>('/notifications/events', { event_type, properties: properties || {}, source }),
 };
 
 // ── Metabolic Budget API ──

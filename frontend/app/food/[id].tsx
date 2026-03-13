@@ -1,69 +1,75 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, router } from 'expo-router';
-import LogoHeader from '../../components/LogoHeader';
+import { router, useLocalSearchParams } from 'expo-router';
+
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { Card } from '../../components/GradientCard';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
+import LogoHeader from '../../components/LogoHeader';
 import { useTheme } from '../../hooks/useTheme';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { foodApi, nutritionApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { useScaleReveal } from '../../hooks/useAnimations';
 
 
-interface NutrientDetail {
-  value: number;
-  unit: string;
+interface ServingOption {
+  id: string;
+  label: string;
+  grams: number;
+  nutrition: Record<string, number>;
 }
 
 interface FoodDetail {
   id: string;
   name: string;
-  category?: string;
-  brand?: string;
-  source?: string;
-  serving?: string;
-  description?: string;
-  nutrients: Record<string, NutrientDetail | number>;
-  portions?: Array<{ amount: number; gramWeight: number; modifier: string }>;
+  brand?: string | null;
+  category?: string | null;
+  source_kind?: string | null;
+  default_serving_label?: string | null;
+  default_serving_grams?: number | null;
+  nutrition_per_serving: Record<string, number>;
+  nutrition_per_100g: Record<string, number>;
+  mes_ready_nutrition: Record<string, number>;
+  micronutrients: Record<string, number>;
+  serving_options: ServingOption[];
 }
 
-const MACRO_KEYS: { match: string; label: string; color: 'text' | 'primary' | 'accent' | 'info' }[] = [
-  { match: 'energy', label: 'Calories', color: 'text' },
-  { match: 'protein', label: 'Protein', color: 'primary' },
-  { match: 'carbohydrate', label: 'Carbs', color: 'accent' },
-  { match: 'total lipid', label: 'Fat', color: 'info' },
-  { match: 'fiber', label: 'Fiber', color: 'text' },
+const MACRO_ROWS = [
+  { key: 'calories', label: 'Calories' },
+  { key: 'protein_g', label: 'Protein' },
+  { key: 'carbs_g', label: 'Carbs' },
+  { key: 'fat_g', label: 'Fat' },
+  { key: 'fiber_g', label: 'Fiber' },
 ];
 
-function findNutrient(nutrients: Record<string, NutrientDetail | number>, match: string): { value: number; unit: string } | null {
-  for (const [key, val] of Object.entries(nutrients)) {
-    if (key.toLowerCase().includes(match)) {
-      if (typeof val === 'number') return { value: val, unit: match === 'energy' ? 'calories' : 'g' };
-      if (val && typeof val === 'object' && 'value' in val) return { value: val.value, unit: val.unit };
-    }
-  }
-  const simple = nutrients[match] ?? nutrients[match + 's'];
-  if (typeof simple === 'number') return { value: simple, unit: match === 'energy' || match === 'calories' ? 'calories' : 'g' };
-  return null;
+function formatValue(value: number, key: string) {
+  const rounded = Number.isInteger(value) ? value : Number(value.toFixed(1));
+  return key === 'calories' ? `${rounded}` : `${rounded}g`;
 }
 
 export default function FoodDetailScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
+
   const [food, setFood] = useState<FoodDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
   const [logSuccess, setLogSuccess] = useState(false);
+  const { animatedStyle: checkmarkStyle } = useScaleReveal(logSuccess, 0.3, { speed: 18, bounciness: 12 });
+  const [quantity, setQuantity] = useState('1');
+  const [selectedServingId, setSelectedServingId] = useState<string>('default');
   const [successModal, setSuccessModal] = useState<{ visible: boolean; message: string }>({
     visible: false,
     message: '',
@@ -71,77 +77,72 @@ export default function FoodDetailScreen() {
 
   useEffect(() => {
     if (!id) return;
-    loadFood();
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await foodApi.getDetail(id);
+        setFood(data);
+        setSelectedServingId(data?.serving_options?.[0]?.id || 'default');
+      } catch (e: any) {
+        setError(e?.message || 'Unable to load food details.');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
-  const loadFood = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await foodApi.getDetail(id!);
-      setFood(data);
-    } catch (e: any) {
-      setError(e?.message || 'Unable to load food details.');
-    } finally {
-      setLoading(false);
-    }
+  const selectedServing = useMemo(() => {
+    if (!food) return null;
+    return food.serving_options?.find((item) => item.id === selectedServingId) || food.serving_options?.[0] || null;
+  }, [food, selectedServingId]);
+
+  const quantityValue = Math.max(0.1, Number(quantity || 1));
+
+  const displayedNutrition = useMemo(() => {
+    const base = selectedServing?.nutrition || food?.nutrition_per_serving || {};
+    const scaled: Record<string, number> = {};
+    Object.entries(base).forEach(([key, value]) => {
+      scaled[key] = Number(value || 0) * quantityValue;
+    });
+    return scaled;
+  }, [food?.nutrition_per_serving, quantityValue, selectedServing?.nutrition]);
+
+  const micronutrients = useMemo(() => {
+    return Object.entries(food?.micronutrients || {})
+      .map(([name, value]) => ({ name, value: Number(value || 0) * quantityValue }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [food?.micronutrients, quantityValue]);
+
+  const handleAdjustQuantity = (delta: number) => {
+    const next = Math.max(0.1, Number((quantityValue + delta).toFixed(1)));
+    setQuantity(`${next}`);
   };
 
   const handleLog = async () => {
     if (!food) return;
     setLogging(true);
     try {
-      const cals = findNutrient(food.nutrients, 'energy') ?? findNutrient(food.nutrients, 'calories');
-      const protein = findNutrient(food.nutrients, 'protein');
-      const carbs = findNutrient(food.nutrients, 'carbohydrate') ?? findNutrient(food.nutrients, 'carbs');
-      const fat = findNutrient(food.nutrients, 'total lipid') ?? findNutrient(food.nutrients, 'fat');
-
       await nutritionApi.createLog({
-        source_type: 'manual',
-        title: food.name,
+        source_type: 'food_db',
+        source_id: food.id,
+        serving_option_id: selectedServing?.id,
         meal_type: 'meal',
-        servings: 1,
+        servings: quantityValue,
         quantity: 1,
-        nutrition: {
-          calories: cals?.value ?? 0,
-          protein: protein?.value ?? 0,
-          carbs: carbs?.value ?? 0,
-          fat: fat?.value ?? 0,
-        },
       });
       setLogSuccess(true);
-      setTimeout(() => setLogSuccess(false), 3000);
       setSuccessModal({
         visible: true,
         message: `"${food.name}" has been added to today's nutrition log.`,
       });
-    } catch (e) {
-      Alert.alert('Error', 'Failed to log food. Please try again.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to log food. Please try again.');
     } finally {
       setLogging(false);
     }
   };
-
-  const macroRows = food
-    ? MACRO_KEYS.map((mk) => {
-        const found = findNutrient(food.nutrients, mk.match)
-          ?? (mk.match === 'energy' ? findNutrient(food.nutrients, 'calories') : null);
-        return { ...mk, value: found?.value ?? 0, unit: found?.unit ?? (mk.match === 'energy' ? 'calories' : 'g') };
-      })
-    : [];
-
-  const micronutrients = food
-    ? Object.entries(food.nutrients)
-        .filter(([key]) => {
-          const k = key.toLowerCase();
-          return !MACRO_KEYS.some((mk) => k.includes(mk.match)) && !k.includes('calories');
-        })
-        .map(([key, val]) => {
-          const v = typeof val === 'number' ? { value: val, unit: '' } : val as NutrientDetail;
-          return { name: key, value: v.value, unit: v.unit };
-        })
-        .filter((n) => n.value > 0)
-    : [];
 
   if (loading) {
     return (
@@ -161,12 +162,6 @@ export default function FoodDetailScreen() {
           <Ionicons name="cloud-offline-outline" size={48} color={theme.textTertiary} />
           <Text style={[styles.errorTitle, { color: theme.text }]}>Something went wrong</Text>
           <Text style={[styles.errorText, { color: theme.textSecondary }]}>{error || 'Food not found.'}</Text>
-          <TouchableOpacity
-            onPress={loadFood}
-            style={[styles.retryBtn, { backgroundColor: theme.primaryMuted }]}
-          >
-            <Text style={[styles.retryText, { color: theme.primary }]}>Retry</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -184,99 +179,117 @@ export default function FoodDetailScreen() {
         }}
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, { color: theme.text }]}>{food.name}</Text>
         <View style={styles.badges}>
-          {food.category ? (
+          {!!food.category && (
             <View style={[styles.categoryChip, { backgroundColor: theme.primaryMuted }]}>
               <Text style={[styles.categoryChipText, { color: theme.primary }]}>{food.category}</Text>
             </View>
-          ) : null}
-          {food.brand ? (
+          )}
+          {!!food.brand && (
             <View style={[styles.categoryChip, { backgroundColor: theme.accentMuted }]}>
               <Text style={[styles.categoryChipText, { color: theme.accent }]}>{food.brand}</Text>
             </View>
-          ) : null}
-          {food.source === 'local' ? (
+          )}
+          {!!food.source_kind && (
             <View style={[styles.categoryChip, { backgroundColor: theme.infoMuted }]}>
-              <Text style={[styles.categoryChipText, { color: theme.info }]}>Local DB</Text>
+              <Text style={[styles.categoryChipText, { color: theme.info }]}>{food.source_kind.replace(/_/g, ' ')}</Text>
             </View>
-          ) : null}
+          )}
         </View>
-        {food.serving ? (
-          <Text style={[styles.serving, { color: theme.textTertiary }]}>
-            Serving: {food.serving}
-          </Text>
-        ) : null}
 
-        {/* Macros */}
-        <Card style={styles.nutritionCard}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Nutrition</Text>
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Serving</Text>
+          <View style={styles.servingWrap}>
+            {(food.serving_options || []).map((option) => {
+              const active = option.id === selectedServingId;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  onPress={() => setSelectedServingId(option.id)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.servingChip,
+                    {
+                      backgroundColor: active ? theme.primaryMuted : theme.surfaceElevated,
+                      borderColor: active ? theme.primary : theme.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.servingChipText, { color: active ? theme.primary : theme.textSecondary }]}>
+                    {option.label}
+                  </Text>
+                  <Text style={[styles.servingChipSub, { color: theme.textTertiary }]}>{Math.round(option.grams)}g</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.quantityRow}>
+            <Text style={[styles.quantityLabel, { color: theme.text }]}>Quantity</Text>
+            <View style={styles.quantityControl}>
+              <TouchableOpacity onPress={() => handleAdjustQuantity(-0.5)} style={[styles.quantityBtn, { backgroundColor: theme.surfaceElevated }]}>
+                <Ionicons name="remove" size={18} color={theme.text} />
+              </TouchableOpacity>
+              <TextInput
+                value={quantity}
+                onChangeText={setQuantity}
+                keyboardType="decimal-pad"
+                style={[styles.quantityInput, { color: theme.text, borderColor: theme.border }]}
+              />
+              <TouchableOpacity onPress={() => handleAdjustQuantity(0.5)} style={[styles.quantityBtn, { backgroundColor: theme.surfaceElevated }]}>
+                <Ionicons name="add" size={18} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Nutrition for this log</Text>
           <View style={styles.macroGrid}>
-            {macroRows.map((macro) => (
-              <View key={macro.label} style={styles.macroItem}>
-                <Text style={[styles.macroValue, { color: (theme as any)[macro.color] || theme.text }]}>
-                  {macro.value % 1 === 0 ? macro.value : macro.value.toFixed(1)}
-                  <Text style={styles.macroUnit}>{macro.unit}</Text>
-                </Text>
-                <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>{macro.label}</Text>
+            {MACRO_ROWS.map((row) => (
+              <View key={row.key} style={styles.macroItem}>
+                <Text style={[styles.macroValue, { color: theme.text }]}>{formatValue(Number(displayedNutrition[row.key] || 0), row.key)}</Text>
+                <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>{row.label}</Text>
               </View>
             ))}
           </View>
         </Card>
 
-        {/* Micronutrients */}
-        {micronutrients.length > 0 ? (
-          <Card style={styles.nutritionCard}>
+        {micronutrients.length > 0 && (
+          <Card style={styles.card}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Micronutrients</Text>
-            {micronutrients.map((n, idx) => (
-              <View
-                key={n.name}
-                style={[
-                  styles.microRow,
-                  idx % 2 === 1 && { backgroundColor: theme.surfaceHighlight },
-                ]}
-              >
-                <Text style={[styles.microName, { color: theme.text }]} numberOfLines={1}>
-                  {n.name}
-                </Text>
+            {micronutrients.map((item, index) => (
+              <View key={item.name} style={[styles.microRow, index % 2 === 1 && { backgroundColor: theme.surfaceHighlight }]}>
+                <Text style={[styles.microName, { color: theme.text }]}>{item.name.replace(/_/g, ' ')}</Text>
                 <Text style={[styles.microValue, { color: theme.textSecondary }]}>
-                  {n.value % 1 === 0 ? n.value : n.value.toFixed(2)} {n.unit}
+                  {Number.isInteger(item.value) ? item.value : item.value.toFixed(1)}
                 </Text>
               </View>
             ))}
           </Card>
-        ) : null}
+        )}
 
-        {/* Portions */}
-        {food.portions && food.portions.length > 0 ? (
-          <Card style={styles.nutritionCard}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Serving Sizes</Text>
-            {food.portions.map((p, idx) => (
-              <View
-                key={idx}
-                style={[styles.portionRow, idx % 2 === 1 && { backgroundColor: theme.surfaceHighlight }]}
-              >
-                <Text style={[styles.portionMod, { color: theme.text }]}>
-                  {p.amount} {p.modifier || 'serving'}
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>MES-ready nutrition</Text>
+          <View style={styles.mesRow}>
+            {['protein_g', 'fiber_g', 'carbs_g'].map((key) => (
+              <View key={key} style={styles.mesItem}>
+                <Text style={[styles.mesValue, { color: theme.primary }]}>
+                  {formatValue(Number(food.mes_ready_nutrition[key] || 0), key)}
                 </Text>
-                <Text style={[styles.portionWeight, { color: theme.textTertiary }]}>
-                  {p.gramWeight}g
-                </Text>
+                <Text style={[styles.mesLabel, { color: theme.textSecondary }]}>{key.replace('_g', '').replace(/_/g, ' ')}</Text>
               </View>
             ))}
-          </Card>
-        ) : null}
+          </View>
+        </Card>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: Layout.scrollBottomPadding }} />
       </ScrollView>
 
-      {/* Sticky Log Bar */}
       <View style={[styles.logBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        <View style={{ height: 10 }} />
         <TouchableOpacity
           style={[styles.logBtn, { backgroundColor: logSuccess ? theme.success : theme.primary }]}
           onPress={handleLog}
@@ -287,7 +300,9 @@ export default function FoodDetailScreen() {
             <ActivityIndicator size="small" color="#fff" />
           ) : logSuccess ? (
             <>
-              <Ionicons name="checkmark-circle" size={18} color="#fff" />
+              <Animated.View style={checkmarkStyle}>
+                <Ionicons name="checkmark-circle" size={18} color="#fff" />
+              </Animated.View>
               <Text style={styles.logBtnText}>Logged!</Text>
             </>
           ) : (
@@ -303,47 +318,18 @@ export default function FoodDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: Spacing.xl,
-  },
+  container: { flex: 1 },
+  content: { padding: Spacing.xl },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
   },
-  loadingText: {
-    marginTop: Spacing.md,
-    fontSize: FontSize.md,
-  },
-  errorTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-    marginTop: Spacing.md,
-  },
-  errorText: {
-    fontSize: FontSize.md,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-  },
-  retryText: {
-    fontWeight: '700',
-    fontSize: FontSize.md,
-  },
-  title: {
-    fontSize: FontSize.xxxl,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
+  loadingText: { marginTop: Spacing.md, fontSize: FontSize.md },
+  errorTitle: { fontSize: FontSize.lg, fontWeight: '700', marginTop: Spacing.md },
+  errorText: { fontSize: FontSize.md, marginTop: Spacing.xs, textAlign: 'center' },
+  title: { fontSize: FontSize.xxxl, fontWeight: '800', letterSpacing: -0.5 },
   badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -357,43 +343,49 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
-  categoryChipText: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
+  categoryChipText: { fontSize: FontSize.sm, fontWeight: '700' },
+  card: { marginBottom: Spacing.md },
+  sectionTitle: { fontSize: FontSize.lg, fontWeight: '700', marginBottom: Spacing.md },
+  servingWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  servingChip: {
+    minWidth: '47%',
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
-  serving: {
-    fontSize: FontSize.sm,
-    marginBottom: Spacing.lg,
-  },
-  nutritionCard: {
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-    marginBottom: Spacing.md,
-  },
-  macroGrid: {
+  servingChipText: { fontSize: FontSize.sm, fontWeight: '700' },
+  servingChipSub: { fontSize: FontSize.xs, marginTop: Spacing.xs },
+  quantityRow: {
+    marginTop: Spacing.lg,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  macroItem: {
     alignItems: 'center',
-    minWidth: 60,
+    justifyContent: 'space-between',
+    gap: Spacing.md,
   },
-  macroValue: {
-    fontSize: FontSize.xl,
-    fontWeight: '800',
+  quantityLabel: { fontSize: FontSize.md, fontWeight: '700' },
+  quantityControl: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  quantityBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  macroUnit: {
-    fontSize: FontSize.sm,
-    fontWeight: '500',
+  quantityInput: {
+    minWidth: 72,
+    height: 44,
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    textAlign: 'center',
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    paddingHorizontal: Spacing.sm,
   },
-  macroLabel: {
-    fontSize: FontSize.xs,
-    marginTop: 2,
-  },
+  macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
+  macroItem: { alignItems: 'center', minWidth: 70 },
+  macroValue: { fontSize: FontSize.xl, fontWeight: '800' },
+  macroLabel: { fontSize: FontSize.xs, marginTop: Spacing.xs },
   microRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -402,31 +394,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
   },
-  microName: {
-    fontSize: FontSize.md,
-    flex: 1,
-  },
-  microValue: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  portionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-  },
-  portionMod: {
-    fontSize: FontSize.md,
-    flex: 1,
-  },
-  portionWeight: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-  },
+  microName: { fontSize: FontSize.md, flex: 1, textTransform: 'capitalize' },
+  microValue: { fontSize: FontSize.md, fontWeight: '600', textAlign: 'right' },
+  mesRow: { flexDirection: 'row', gap: Spacing.lg },
+  mesItem: { flex: 1, alignItems: 'center', paddingVertical: Spacing.sm },
+  mesValue: { fontSize: FontSize.lg, fontWeight: '800' },
+  mesLabel: { fontSize: FontSize.xs, marginTop: Spacing.xs, textTransform: 'capitalize' },
   logBar: {
     position: 'absolute',
     bottom: 0,
@@ -444,9 +417,5 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
   },
-  logBtnText: {
-    color: '#fff',
-    fontSize: FontSize.md,
-    fontWeight: '700',
-  },
+  logBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '700' },
 });

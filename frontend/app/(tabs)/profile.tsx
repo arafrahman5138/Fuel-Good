@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  Animated,
   View,
   Text,
   StyleSheet,
@@ -18,8 +19,10 @@ import { StreakBadge } from '../../components/StreakBadge';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { gameApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
 import { XP_PER_LEVEL } from '../../constants/Config';
+import { useEntranceAnimation, useStaggeredEntrance } from '../../hooks/useAnimations';
 
 interface Achievement {
   id: string;
@@ -42,6 +45,8 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const xp = user?.xp_points || 0;
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const headerEntrance = useEntranceAnimation(0);
+  const contentEntrance = useEntranceAnimation(100);
 
   const loadAchievements = async () => {
     setLoadingAchievements(true);
@@ -74,6 +79,7 @@ export default function ProfileScreen() {
   const filteredAchievements = selectedCategory
     ? achievements.filter((a) => a.category === selectedCategory)
     : achievements;
+  const achieveStagger = useStaggeredEntrance(filteredAchievements.length, 50, selectedCategory ?? 'all');
 
   return (
     <ScreenContainer>
@@ -108,12 +114,14 @@ export default function ProfileScreen() {
         </View>
 
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <LinearGradient colors={theme.gradient.hero} style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(user?.name || 'U').charAt(0).toUpperCase()}
-            </Text>
-          </LinearGradient>
+        <Animated.View style={[styles.profileHeader, headerEntrance.style]}>
+          <View style={{ ...Shadows.interactive(false), borderRadius: BorderRadius.full }}>
+            <LinearGradient colors={['#16A34A', '#0D9488', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
+              <Text style={styles.avatarText}>
+                {(user?.name || 'U').charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
+          </View>
           <Text style={[styles.name, { color: theme.text }]}>{user?.name || 'User'}</Text>
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || ''}</Text>
           <View style={styles.badgeRow}>
@@ -123,7 +131,7 @@ export default function ProfileScreen() {
             </View>
             <StreakBadge streak={user?.current_streak || 0} compact />
           </View>
-        </View>
+        </Animated.View>
 
         {/* XP Progress */}
         <Card style={{ marginBottom: Spacing.xl }}>
@@ -131,6 +139,7 @@ export default function ProfileScreen() {
         </Card>
 
         {/* Tab Selector */}
+        <Animated.View style={contentEntrance.style}>
         <View style={[styles.tabRow, { backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.md }]}>
           {(['stats', 'achievements'] as const).map((tab) => (
             <TouchableOpacity
@@ -139,7 +148,7 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
               style={[
                 styles.tab,
-                activeTab === tab && { backgroundColor: theme.surface },
+                activeTab === tab && { backgroundColor: theme.primary + '18', borderWidth: 1, borderColor: theme.primary + '30' },
               ]}
             >
               <Text
@@ -158,22 +167,22 @@ export default function ProfileScreen() {
           <>
             {/* Stats Grid */}
             <View style={styles.statsGrid}>
-              <Card style={styles.statCard} padding={Spacing.lg}>
+              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
                 <Ionicons name="flame" size={24} color={theme.accent} />
                 <Text style={[styles.statValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
               </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
+              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
                 <Ionicons name="trophy" size={24} color={theme.accent} />
                 <Text style={[styles.statValue, { color: theme.text }]}>{user?.longest_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
               </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
+              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.primary }]} padding={Spacing.lg}>
                 <Ionicons name="star" size={24} color={theme.primary} />
                 <Text style={[styles.statValue, { color: theme.text }]}>{xp}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
               </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
+              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.info }]} padding={Spacing.lg}>
                 <Ionicons name="ribbon" size={24} color={theme.info} />
                 <Text style={[styles.statValue, { color: theme.text }]}>{unlockedCount}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Achievements</Text>
@@ -257,9 +266,9 @@ export default function ProfileScreen() {
                   </ScrollView>
                 )}
 
-                {filteredAchievements.map((achievement) => (
+                {filteredAchievements.map((achievement, achIdx) => (
+                  <Animated.View key={achievement.id} style={achieveStagger[achIdx]}>
                   <View
-                    key={achievement.id}
                     style={[
                       styles.achieveCard,
                       {
@@ -309,11 +318,13 @@ export default function ProfileScreen() {
                       </View>
                     </View>
                   </View>
+                  </Animated.View>
                 ))}
               </View>
             )}
           </>
         )}
+        </Animated.View>
 
       </ScrollView>
     </ScreenContainer>
@@ -323,7 +334,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   scroll: {
     paddingTop: Spacing.sm,
-    paddingBottom: 120,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   topBar: {
     flexDirection: 'row',
@@ -334,7 +345,7 @@ const styles = StyleSheet.create({
   topBarBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -345,13 +356,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: FontSize.xxxl,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -361,7 +372,7 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: FontSize.sm,
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -371,7 +382,7 @@ const styles = StyleSheet.create({
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -382,12 +393,12 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    padding: 4,
+    padding: Spacing.xs,
     marginBottom: Spacing.xl,
   },
   tab: {
     flex: 1,
-    paddingVertical: Spacing.sm + 2,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.sm,
     alignItems: 'center',
   },
@@ -424,7 +435,7 @@ const styles = StyleSheet.create({
   achieveIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -435,7 +446,7 @@ const styles = StyleSheet.create({
     right: -3,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -450,28 +461,28 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   achieveXP: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   achieveXPText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '800',
   },
   achieveSummaryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   emptyState: {

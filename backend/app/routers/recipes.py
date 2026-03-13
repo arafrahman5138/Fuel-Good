@@ -1,8 +1,11 @@
+import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.db import get_db
+
+logger = logging.getLogger(__name__)
 from app.auth import get_current_user
 from app.models.user import User
 from app.models.recipe import Recipe
@@ -10,8 +13,10 @@ from app.models.saved_recipe import SavedRecipe
 from app.nutrition_tags import HEALTH_BENEFIT_LABELS
 from app.achievements_engine import check_achievements
 from app.services.ingredient_substitution import apply_user_substitutions
-from app.services.metabolic_engine import compute_meal_mes, display_tier, get_or_create_budget
+from app.services.metabolic_engine import compute_meal_mes, compute_meal_mes_with_pairing, display_tier, load_budget_for_user
+from app.services.recipe_retrieval import ensure_recipe_embedding
 from typing import Optional
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 
@@ -28,28 +33,60 @@ def _compute_card_pairing_score(r: Recipe, db: Session, current_user: User) -> d
     if not default_recipes:
         return {}
 
-    role_priority = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
-    preferred_default = sorted(
-        default_recipes,
-        key=lambda recipe: (
-            role_priority.index(getattr(recipe, 'recipe_role', None) or "full_meal")
-            if (getattr(recipe, 'recipe_role', None) or "full_meal") in role_priority
-            else len(role_priority)
-        ),
-    )[0]
-
-    budget = get_or_create_budget(db, current_user.id)
+    budget = load_budget_for_user(db, current_user.id)
     source_nutrition = r.nutrition_info or {}
-    pairing_nutrition = preferred_default.nutrition_info or {}
+    stored_default_pairing_id = source_nutrition.get("mes_default_pairing_id")
+
+    preferred_default = None
+    if stored_default_pairing_id:
+        preferred_default = next(
+            (recipe for recipe in default_recipes if str(recipe.id) == str(stored_default_pairing_id)),
+            None,
+        )
+
+    if preferred_default is None:
+        role_priority = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
+        preferred_default = sorted(
+            default_recipes,
+            key=lambda recipe: (
+                role_priority.index(getattr(recipe, 'recipe_role', None) or "full_meal")
+                if (getattr(recipe, 'recipe_role', None) or "full_meal") in role_priority
+                else len(role_priority)
+            ),
+        )[0]
+
+    # Prefer stored paired/adjusted values when present so browse and detail stay consistent.
+    stored_adjusted = source_nutrition.get("mes_default_pairing_adjusted_score")
+    stored_macro_paired = source_nutrition.get("mes_score_with_default_pairing")
+    stored_delta = source_nutrition.get("mes_default_pairing_delta")
+    stored_gis_bonus = source_nutrition.get("mes_default_pairing_gis_bonus")
+    stored_synergy_bonus = source_nutrition.get("mes_default_pairing_synergy_bonus")
+    stored_reasons = source_nutrition.get("mes_default_pairing_reasons") or []
+
+    if stored_adjusted is not None or stored_macro_paired is not None:
+        composite_display_score = float(stored_adjusted if stored_adjusted is not None else stored_macro_paired)
+        mes_delta = float(stored_delta if stored_delta is not None else 0)
+        return {
+            "card_pairing_recipe_id": str(preferred_default.id),
+            "card_pairing_recipe_role": getattr(preferred_default, 'recipe_role', None) or "full_meal",
+            "card_pairing_title": preferred_default.title,
+            "card_pairing_mes_delta": round(mes_delta, 1),
+            "card_pairing_gis_bonus": float(stored_gis_bonus or 0),
+            "card_pairing_synergy_bonus": float(stored_synergy_bonus or 0),
+            "card_pairing_reasons": stored_reasons,
+            "composite_display_score": round(composite_display_score, 1),
+            "composite_display_tier": display_tier(composite_display_score),
+        }
+
     source_mes = compute_meal_mes(source_nutrition, budget)
-
-    combined = {}
-    for key in ("protein", "protein_g", "fiber", "fiber_g", "carbs", "carbs_g",
-                "sugar", "sugar_g", "calories", "fat", "fat_g"):
-        combined[key] = float(source_nutrition.get(key, 0) or 0) + float(pairing_nutrition.get(key, 0) or 0)
-
-    combined_mes = compute_meal_mes(combined, budget)
-    mes_delta = round(combined_mes["total_score"] - source_mes["total_score"], 1)
+    paired_mes = compute_meal_mes_with_pairing(
+        source_nutrition,
+        pairing_recipe=preferred_default,
+        budget=budget,
+        pairing_nutrition=preferred_default.nutrition_info or {},
+    )
+    combined_mes = paired_mes["score"]
+    mes_delta = round(float(combined_mes["total_score"] or 0) - float(source_mes["total_score"] or 0), 1)
 
     raw_mes = source_nutrition.get("mes_score")
     composite_display_score = None
@@ -66,6 +103,9 @@ def _compute_card_pairing_score(r: Recipe, db: Session, current_user: User) -> d
         "card_pairing_recipe_role": getattr(preferred_default, 'recipe_role', None) or "full_meal",
         "card_pairing_title": preferred_default.title,
         "card_pairing_mes_delta": mes_delta,
+        "card_pairing_gis_bonus": paired_mes["pairing_gis_bonus"],
+        "card_pairing_synergy_bonus": paired_mes["pairing_synergy_bonus"],
+        "card_pairing_reasons": paired_mes["pairing_reasons"],
         "composite_display_score": composite_display_score,
         "composite_display_tier": display_tier(composite_display_score),
     }
@@ -96,6 +136,7 @@ def _serialize_recipe_card(r: Recipe, db: Session | None = None, current_user: U
         "default_pairing_ids": getattr(r, 'default_pairing_ids', None) or [],
         "needs_default_pairing": getattr(r, 'needs_default_pairing', None),
         "is_mes_scoreable": getattr(r, 'is_mes_scoreable', True) if getattr(r, 'is_mes_scoreable', None) is not None else True,
+        "pairing_synergy_profile": getattr(r, 'pairing_synergy_profile', None),
     }
     if db is not None and current_user is not None:
         card.update(_compute_card_pairing_score(r, db, current_user))
@@ -405,9 +446,18 @@ async def save_recipe(
 
     db.add(SavedRecipe(id=str(uuid.uuid4()), user_id=current_user.id, recipe_id=recipe_id))
     db.commit()
+    record_notification_event(
+        db,
+        current_user.id,
+        "recipe_saved",
+        properties={"recipe_id": recipe_id, "recipe_title": recipe_exists.title},
+        source="server",
+    )
 
     saved_count = db.query(SavedRecipe).filter(SavedRecipe.user_id == current_user.id).count()
     new_achievements = check_achievements(db, current_user, {"saved_recipe_count": saved_count})
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     return {"status": "saved", "achievements": new_achievements}
 
@@ -490,9 +540,22 @@ async def save_generated_recipe(
 
     db.add(SavedRecipe(id=str(uuid.uuid4()), user_id=current_user.id, recipe_id=recipe.id))
     db.commit()
+    record_notification_event(
+        db,
+        current_user.id,
+        "recipe_saved",
+        properties={"recipe_id": str(recipe.id), "recipe_title": recipe.title, "generated": True},
+        source="server",
+    )
+    try:
+        await ensure_recipe_embedding(db, recipe)
+    except Exception:
+        logger.warning("Recipe embedding failed for %s", recipe.id, exc_info=True)
 
     saved_count = db.query(SavedRecipe).filter(SavedRecipe.user_id == current_user.id).count()
     new_achievements = check_achievements(db, current_user, {"saved_recipe_count": saved_count})
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     return {
         "status": "saved",
@@ -518,8 +581,6 @@ async def substitute_recipe_ingredients(
     disliked_ingredients = current_user.disliked_ingredients if body.use_dislikes else []
     protein_preferences = current_user.protein_preferences or {}
 
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(
         "substitute.start recipe_id=%s user_id=%s allergies=%s dislikes=%s",
         recipe_id, current_user.id, allergies, disliked_ingredients
@@ -574,7 +635,17 @@ async def get_cook_help(
     try:
         from app.agents.cook_assistant import get_cooking_help
         answer = await get_cooking_help(recipe_dict, body.step_number, body.question)
+        record_notification_event(
+            db,
+            current_user.id,
+            "cook_started",
+            properties={"recipe_id": recipe_id, "step_number": body.step_number},
+            source="server",
+        )
+        db.commit()
     except Exception as exc:
-        answer = f"I'm having trouble connecting right now. Here's the step: {(recipe.steps or [])[body.step_number] if body.step_number < len(recipe.steps or []) else 'No more steps.'}"
+        steps = recipe.steps or []
+        step_text = steps[body.step_number] if 0 <= body.step_number < len(steps) else "No more steps."
+        answer = f"I'm having trouble connecting right now. Here's the step: {step_text}"
 
     return {"answer": answer}

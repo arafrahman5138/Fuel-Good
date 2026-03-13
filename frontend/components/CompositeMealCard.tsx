@@ -5,8 +5,10 @@
  * combined MES badge, component chips, aggregated macros, and an
  * expandable detail view of individual components.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   LayoutAnimation,
   Platform,
   StyleSheet,
@@ -18,6 +20,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { MealMESBadge } from './MealMESBadge';
 import { useTheme } from '../hooks/useTheme';
+import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { useMetabolicBudgetStore, getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES, CompositeMES, MESScore } from '../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
@@ -40,6 +43,43 @@ interface DailyLog {
   nutrition?: Record<string, number>;
   nutrition_snapshot?: Record<string, number>;
   [key: string]: unknown;
+}
+
+function cleanScanTitle(raw: string | undefined, snap: Record<string, any>): string {
+  const value = String(raw || '').trim();
+  if (
+    value &&
+    value.length > 3 &&
+    !/[+\-]$/.test(value) &&
+    !/\b(with|and|in|on|over|with\s*)$/i.test(value)
+  ) {
+    return value;
+  }
+
+  const estimated = Array.isArray(snap?.estimated_ingredients) ? snap.estimated_ingredients : [];
+  const normalized = Array.isArray(snap?.normalized_ingredients) ? snap.normalized_ingredients : [];
+  const ingredients = (estimated.length ? estimated : normalized)
+    .map((item: unknown) => String(item || '').trim())
+    .filter(Boolean);
+
+  if (ingredients.length >= 2) return `${ingredients[0]} + ${ingredients[1]}`;
+  if (ingredients.length === 1) return ingredients[0];
+  return value || 'Scanned food';
+}
+
+function deriveSnackProfile(snap: Record<string, any>) {
+  if (snap?.meal_context !== 'snack') return null;
+  const protein = Number(snap.protein || snap.protein_g || 0);
+  const carbs = Number(snap.carbs || snap.carbs_g || 0);
+  const sugar = Number(snap.sugar || Math.max(0, carbs * 0.18) || 0);
+  const flags = Array.isArray(snap.whole_food_flags) ? snap.whole_food_flags : [];
+  const hasHighSeverity = flags.some((flag: any) => String(flag?.severity || '') === 'high');
+  const isWholeFood = String(snap.whole_food_status || '') === 'pass';
+  const isHealthySnack = isWholeFood && !hasHighSeverity && (protein >= 12 || (carbs <= 18 && sugar <= 10));
+  return {
+    isHealthySnack,
+    label: isHealthySnack ? 'Healthy snack' : 'Snack',
+  };
 }
 
 interface MealGroup {
@@ -82,7 +122,7 @@ function aggregateNutrition(logs: DailyLog[]) {
 
 // ── SingleMealRow — used for ungrouped logs & expanded component rows ──
 
-export function SingleMealRow({
+export const SingleMealRow = React.memo(function SingleMealRow({
   log,
   mealScore,
   recipeScoreOverride,
@@ -97,6 +137,7 @@ export function SingleMealRow({
 }) {
   const theme = useTheme();
   const snap = log.nutrition_snapshot || {};
+  const snackProfile = log.source_type === 'scan' ? deriveSnackProfile(snap) : null;
   const cal = Number(snap.calories || 0);
   const pro = Number(snap.protein || snap.protein_g || 0);
   const carb = Number(snap.carbs || snap.carbs_g || 0);
@@ -116,6 +157,11 @@ export function SingleMealRow({
     mealScore?.score?.display_tier ??
     mealScore?.score?.tier ??
     'critical';
+  const displayTitle = log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled');
+  const showMesBadge = !compact && !snackProfile && (mealScore || recipeScoreOverride);
+  const showSnackBadge = !compact && !!snackProfile;
+  const scanAccent = snackProfile?.isHealthySnack ? '#16A34A' : '#64748B';
+  const scanAccentBg = snackProfile?.isHealthySnack ? '#DCFCE7' : '#F1F5F9';
 
   return (
     <View
@@ -140,8 +186,8 @@ export function SingleMealRow({
       >
         <Ionicons name={resolvedSourceIcon as any} size={compact ? 13 : 16} color={theme.primary} />
       </View>
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 }}>
           <Text
             style={{
               color: theme.text,
@@ -151,12 +197,30 @@ export function SingleMealRow({
             }}
             numberOfLines={1}
           >
-            {log.title || 'Untitled'}
+            {displayTitle}
           </Text>
-          {!compact && (mealScore || recipeScoreOverride) && (
+          {showMesBadge && (
             badgeScore != null
               ? <MealMESBadge score={badgeScore} tier={badgeTier} compact />
               : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealScore?.unscored_hint} compact />
+          )}
+          {showSnackBadge && (
+            <View
+              style={{
+                backgroundColor: scanAccentBg,
+                borderRadius: BorderRadius.full,
+                paddingHorizontal: Spacing.sm + 2,
+                paddingVertical: Spacing.xs + 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.xs + 1,
+              }}
+            >
+              <Ionicons name={snackProfile.isHealthySnack ? 'leaf-outline' : 'cafe-outline'} size={12} color={scanAccent} />
+              <Text style={{ color: scanAccent, fontSize: 10, fontWeight: '700' }}>
+                {snackProfile.label}
+              </Text>
+            </View>
           )}
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 1 }}>
@@ -167,10 +231,23 @@ export function SingleMealRow({
           {carb > 0 && <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500' }}>C {carb.toFixed(0)}g</Text>}
           {fat > 0 && <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500' }}>F {fat.toFixed(0)}g</Text>}
         </View>
+        {snackProfile && (
+          <Text
+            style={{
+              color: theme.textTertiary,
+              fontSize: 11,
+              fontWeight: '500',
+              marginTop: 3,
+            }}
+            numberOfLines={1}
+          >
+            Whole-food snack logged separately from MES meals
+          </Text>
+        )}
       </View>
     </View>
   );
-}
+});
 
 // ── CompositeMealCard — The main composite card ──
 
@@ -183,27 +260,72 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
   const [loading, setLoading] = useState(false);
 
   const config = getMealTypeConfig(group.mealType);
-  const agg = aggregateNutrition(group.logs);
+  const chevronAnim = useRef(new Animated.Value(0)).current;
+  const rowAnims = useRef<Animated.Value[]>([]);
+  const agg = useMemo(() => aggregateNutrition(group.logs), [group.logs]);
+  const compositeLogIds = useMemo(
+    () => group.logs.map((log) => log.id).filter(Boolean),
+    [group.logs]
+  );
+  const compositeLogIdsKey = useMemo(() => compositeLogIds.join(','), [compositeLogIds]);
 
   // Fetch composite MES on mount
   useEffect(() => {
     let cancelled = false;
-    const ids = group.logs.map(l => l.id).filter(Boolean);
-    if (ids.length < 2) return;
+    if (compositeLogIds.length < 2) return;
 
     setLoading(true);
-    fetchCompositeMES(ids).then(result => {
+    fetchCompositeMES(compositeLogIds).then(result => {
       if (!cancelled) {
         setCompositeMES(result);
         setLoading(false);
       }
+    }).catch(() => {
+      if (!cancelled) {
+        setLoading(false);
+      }
     });
     return () => { cancelled = true; };
-  }, [group.logs.map(l => l.id).join(',')]);
+  }, [compositeLogIdsKey, fetchCompositeMES]);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded(!expanded);
+    const next = !expanded;
+    setExpanded(next);
+
+    if (isReduceMotionEnabled()) {
+      chevronAnim.setValue(next ? 1 : 0);
+      return;
+    }
+
+    // Animate chevron rotation
+    Animated.spring(chevronAnim, {
+      toValue: next ? 1 : 0,
+      useNativeDriver: true,
+      speed: 24,
+      bounciness: 0,
+    }).start();
+
+    // Stagger rows in when expanding
+    if (next) {
+      const count = group.logs.length;
+      if (rowAnims.current.length !== count) {
+        rowAnims.current = Array.from({ length: count }, () => new Animated.Value(0));
+      } else {
+        rowAnims.current.forEach((a) => a.setValue(0));
+      }
+      Animated.stagger(
+        50,
+        rowAnims.current.map((a) =>
+          Animated.timing(a, {
+            toValue: 1,
+            duration: 280,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ),
+      ).start();
+    }
   };
 
   // Determine display score/tier
@@ -254,11 +376,18 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
               ) : displayScore != null ? (
                 <MealMESBadge score={displayScore} tier={displayTier} />
               ) : null}
-              <Ionicons
-                name={expanded ? 'chevron-up' : 'chevron-down'}
-                size={14}
-                color={theme.textTertiary}
-              />
+              <Animated.View
+                style={{
+                  transform: [{
+                    rotate: chevronAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '180deg'],
+                    }),
+                  }],
+                }}
+              >
+                <Ionicons name="chevron-down" size={14} color={theme.textTertiary} />
+              </Animated.View>
             </View>
           </View>
 
@@ -308,14 +437,27 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
             <View style={[styles.expandedSection, { borderTopColor: theme.surfaceHighlight }]}>
               {group.logs.map((log, idx) => {
                 const score = group.mealScores.find(ms => ms.food_log_id === log.id);
+                const rowAnim = rowAnims.current[idx];
+                const rowStyle = rowAnim
+                  ? {
+                      opacity: rowAnim,
+                      transform: [{
+                        translateY: rowAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [8, 0],
+                        }),
+                      }],
+                    }
+                  : undefined;
                 return (
-                  <SingleMealRow
-                    key={log.id}
-                    log={log}
-                    mealScore={score}
-                    isLast={idx === group.logs.length - 1}
-                    compact
-                  />
+                  <Animated.View key={log.id} style={rowStyle}>
+                    <SingleMealRow
+                      log={log}
+                      mealScore={score}
+                      isLast={idx === group.logs.length - 1}
+                      compact
+                    />
+                  </Animated.View>
                 );
               })}
             </View>
@@ -350,13 +492,13 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm + 2,
     flex: 1,
   },
   mealTypeIcon: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -365,36 +507,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   componentCount: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     marginTop: 1,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.xs + 2,
   },
   mesBadgeLoading: {
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: Spacing.xs + 2,
     marginTop: Spacing.sm,
   },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
-    maxWidth: 120,
+    maxWidth: 180,
   },
   macroRow: {
     flexDirection: 'row',
@@ -409,14 +551,14 @@ const styles = StyleSheet.create({
   macroDot: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm + 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   macroDotInner: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: BorderRadius.xs,
   },
   macroValue: {
     fontSize: FontSize.xs,

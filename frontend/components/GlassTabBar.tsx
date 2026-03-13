@@ -17,6 +17,9 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { useThemeStore } from '../stores/themeStore';
+import { usePressScale } from '../hooks/useAnimations';
+import { Shadows } from '../constants/Shadows';
+import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 
 /** Route names to exclude from the visible pill. */
 const HIDDEN_ROUTES = new Set(['profile']);
@@ -38,6 +41,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
+  const plusPress = usePressScale(0.92);
 
   // Filter out hidden routes (profile, etc.)
   const visibleRoutes = state.routes.filter((r) => {
@@ -51,7 +55,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const tintBg = isDark ? 'rgba(10, 10, 15, 0.42)' : 'rgba(248, 248, 248, 0.68)';
   const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const inactiveColor = isDark ? 'rgba(255,255,255,0.82)' : CHARCOAL;
-  const shadowOpacity = isDark ? 0.25 : 0.12;
+  const pillShadow = Shadows.lg(isDark);
+  const plusShadow = Shadows.md(isDark);
+  const menuShadow = Shadows.overlay(isDark);
   const plusBg = isDark ? 'rgba(10,10,15,0.36)' : 'rgba(248, 248, 248, 0.68)';
   const plusBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const plusIconColor = showAddMenu ? theme.primary : inactiveColor;
@@ -88,7 +94,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
     >
       <View style={styles.row}>
         {/* ── Main pill ── */}
-        <View style={[styles.pillWrapper, { shadowOpacity, flex: 1 }]}> 
+        <View style={[styles.pillWrapper, pillShadow, { flex: 1 }]}>
           <BlurView
             intensity={Platform.OS === 'ios' ? (isDark ? 80 : 50) : 100}
             tint={blurTint}
@@ -168,7 +174,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                       {
                         color: iconColor,
                         fontWeight: '400',
-                        fontSize: compactTabs ? 10 : 11,
+                        fontSize: compactTabs ? 10 : FontSize.xs,
                       },
                     ]}
                     numberOfLines={1}
@@ -184,21 +190,25 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         </View>
 
         {/* ── "+" Log Meal button ── */}
-        <TouchableOpacity
-          style={[
-            styles.plusButton,
-            {
-              backgroundColor: plusBg,
-              borderColor: plusBorder,
-              shadowOpacity: shadowOpacity * 0.8,
-            },
-          ]}
-          activeOpacity={0.7}
-          onPress={() => setShowAddMenu((v) => !v)}
-          accessibilityLabel="Open quick actions"
-        >
-          <Ionicons name="add" size={28} color={plusIconColor} />
-        </TouchableOpacity>
+        <Animated.View style={plusPress.animatedStyle}>
+          <TouchableOpacity
+            style={[
+              styles.plusButton,
+              plusShadow,
+              {
+                backgroundColor: plusBg,
+                borderColor: plusBorder,
+              },
+            ]}
+            activeOpacity={0.7}
+            onPress={() => setShowAddMenu((v) => !v)}
+            onPressIn={plusPress.onPressIn}
+            onPressOut={plusPress.onPressOut}
+            accessibilityLabel="Open quick actions"
+          >
+            <Ionicons name="add" size={28} color={plusIconColor} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       <Modal transparent visible={showAddMenu} animationType="fade" onRequestClose={() => setShowAddMenu(false)}>
@@ -206,12 +216,12 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           <View
             style={[
               styles.addMenu,
+              menuShadow,
               {
-                bottom: Math.max(insets.bottom, 12) + FLOATING_BAR_HEIGHT + 14,
-                right: 16,
+                bottom: Math.max(insets.bottom, 6) + PLUS_BUTTON_SIZE + 6,
+                right: Spacing.lg,
                 backgroundColor: menuBg,
                 borderColor: borderCol,
-                shadowColor: theme.text,
               },
             ]}
           >
@@ -264,7 +274,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   },
                 ]}
               >
-                <View style={[styles.addMenuIcon, { backgroundColor: theme.primaryMuted }]}> 
+                <View style={[styles.addMenuIcon, { backgroundColor: theme.primaryMuted }]}>
                   <Ionicons name={item.icon} size={18} color={theme.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -288,26 +298,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing.md,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
     width: '100%',
   },
   pillWrapper: {
     height: FLOATING_BAR_HEIGHT,
-    borderRadius: 28,
+    borderRadius: BorderRadius.pill,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowRadius: 16,
-    elevation: 12,
   },
   tintOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 28,
+    borderRadius: BorderRadius.pill,
     borderWidth: 1,
   },
   tabRow: {
@@ -315,31 +321,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: Spacing.sm,
     position: 'relative',
   },
   activeBubble: {
     position: 'absolute',
     top: 6,
     bottom: 6,
-    borderRadius: 22,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
     position: 'relative',
     zIndex: 1,
   },
   focusedTabItem: {
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
   },
   tabLabel: {
-    fontSize: 11,
-    marginTop: 3,
+    fontSize: FontSize.xs,
+    marginTop: Spacing.xs,
     letterSpacing: 0.3,
   },
   plusButton: {
@@ -349,10 +355,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 10,
-    elevation: 8,
   },
   menuBackdrop: {
     flex: 1,
@@ -360,35 +362,31 @@ const styles = StyleSheet.create({
   },
   addMenu: {
     position: 'absolute',
-    width: 240,
-    borderRadius: 14,
+    width: 260,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 16,
   },
   addMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   addMenuIcon: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addMenuLabel: {
-    fontSize: 13,
+    fontSize: FontSize.sm,
     fontWeight: '700',
   },
   addMenuSub: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     marginTop: 1,
   },

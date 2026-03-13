@@ -1,25 +1,83 @@
-export const API_URL = __DEV__
-  ? 'http://192.168.0.193:8000/api'
-  : 'https://api.wholefoodlabs.com/api';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-export const APP_NAME = 'WholeFoodLabs';
+function stripTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, '');
+}
+
+function normalizeOptionalUrl(value?: string): string {
+  return value?.trim() ? stripTrailingSlash(value.trim()) : '';
+}
+
+function getDevApiUrl(): string {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (envUrl) return stripTrailingSlash(envUrl);
+
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
+    (Constants as any).manifest?.debuggerHost ||
+    '';
+  const host = hostUri.split(':')[0];
+
+  if (host) {
+    return stripTrailingSlash(`http://${host}:8000/api`);
+  }
+
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:8000/api';
+  }
+
+  return 'http://127.0.0.1:8000/api';
+}
+
+function getProdApiUrl(): string {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (!envUrl) {
+    return 'https://api.wholefoodlabs.com/api';
+  }
+  if (!envUrl.startsWith('https://')) {
+    throw new Error('Production API URL must use HTTPS.');
+  }
+  return stripTrailingSlash(envUrl);
+}
+
+export const API_URL = __DEV__
+  ? getDevApiUrl()
+  : getProdApiUrl();
+
+export const APP_NAME = 'Fuel Good';
+export const APP_ENV = (process.env.EXPO_PUBLIC_APP_ENV?.trim() || (__DEV__ ? 'development' : 'production')).toLowerCase();
+export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
+export const RELEASE_CHANNEL = process.env.EXPO_PUBLIC_RELEASE_CHANNEL?.trim() || APP_ENV;
+export const EXPO_PROJECT_ID =
+  process.env.EXPO_PUBLIC_EXPO_PROJECT_ID?.trim()
+  || (Constants.expoConfig?.extra as any)?.eas?.projectId
+  || '';
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@wholefoodlabs.com';
+export const PRIVACY_POLICY_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
+export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL);
+export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL);
+export const CLIENT_ERROR_REPORTING_ENABLED = (process.env.EXPO_PUBLIC_ENABLE_ERROR_REPORTING?.trim() || 'true') !== 'false';
+export const ENABLE_ANALYTICS = (process.env.EXPO_PUBLIC_ENABLE_ANALYTICS?.trim() || 'false') === 'true';
+export const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() || '';
+export const APP_STORE_MANAGE_SUBSCRIPTIONS_URL =
+  process.env.EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL?.trim()
+  || 'https://apps.apple.com/account/subscriptions';
+export const PREMIUM_ENTITLEMENT_ID = process.env.EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID?.trim() || 'premium';
 
 // OAuth Configuration
-export const GOOGLE_CLIENT_ID = __DEV__
-  ? 'YOUR_DEV_GOOGLE_CLIENT_ID.apps.googleusercontent.com'
-  : 'YOUR_PROD_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-
-export const GOOGLE_IOS_CLIENT_ID = __DEV__
-  ? 'YOUR_DEV_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com'
-  : 'YOUR_PROD_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
+export const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() || '';
+export const IS_GOOGLE_AUTH_CONFIGURED = Boolean(GOOGLE_CLIENT_ID && GOOGLE_IOS_CLIENT_ID);
 
 export const FLAVOR_OPTIONS = [
-  { id: 'spicy', label: 'Spicy', icon: 'fire' },
-  { id: 'savory', label: 'Savory', icon: 'food-steak' },
-  { id: 'sweet', label: 'Sweet', icon: 'candy' },
-  { id: 'umami', label: 'Umami', icon: 'noodles' },
-  { id: 'mild', label: 'Mild', icon: 'leaf' },
-  { id: 'tangy', label: 'Tangy', icon: 'fruit-citrus' },
+  { id: 'spicy', label: 'Spicy', icon: 'flame-outline' },
+  { id: 'savory', label: 'Savory', icon: 'restaurant-outline' },
+  { id: 'sweet', label: 'Sweet', icon: 'ice-cream-outline' },
+  { id: 'umami', label: 'Umami', icon: 'fish-outline' },
+  { id: 'mild', label: 'Mild', icon: 'leaf-outline' },
+  { id: 'tangy', label: 'Tangy', icon: 'nutrition-outline' },
 ];
 
 export const DIETARY_OPTIONS = [

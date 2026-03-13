@@ -12,6 +12,7 @@ from app.schemas.gamification import (
     DailyQuestResponse, NutritionStreakResponse, ScoreHistoryEntry,
 )
 from app.achievements_engine import check_achievements, award_xp, update_nutrition_streak, level_title
+from app.services.notifications import process_user_notifications, record_notification_event
 from typing import List, Optional
 from datetime import datetime, timedelta, date
 import uuid
@@ -209,6 +210,15 @@ async def update_streak(
 
     # Check streak-related achievements
     check_achievements(db, current_user)
+    record_notification_event(
+        db,
+        current_user.id,
+        "streak_updated",
+        properties={"streak": current_user.current_streak},
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     return {"message": "Streak updated", "streak": current_user.current_streak}
 
@@ -388,6 +398,20 @@ async def update_quest_progress(
         quest.completed_at = datetime.utcnow()
         xp_result = award_xp(db, current_user, quest.xp_reward, f"quest:{quest.title}")
         xp_gained = quest.xp_reward
+    db.commit()
+    record_notification_event(
+        db,
+        current_user.id,
+        "quest_progressed",
+        properties={
+            "quest_id": quest_id,
+            "current_value": quest.current_value,
+            "target_value": quest.target_value,
+            "completed": quest.completed,
+        },
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
     db.commit()
 
     return {

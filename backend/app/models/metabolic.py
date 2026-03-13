@@ -28,6 +28,13 @@ class MetabolicBudget(Base):
     fiber_floor_g = Column(Float, default=30.0)
     sugar_ceiling_g = Column(Float, default=130.0)  # was 200; now carb ceiling
 
+    # ── Computed targets (synced from profile via sync_budget_from_profile) ──
+    fat_target_g = Column(Float, nullable=True)
+    tdee = Column(Float, nullable=True)
+    calorie_target_kcal = Column(Float, nullable=True)
+    ism = Column(Float, default=1.0)
+    tier_thresholds_json = Column(JSON, nullable=True)
+
     # ── Score weights (4-sub-score: GIS/PAS/FS/FAS) ──
     weight_protein = Column(Float, default=0.30)
     weight_fiber = Column(Float, default=0.20)

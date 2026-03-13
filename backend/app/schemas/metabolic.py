@@ -1,6 +1,6 @@
 """Pydantic schemas for Metabolic Budget endpoints."""
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Any, Optional, List, Dict
 
 
 # ──────────────────── Sub-score detail ──────────
@@ -114,6 +114,10 @@ class MESScoreResponse(BaseModel):
     weights_used: Optional[WeightsUsed] = None
     net_carbs_g: Optional[float] = None
     fat_g: Optional[float] = None
+    pairing_applied: Optional[bool] = None
+    pairing_gis_bonus: Optional[float] = None
+    pairing_synergy_bonus: Optional[float] = None
+    pairing_reasons: Optional[List[str]] = None
 
 
 class DailyMESResponse(BaseModel):
@@ -122,6 +126,8 @@ class DailyMESResponse(BaseModel):
     remaining: Optional[dict] = None
     treat_impact: Optional[dict] = None
     mea: Optional[dict] = None
+    pairing_synergy_daily_bonus: Optional[float] = None
+    pairing_synergy_sources: Optional[List[Dict[str, Any]]] = None
 
 
 class MealMESResponse(BaseModel):
@@ -191,6 +197,12 @@ class CompositeMESResponse(BaseModel):
     total_carbs_g: float = 0
     total_fat_g: float = 0
     total_fiber_g: float = 0
+    macro_only_combined_score: Optional[float] = None
+    pairing_adjusted_score: Optional[float] = None
+    pairing_gis_bonus: Optional[float] = None
+    pairing_synergy_bonus: Optional[float] = None
+    pairing_reasons: Optional[List[str]] = None
+    pairing_applied: Optional[bool] = None
 
 
 # ──────────────────── Meal suggestions ──────────
@@ -220,3 +232,22 @@ class MEAScoreResponse(BaseModel):
     daily_mes: float = 0
     energy_prediction: str = "adequate"
     tier: str = "moderate"
+
+
+# ──────────────────── Coach Insights ──────────────────────
+
+class CoachInsightAction(BaseModel):
+    type: str  # "chat" | "browse" | "scan"
+    query: Optional[str] = None
+
+class CoachInsight(BaseModel):
+    icon: str
+    title: str
+    body: str
+    accent: str
+    priority: int = 0
+    action: Optional[CoachInsightAction] = None
+
+class CoachInsightsResponse(BaseModel):
+    insights: List[CoachInsight]
+    suggested_foods: Optional[List[Dict[str, Any]]] = None

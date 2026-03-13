@@ -33,7 +33,7 @@ class FoodLog(Base):
     date = Column(Date, nullable=False, index=True)
     meal_type = Column(String, default="meal")  # breakfast/lunch/dinner/snack
 
-    source_type = Column(String, default="manual")  # manual|recipe|meal_plan|cook_mode
+    source_type = Column(String, default="manual")  # manual|recipe|meal_plan|cook_mode|food_db|scan
     source_id = Column(String, nullable=True)
     group_id = Column(String, nullable=True, index=True)  # links main meal + side logs
     group_mes_score = Column(Float, nullable=True)  # combined MES score for grouped meals

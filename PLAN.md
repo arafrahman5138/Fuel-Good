@@ -2,7 +2,7 @@
 
 ## Vision
 
-A consumer mobile app that helps people ditch processed food and eat real, whole-food meals — powered by AI coaching, a global recipe database, and a community of like-minded eaters. Freemium model with a free tier generous enough to hook users and a premium tier worth paying for.
+A consumer mobile app that helps people ditch processed food and eat real, whole-food meals — powered by AI coaching, a global recipe database, and a community of like-minded eaters. Subscription-first model with onboarding before a hard paywall and full premium access unlocked through App Store billing.
 
 ---
 
@@ -130,28 +130,19 @@ A consumer mobile app that helps people ditch processed food and eat real, whole
 
 ---
 
-## Monetization — Freemium Model
+## Monetization — Subscription First
 
-### Free Tier
-- Healthify chat (5 transforms/day)
-- Browse full recipe database
-- 1 meal plan per week
-- Basic grocery list
-- Barcode scanning (5 scans/day)
-- Daily nutrition logging
-- Community access (read-only)
+### Trial and Paid Access
+- Users can create an account and finish onboarding before checkout.
+- Full app access begins only after starting a store-managed `7-day` free trial or paid subscription.
+- Monthly subscription: `$9.99/month`
+- Annual subscription: `$49.99/year`
+- Monthly and annual plans unlock the same premium entitlement.
 
-### Premium ($7.99/mo or $59.99/yr)
-- Unlimited Healthify transforms
-- AI nutrition coach (proactive check-ins, goal tracking, restaurant analysis)
-- Unlimited meal plans with family/household support
-- Advanced meal prep & batch cooking planner
-- Unlimited barcode scanning + scan history
-- Grocery delivery integration
-- Full community access (post, share, create groups)
-- Dietary transition programs
-- Ad-free experience
-- Priority AI responses
+### Included With Premium
+- Full access to chat, scans, browse, saved recipes, meal plans, and tracking
+- Ongoing AI coaching and premium product experiences
+- Restore purchases and manage subscription through the App Store
 
 ---
 

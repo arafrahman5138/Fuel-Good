@@ -1,8 +1,8 @@
 {
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/wholefoodlabs",
-  "exported_at": "2026-03-07T16:03:32.050806Z",
-  "meal_count": 52,
+  "exported_at": "2026-03-13T01:23:36.214250Z",
+  "meal_count": 65,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -105,10 +105,25 @@
           "fas": 65.0
         },
         "mes_score_with_default_pairing": 77.6,
-        "mes_default_pairing_delta": 15.0,
+        "mes_default_pairing_delta": 18.9,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 81.5,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -143,13 +158,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918470"
     },
     {
@@ -293,6 +307,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918471"
     },
     {
@@ -455,6 +470,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918472"
     },
     {
@@ -608,17 +624,7 @@
         "protein": 12,
         "carbs": 34,
         "fat": 22,
-        "fiber": 8,
-        "mes_score": 57.6,
-        "mes_display_score": 57.6,
-        "mes_tier": "moderate",
-        "mes_display_tier": "moderate",
-        "mes_sub_scores": {
-          "gis": 70.0,
-          "pas": 15.9,
-          "fs": 77.5,
-          "fas": 85.6
-        }
+        "fiber": 8
       },
       "difficulty": "easy",
       "tags": [
@@ -665,6 +671,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918474"
     },
     {
@@ -794,10 +801,25 @@
           "fas": 85.6
         },
         "mes_score_with_default_pairing": 65.5,
-        "mes_default_pairing_delta": 12.6,
+        "mes_default_pairing_delta": 16.6,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 69.5,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "medium",
       "tags": [
@@ -831,13 +853,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918476"
     },
     {
@@ -990,6 +1011,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918479"
     },
     {
@@ -1141,10 +1163,25 @@
           "fas": 84.0
         },
         "mes_score_with_default_pairing": 80.8,
-        "mes_default_pairing_delta": 13.4,
+        "mes_default_pairing_delta": 17.4,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 84.8,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -1182,13 +1219,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918481"
     },
     {
@@ -1387,6 +1423,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918485"
     },
     {
@@ -1536,10 +1573,25 @@
           "fas": 87.2
         },
         "mes_score_with_default_pairing": 70.5,
-        "mes_default_pairing_delta": 13.4,
+        "mes_default_pairing_delta": 17.3,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 74.4,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "medium",
       "tags": [
@@ -1575,13 +1627,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918482"
     },
     {
@@ -1699,10 +1750,25 @@
           "fas": 90.4
         },
         "mes_score_with_default_pairing": 75.9,
-        "mes_default_pairing_delta": 13.0,
+        "mes_default_pairing_delta": 16.9,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 79.8,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "medium",
       "tags": [
@@ -1737,13 +1803,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918484"
     },
     {
@@ -1906,10 +1971,25 @@
           "fas": 87.2
         },
         "mes_score_with_default_pairing": 69.0,
-        "mes_default_pairing_delta": 11.2,
+        "mes_default_pairing_delta": 15.2,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 73.0,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "medium",
       "tags": [
@@ -1948,13 +2028,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918483"
     },
     {
@@ -2058,7 +2137,91 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "high",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "with_meal"
+      },
       "created_at": "2026-03-03T00:05:13.009592"
+    },
+    {
+      "id": "4681fbb5-9c7e-4760-baf5-01e3c20781e6",
+      "title": "Brown Rice",
+      "description": "Meal-prep carb component using fluffy brown rice.",
+      "ingredients": [
+        {
+          "name": "brown rice",
+          "quantity": "1/2",
+          "unit": "cup uncooked",
+          "category": "grains"
+        },
+        {
+          "name": "water or broth",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "other"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "pinch",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Rinse the brown rice well.",
+        "Cook with water or broth and a pinch of salt until tender.",
+        "Fluff and portion for meal prep."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 25,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 165,
+        "protein": 3.5,
+        "carbs": 34.0,
+        "fat": 1.2,
+        "fiber": 2.6,
+        "sugar": 0.4
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "carb_base",
+        "carb_component",
+        "red_pepper_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "neutral"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "global",
+      "health_benefits": [
+        "energy_boost"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T19:08:47.788844"
     },
     {
       "id": "552b46b7-fd6d-472d-9a8f-582c3a7f20ec",
@@ -2207,15 +2370,16 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T17:24:15.729766"
     },
     {
       "id": "e64ffc8e-4f44-4aa5-89de-e2bef06a218c",
       "title": "Butter Chicken Bowl",
-      "description": "Butter Chicken Bowl with white rice and kachumber salad.",
+      "description": "Butter Chicken Bowl with chicken thighs, 2/3 cup cooked white rice, and 1.5 servings kachumber salad.",
       "ingredients": [
         {
-          "name": "chicken breast",
+          "name": "chicken thighs",
           "quantity": "2",
           "unit": "pieces",
           "category": "protein"
@@ -2251,6 +2415,30 @@
           "category": "spices"
         },
         {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "minced garlic",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "produce"
+        },
+        {
+          "name": "ginger paste",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "produce"
+        },
+        {
           "name": "crushed tomatoes",
           "quantity": "1/2",
           "unit": "cup",
@@ -2269,74 +2457,95 @@
           "category": "dairy"
         },
         {
+          "name": "extra virgin olive oil",
+          "quantity": "2",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
           "name": "white basmati rice",
-          "quantity": "3/4",
+          "quantity": "2/3",
           "unit": "cup cooked",
           "category": "grains"
         },
         {
           "name": "cucumber, diced",
-          "quantity": "1",
-          "unit": "cup",
+          "quantity": "1.5",
+          "unit": "cups",
           "category": "produce"
         },
         {
           "name": "tomatoes, diced",
-          "quantity": "1",
-          "unit": "cup",
+          "quantity": "1.5",
+          "unit": "cups",
           "category": "produce"
         },
         {
           "name": "red onion, finely chopped",
-          "quantity": "1/4",
+          "quantity": "3/8",
           "unit": "cup",
           "category": "produce"
         },
         {
           "name": "fresh cilantro",
-          "quantity": "2",
+          "quantity": "3",
           "unit": "tbsp",
           "category": "produce"
         },
         {
           "name": "lemon juice",
-          "quantity": "1",
+          "quantity": "1.5",
           "unit": "tbsp",
           "category": "produce"
         }
       ],
       "steps": [
-        "Butter Chicken: Cook chicken with onion, peas, garlic, ginger, and spices. Add crushed tomatoes, Greek yogurt, and sour cream; simmer until thick and fully cooked.",
-        "Rice: Cook or warm white basmati rice until fluffy.",
-        "Kachumber Salad: Mix cucumber, tomatoes, onion, cilantro, and lemon juice; season lightly with salt and pepper.",
-        "Assembly: Divide rice into two bowls, top with butter chicken, and finish with kachumber salad."
+        "Butter Chicken: Cook chicken thighs with onion, peas, garlic, ginger, and spices. Add crushed tomatoes, Greek yogurt, and sour cream; simmer until thick and fully cooked.",
+        "Rice: Prepare or warm 2/3 cup cooked white basmati rice.",
+        "Kachumber Salad: Mix cucumber, tomatoes, red onion, cilantro, and lemon juice for a 1.5-serving salad.",
+        "Assembly: Add rice to the bowl, top with butter chicken, and finish with the larger kachumber side."
       ],
       "prep_time_min": 10,
       "cook_time_min": 20,
       "total_time_min": 30,
       "servings": 2,
       "nutrition_info": {
-        "calories": 391.5,
-        "protein": 37.1,
-        "carbs": 38.5,
-        "fat": 8.4,
-        "fiber": 4.4,
-        "sugar": 6.0,
-        "mes_score": 63.5,
-        "mes_display_score": 63.5,
-        "mes_tier": "moderate",
-        "mes_display_tier": "moderate",
+        "calories": 420.0,
+        "protein": 38.0,
+        "carbs": 36.0,
+        "fat": 13.0,
+        "fiber": 8.8,
+        "sugar": 5.6,
+        "mes_score": 78.9,
+        "mes_display_score": 78.9,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 56.5,
-          "pas": 90.8,
-          "fs": 47.0,
-          "fas": 47.0
+          "gis": 68.0,
+          "pas": 93.5,
+          "fs": 82.5,
+          "fas": 70.0
         },
-        "mes_score_with_default_pairing": 66.6,
-        "mes_default_pairing_delta": 3.1,
+        "mes_score_with_default_pairing": 78.3,
+        "mes_default_pairing_delta": 3.0,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 6.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ],
         "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
         "mes_default_pairing_title": "Kachumber Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 81.9,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -2378,14 +2587,284 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "552b46b7-fd6d-472d-9a8f-582c3a7f20ec",
-        "edce49c5-21b3-4915-9e75-e9c381ed32fd",
         "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T17:24:15.729771"
+    },
+    {
+      "id": "f2e2813f-ebaf-4cd5-a2dc-28a9925df80b",
+      "title": "Butter Chicken Bowl Plus",
+      "description": "Composed bowl using prep components: 2 servings butter chicken thighs, 4/3 cups cooked white rice, and 3 servings kachumber salad across 2 total servings.",
+      "ingredients": [
+        {
+          "name": "butter chicken thighs",
+          "quantity": "2",
+          "unit": "servings",
+          "category": "protein"
+        },
+        {
+          "name": "white rice",
+          "quantity": "4/3",
+          "unit": "cups cooked",
+          "category": "grains"
+        },
+        {
+          "name": "kachumber salad",
+          "quantity": "3",
+          "unit": "servings",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Protein Component: Add 2 servings of Butter Chicken Thighs meal-prep component.",
+        "Carb Component: Add 4/3 cups cooked White Rice meal-prep component (2/3 cup per serving).",
+        "Veggie Component: Add 3 servings of Kachumber Salad meal-prep component (1.5 servings per serving).",
+        "Assembly: Divide into 2 bowls and serve."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 10,
+      "total_time_min": 15,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 420.0,
+        "protein": 38.0,
+        "carbs": 36.0,
+        "fat": 13.0,
+        "fiber": 8.8,
+        "sugar": 5.6,
+        "mes_score": 78.9,
+        "mes_display_score": 78.9,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 68.0,
+          "pas": 93.5,
+          "fs": 82.5,
+          "fas": 70.0
+        },
+        "mes_score_with_default_pairing": 78.3,
+        "mes_default_pairing_delta": 3.0,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 6.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ],
+        "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
+        "mes_default_pairing_title": "Kachumber Salad",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 81.9,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "sit-down",
+        "whole-food",
+        "butter_chicken_group_v2"
+      ],
+      "flavor_profile": [
+        "savory",
+        "spicy",
+        "umami",
+        "fresh"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "indian",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6"
+      ],
+      "component_composition": {
+        "protein_component_title": "Butter Chicken Thighs",
+        "carb_component_title": "White Rice",
+        "veg_component_title": "Kachumber Salad",
+        "protein_servings_total": 2,
+        "rice_cups_total": "4/3",
+        "salad_servings_total": 3,
+        "meal_servings_total": 2
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-08T19:21:26.948400"
+    },
+    {
+      "id": "061ab365-7eb4-4195-8940-b402f190e042",
+      "title": "Butter Chicken Thighs",
+      "description": "Meal-prep protein component for butter chicken bowls.",
+      "ingredients": [
+        {
+          "name": "chicken thighs",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "onion, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "frozen peas",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "garam masala",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "minced garlic",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "produce"
+        },
+        {
+          "name": "ginger paste",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "produce"
+        },
+        {
+          "name": "crushed tomatoes",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fat free greek yogurt",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "fat free sour cream",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "extra virgin olive oil",
+          "quantity": "2",
+          "unit": "tsp",
+          "category": "fats"
+        }
+      ],
+      "steps": [
+        "Marinate chicken thighs with garlic, ginger, garam masala, paprika, chili powder, salt, and pepper.",
+        "Sear chicken with sliced onion and peas until chicken is nearly cooked through.",
+        "Add crushed tomatoes, Greek yogurt, and sour cream, then simmer until the sauce thickens and chicken is fully cooked.",
+        "Portion into 2 meal-prep servings."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 20,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 300,
+        "protein": 33.0,
+        "carbs": 10.0,
+        "fat": 15.0,
+        "fiber": 2.5,
+        "sugar": 3.5
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "protein_base",
+        "protein_component",
+        "butter_chicken_group_v2"
+      ],
+      "flavor_profile": [
+        "savory",
+        "spicy",
+        "umami"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "indian",
+      "health_benefits": [
+        "anti_inflammatory",
+        "bone_health",
+        "energy_boost",
+        "gut_health",
+        "heart_health",
+        "immune_support",
+        "muscle_recovery",
+        "skin_health"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-08T19:21:26.946640"
     },
     {
       "id": "cb558ac2-8ddf-430f-9b9c-e458ccc7623c",
@@ -2506,6 +2985,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918485"
     },
     {
@@ -2594,6 +3074,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009592"
     },
     {
@@ -2705,6 +3186,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.883221"
     },
     {
@@ -2841,7 +3323,27 @@
           "pas": 93.5,
           "fs": 82.5,
           "fas": 70.0
-        }
+        },
+        "mes_score_with_default_pairing": 78.3,
+        "mes_default_pairing_delta": 3.0,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 6.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ],
+        "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
+        "mes_default_pairing_title": "Kachumber Salad",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 81.9,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -2882,8 +3384,6 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "33af1e73-c242-40b9-808d-fa0853e61a05",
-        "edce49c5-21b3-4915-9e75-e9c381ed32fd",
         "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6"
       ],
       "component_composition": {
@@ -2895,6 +3395,7 @@
       },
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-05T23:33:57.963085"
     },
     {
@@ -3069,6 +3570,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-02T22:22:52.924264"
     },
     {
@@ -3379,7 +3881,112 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-01T18:00:05.652729"
+    },
+    {
+      "id": "0a823513-6446-45a3-b605-f9ba207ed52c",
+      "title": "Cilantro Lime Cabbage Slaw",
+      "description": "Crunchy cabbage slaw with lime and cilantro that brightens smoky bowls and adds a better metabolic buffer.",
+      "ingredients": [
+        {
+          "name": "green cabbage, shredded",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "produce"
+        },
+        {
+          "name": "red cabbage, shredded",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "cilantro, chopped",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "lime juice",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "pinch",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Add the green cabbage, red cabbage, and cilantro to a bowl.",
+        "Dress with lime juice, olive oil, and a pinch of salt.",
+        "Toss well and let it sit for a few minutes so the cabbage softens slightly while staying crisp."
+      ],
+      "prep_time_min": 8,
+      "cook_time_min": 0,
+      "total_time_min": 8,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 85,
+        "protein": 2.0,
+        "carbs": 9.0,
+        "fat": 5.0,
+        "fiber": 4.0,
+        "sugar": 3.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "veg_side",
+        "veg_component",
+        "salad",
+        "fiesta_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "fresh",
+        "tangy",
+        "crunchy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "detox_support",
+        "hormone_support",
+        "immune_support"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": "fiesta_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "med",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
+      "created_at": "2026-03-12T20:50:22.686711"
     },
     {
       "id": "509a0794-9599-4e2e-8993-b4f45a4c00a9",
@@ -3528,6 +4135,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918473"
     },
     {
@@ -3635,6 +4243,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.884137"
     },
     {
@@ -3753,6 +4362,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918476"
     },
     {
@@ -3836,7 +4446,335 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918481"
+    },
+    {
+      "id": "89b4e9ab-643b-49bc-9a12-eb41f00847c7",
+      "title": "Creamy Red Pepper Chicken Rice Bowl",
+      "description": "A chicken and brown rice bowl finished with creamy red pepper sauce, with a fresh herb salad as the default pairing.",
+      "ingredients": [
+        {
+          "name": "red pepper chicken",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "protein"
+        },
+        {
+          "name": "brown rice",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "grains"
+        },
+        {
+          "name": "creamy red pepper sauce",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Protein Component: Add 1 serving of Red Pepper Chicken.",
+        "Carb Component: Add 1 serving of Brown Rice.",
+        "Sauce Component: Spoon over 1 serving of Creamy Red Pepper Sauce.",
+        "Assembly: Build the bowl and serve hot. Pair it with the default Cucumber Tomato Herb Salad for a more balanced plate."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 20,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 460,
+        "protein": 41.5,
+        "carbs": 47.0,
+        "fat": 13.2,
+        "fiber": 8.1,
+        "sugar": 6.4,
+        "mes_score": 73.5,
+        "mes_display_score": 73.5,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 49.2,
+          "pas": 100.0,
+          "fs": 78.1,
+          "fas": 71.0
+        },
+        "mes_score_with_default_pairing": 74.1,
+        "mes_default_pairing_delta": 4.6,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ],
+        "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
+        "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 78.1,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "red_pepper_bowl_group_v1",
+        "sit-down",
+        "whole-food"
+      ],
+      "flavor_profile": [
+        "savory",
+        "creamy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "energy_boost",
+        "immune_support",
+        "muscle_recovery",
+        "skin_health"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "red_pepper_bowl_group_v1",
+      "default_pairing_ids": [
+        "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699"
+      ],
+      "component_composition": {
+        "protein_component_title": "Red Pepper Chicken",
+        "carb_component_title": "Brown Rice",
+        "sauce_component_title": "Creamy Red Pepper Sauce",
+        "default_pairing_title": "Cucumber Tomato Herb Salad",
+        "component_titles": [
+          "Red Pepper Chicken",
+          "Brown Rice",
+          "Creamy Red Pepper Sauce"
+        ],
+        "default_pairing_role": "veg_side"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T19:08:47.793117"
+    },
+    {
+      "id": "29b0f2d7-b366-4fb9-9ff8-c6c8d0f45a82",
+      "title": "Creamy Red Pepper Sauce",
+      "description": "Meal-prep sauce component made with red pepper, garlic, milk, and light cream cheese.",
+      "ingredients": [
+        {
+          "name": "red bell pepper",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves",
+          "quantity": "3",
+          "unit": "cloves",
+          "category": "produce"
+        },
+        {
+          "name": "water",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "other"
+        },
+        {
+          "name": "1% milk",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "light cream cheese",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "dairy"
+        },
+        {
+          "name": "salt",
+          "quantity": "pinch",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "onion powder",
+          "quantity": "pinch",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Cook the bell pepper and garlic until soft and fragrant.",
+        "Blend with milk, cream cheese, water, salt, and onion powder until smooth.",
+        "Pour back into the pan and simmer briefly until creamy."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 10,
+      "total_time_min": 20,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 90,
+        "protein": 4.0,
+        "carbs": 8.0,
+        "fat": 4.0,
+        "fiber": 1.5,
+        "sugar": 4.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "sauce_component",
+        "sauce",
+        "red_pepper_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "creamy",
+        "savory"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "vegetarian"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "heart_health",
+        "immune_support",
+        "skin_health"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T19:08:47.788845"
+    },
+    {
+      "id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
+      "title": "Cucumber Tomato Herb Salad",
+      "description": "Fresh salad side that brightens rich bowls and boosts fiber.",
+      "ingredients": [
+        {
+          "name": "cucumber",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "tomato",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh parsley",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "lemon juice",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "pinch",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Toss the cucumber, tomato, and parsley together.",
+        "Dress with olive oil, lemon juice, and a pinch of salt."
+      ],
+      "prep_time_min": 8,
+      "cook_time_min": 0,
+      "total_time_min": 8,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 70,
+        "protein": 2.0,
+        "carbs": 10.0,
+        "fat": 3.0,
+        "fiber": 3.0,
+        "sugar": 4.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "veg_side",
+        "veg_component",
+        "salad",
+        "red_pepper_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "fresh"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "detox_support",
+        "skin_health"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "med",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
+      "created_at": "2026-03-12T19:08:47.788846"
     },
     {
       "id": "5713b88b-a4c3-4761-b602-d984b046792e",
@@ -3920,6 +4858,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-02T22:32:08.198885"
     },
     {
@@ -4022,6 +4961,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.882272"
     },
     {
@@ -4162,10 +5102,25 @@
           "fas": 88.8
         },
         "mes_score_with_default_pairing": 72.8,
-        "mes_default_pairing_delta": 11.3,
+        "mes_default_pairing_delta": 15.3,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 76.8,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -4196,13 +5151,12 @@
       "is_component": false,
       "meal_group_id": null,
       "default_pairing_ids": [
-        "18b6eeaf-36a8-4dc1-bfee-b26bba3c5769",
-        "131365e2-b77a-45bb-a6be-04a82c29cce3",
-        "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e"
+        "131365e2-b77a-45bb-a6be-04a82c29cce3"
       ],
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918486"
     },
     {
@@ -4306,6 +5260,13 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "med",
+        "healthy_fat": false,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
       "created_at": "2026-03-03T17:24:15.729770"
     },
     {
@@ -4404,6 +5365,13 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "high",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
       "created_at": "2026-03-03T00:05:13.009591"
     },
     {
@@ -4499,6 +5467,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009591"
     },
     {
@@ -4609,6 +5578,13 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "high",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
       "created_at": "2026-03-03T00:05:13.009593"
     },
     {
@@ -4710,6 +5686,13 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": {
+        "acid": true,
+        "fiber_class": "med",
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
       "created_at": "2026-03-03T00:05:13.009589"
     },
     {
@@ -4805,6 +5788,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009591"
     },
     {
@@ -4954,7 +5938,115 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918477"
+    },
+    {
+      "id": "6fa6c5e8-4577-4aa4-9abc-66bfaae1445e",
+      "title": "Red Pepper Chicken",
+      "description": "Meal-prep protein component with seasoned chicken in a silky red pepper finish.",
+      "ingredients": [
+        {
+          "name": "chicken breast",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "oregano",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "onion, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Season the chicken with olive oil, salt, pepper, paprika, cumin, and oregano.",
+        "Cook in a hot skillet with sliced onion until the chicken is cooked through and lightly browned.",
+        "Slice and portion into meal-prep containers."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 15,
+      "total_time_min": 25,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 240,
+        "protein": 34.0,
+        "carbs": 5.0,
+        "fat": 8.0,
+        "fiber": 1.0,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "protein_base",
+        "protein_component",
+        "red_pepper_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "savory",
+        "smoky"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T19:08:47.788843"
     },
     {
       "id": "89b3aecb-1bfd-4e77-9c01-8309a5f652b5",
@@ -5041,6 +6133,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009587"
     },
     {
@@ -5129,6 +6222,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009593"
     },
     {
@@ -5223,6 +6317,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009590"
     },
     {
@@ -5313,6 +6408,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009591"
     },
     {
@@ -5434,6 +6530,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.884604"
     },
     {
@@ -5521,6 +6618,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009590"
     },
     {
@@ -5605,6 +6703,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-02T22:32:08.198885"
     },
     {
@@ -5714,6 +6813,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-02T22:32:08.198883"
     },
     {
@@ -5797,17 +6897,7 @@
         "carbs": 6.0,
         "fat": 15.0,
         "fiber": 1.2,
-        "sugar": 1.5,
-        "mes_score": 73.0,
-        "mes_display_score": 73.0,
-        "mes_tier": "good",
-        "mes_display_tier": "good",
-        "mes_sub_scores": {
-          "gis": 100.0,
-          "pas": 78.6,
-          "fs": 12.0,
-          "fas": 80.0
-        }
+        "sugar": 1.5
       },
       "difficulty": "easy",
       "tags": [
@@ -5850,7 +6940,183 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-05T23:38:11.361036"
+    },
+    {
+      "id": "ee71fb47-a228-4281-a30f-af5dc20e70f7",
+      "title": "Skillet Chicken Fajita Rice Bowl",
+      "description": "A simple fajita-inspired bowl with seasoned chicken, brown rice, sauteed peppers and onion, finished with sour cream and hot sauce. Paired with cucumber tomato herb salad for a brighter, fresher plate.",
+      "ingredients": [
+        {
+          "name": "brown rice, uncooked",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "grains"
+        },
+        {
+          "name": "water or broth",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "other"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "chicken breast",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1.5",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "red onion, chopped",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "red bell pepper, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "green bell pepper, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "fat-free sour cream",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "hot sauce or sriracha",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Start the rice first so everything finishes around the same time. Add the brown rice, water or broth, and a pinch of salt to a pot, bring it to a boil, then lower the heat, cover, and let it simmer until the rice is tender and the liquid is gone.",
+        "While the rice cooks, slice the chicken into strips and season it with olive oil, salt, black pepper, paprika, chili powder, and garlic powder so every piece is well coated.",
+        "Heat a skillet over medium-high heat. Add a little olive oil, then cook the onion and both bell peppers until they soften and pick up a little color but still keep some bite.",
+        "Move the veggies out of the pan and add the chicken. Let it cook in a single layer for a few minutes on each side until it is cooked through and lightly browned around the edges.",
+        "Return the peppers and onion to the pan, then stir in the sour cream and hot sauce just long enough to coat everything and make it creamy.",
+        "Divide the rice into bowls, spoon the chicken fajita mixture over the top, and serve with the default cucumber tomato herb salad on the side. For the best metabolic response, eat the salad first."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 20,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 437,
+        "protein": 39.5,
+        "carbs": 48.0,
+        "fat": 8.0,
+        "fiber": 6.0,
+        "sugar": 5.0,
+        "mes_score": 64.7,
+        "mes_display_score": 64.7,
+        "mes_tier": "moderate",
+        "mes_display_tier": "moderate",
+        "mes_sub_scores": {
+          "gis": 44.5,
+          "pas": 98.0,
+          "fs": 65.0,
+          "fas": 45.0
+        },
+        "mes_score_with_default_pairing": 67.7,
+        "mes_default_pairing_delta": 6.9,
+        "mes_default_pairing_adjusted_score": 71.6,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
+        "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "sit-down",
+        "whole-food"
+      ],
+      "flavor_profile": [
+        "savory",
+        "smoky",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "blood_sugar",
+        "energy_boost",
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T22:55:52.507970"
     },
     {
       "id": "c975e136-9360-44d5-b763-473b9713a2f0",
@@ -6006,6 +7272,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-02-28T18:39:34.918483"
     },
     {
@@ -6119,7 +7386,497 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.882764"
+    },
+    {
+      "id": "c278c967-4fbb-4af0-b142-776798835b25",
+      "title": "Smoky Burrito Chicken",
+      "description": "Meal-prep protein component for burrito bowls.",
+      "ingredients": [
+        {
+          "name": "chicken breast",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Season the chicken well.",
+        "Cook in a hot skillet until cooked through and lightly browned.",
+        "Slice and portion into prep containers."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 15,
+      "total_time_min": 25,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 250,
+        "protein": 34.0,
+        "carbs": 2.0,
+        "fat": 8.0,
+        "fiber": 0.0,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "protein_base",
+        "protein_component",
+        "burrito_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "savory",
+        "smoky"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "burrito_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T21:04:05.401144"
+    },
+    {
+      "id": "32e9985b-bae5-476e-9227-f38a154b782f",
+      "title": "Smoky Chicken Potato Fiesta Bowl",
+      "description": "A smoky, high-protein chicken and potato bowl with black beans, corn, and tomato for a hearty weeknight meal.",
+      "ingredients": [
+        {
+          "name": "potatoes",
+          "quantity": "2",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "2",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chicken breast",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "onion, sliced",
+          "quantity": "1",
+          "unit": "small",
+          "category": "produce"
+        },
+        {
+          "name": "frozen corn",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "black beans",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "protein"
+        },
+        {
+          "name": "tomato, diced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "sour cream (optional)",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "dairy"
+        },
+        {
+          "name": "hot sauce",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Start by preheating your oven to 450\u00b0F so it is fully hot before the potatoes go in.",
+        "Cut the potatoes into bite-size cubes, toss with olive oil, salt, pepper, garlic powder, paprika, and chili powder, then spread them on a tray and roast until golden and crisp on the edges, about 30 to 35 minutes.",
+        "While the potatoes roast, cube the chicken and season it with olive oil, salt, pepper, paprika, and chili powder so every piece is evenly coated.",
+        "Heat a large skillet, cook the chicken for a few minutes, then add onion and corn and keep cooking until the chicken is cooked through and the onion softens.",
+        "Stir in black beans and diced tomato for the last minute just to warm everything through, then fold in the roasted potatoes.",
+        "Serve hot in a bowl and finish with a spoon of sour cream and hot sauce if you want extra creaminess and heat."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 30,
+      "total_time_min": 40,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 464,
+        "protein": 44.0,
+        "carbs": 49.5,
+        "fat": 8.0,
+        "fiber": 9.0,
+        "sugar": 5.5,
+        "mes_score": 69.9,
+        "mes_display_score": 69.9,
+        "mes_tier": "moderate",
+        "mes_display_tier": "moderate",
+        "mes_sub_scores": {
+          "gis": 46.8,
+          "pas": 100.0,
+          "fs": 83.8,
+          "fas": 45.0
+        },
+        "mes_score_with_default_pairing": 73.4,
+        "mes_default_pairing_delta": 7.5,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ],
+        "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
+        "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_adjusted_score": 77.4,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "fiesta_bowl_group_v1",
+        "sit-down",
+        "whole-food"
+      ],
+      "flavor_profile": [
+        "savory",
+        "smoky",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "anti_inflammatory",
+        "blood_sugar",
+        "energy_boost",
+        "heart_health",
+        "immune_support",
+        "muscle_recovery",
+        "skin_health"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "potato"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "0a823513-6446-45a3-b605-f9ba207ed52c"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-10T23:38:05.438708"
+    },
+    {
+      "id": "0a6499aa-09ec-4552-a6ca-d10bf4c76506",
+      "title": "Smoky Tomato Chicken Burrito Bowl",
+      "description": "A hearty burrito bowl with tomato rice, seasoned chicken, peppers, corn, and black beans, paired with cilantro lime cabbage slaw.",
+      "ingredients": [
+        {
+          "name": "brown rice",
+          "quantity": "1/2",
+          "unit": "cup uncooked",
+          "category": "grains"
+        },
+        {
+          "name": "diced tomatoes",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "water or broth",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "other"
+        },
+        {
+          "name": "chicken breast",
+          "quantity": "2",
+          "unit": "pieces",
+          "category": "protein"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "small onion, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "green bell pepper, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "black beans",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "protein"
+        },
+        {
+          "name": "frozen corn",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "lettuce or spinach, chopped",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "sour cream",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "dairy"
+        },
+        {
+          "name": "hot sauce",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Cook the tomato rice by simmering the brown rice with diced tomatoes, water or broth, and salt until tender.",
+        "Season the chicken with olive oil, salt, pepper, garlic powder, paprika, and chili powder, then sear until cooked through and slice it up.",
+        "Cook the onion and green bell pepper in the same pan until soft, then stir in the corn and black beans until warmed through.",
+        "Build the bowl with tomato rice first, then chicken, peppers, onions, corn, beans, and greens.",
+        "Serve it with the default Cilantro Lime Cabbage Slaw on the side for extra crunch and a better metabolic balance."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 25,
+      "total_time_min": 35,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 457,
+        "protein": 42.5,
+        "carbs": 53.0,
+        "fat": 6.0,
+        "fiber": 9.0,
+        "sugar": 6.0,
+        "mes_score": 66.5,
+        "mes_display_score": 66.5,
+        "mes_tier": "moderate",
+        "mes_display_tier": "moderate",
+        "mes_sub_scores": {
+          "gis": 41.5,
+          "pas": 100.0,
+          "fs": 83.8,
+          "fas": 35.0
+        },
+        "mes_score_with_default_pairing": 70.1,
+        "mes_default_pairing_delta": 7.6,
+        "mes_default_pairing_adjusted_score": 74.1,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
+        "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "sit-down",
+        "whole-food",
+        "burrito_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "savory",
+        "smoky",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "blood_sugar",
+        "energy_boost",
+        "heart_health",
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "0a823513-6446-45a3-b605-f9ba207ed52c"
+      ],
+      "component_composition": {
+        "protein_component_title": "Smoky Burrito Chicken",
+        "carb_component_title": "Tomato Brown Rice",
+        "default_pairing_title": "Cilantro Lime Cabbage Slaw",
+        "component_titles": [
+          "Smoky Burrito Chicken",
+          "Tomato Brown Rice"
+        ],
+        "default_pairing_role": "veg_side"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T20:53:00.833943"
     },
     {
       "id": "f589dd6b-c548-43a2-937f-62e43d67d1f9",
@@ -6246,6 +8003,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.883649"
     },
     {
@@ -6328,6 +8086,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009584"
     },
     {
@@ -6414,6 +8173,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009592"
     },
     {
@@ -6502,7 +8262,89 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T00:05:13.009593"
+    },
+    {
+      "id": "819890cd-7a79-4299-80ed-ae2463a7d75a",
+      "title": "Tomato Brown Rice",
+      "description": "Meal-prep carb component for burrito bowls.",
+      "ingredients": [
+        {
+          "name": "brown rice",
+          "quantity": "1/2",
+          "unit": "cup uncooked",
+          "category": "grains"
+        },
+        {
+          "name": "diced tomatoes",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "water or broth",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "other"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Add rice, tomatoes, liquid, and salt to a pot.",
+        "Simmer until tender and fluffy.",
+        "Portion for meal prep."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 25,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 155,
+        "protein": 3.5,
+        "carbs": 31.0,
+        "fat": 1.0,
+        "fiber": 3.0,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "whole-food",
+        "carb_base",
+        "carb_component",
+        "burrito_bowl_group_v1"
+      ],
+      "flavor_profile": [
+        "savory"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [],
+      "protein_type": [],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": "burrito_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "created_at": "2026-03-12T21:04:05.401146"
     },
     {
       "id": "83ba9791-f3db-441d-9cd9-b29c0e6466c1",
@@ -6585,6 +8427,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-02T22:32:08.198885"
     },
     {
@@ -6697,6 +8540,7 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-04T01:46:56.881618"
     },
     {
@@ -6773,6 +8617,7 @@
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
+      "pairing_synergy_profile": null,
       "created_at": "2026-03-03T17:24:15.729768"
     }
   ]

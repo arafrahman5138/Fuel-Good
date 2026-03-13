@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, JSON
+from sqlalchemy import Boolean, Column, String, Integer, DateTime, JSON
 from sqlalchemy.orm import relationship
 from app.db import Base, GUID
 
@@ -13,6 +13,7 @@ class User(Base):
     hashed_password = Column(String, nullable=True)
     name = Column(String, nullable=False)
     auth_provider = Column(String, default="email")
+    provider_subject = Column(String, nullable=True, index=True)
     dietary_preferences = Column(JSON, default=list)
     flavor_preferences = Column(JSON, default=list)
     allergies = Column(JSON, default=list)
@@ -26,6 +27,20 @@ class User(Base):
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     last_active_date = Column(DateTime, nullable=True)
+    revenuecat_customer_id = Column(String, nullable=True, index=True)
+    subscription_product_id = Column(String, nullable=True)
+    subscription_store = Column(String, nullable=True)
+    subscription_status = Column(String, default="inactive")
+    subscription_trial_started_at = Column(DateTime, nullable=True)
+    subscription_trial_ends_at = Column(DateTime, nullable=True)
+    subscription_current_period_ends_at = Column(DateTime, nullable=True)
+    subscription_will_renew = Column(Boolean, default=False)
+    subscription_manage_url = Column(String, nullable=True)
+    subscription_last_synced_at = Column(DateTime, nullable=True)
+    access_override_level = Column(String, nullable=True)
+    access_override_reason = Column(String, nullable=True)
+    access_override_expires_at = Column(DateTime, nullable=True)
+    access_override_updated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -33,3 +48,4 @@ class User(Base):
     grocery_lists = relationship("GroceryList", back_populates="user")
     chat_sessions = relationship("ChatSession", back_populates="user")
     achievements = relationship("UserAchievement", back_populates="user")
+    push_tokens = relationship("UserPushToken")

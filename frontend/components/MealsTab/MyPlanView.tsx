@@ -24,19 +24,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
-import { mealPlanApi, nutritionApi } from '../../services/api';
+import { mealPlanApi, nutritionApi, recipeApi } from '../../services/api';
 import { FLAVOR_OPTIONS, DIETARY_OPTIONS, ALLERGY_OPTIONS } from '../../constants/Config';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
 import { ProjectedMESCard } from '../ProjectedMESCard';
+import { maybePromptForPush } from '../../services/notifications';
 import { getTierConfig, useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FLOATING_TAB_BAR_HEIGHT = 68;
-const PLANNER_CARD_BG = '#FFFFFF';
-const PLANNER_SUBTLE_BG = '#FBFAF6';
-const PLANNER_BORDER = '#ECE9E2';
 
 const FLAVOR_LABELS = Object.fromEntries(FLAVOR_OPTIONS.map((option) => [option.id, option.label]));
 const DIETARY_LABELS = Object.fromEntries(DIETARY_OPTIONS.map((option) => [option.id, option.label]));
@@ -190,7 +188,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
         if (res.xp_gained > 0) {
           showQuestToast(`+${res.xp_gained} XP · Weekly Plan`);
         }
-      });
+      }).catch(() => {});
+      maybePromptForPush('meal_plan').catch(() => {});
       if (plannerMode) {
         router.back();
       }
@@ -258,6 +257,62 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
     } finally {
       setReplacingRecipeId(null);
     }
+  };
+
+  const handleLogPlannedMeal = async (meal: any, recipe: any) => {
+    const recipeId = recipe?.id;
+    if (!meal?.id) {
+      throw new Error('Meal plan item is missing an id');
+    }
+
+    let preferredPairing: any | null = null;
+    if (recipeId) {
+      try {
+        const suggestions = await recipeApi.getPairingSuggestions(String(recipeId), 6);
+        preferredPairing = suggestions.find((item: any) => item?.is_default_pairing) || null;
+      } catch {
+        preferredPairing = null;
+      }
+    }
+
+    const hasPairing = !!preferredPairing?.recipe_id;
+    const groupId = hasPairing
+      ? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      : undefined;
+    const combinedScore =
+      preferredPairing?.combined_display_score ?? preferredPairing?.combined_mes_score ?? undefined;
+    const combinedTier =
+      preferredPairing?.combined_tier ||
+      (combinedScore != null
+        ? (combinedScore >= 80 ? 'optimal' : combinedScore >= 60 ? 'stable' : combinedScore >= 40 ? 'shaky' : 'crash_risk')
+        : undefined);
+
+    await nutritionApi.createLog({
+      source_type: 'meal_plan',
+      source_id: meal.id,
+      meal_type: meal.meal_type,
+      servings: 1,
+      quantity: 1,
+      group_id: groupId,
+      group_mes_score: combinedScore,
+      group_mes_tier: combinedTier,
+    });
+
+    if (hasPairing && groupId) {
+      await nutritionApi.createLog({
+        source_type: 'recipe',
+        source_id: preferredPairing.recipe_id,
+        meal_type: meal.meal_type,
+        servings: 1,
+        quantity: 1,
+        group_id: groupId,
+        group_mes_score: combinedScore,
+        group_mes_tier: combinedTier,
+      });
+    }
+
+    const sideLabel = hasPairing ? ` + ${preferredPairing.title}` : '';
+    Alert.alert('Logged!', `"${recipe?.title || meal.meal_type}"${sideLabel} added to today's nutrition log.`);
   };
 
   const toggleFlavor = (id: string) => {
@@ -362,7 +417,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
           style={[
             styles.plannerShell,
             {
-              backgroundColor: '#FCFCFA',
+              backgroundColor: theme.surface,
               opacity: plannerEnterAnim,
               transform: [{ translateY: plannerTranslateY }],
             },
@@ -407,7 +462,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                 </View>
               </View>
 
-              <View style={styles.progressTrack}>
+              <View style={[styles.progressTrack, { backgroundColor: theme.surfaceHighlight }]}>
                 <View
                   style={[
                     styles.progressFill,
@@ -439,8 +494,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     style={[
                       styles.preferenceCard,
                       {
-                        backgroundColor: PLANNER_CARD_BG,
-                        borderColor: PLANNER_BORDER,
+                        backgroundColor: theme.surface,
+                        borderColor: theme.border,
                       },
                     ]}
                   >
@@ -482,8 +537,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     style={[
                       styles.preferenceCard,
                       {
-                        backgroundColor: PLANNER_CARD_BG,
-                        borderColor: PLANNER_BORDER,
+                        backgroundColor: theme.surface,
+                        borderColor: theme.border,
                       },
                     ]}
                   >
@@ -525,8 +580,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     style={[
                       styles.preferenceCard,
                       {
-                        backgroundColor: PLANNER_CARD_BG,
-                        borderColor: PLANNER_BORDER,
+                        backgroundColor: theme.surface,
+                        borderColor: theme.border,
                       },
                     ]}
                   >
@@ -561,7 +616,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                             style={[
                               styles.summaryChip,
                               {
-                                backgroundColor: allergies.length ? 'rgba(245,158,11,0.12)' : PLANNER_SUBTLE_BG,
+                                backgroundColor: allergies.length ? 'rgba(245,158,11,0.12)' : theme.surfaceElevated,
                               },
                             ]}
                           >
@@ -593,12 +648,12 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                           style={[
                             styles.planStyleCard,
                             {
-                              backgroundColor: selected ? theme.primaryMuted : PLANNER_CARD_BG,
-                              borderColor: selected ? theme.primary : PLANNER_BORDER,
+                              backgroundColor: selected ? theme.primaryMuted : theme.surface,
+                              borderColor: selected ? theme.primary : theme.border,
                             },
                           ]}
                         >
-                          <View style={[styles.planStyleIcon, { backgroundColor: selected ? '#FFFFFF' : PLANNER_SUBTLE_BG }]}>
+                          <View style={[styles.planStyleIcon, { backgroundColor: selected ? theme.surface : theme.surfaceElevated }]}>
                             <Ionicons name={option.icon} size={18} color={theme.primary} />
                           </View>
                           <Text style={[styles.planStyleTitle, { color: theme.text }]}>{option.title}</Text>
@@ -627,8 +682,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                             style={[
                               styles.shortlistCard,
                               {
-                                backgroundColor: PLANNER_CARD_BG,
-                                borderColor: included ? theme.primary : avoided ? theme.warning : PLANNER_BORDER,
+                                backgroundColor: theme.surface,
+                                borderColor: included ? theme.primary : avoided ? theme.warning : theme.border,
                               },
                             ]}
                           >
@@ -653,7 +708,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                                 onPress={() => toggleShortlistSelection(item.id, 'include')}
                                 style={[
                                   styles.shortlistAction,
-                                  { backgroundColor: included ? theme.primaryMuted : PLANNER_SUBTLE_BG, borderColor: included ? theme.primary : PLANNER_BORDER },
+                                  { backgroundColor: included ? theme.primaryMuted : theme.surfaceElevated, borderColor: included ? theme.primary : theme.border },
                                 ]}
                               >
                                 <Text style={[styles.shortlistActionText, { color: included ? theme.primary : theme.textSecondary }]}>
@@ -664,7 +719,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                                 onPress={() => toggleShortlistSelection(item.id, 'avoid')}
                                 style={[
                                   styles.shortlistAction,
-                                  { backgroundColor: avoided ? 'rgba(245,158,11,0.14)' : PLANNER_SUBTLE_BG, borderColor: avoided ? theme.warning : PLANNER_BORDER },
+                                  { backgroundColor: avoided ? 'rgba(245,158,11,0.14)' : theme.surfaceElevated, borderColor: avoided ? theme.warning : theme.border },
                                 ]}
                               >
                                 <Text style={[styles.shortlistActionText, { color: avoided ? theme.warning : theme.textSecondary }]}>
@@ -699,7 +754,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                 />
               </View>
             ) : (
-              <View style={[styles.inlineCtaCard, { backgroundColor: PLANNER_CARD_BG, borderColor: PLANNER_BORDER }]}>
+              <View style={[styles.inlineCtaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={styles.inlineCtaHeader}>
                   <View style={styles.inlineCtaCopy}>
                     <Text style={[styles.inlineCtaEyebrow, { color: theme.primary }]}>Weekly Plan Builder</Text>
@@ -713,11 +768,11 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                 </View>
 
                 <View style={styles.inlineCtaMetrics}>
-                  <View style={[styles.inlineCtaPill, { backgroundColor: PLANNER_SUBTLE_BG }]}>
+                  <View style={[styles.inlineCtaPill, { backgroundColor: theme.surfaceElevated }]}>
                     <Ionicons name="flash" size={13} color={theme.primary} />
                     <Text style={[styles.inlineCtaPillText, { color: theme.textSecondary }]}>70+ MES target</Text>
                   </View>
-                  <View style={[styles.inlineCtaPill, { backgroundColor: PLANNER_SUBTLE_BG }]}>
+                  <View style={[styles.inlineCtaPill, { backgroundColor: theme.surfaceElevated }]}>
                     <Ionicons name="restaurant-outline" size={13} color={theme.primary} />
                     <Text style={[styles.inlineCtaPillText, { color: theme.textSecondary }]}>
                       {planStyle === 'prep_heavy' ? 'Meal prep' : planStyle === 'balanced' ? 'Balanced week' : 'More variety'}
@@ -858,9 +913,8 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                       style={[
                         styles.dayBtnInner,
                         {
-                          backgroundColor: '#FFFFFF',
+                          backgroundColor: theme.surface,
                           borderColor: theme.border,
-                          shadowColor: '#0F172A',
                         },
                       ]}
                     >
@@ -981,18 +1035,11 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     </Text>
                   )}
 
-                <View style={[styles.metaStrip, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+                <View style={[styles.metaStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <TouchableOpacity
                     onPress={async () => {
                       try {
-                        await nutritionApi.createLog({
-                          source_type: 'meal_plan',
-                          source_id: meal.id,
-                          meal_type: meal.meal_type,
-                          servings: 1,
-                          quantity: 1,
-                        });
-                        Alert.alert('Logged!', `"${recipe.title || meal.meal_type}" added to today's nutrition log.`);
+                        await handleLogPlannedMeal(meal, recipe);
                       } catch (e) {
                         Alert.alert('Error', 'Failed to log meal. Please try again.');
                       }
@@ -1194,7 +1241,6 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 6,
     borderRadius: BorderRadius.full,
-    backgroundColor: '#ECE9E2',
     overflow: 'hidden',
     marginBottom: Spacing.lg,
   },
@@ -1241,13 +1287,13 @@ const styles = StyleSheet.create({
   },
   emptyPlanCard: {
     borderWidth: 1,
-    borderRadius: 24,
+    borderRadius: BorderRadius.xxl,
     alignItems: 'center',
   },
   emptyPlanIcon: {
     width: 54,
     height: 54,
-    borderRadius: 27,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
@@ -1277,14 +1323,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   planStyleCard: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,
   },
   planStyleIcon: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
@@ -1303,7 +1349,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   preferenceCard: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
@@ -1369,7 +1415,7 @@ const styles = StyleSheet.create({
   },
   shortlistCard: {
     width: 228,
-    borderRadius: 22,
+    borderRadius: BorderRadius.xxl,
     borderWidth: 1,
     padding: Spacing.md,
   },
@@ -1388,7 +1434,7 @@ const styles = StyleSheet.create({
   shortlistScoreRing: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: BorderRadius.full,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1428,7 +1474,7 @@ const styles = StyleSheet.create({
   inlineCtaCard: {
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
-    borderRadius: 24,
+    borderRadius: BorderRadius.xxl,
     borderWidth: 1,
     padding: Spacing.lg,
   },
@@ -1460,7 +1506,7 @@ const styles = StyleSheet.create({
   inlineCtaSpark: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1510,7 +1556,7 @@ const styles = StyleSheet.create({
   personalizeCheck: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1524,7 +1570,7 @@ const styles = StyleSheet.create({
   },
   prepTimelineCard: {
     width: 230,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,
   },
@@ -1560,15 +1606,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
   },
   dayBtnInnerActive: {
     borderWidth: 0,
-    shadowOpacity: 0,
-    elevation: 0,
   },
   dayBtnText: {
     fontSize: FontSize.sm,
@@ -1591,7 +1631,7 @@ const styles = StyleSheet.create({
   mealCard: {
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderRadius: 24,
+    borderRadius: BorderRadius.xxl,
   },
   mealTopRow: {
     flexDirection: 'row',
@@ -1602,7 +1642,7 @@ const styles = StyleSheet.create({
   scoreRing: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: BorderRadius.full,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1637,9 +1677,9 @@ const styles = StyleSheet.create({
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: Spacing.xs + 2,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.full,
     flexShrink: 0,
     borderWidth: 1,
@@ -1662,20 +1702,22 @@ const styles = StyleSheet.create({
   metaStrip: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
+    gap: Spacing.sm,
     marginTop: Spacing.md,
-    padding: 10,
-    borderRadius: 18,
+    padding: Spacing.sm + 2,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
   logBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    gap: Spacing.xs + 1,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.sm - 1,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
+    flexShrink: 0,
   },
   logBtnText: {
     fontSize: FontSize.xs,
@@ -1687,6 +1729,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 4,
     paddingVertical: 4,
+    flexShrink: 0,
   },
   metaPillText: {
     fontSize: FontSize.xs,
@@ -1695,11 +1738,12 @@ const styles = StyleSheet.create({
   replaceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    gap: Spacing.xs + 1,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.sm - 1,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
+    flexShrink: 0,
   },
   replaceBtnText: {
     fontSize: FontSize.xs,
@@ -1750,7 +1794,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   replaceOptionCard: {
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,
   },

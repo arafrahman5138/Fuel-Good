@@ -1,287 +1,367 @@
-from typing import List, Optional, AsyncIterator
+from __future__ import annotations
+
+import json
 import re
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langgraph.graph import StateGraph, END
-from typing_extensions import TypedDict
+from typing import Any, AsyncIterator, List
+
+from pydantic import BaseModel, Field, ValidationError
+from sqlalchemy.orm import Session
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
 from app.agents.llm_provider import get_llm
+from app.models.recipe import Recipe
+from app.services.recipe_retrieval import retrieve_recipe_candidates
+from app.services.metabolic_engine import (
+    load_budget_for_user,
+    compute_meal_mes,
+    compute_daily_mes,
+    aggregate_daily_totals,
+    remaining_budget,
+)
+from app.models.metabolic_profile import MetabolicProfile
+from datetime import date
 
 
-class HealthifyState(TypedDict):
-    messages: list
-    user_input: str
-    analysis: str
-    swaps: list
-    recipe: dict
-    nutrition: dict
-    final_response: str
+PROMPT_VERSION = "healthify_v2_rag"
+RETRIEVAL_THRESHOLD = 0.72
 
 
-SYSTEM_PROMPT = """You are a health food expert at WholeFoodLabs. Your mission is to help people transform 
-their favorite unhealthy foods into delicious, whole-food alternatives.
+class RecipeIngredientSchema(BaseModel):
+    name: str
+    quantity: str | int | float | None = ""
+    unit: str | None = ""
 
-When a user tells you about an unhealthy food they love, you should:
 
-1. ANALYZE: Identify the key unhealthy ingredients (processed sugars, refined flour, artificial additives, 
-   seed oils, preservatives, etc.)
+class RecipeSchema(BaseModel):
+    title: str
+    description: str = ""
+    ingredients: list[RecipeIngredientSchema] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
+    prep_time_min: int = 0
+    cook_time_min: int = 0
+    servings: int = 1
 
-2. SWAP: For each unhealthy ingredient, suggest a whole-food substitute that maintains the flavor and 
-   texture as much as possible. Explain WHY each swap is healthier.
 
-3. RECIPE: Create a complete recipe using the healthier substitutes. Include:
-   - Ingredients list with quantities
-   - Step-by-step instructions
-   - Prep time and cook time
-   - Serving size
+GENERATE_PROMPT = """You are WholeFoodLabs Healthify AI.
 
-4. COMPARE: Provide a brief nutrition comparison (estimated) between the original and your healthified version.
+Return strict JSON with keys: message, recipe, swaps, nutrition.
 
-Always be encouraging and positive. Make healthy eating feel exciting, not restrictive.
-Respond in a structured JSON format with keys: message, recipe, swaps, nutrition.
+Behavior:
+- If the user wants a meal made healthier, preserve the spirit of the dish while replacing ultra-processed ingredients with whole-food alternatives.
+- If the user names a dish or cuisine with no extra context, treat that as a request for a complete healthified recipe.
+- Use realistic ingredients and plausible quantities.
+- Keep recipe steps actionable and concise.
+- Keep nutrition estimates plausible and internally consistent.
+- Do not copy retrieved recipes verbatim if told they are only context.
+- If you include swaps, every swap must include `original`, `replacement`, and `reason`.
+- Do not return partial swap entries or empty replacement fields.
+- For food and recipe requests, `recipe` must not be null and must include non-empty `ingredients` and `steps`.
 
-The "message" should be a friendly, conversational response.
-The "recipe" should have: title, description, ingredients (list of {name, quantity, unit}), 
-steps (list of strings), prep_time_min, cook_time_min, servings.
-The "swaps" should be a list of {original, replacement, reason}.
-The "nutrition" should have: original_estimate {calories, protein, carbs, fat, fiber}, 
-healthified_estimate {calories, protein, carbs, fat, fiber}.
+Recipe schema:
+- recipe.title: string
+- recipe.description: string
+- recipe.ingredients: list of {name, quantity, unit}
+- recipe.steps: list of strings
+- recipe.prep_time_min: integer
+- recipe.cook_time_min: integer
+- recipe.servings: integer
+
+Nutrition schema:
+- nutrition.original_estimate: {calories, protein, carbs, fat, fiber}
+- nutrition.healthified_estimate: {calories, protein, carbs, fat, fiber}
+"""
+
+GENERAL_PROMPT = """You are WholeFoodLabs Healthify AI.
+Return strict JSON with keys: message, recipe, swaps, nutrition.
+For general questions, provide a helpful answer in message and set recipe, swaps, and nutrition to null.
 """
 
 
-async def analyze_food(state: HealthifyState) -> HealthifyState:
-    llm = get_llm()
-    messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
-    ]
-    for msg in state.get("messages", []):
-        if msg["role"] == "user":
-            messages.append(HumanMessage(content=msg["content"]))
-        else:
-            messages.append(AIMessage(content=msg["content"]))
-    messages.append(HumanMessage(content=state["user_input"]))
-
-    response = await llm.ainvoke(messages)
-    state["final_response"] = response.content
-    return state
+def _clean_md_line(line: str) -> str:
+    return ((line or "").replace("**", "").replace("__", "").strip())
 
 
-def build_healthify_graph():
-    workflow = StateGraph(HealthifyState)
-    workflow.add_node("analyze", analyze_food)
-    workflow.set_entry_point("analyze")
-    workflow.add_edge("analyze", END)
-    return workflow.compile()
+def _recipe_to_payload(recipe: Recipe) -> dict[str, Any]:
+    return {
+        "id": str(recipe.id),
+        "title": recipe.title,
+        "description": recipe.description or "",
+        "ingredients": recipe.ingredients or [],
+        "steps": recipe.steps or [],
+        "prep_time_min": recipe.prep_time_min or 0,
+        "cook_time_min": recipe.cook_time_min or 0,
+        "servings": recipe.servings or 1,
+        "nutrition_info": recipe.nutrition_info or {},
+        "cuisine": recipe.cuisine or "american",
+        "tags": recipe.tags or [],
+    }
 
 
-graph = build_healthify_graph()
+def _retrieved_response(recipe: Recipe, confidence: float) -> dict[str, Any]:
+    message = f"I found an existing meal in our recipe library that closely matches what you asked for, so I’m using that instead of generating a new one."
+    return {
+        "message": message,
+        "recipe": _recipe_to_payload(recipe),
+        "swaps": [],
+        "nutrition": {
+            "original_estimate": recipe.nutrition_info or {},
+            "healthified_estimate": recipe.nutrition_info or {},
+        },
+        "response_mode": "retrieved",
+        "matched_recipe_id": str(recipe.id),
+        "retrieval_confidence": round(confidence, 2),
+        "prompt_version": PROMPT_VERSION,
+    }
 
 
-async def healthify_agent(
-    user_input: str,
-    history: List[dict],
-    stream: bool = False,
-) -> dict | AsyncIterator[str]:
-    import json
+def _build_user_context(db: Session, user_id: str | None) -> str:
+    """Build a natural-language context block from the user's metabolic profile and daily state."""
+    if not user_id:
+        return ""
+    try:
+        profile = db.query(MetabolicProfile).filter(
+            MetabolicProfile.user_id == user_id
+        ).first()
+        if not profile or not profile.weight_lb:
+            return ""
 
-    def _clean_md_line(line: str) -> str:
-        return (
-            (line or "")
-            .replace("**", "")
-            .replace("__", "")
-            .strip()
-        )
+        budget = load_budget_for_user(db, user_id)
+        totals = aggregate_daily_totals(db, user_id, date.today())
+        rem = remaining_budget(totals, budget)
 
-    def _parse_markdown_recipe(raw_text: str) -> dict | None:
-        lines = (raw_text or "").splitlines()
+        lines = ["User context (tailor the recipe to these constraints):"]
 
-        mode = "message"
-        saw_recipe = False
-        message_lines: list[str] = []
-        ingredients: list[dict] = []
-        steps: list[str] = []
-        swaps: list[dict] = []
-        current_swap: dict | None = None
+        # Goal and activity
+        goal_label = (profile.goal or "maintenance").replace("_", " ")
+        activity_label = (profile.activity_level or "moderate").replace("_", " ")
+        lines.append(f"- Goal: {goal_label} | Activity: {activity_label}")
 
-        title = ""
-        description = ""
-        prep_time = None
-        cook_time = None
-        servings = None
+        # Health conditions
+        conditions = []
+        if profile.type_2_diabetes:
+            conditions.append("type 2 diabetes")
+        if profile.insulin_resistant and not profile.type_2_diabetes:
+            conditions.append("insulin resistant")
+        if profile.prediabetes:
+            conditions.append("prediabetes")
+        if conditions:
+            lines.append(f"- Health: {', '.join(conditions)} — STRICT carb management required")
 
-        def _parse_ingredient(text: str) -> dict | None:
-            t = _clean_md_line(text)
-            t = re.sub(r"^[-*•]\s*", "", t)
-            t = re.sub(r"^\d+[\).\s-]+", "", t)
-            if not t:
-                return None
+        # Targets and remaining
+        protein_remaining = rem.get("protein_remaining_g", 0)
+        fiber_remaining = rem.get("fiber_remaining_g", 0)
+        carb_headroom = rem.get("carb_headroom_g", rem.get("sugar_headroom_g", 0))
 
-            if ":" in t:
-                name, qty = t.split(":", 1)
-                return {"name": name.strip(), "quantity": qty.strip(), "unit": ""}
+        lines.append(f"- Protein target: {round(budget.protein_g)}g/day ({round(max(0, protein_remaining))}g remaining today)")
+        lines.append(f"- Fiber target: {round(budget.fiber_g)}g/day ({round(max(0, fiber_remaining))}g remaining today)")
+        lines.append(f"- Carb ceiling: {round(budget.carb_ceiling_g)}g/day ({round(max(0, carb_headroom))}g headroom remaining)")
+        lines.append(f"- Calorie target: ~{round(budget.calorie_target_kcal)} kcal/day")
 
-            m = re.match(r"^(\d+(?:\/\d+)?(?:\.\d+)?)(?:\s+([a-zA-Z]+))?\s+(.+)$", t)
-            if m:
-                return {
-                    "name": m.group(3).strip(),
-                    "quantity": m.group(1).strip(),
-                    "unit": (m.group(2) or "").strip(),
-                }
+        # Key constraints as IMPORTANT instructions
+        constraints = []
+        if budget.carb_ceiling_g <= 100:
+            max_carbs_per_meal = round(budget.carb_ceiling_g / 3 * 0.8)
+            constraints.append(f"IMPORTANT: This user has a LOW carb ceiling ({round(budget.carb_ceiling_g)}g/day). Keep carbs under ~{max_carbs_per_meal}g per serving.")
+        if carb_headroom < 30:
+            constraints.append(f"IMPORTANT: Only {round(carb_headroom)}g carb headroom left today. Minimize carbs in this recipe.")
+        if protein_remaining > 40:
+            constraints.append(f"Prioritize protein-dense ingredients ({round(protein_remaining)}g still needed today).")
+        if profile.goal == "muscle_gain":
+            constraints.append("User is building muscle — maximize protein per serving.")
+        if profile.goal == "fat_loss":
+            constraints.append("User is losing fat — keep calories moderate and protein high.")
 
-            return {"name": t, "quantity": "", "unit": ""}
+        if constraints:
+            lines.append("")
+            lines.extend(constraints)
 
-        for raw in lines:
-            line = (raw or "").strip()
-            if not line or line.startswith("```") or line.startswith("'''"):
-                continue
+        return "\n".join(lines)
+    except Exception:
+        return ""
 
-            clean = _clean_md_line(line)
-            clean = re.sub(r"^#+\s*", "", clean).strip()
 
-            title_match = re.match(r"^(?:recipe|title)\s*:\s*(.+)$", clean, re.IGNORECASE)
-            if title_match:
-                title = title_match.group(1).strip()
-                saw_recipe = True
-                continue
+def _compute_recipe_mes(
+    db: Session, user_id: str | None, nutrition_data: dict | None
+) -> dict | None:
+    """Compute MES score and projected daily score for a recipe's nutrition."""
+    if not user_id or not nutrition_data:
+        return None
+    try:
+        budget = load_budget_for_user(db, user_id)
+        # Extract healthified_estimate or use as-is
+        est = nutrition_data.get("healthified_estimate") or nutrition_data
+        meal_nutrition = {
+            "protein_g": float(est.get("protein") or est.get("protein_g") or 0),
+            "carbs_g": float(est.get("carbs") or est.get("carbs_g") or 0),
+            "fiber_g": float(est.get("fiber") or est.get("fiber_g") or 0),
+            "fat_g": float(est.get("fat") or est.get("fat_g") or 0),
+            "calories": float(est.get("calories") or 0),
+        }
+        meal_result = compute_meal_mes(meal_nutrition, budget)
 
-            desc_match = re.match(r"^description\s*:\s*(.+)$", clean, re.IGNORECASE)
-            if desc_match:
-                description = desc_match.group(1).strip()
-                saw_recipe = True
-                continue
+        # Projected daily score
+        totals = aggregate_daily_totals(db, user_id, date.today())
+        projected = {
+            "protein_g": totals.get("protein_g", 0) + meal_nutrition["protein_g"],
+            "fiber_g": totals.get("fiber_g", 0) + meal_nutrition["fiber_g"],
+            "carbs_g": totals.get("carbs_g", 0) + meal_nutrition["carbs_g"],
+            "fat_g": totals.get("fat_g", 0) + meal_nutrition["fat_g"],
+            "calories": totals.get("calories", 0) + meal_nutrition["calories"],
+        }
+        daily_result = compute_daily_mes(projected, budget)
 
-            if re.match(r"^ingredients?\s*:?$", clean, re.IGNORECASE):
-                mode = "ingredients"
-                saw_recipe = True
-                continue
+        return {
+            "meal_score": meal_result.get("display_score", meal_result.get("total_score", 0)),
+            "meal_tier": meal_result.get("display_tier", meal_result.get("tier", "moderate")),
+            "projected_daily_score": daily_result.get("display_score", daily_result.get("total_score", 0)),
+            "projected_daily_tier": daily_result.get("display_tier", daily_result.get("tier", "moderate")),
+        }
+    except Exception:
+        return None
 
-            if re.match(r"^(instructions?|steps?|directions?)\s*:?$", clean, re.IGNORECASE):
-                mode = "steps"
-                saw_recipe = True
-                continue
 
-            if re.match(r"^swaps?\s*:?$", clean, re.IGNORECASE):
-                mode = "swaps"
-                saw_recipe = True
-                continue
+def _classify_intent(user_input: str) -> str:
+    text = (user_input or "").lower()
+    if any(token in text for token in ["what is", "how many", "is this healthy", "why is", "should i", "can i"]):
+        return "general_nutrition_question"
+    if any(token in text for token in ["protein", "fiber", "calories", "macros"]) and "?" in text:
+        return "general_nutrition_question"
+    if any(token in text for token in ["change the", "modify", "swap", "instead of", "make it with", "without"]):
+        return "modify_prior_recipe"
+    if any(token in text for token in ["healthy version", "healthify", "clean up", "whole-food", "make this healthier"]):
+        return "healthify_unhealthy_meal"
+    words = re.findall(r"[a-zA-Z][a-zA-Z'-]*", text)
+    if 1 <= len(words) <= 6:
+        return "healthify_unhealthy_meal"
+    return "lookup_existing_meal"
 
-            if re.match(r"^nutrition(?:\s*comparison)?\s*:?$", clean, re.IGNORECASE):
-                mode = "nutrition"
-                continue
 
-            prep_match = re.match(r"^prep\s*time\s*:?\s*(\d+)", clean, re.IGNORECASE)
-            if prep_match:
-                prep_time = int(prep_match.group(1))
-                saw_recipe = True
-                continue
+def _parse_markdown_recipe(raw_text: str) -> dict[str, Any] | None:
+    lines = (raw_text or "").splitlines()
+    mode = "message"
+    saw_recipe = False
+    message_lines: list[str] = []
+    ingredients: list[dict[str, Any]] = []
+    steps: list[str] = []
+    swaps: list[dict[str, Any]] = []
+    current_swap: dict[str, Any] | None = None
+    title = ""
+    description = ""
+    prep_time = 0
+    cook_time = 0
+    servings = 1
 
-            cook_match = re.match(r"^cook\s*time\s*:?\s*(\d+)", clean, re.IGNORECASE)
-            if cook_match:
-                cook_time = int(cook_match.group(1))
-                saw_recipe = True
-                continue
-
-            servings_match = re.match(r"^servings?\s*:?\s*(\d+)", clean, re.IGNORECASE)
-            if servings_match:
-                servings = int(servings_match.group(1))
-                saw_recipe = True
-                continue
-
-            if mode == "ingredients":
-                if re.match(r"^(instructions?|steps?|directions?)\s*:?$", clean, re.IGNORECASE):
-                    mode = "steps"
-                    saw_recipe = True
-                    continue
-                if re.match(r"^swaps?\s*:?$", clean, re.IGNORECASE):
-                    mode = "swaps"
-                    continue
-                if re.match(r"^nutrition(?:\s*comparison)?\s*:?$", clean, re.IGNORECASE):
-                    mode = "nutrition"
-                    continue
-                ing = _parse_ingredient(line)
-                if ing:
-                    ingredients.append(ing)
-                    saw_recipe = True
-                continue
-
-            if mode == "steps":
-                if re.match(r"^swaps?\s*:?$", clean, re.IGNORECASE):
-                    mode = "swaps"
-                    continue
-                if re.match(r"^nutrition(?:\s*comparison)?\s*:?$", clean, re.IGNORECASE):
-                    mode = "nutrition"
-                    continue
-                step = re.sub(r"^\d+[\).\s-]+", "", clean).strip()
-                step = re.sub(r"^[-*•]\s*", "", step).strip()
-                if step:
-                    steps.append(step)
-                    saw_recipe = True
-                continue
-
-            if mode == "swaps":
-                if re.match(r"^nutrition(?:\s*comparison)?\s*:?$", clean, re.IGNORECASE):
-                    if current_swap and (current_swap.get("original") or current_swap.get("replacement")):
-                        current_swap.setdefault("reason", "healthier whole-food alternative")
-                        swaps.append(current_swap)
-                        current_swap = None
-                    mode = "nutrition"
-                    continue
-
-                line_no_prefix = re.sub(r"^\d+[\).\s-]+", "", clean).strip()
-
-                original_match = re.match(r"^original\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
-                if original_match:
-                    if current_swap and (current_swap.get("original") or current_swap.get("replacement")):
-                        current_swap.setdefault("reason", "healthier whole-food alternative")
-                        swaps.append(current_swap)
-                    current_swap = {"original": original_match.group(1).strip()}
-                    saw_recipe = True
-                    continue
-
-                replacement_match = re.match(r"^replacement\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
-                if replacement_match:
-                    if current_swap is None:
-                        current_swap = {}
-                    current_swap["replacement"] = replacement_match.group(1).strip()
-                    saw_recipe = True
-                    continue
-
-                reason_match = re.match(r"^reason\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
-                if reason_match:
-                    if current_swap is None:
-                        current_swap = {}
-                    current_swap["reason"] = reason_match.group(1).strip()
-                    if current_swap.get("original") or current_swap.get("replacement"):
-                        current_swap.setdefault("reason", "healthier whole-food alternative")
-                        swaps.append(current_swap)
-                        current_swap = None
-                    saw_recipe = True
-                    continue
-
-                arrow_match = re.match(r"^(.+?)\s*(?:->|→)\s*(.+?)(?:\s*[—-]\s*(.+))?$", line_no_prefix)
-                if arrow_match:
-                    swaps.append(
-                        {
-                            "original": arrow_match.group(1).strip(),
-                            "replacement": arrow_match.group(2).strip(),
-                            "reason": (arrow_match.group(3) or "healthier whole-food alternative").strip(),
-                        }
-                    )
-                    saw_recipe = True
-                continue
-
-            message_lines.append(clean)
-
-        if not saw_recipe:
+    def _parse_ingredient(text: str) -> dict[str, Any] | None:
+        t = _clean_md_line(text)
+        t = re.sub(r"^[-*•]\s*", "", t)
+        t = re.sub(r"^\d+[\).\s-]+", "", t)
+        if not t:
             return None
+        if ":" in t:
+            name, qty = t.split(":", 1)
+            return {"name": name.strip(), "quantity": qty.strip(), "unit": ""}
+        match = re.match(r"^(\d+(?:\/\d+)?(?:\.\d+)?)(?:\s+([a-zA-Z]+))?\s+(.+)$", t)
+        if match:
+            return {"name": match.group(3).strip(), "quantity": match.group(1).strip(), "unit": (match.group(2) or "").strip()}
+        return {"name": t, "quantity": "", "unit": ""}
 
-        if current_swap and (current_swap.get("original") or current_swap.get("replacement")):
-            current_swap.setdefault("reason", "healthier whole-food alternative")
-            swaps.append(current_swap)
+    for raw in lines:
+        line = (raw or "").strip()
+        if not line or line.startswith("```") or line.startswith("'''"):
+            continue
+        clean = re.sub(r"^#+\s*", "", _clean_md_line(line)).strip()
 
-        message = "\n".join([m for m in message_lines if m]).strip()
-        if not message:
-            message = "Here’s a healthified version with cleaner ingredients."
+        title_match = re.match(r"^(?:recipe|title)\s*:\s*(.+)$", clean, re.IGNORECASE)
+        if title_match:
+            title = title_match.group(1).strip()
+            saw_recipe = True
+            continue
+        desc_match = re.match(r"^description\s*:\s*(.+)$", clean, re.IGNORECASE)
+        if desc_match:
+            description = desc_match.group(1).strip()
+            saw_recipe = True
+            continue
+        if re.match(r"^ingredients?\s*:?$", clean, re.IGNORECASE):
+            mode = "ingredients"
+            saw_recipe = True
+            continue
+        if re.match(r"^(instructions?|steps?|directions?)\s*:?$", clean, re.IGNORECASE):
+            mode = "steps"
+            saw_recipe = True
+            continue
+        if re.match(r"^swaps?\s*:?$", clean, re.IGNORECASE):
+            mode = "swaps"
+            saw_recipe = True
+            continue
+        prep_match = re.match(r"^prep\s*time\s*:?\s*(\d+)", clean, re.IGNORECASE)
+        if prep_match:
+            prep_time = int(prep_match.group(1))
+            continue
+        cook_match = re.match(r"^cook\s*time\s*:?\s*(\d+)", clean, re.IGNORECASE)
+        if cook_match:
+            cook_time = int(cook_match.group(1))
+            continue
+        servings_match = re.match(r"^servings?\s*:?\s*(\d+)", clean, re.IGNORECASE)
+        if servings_match:
+            servings = int(servings_match.group(1))
+            continue
 
-        recipe = {
+        if mode == "ingredients":
+            ing = _parse_ingredient(line)
+            if ing:
+                ingredients.append(ing)
+                saw_recipe = True
+            continue
+        if mode == "steps":
+            step = re.sub(r"^\d+[\).\s-]+", "", clean).strip()
+            step = re.sub(r"^[-*•]\s*", "", step).strip()
+            if step:
+                steps.append(step)
+                saw_recipe = True
+            continue
+        if mode == "swaps":
+            line_no_prefix = re.sub(r"^\d+[\).\s-]+", "", clean).strip()
+            arrow_match = re.match(r"^(.+?)\s*(?:->|→)\s*(.+?)(?:\s*[—-]\s*(.+))?$", line_no_prefix)
+            if arrow_match:
+                swaps.append(
+                    {
+                        "original": arrow_match.group(1).strip(),
+                        "replacement": arrow_match.group(2).strip(),
+                        "reason": (arrow_match.group(3) or "healthier whole-food alternative").strip(),
+                    }
+                )
+                saw_recipe = True
+                continue
+            original_match = re.match(r"^original\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
+            if original_match:
+                if current_swap and (current_swap.get("original") or current_swap.get("replacement")):
+                    swaps.append(current_swap)
+                current_swap = {"original": original_match.group(1).strip()}
+                continue
+            replacement_match = re.match(r"^replacement\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
+            if replacement_match:
+                current_swap = current_swap or {}
+                current_swap["replacement"] = replacement_match.group(1).strip()
+                continue
+            reason_match = re.match(r"^reason\s*:\s*(.+)$", line_no_prefix, re.IGNORECASE)
+            if reason_match:
+                current_swap = current_swap or {}
+                current_swap["reason"] = reason_match.group(1).strip()
+                if current_swap.get("original") or current_swap.get("replacement"):
+                    swaps.append(current_swap)
+                    current_swap = None
+                continue
+
+        message_lines.append(clean)
+
+    if not saw_recipe:
+        return None
+    if current_swap and (current_swap.get("original") or current_swap.get("replacement")):
+        swaps.append(current_swap)
+    return {
+        "message": "\n".join([m for m in message_lines if m]).strip() or "Here’s a healthified version with cleaner ingredients.",
+        "recipe": {
             "title": title or "Healthified Recipe",
             "description": description,
             "ingredients": ingredients,
@@ -289,84 +369,268 @@ async def healthify_agent(
             "prep_time_min": prep_time,
             "cook_time_min": cook_time,
             "servings": servings,
-        }
-
-        return {
-            "message": message,
-            "recipe": recipe,
-            "swaps": swaps or None,
-            "nutrition": None,
-        }
-
-    def _extract_payload(raw_text: str) -> dict:
-        text = (raw_text or "").strip()
-
-        fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
-        if fence_match:
-            text = fence_match.group(1).strip()
-        else:
-            alt_fence = re.search(r"'''(?:json)?\s*([\s\S]*?)'''", text, re.IGNORECASE)
-            if alt_fence:
-                text = alt_fence.group(1).strip()
-
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            text = text[start : end + 1]
-
-        normalized = text
-        normalized = normalized.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
-        normalized = re.sub(r'("quantity"\s*:\s*)(\d+\s*/\s*\d+)(\s*[,}])', r'\1"\2"\3', normalized)
-        normalized = re.sub(r",\s*([}\]])", r"\1", normalized)
-
-        parsed = None
-        for candidate in (normalized, text):
-            try:
-                parsed = json.loads(candidate)
-                break
-            except Exception:
-                continue
-
-        if isinstance(parsed, dict):
-            return {
-                "message": parsed.get("message", raw_text),
-                "recipe": parsed.get("recipe"),
-                "swaps": parsed.get("swaps"),
-                "nutrition": parsed.get("nutrition"),
-            }
-
-        markdown_payload = _parse_markdown_recipe(raw_text)
-        if markdown_payload:
-            return markdown_payload
-
-        msg_match = re.search(r'"message"\s*:\s*"([\s\S]*?)"\s*,\s*"recipe"', raw_text)
-        fallback_message = msg_match.group(1).replace('\\n', '\n').strip() if msg_match else raw_text
-        return {
-            "message": fallback_message,
-            "recipe": None,
-            "swaps": None,
-            "nutrition": None,
-        }
-
-    state = {
-        "messages": history,
-        "user_input": user_input,
-        "analysis": "",
-        "swaps": [],
-        "recipe": {},
-        "nutrition": {},
-        "final_response": "",
+        },
+        "swaps": swaps or None,
+        "nutrition": None,
     }
 
+
+def _extract_payload(raw_text: str) -> dict[str, Any]:
+    text = (raw_text or "").strip()
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
+    if fence_match:
+        text = fence_match.group(1).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        text = text[start : end + 1]
+    normalized = text.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
+    normalized = re.sub(r'("quantity"\s*:\s*)(\d+\s*/\s*\d+)(\s*[,}])', r'\1"\2"\3', normalized)
+    normalized = re.sub(r",\s*([}\]])", r"\1", normalized)
+    for candidate in (normalized, text):
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return {
+                    "message": parsed.get("message", raw_text),
+                    "recipe": parsed.get("recipe"),
+                    "swaps": parsed.get("swaps"),
+                    "nutrition": parsed.get("nutrition"),
+                }
+        except Exception:
+            pass
+    markdown_payload = _parse_markdown_recipe(raw_text)
+    if markdown_payload:
+        return markdown_payload
+    return {"message": raw_text, "recipe": None, "swaps": None, "nutrition": None}
+
+
+def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    recipe = payload.get("recipe")
+    if not recipe:
+        return payload
+    try:
+        normalized = RecipeSchema.model_validate(recipe)
+    except ValidationError:
+        payload["recipe"] = None
+        payload["swaps"] = payload.get("swaps") or []
+        payload["nutrition"] = payload.get("nutrition") or None
+        return payload
+
+    ingredients = [
+        {
+            "name": ingredient.name.strip(),
+            "quantity": ingredient.quantity if ingredient.quantity is not None else "",
+            "unit": ingredient.unit or "",
+        }
+        for ingredient in normalized.ingredients
+        if ingredient.name.strip()
+    ]
+    steps = [step.strip() for step in normalized.steps if step and step.strip()]
+    if not ingredients or not steps:
+        payload["recipe"] = None
+        return payload
+
+    recipe_payload = normalized.model_dump()
+    recipe_payload["ingredients"] = ingredients
+    recipe_payload["steps"] = steps
+    recipe_payload["prep_time_min"] = max(0, min(int(recipe_payload.get("prep_time_min") or 0), 240))
+    recipe_payload["cook_time_min"] = max(0, min(int(recipe_payload.get("cook_time_min") or 0), 360))
+    recipe_payload["servings"] = max(1, min(int(recipe_payload.get("servings") or 1), 12))
+    payload["recipe"] = recipe_payload
+    return payload
+
+
+def _nutrition_is_plausible(nutrition: dict[str, Any] | None) -> bool:
+    if not nutrition:
+        return True
+    for branch in ("original_estimate", "healthified_estimate"):
+        values = nutrition.get(branch) or {}
+        if not isinstance(values, dict):
+            return False
+        for key in ("calories", "protein", "carbs", "fat", "fiber"):
+            value = float(values.get(key, 0) or 0)
+            if value < 0 or value > 5000:
+                return False
+    return True
+
+
+def _normalize_swaps(swaps: Any) -> list[dict[str, str]]:
+    if not isinstance(swaps, list):
+        return []
+
+    normalized: list[dict[str, str]] = []
+    for swap in swaps:
+        if not isinstance(swap, dict):
+            continue
+        original = str(swap.get("original", "") or "").strip()
+        replacement = str(swap.get("replacement", "") or "").strip()
+        reason = str(swap.get("reason", "") or "").strip()
+        if not original or not replacement:
+            continue
+        normalized.append(
+            {
+                "original": original,
+                "replacement": replacement,
+                "reason": reason or "Cleaner whole-food alternative.",
+            }
+        )
+    return normalized
+
+
+async def _generate_healthified_payload(
+    user_input: str,
+    history: List[dict],
+    retrieved_context: list[dict[str, Any]],
+    user_context: str = "",
+) -> dict[str, Any]:
+    llm = get_llm()
+    system_prompt = GENERATE_PROMPT
+    if user_context:
+        system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+
+    context_block = ""
+    if retrieved_context:
+        context_block = "Closest existing recipe context:\n" + json.dumps(retrieved_context, indent=2)
+    messages.append(
+        HumanMessage(
+            content=f"{context_block}\n\nUser request:\n{user_input}\n\nReturn JSON only."
+        )
+    )
+
+    response = await llm.ainvoke(messages)
+    payload = _extract_payload(response.content)
+    payload = _validate_recipe_payload(payload)
+    payload["swaps"] = _normalize_swaps(payload.get("swaps"))
+    if not _nutrition_is_plausible(payload.get("nutrition")):
+        payload["nutrition"] = None
+
+    if not payload.get("recipe"):
+        repair_prompt = """Your previous response did not include a valid recipe object.
+Return strict JSON only with keys: message, recipe, swaps, nutrition.
+Requirements:
+- recipe must be non-null
+- recipe.ingredients must contain at least 5 items
+- recipe.steps must contain at least 3 concise steps
+- keep the dish faithful to the user's request
+"""
+        repair_messages = [SystemMessage(content=f"{GENERATE_PROMPT}\n\n{repair_prompt}")]
+        if user_context:
+            repair_messages = [SystemMessage(content=f"{GENERATE_PROMPT}\n\n{user_context}\n\n{repair_prompt}")]
+        if retrieved_context:
+            repair_messages.append(
+                HumanMessage(
+                    content=(
+                        "Closest existing recipe context:\n"
+                        + json.dumps(retrieved_context, indent=2)
+                        + f"\n\nUser request:\n{user_input}\n\nReturn JSON only."
+                    )
+                )
+            )
+        else:
+            repair_messages.append(
+                HumanMessage(content=f"User request:\n{user_input}\n\nReturn JSON only.")
+            )
+        repair_response = await llm.ainvoke(repair_messages)
+        repaired_payload = _extract_payload(repair_response.content)
+        repaired_payload = _validate_recipe_payload(repaired_payload)
+        repaired_payload["swaps"] = _normalize_swaps(repaired_payload.get("swaps"))
+        if _nutrition_is_plausible(repaired_payload.get("nutrition")):
+            payload["nutrition"] = repaired_payload.get("nutrition") or payload.get("nutrition")
+        if repaired_payload.get("recipe"):
+            payload["recipe"] = repaired_payload.get("recipe")
+            payload["message"] = repaired_payload.get("message") or payload.get("message")
+            payload["swaps"] = repaired_payload.get("swaps") or payload.get("swaps")
+
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = retrieved_context[0]["id"] if retrieved_context else None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
+async def _answer_general_question(
+    user_input: str, history: List[dict], user_context: str = ""
+) -> dict[str, Any]:
+    llm = get_llm()
+    system_prompt = GENERAL_PROMPT
+    if user_context:
+        system_prompt = f"{GENERAL_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+    messages.append(HumanMessage(content=user_input))
+    response = await llm.ainvoke(messages)
+    payload = _extract_payload(response.content)
+    payload["recipe"] = None
+    payload["swaps"] = _normalize_swaps(payload.get("swaps"))
+    payload["nutrition"] = payload.get("nutrition") if _nutrition_is_plausible(payload.get("nutrition")) else None
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
+async def healthify_agent(
+    db: Session,
+    user_input: str,
+    history: List[dict],
+    stream: bool = False,
+    user_id: str | None = None,
+) -> dict[str, Any] | AsyncIterator[str]:
+    user_context = _build_user_context(db, user_id)
+
+    intent = _classify_intent(user_input)
+    if intent == "general_nutrition_question":
+        if stream:
+            async def _general_stream():
+                payload = await _answer_general_question(user_input, history, user_context)
+                yield json.dumps(payload)
+            return _general_stream()
+        return await _answer_general_question(user_input, history, user_context)
+
+    retrieval = await retrieve_recipe_candidates(db, user_input, limit=3, recipe_role="full_meal")
+    top = (retrieval.get("results") or [None])[0]
+    if top and float(top.get("score") or 0) >= RETRIEVAL_THRESHOLD:
+        recipe = top["recipe"]
+        payload = _retrieved_response(recipe, float(top["score"]))
+        # Compute MES for retrieved recipe
+        nutrition = payload.get("nutrition")
+        mes = _compute_recipe_mes(db, user_id, nutrition)
+        if mes:
+            payload["mes_score"] = mes
+        if stream:
+            async def _retrieved_stream():
+                yield json.dumps(payload)
+            return _retrieved_stream()
+        return payload
+
+    retrieved_context = [_recipe_to_payload(item["recipe"]) for item in (retrieval.get("results") or [])[:3]]
     if stream:
         llm = get_llm()
-        messages = [SystemMessage(content=SYSTEM_PROMPT)]
+        system_prompt = GENERATE_PROMPT
+        if user_context:
+            system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"
+        messages = [SystemMessage(content=system_prompt)]
         for msg in history:
             if msg["role"] == "user":
                 messages.append(HumanMessage(content=msg["content"]))
             else:
                 messages.append(AIMessage(content=msg["content"]))
-        messages.append(HumanMessage(content=user_input))
+        context_block = ""
+        if retrieved_context:
+            context_block = "Closest existing recipe context:\n" + json.dumps(retrieved_context, indent=2)
+        messages.append(HumanMessage(content=f"{context_block}\n\nUser request:\n{user_input}\n\nReturn JSON only."))
 
         async def stream_response():
             async for chunk in llm.astream(messages):
@@ -375,7 +639,13 @@ async def healthify_agent(
 
         return stream_response()
 
-    result = await graph.ainvoke(state)
-    response_text = result.get("final_response", "")
-
-    return _extract_payload(response_text)
+    payload = await _generate_healthified_payload(user_input, history, retrieved_context, user_context)
+    if top:
+        payload["matched_recipe_id"] = str(top["recipe"].id)
+        payload["retrieval_confidence"] = float(top.get("score") or 0)
+    # Compute MES for generated recipe
+    nutrition = payload.get("nutrition")
+    mes = _compute_recipe_mes(db, user_id, nutrition)
+    if mes:
+        payload["mes_score"] = mes
+    return payload

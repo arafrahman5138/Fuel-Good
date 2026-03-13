@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from app.models.metabolic import MetabolicBudget, MetabolicScore, MetabolicStreak
 from app.models.metabolic_profile import MetabolicProfile
 from app.models.nutrition import FoodLog
+from app.models.recipe import Recipe
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,7 @@ class ComputedBudget:
     """Engine-internal budget (distinct from ORM MetabolicBudget)."""
 
     tdee: float
+    calorie_target_kcal: float
     protein_g: float
     carb_ceiling_g: float
     fiber_g: float
@@ -139,6 +141,28 @@ PROTEIN_RATIO_METABOLIC = 0.82    # ~1.8 g/kg
 # ── Fiber target ──
 FIBER_TARGET_G_PER_LB = 0.18  # ~30g for 165 lb person
 FIBER_FLOOR_MINIMUM_G = 25.0
+
+# ── Fat target model ──
+FAT_RATIO_FAT_LOSS = 0.40
+FAT_RATIO_MAINTENANCE = 0.50
+FAT_RATIO_MUSCLE_GAIN = 0.55
+FAT_RATIO_METABOLIC = 0.52
+FAT_RATIO_ACTIVE_BONUS = 0.03
+FAT_RATIO_ATHLETIC_BONUS = 0.06
+FAT_RATIO_AGE_BONUS = 0.03
+FAT_RATIO_INSULIN_BONUS = 0.04
+FAT_RATIO_MIN = 0.35
+FAT_RATIO_MAX = 0.65
+FAT_SHARE_FAT_LOSS = 0.26
+FAT_SHARE_MAINTENANCE = 0.30
+FAT_SHARE_MUSCLE_GAIN = 0.33
+FAT_SHARE_METABOLIC = 0.32
+FAT_SHARE_ACTIVE_BONUS = 0.01
+FAT_SHARE_ATHLETIC_BONUS = 0.02
+FAT_SHARE_AGE_BONUS = 0.01
+FAT_SHARE_INSULIN_BONUS = 0.02
+FAT_SHARE_MIN = 0.25
+FAT_SHARE_MAX = 0.38
 
 # ── Tier thresholds (base) ──
 TIER_OPTIMAL = 85
@@ -176,6 +200,15 @@ DEFAULT_BUDGET_DICT: dict[str, float] = {
     "weight_fiber": 0.20,
     "weight_sugar": 0.35,
 }
+
+PAIRING_GIS_CAP = 8.0
+PAIRING_SYNERGY_CAP = 1.5
+DAILY_PAIRING_BONUS_CAP = 8.0
+
+PAIRING_FIBER_GIS = {"none": 0.0, "low": 1.0, "med": 2.0, "high": 3.0}
+PAIRING_FIBER_BONUS = {"none": 0.0, "low": 0.0, "med": 0.5, "high": 1.0}
+PAIRING_VEG_GIS = {"none": 0.0, "low": 0.0, "med": 1.0, "high": 2.0}
+PAIRING_VEG_BONUS = {"none": 0.0, "low": 0.0, "med": 0.5, "high": 0.75}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -375,7 +408,10 @@ def calc_protein_target_g(profile: MetabolicProfileInput) -> float:
     # Older users have anabolic resistance — increase protein
     age_bonus = 0.07 if profile.age >= 50 else (0.02 if profile.age >= 40 else 0)
 
-    return round(profile.weight_lb * (base_ratio + age_bonus), 1)
+    target = profile.weight_lb * (base_ratio + age_bonus)
+    floor_ratio = 1.2 if profile.goal == Goal.MUSCLE_GAIN else 1.0
+    floor = profile.weight_lb * floor_ratio
+    return round(max(target, floor), 1)
 
 
 def calc_carb_ceiling_g(profile: MetabolicProfileInput) -> float:
@@ -401,16 +437,62 @@ def calc_carb_ceiling_g(profile: MetabolicProfileInput) -> float:
     return float(base)
 
 
-def calc_fat_target_g(tdee: float, carb_g: float, protein_g: float) -> float:
-    """Fat fills remaining calories after protein and carbs.
+def calc_fat_target_g(
+    tdee: float,
+    carb_g: float,
+    protein_g: float,
+    profile: MetabolicProfileInput | None = None,
+) -> float:
+    """Return a practical daily fat target.
 
-    Floor of 40g for hormonal health.
+    The old "fill all remaining calories" model inflated fat targets for lower-carb
+    profiles. This keeps fat moderate and body-size aware instead.
     """
-    calories_from_protein = protein_g * 4
-    calories_from_carbs = carb_g * 4
-    calories_from_fat = tdee - calories_from_protein - calories_from_carbs
-    fat_g = calories_from_fat / 9
-    return round(max(40.0, fat_g), 1)
+    if profile is None:
+        weight_lb = max(120.0, protein_g)
+        target_ratio = FAT_RATIO_MAINTENANCE
+        target_share = FAT_SHARE_MAINTENANCE
+    else:
+        weight_lb = max(0.0, profile.weight_lb)
+        goal_ratio_map = {
+            Goal.FAT_LOSS: FAT_RATIO_FAT_LOSS,
+            Goal.MAINTENANCE: FAT_RATIO_MAINTENANCE,
+            Goal.MUSCLE_GAIN: FAT_RATIO_MUSCLE_GAIN,
+            Goal.METABOLIC_RESET: FAT_RATIO_METABOLIC,
+        }
+        goal_share_map = {
+            Goal.FAT_LOSS: FAT_SHARE_FAT_LOSS,
+            Goal.MAINTENANCE: FAT_SHARE_MAINTENANCE,
+            Goal.MUSCLE_GAIN: FAT_SHARE_MUSCLE_GAIN,
+            Goal.METABOLIC_RESET: FAT_SHARE_METABOLIC,
+        }
+        target_ratio = goal_ratio_map.get(profile.goal, FAT_RATIO_MAINTENANCE)
+        target_share = goal_share_map.get(profile.goal, FAT_SHARE_MAINTENANCE)
+        if profile.activity_level == ActivityLevel.ACTIVE:
+            target_ratio += FAT_RATIO_ACTIVE_BONUS
+            target_share += FAT_SHARE_ACTIVE_BONUS
+        elif profile.activity_level == ActivityLevel.ATHLETIC:
+            target_ratio += FAT_RATIO_ATHLETIC_BONUS
+            target_share += FAT_SHARE_ATHLETIC_BONUS
+        if profile.age >= 50:
+            target_ratio += FAT_RATIO_AGE_BONUS
+            target_share += FAT_SHARE_AGE_BONUS
+        if profile.insulin_resistant or profile.prediabetes or profile.type_2_diabetes:
+            target_ratio += FAT_RATIO_INSULIN_BONUS
+            target_share += FAT_SHARE_INSULIN_BONUS
+
+    target_ratio = max(FAT_RATIO_MIN, min(FAT_RATIO_MAX, target_ratio))
+    target_share = max(FAT_SHARE_MIN, min(FAT_SHARE_MAX, target_share))
+    weight_based_fat_g = weight_lb * target_ratio
+    calorie_capped_fat_g = (tdee * target_share) / 9 if tdee > 0 else weight_based_fat_g
+    remaining_calorie_fat_g = max(25.0, (tdee - (protein_g * 4) - (carb_g * 4)) / 9) if tdee > 0 else weight_based_fat_g
+    fat_g = min(weight_based_fat_g, calorie_capped_fat_g, remaining_calorie_fat_g)
+    return round(max(25.0, fat_g), 1)
+
+
+def calc_macro_calorie_target_kcal(protein_g: float, carb_g: float, fat_g: float) -> float:
+    """Calorie target implied by the macro targets."""
+    return round((protein_g * 4) + (carb_g * 4) + (fat_g * 9), 1)
 
 
 def calc_ism(profile: MetabolicProfileInput) -> float:
@@ -489,7 +571,10 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
     protein_g = calc_protein_target_g(profile)
     carb_g = calc_carb_ceiling_g(profile)
     fiber_g = max(FIBER_FLOOR_MINIMUM_G, profile.weight_lb * FIBER_TARGET_G_PER_LB)
-    fat_g = calc_fat_target_g(tdee, carb_g, protein_g)
+    fat_g = calc_fat_target_g(tdee, carb_g, protein_g, profile)
+    calorie_target_kcal = calc_macro_calorie_target_kcal(protein_g, carb_g, fat_g)
+    if tdee > 0:
+        calorie_target_kcal = min(calorie_target_kcal, round(tdee, 1))
     ism = calc_ism(profile)
 
     # Adjust GIS weight via ISM, cap at 0.50
@@ -509,6 +594,7 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
 
     return ComputedBudget(
         tdee=tdee,
+        calorie_target_kcal=calorie_target_kcal,
         protein_g=protein_g,
         carb_ceiling_g=carb_g,
         fiber_g=fiber_g,
@@ -544,29 +630,63 @@ def _normalize_budget(
     carb_ceiling_g = _g("sugar_ceiling_g", CARB_CEILING_DEFAULT_G)
     fiber_g = _g("fiber_floor_g", FIBER_FLOOR_MINIMUM_G)
 
-    # Old budgets don't have fat/tdee — derive reasonable defaults
-    tdee = _g("tdee", 2000.0)
+    # Read stored computed fields (populated by sync_budget_from_profile)
+    tdee = _g("tdee", 0)
+    calorie_target_kcal = _g("calorie_target_kcal", 0)
     fat_g = _g("fat_target_g", 0)
+    stored_ism = _g("ism", 0)
+
+    # Derive missing values for pre-migration rows
+    if tdee <= 0:
+        tdee = 2000.0
     if fat_g <= 0:
         fat_g = calc_fat_target_g(tdee, carb_ceiling_g, protein_g)
+    if calorie_target_kcal <= 0:
+        calorie_target_kcal = calc_macro_calorie_target_kcal(protein_g, carb_ceiling_g, fat_g)
+    if tdee > 0:
+        calorie_target_kcal = min(calorie_target_kcal, round(tdee, 1))
 
-    # Always use new base weights (old 50/25/25 is meaningless with new formulas)
-    weights = ScoreWeights(
-        gis=BASE_WEIGHT_GIS,
-        protein=BASE_WEIGHT_PROTEIN,
-        fiber=BASE_WEIGHT_FIBER,
-        fat=BASE_WEIGHT_FAT,
-    ).normalized()
+    # Use stored ISM if available, otherwise default to 1.0
+    ism = stored_ism if stored_ism > 0 else 1.0
+
+    # Use stored weights (which include ISM adjustments) if they look personalized
+    stored_gis_w = _g("weight_sugar", 0)
+    stored_protein_w = _g("weight_protein", 0)
+    stored_fiber_w = _g("weight_fiber", 0)
+    stored_fat_w = _g("weight_fat", 0)
+    if stored_gis_w > 0 and stored_protein_w > 0 and stored_fiber_w > 0 and stored_fat_w > 0:
+        weights = ScoreWeights(
+            gis=stored_gis_w,
+            protein=stored_protein_w,
+            fiber=stored_fiber_w,
+            fat=stored_fat_w,
+        ).normalized()
+    else:
+        weights = ScoreWeights(
+            gis=BASE_WEIGHT_GIS,
+            protein=BASE_WEIGHT_PROTEIN,
+            fiber=BASE_WEIGHT_FIBER,
+            fat=BASE_WEIGHT_FAT,
+        ).normalized()
+
+    # Use stored tier thresholds if available
+    stored_tiers = None
+    if isinstance(budget, dict):
+        stored_tiers = budget.get("tier_thresholds_json")
+    else:
+        stored_tiers = getattr(budget, "tier_thresholds_json", None)
+    tier_thresholds = stored_tiers if stored_tiers else dict(BASE_TIER_THRESHOLDS)
 
     return ComputedBudget(
         tdee=tdee,
+        calorie_target_kcal=calorie_target_kcal,
         protein_g=protein_g,
         carb_ceiling_g=carb_ceiling_g,
         fiber_g=fiber_g,
         fat_g=fat_g,
         weights=weights,
-        ism=1.0,
-        tier_thresholds=dict(BASE_TIER_THRESHOLDS),
+        ism=ism,
+        tier_thresholds=tier_thresholds,
     )
 
 
@@ -683,6 +803,102 @@ def _extract_nutrition(nutrition: dict[str, Any]) -> tuple[float, float, float, 
     return protein_g, fiber_g, carbs_g, fat_g
 
 
+def _combine_nutrition(a: dict[str, Any] | None, b: dict[str, Any] | None) -> dict[str, float]:
+    combined: dict[str, float] = {}
+    for key in (
+        "protein",
+        "protein_g",
+        "fiber",
+        "fiber_g",
+        "carbs",
+        "carbs_g",
+        "sugar",
+        "sugar_g",
+        "calories",
+        "fat",
+        "fat_g",
+    ):
+        combined[key] = float((a or {}).get(key, 0) or 0) + float((b or {}).get(key, 0) or 0)
+    return combined
+
+
+def _sanitize_pairing_profile(profile: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(profile, dict):
+        return None
+    fiber_class = str(profile.get("fiber_class", "none") or "none").strip().lower()
+    veg_density = str(profile.get("veg_density", "none") or "none").strip().lower()
+    recommended_timing = str(profile.get("recommended_timing", "with_meal") or "with_meal").strip().lower()
+    if fiber_class not in PAIRING_FIBER_GIS:
+        fiber_class = "none"
+    if veg_density not in PAIRING_VEG_GIS:
+        veg_density = "none"
+    if recommended_timing not in {"with_meal", "before_meal"}:
+        recommended_timing = "with_meal"
+    return {
+        "fiber_class": fiber_class,
+        "acid": bool(profile.get("acid", False)),
+        "healthy_fat": bool(profile.get("healthy_fat", False)),
+        "veg_density": veg_density,
+        "recommended_timing": recommended_timing,
+    }
+
+
+def _pairing_profile_from_recipe(pairing_recipe: Recipe | dict[str, Any] | None) -> dict[str, Any] | None:
+    if pairing_recipe is None:
+        return None
+    if isinstance(pairing_recipe, dict):
+        profile = pairing_recipe.get("pairing_synergy_profile")
+    else:
+        profile = getattr(pairing_recipe, "pairing_synergy_profile", None)
+    return _sanitize_pairing_profile(profile)
+
+
+def _score_to_result_dict(
+    *,
+    raw_mes: float,
+    gis: float,
+    pas: float,
+    fs: float,
+    fas: float,
+    protein_g: float,
+    fiber_g: float,
+    carbs_g: float,
+    fat_g: float,
+    weights: ScoreWeights,
+    thresholds: dict[str, int] | None,
+) -> dict[str, Any]:
+    tier = score_to_tier(raw_mes, thresholds)
+    net_carbs_g = max(0.0, carbs_g - fiber_g)
+    return {
+        "protein_score": round(pas, 1),
+        "fiber_score": round(fs, 1),
+        "sugar_score": round(gis, 1),
+        "total_score": round(raw_mes, 1),
+        "display_score": round(raw_mes, 1),
+        "tier": tier,
+        "display_tier": tier,
+        "protein_g": round(protein_g, 1),
+        "fiber_g": round(fiber_g, 1),
+        "sugar_g": round(carbs_g, 1),
+        "carbs_g": round(carbs_g, 1),
+        "meal_mes": round(raw_mes, 1),
+        "sub_scores": {
+            "gis": round(gis, 1),
+            "pas": round(pas, 1),
+            "fs": round(fs, 1),
+            "fas": round(fas, 1),
+        },
+        "weights_used": {
+            "gis": round(weights.gis, 3),
+            "protein": round(weights.protein, 3),
+            "fiber": round(weights.fiber, 3),
+            "fat": round(weights.fat, 3),
+        },
+        "net_carbs_g": round(net_carbs_g, 1),
+        "fat_g": round(fat_g, 1),
+    }
+
+
 def compute_meal_mes(
     nutrition: dict[str, Any],
     budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
@@ -708,43 +924,168 @@ def compute_meal_mes(
     w = b.weights
     raw_mes = round(w.gis * gis + w.protein * pas + w.fiber * fs + w.fat * fas, 1)
 
-    tier = score_to_tier(raw_mes, b.tier_thresholds)
+    return _score_to_result_dict(
+        raw_mes=raw_mes,
+        gis=gis,
+        pas=pas,
+        fs=fs,
+        fas=fas,
+        protein_g=protein_g,
+        fiber_g=fiber_g,
+        carbs_g=carbs_g,
+        fat_g=fat_g,
+        weights=w,
+        thresholds=b.tier_thresholds,
+    )
 
+
+def compute_pairing_synergy(
+    pairing_recipe: Recipe | dict[str, Any] | None,
+    base_meal: dict[str, Any] | None = None,
+    pairing_nutrition: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    del base_meal, pairing_nutrition
+    profile = _pairing_profile_from_recipe(pairing_recipe)
+    if not profile:
+        return {
+            "pairing_applied": False,
+            "profile": None,
+            "gis_bonus": 0.0,
+            "synergy_bonus": 0.0,
+            "reasons": [],
+            "recommended_timing": "with_meal",
+        }
+
+    gis_bonus = PAIRING_FIBER_GIS[profile["fiber_class"]]
+    synergy_bonus = PAIRING_FIBER_BONUS[profile["fiber_class"]]
+    reasons: list[str] = []
+
+    if profile["fiber_class"] in {"med", "high"}:
+        reasons.append("fiber-rich side")
+    if profile["acid"]:
+        gis_bonus += 1.0
+        synergy_bonus += 0.5
+        reasons.append("acidic element")
+    if profile["healthy_fat"]:
+        gis_bonus += 1.0
+        synergy_bonus += 0.5
+        reasons.append("healthy fat")
+    gis_bonus += PAIRING_VEG_GIS[profile["veg_density"]]
+    synergy_bonus += PAIRING_VEG_BONUS[profile["veg_density"]]
+    if profile["veg_density"] in {"med", "high"}:
+        reasons.append("vegetable-forward side")
+    if profile["recommended_timing"] == "before_meal":
+        gis_bonus += 1.0
+        synergy_bonus += 0.25
+        reasons.append("eat before meal")
+
+    gis_bonus = min(PAIRING_GIS_CAP, round(gis_bonus, 1))
+    synergy_bonus = min(PAIRING_SYNERGY_CAP, round(synergy_bonus, 2))
+    pairing_applied = bool(gis_bonus > 0 or synergy_bonus > 0)
     return {
-        # ── Legacy keys (backward compat) ──
-        "protein_score": round(pas, 1),
-        "fiber_score": round(fs, 1),
-        "sugar_score": round(gis, 1),  # GIS replaces sugar_score
-        "total_score": raw_mes,
-        "display_score": raw_mes,  # NO +10 inflation
-        "tier": tier,
-        "display_tier": tier,
-        "protein_g": round(protein_g, 1),
-        "fiber_g": round(fiber_g, 1),
-        "sugar_g": round(carbs_g, 1),  # compat: third guardrail grams
-        "carbs_g": round(carbs_g, 1),
-        # ── New keys ──
-        "meal_mes": raw_mes,
-        "sub_scores": {
-            "gis": round(gis, 1),
-            "pas": round(pas, 1),
-            "fs": round(fs, 1),
-            "fas": round(fas, 1),
-        },
-        "weights_used": {
-            "gis": round(w.gis, 3),
-            "protein": round(w.protein, 3),
-            "fiber": round(w.fiber, 3),
-            "fat": round(w.fat, 3),
-        },
-        "net_carbs_g": round(net_carbs_g, 1),
-        "fat_g": round(fat_g, 1),
+        "pairing_applied": pairing_applied,
+        "profile": profile,
+        "gis_bonus": gis_bonus,
+        "synergy_bonus": synergy_bonus,
+        "reasons": reasons,
+        "recommended_timing": profile["recommended_timing"],
+    }
+
+
+def compute_meal_mes_with_pairing(
+    base_meal: dict[str, Any],
+    pairing_recipe: Recipe | dict[str, Any] | None,
+    budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+    pairing_nutrition: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    combined = _combine_nutrition(base_meal, pairing_nutrition if pairing_nutrition is not None else getattr(pairing_recipe, "nutrition_info", None) if pairing_recipe is not None and not isinstance(pairing_recipe, dict) else (pairing_recipe or {}).get("nutrition_info"))
+    macro_result = compute_meal_mes(combined, budget)
+    synergy = compute_pairing_synergy(pairing_recipe, base_meal=base_meal, pairing_nutrition=pairing_nutrition)
+    if not synergy["pairing_applied"]:
+        return {
+            "score": macro_result,
+            "macro_only_score": macro_result,
+            "pairing_applied": False,
+            "pairing_gis_bonus": 0.0,
+            "pairing_synergy_bonus": 0.0,
+            "pairing_reasons": [],
+            "pairing_recommended_timing": "with_meal",
+        }
+
+    b = _normalize_budget(budget)
+    protein_g, fiber_g, carbs_g, fat_g = _extract_nutrition(combined)
+    protein_target = b.protein_g / MEALS_PER_DAY
+    pas = calc_pas(protein_g, protein_target)
+    fs = calc_fs(fiber_g)
+    fas = calc_fas(fat_g)
+    base_gis = float((macro_result.get("sub_scores") or {}).get("gis", 0) or 0)
+    adjusted_gis = min(100.0, base_gis + synergy["gis_bonus"])
+    raw_mes = round(
+        b.weights.gis * adjusted_gis
+        + b.weights.protein * pas
+        + b.weights.fiber * fs
+        + b.weights.fat * fas
+        + synergy["synergy_bonus"],
+        1,
+    )
+    adjusted_score = _score_to_result_dict(
+        raw_mes=raw_mes,
+        gis=adjusted_gis,
+        pas=pas,
+        fs=fs,
+        fas=fas,
+        protein_g=protein_g,
+        fiber_g=fiber_g,
+        carbs_g=carbs_g,
+        fat_g=fat_g,
+        weights=b.weights,
+        thresholds=b.tier_thresholds,
+    )
+    return {
+        "score": adjusted_score,
+        "macro_only_score": macro_result,
+        "pairing_applied": True,
+        "pairing_gis_bonus": synergy["gis_bonus"],
+        "pairing_synergy_bonus": synergy["synergy_bonus"],
+        "pairing_reasons": synergy["reasons"],
+        "pairing_recommended_timing": synergy["recommended_timing"],
+        "pairing_profile": synergy["profile"],
     }
 
 
 # ═══════════════════════════════════════════════════════════════════════
 #  SCORING — DAILY MES
 # ═══════════════════════════════════════════════════════════════════════
+
+def _empty_daily_mes_result(b: Any) -> dict[str, Any]:
+    """Return a zero-score result for days with no logged meals."""
+    w = b.weights
+    return {
+        "protein_score": 0.0,
+        "fiber_score": 0.0,
+        "sugar_score": 0.0,
+        "total_score": 0.0,
+        "display_score": 0.0,
+        "tier": "no_data",
+        "display_tier": "no_data",
+        "protein_g": 0.0,
+        "fiber_g": 0.0,
+        "sugar_g": 0.0,
+        "carbs_g": 0.0,
+        "treat_impact": {},
+        "base_daily_mes": 0.0,
+        "daily_mes": 0.0,
+        "sub_scores": {"gis": 0.0, "pas": 0.0, "fs": 0.0, "fas": 0.0},
+        "weights_used": {
+            "gis": round(w.gis, 3),
+            "protein": round(w.protein, 3),
+            "fiber": round(w.fiber, 3),
+            "fat": round(w.fat, 3),
+        },
+        "net_carbs_g": 0.0,
+        "fat_g": 0.0,
+    }
+
 
 def compute_daily_mes(
     daily_totals: dict[str, Any],
@@ -754,6 +1095,14 @@ def compute_daily_mes(
     b = _normalize_budget(budget)
 
     protein_g, fiber_g, carbs_g, fat_g = _extract_nutrition(daily_totals)
+    calories = float(daily_totals.get("calories", 0) or 0)
+
+    # No meals logged yet — 0g of everything means GIS would default to 100
+    # (0g net carbs ≤ 10g optimal range), producing a misleading ~31 MES.
+    # Return a neutral zero state instead.
+    if calories == 0 and protein_g == 0 and carbs_g == 0 and fat_g == 0:
+        return _empty_daily_mes_result(b)
+
     # Also accept sugar_g fallback for carbs at the daily totals level
     if carbs_g == 0:
         carbs_g = float(daily_totals.get("sugar_g", 0) or 0)
@@ -961,8 +1310,11 @@ def derive_target_weight_lb(profile: dict[str, Any]) -> float:
 
 
 def derive_protein_target_g(profile: dict[str, Any]) -> float:
-    """Protein target = ratio x target bodyweight (lbs)."""
-    target_weight = derive_target_weight_lb(profile)
+    """Protein target mirrors the profile-aware engine with a 1 g/lb floor."""
+    current_weight = float(profile.get("weight_lb") or 0)
+    if current_weight <= 0:
+        return round(DEFAULT_PROFILE.weight_lb, 1)
+    age = int(profile.get("age") or DEFAULT_PROFILE.age)
     goal = (profile.get("goal") or "maintain").lower()
     if goal in ("lose", "fat-loss", "cut", "fat_loss"):
         ratio = PROTEIN_RATIO_FAT_LOSS
@@ -972,12 +1324,39 @@ def derive_protein_target_g(profile: dict[str, Any]) -> float:
         ratio = PROTEIN_RATIO_METABOLIC
     else:
         ratio = PROTEIN_RATIO_MAINTENANCE
-    return round(ratio * target_weight)
+    age_bonus = 0.07 if age >= 50 else (0.02 if age >= 40 else 0)
+    floor_ratio = 1.2 if goal in ("gain", "bulk", "muscle_gain") else 1.0
+    return round(max(current_weight * (ratio + age_bonus), current_weight * floor_ratio), 1)
 
 
 def derive_sugar_ceiling(profile: dict[str, Any]) -> float:
-    """App-wide carb guardrail — now 130g default (was 200g)."""
-    return float(CARB_CEILING_DEFAULT_G)
+    """Profile-aware carb ceiling mirroring calc_carb_ceiling_g() logic."""
+    goal = (profile.get("goal") or "maintain").lower()
+    activity = (profile.get("activity_level") or "moderate").lower()
+    insulin_resistant = bool(profile.get("insulin_resistant"))
+    type_2_diabetes = bool(profile.get("type_2_diabetes"))
+    prediabetes = bool(profile.get("prediabetes"))
+    triglycerides = profile.get("triglycerides_mgdl")
+
+    if type_2_diabetes or insulin_resistant:
+        base = float(CARB_CEILING_IR_G)
+    elif activity in ("athletic", "high"):
+        base = float(CARB_CEILING_ATHLETIC_G)
+    elif activity == "active":
+        base = float(CARB_CEILING_DEFAULT_G + 25)
+    else:
+        base = float(CARB_CEILING_DEFAULT_G)
+
+    if prediabetes:
+        base = min(base, 110.0)
+
+    if triglycerides and float(triglycerides) > 150:
+        base = round(base * 0.80)
+
+    if goal in ("lose", "fat-loss", "cut", "fat_loss"):
+        base = round(base * 0.85)
+
+    return float(base)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -985,25 +1364,26 @@ def derive_sugar_ceiling(profile: dict[str, Any]) -> float:
 # ═══════════════════════════════════════════════════════════════════════
 
 def get_or_create_budget(db: Session, user_id: str) -> MetabolicBudget:
-    """Return existing budget or auto-create with defaults."""
+    """Return budget synced from the user's metabolic profile.
+
+    Always re-syncs from profile so that budget stays fresh when the user
+    changes their goal, activity level, or health markers.
+    """
+    # Check if user has a metabolic profile for full personalization
+    profile = db.query(MetabolicProfile).filter(MetabolicProfile.user_id == user_id).first()
+    if profile and profile.weight_lb:
+        # Full sync — updates (or creates) the ORM row with all computed values
+        sync_budget_from_profile(db, user_id)
+        budget = db.query(MetabolicBudget).filter(MetabolicBudget.user_id == user_id).first()
+        if budget:
+            return budget
+
+    # No profile — return existing row or create with defaults
     budget = db.query(MetabolicBudget).filter(MetabolicBudget.user_id == user_id).first()
     if budget:
         return budget
 
     budget = MetabolicBudget(user_id=user_id)
-
-    # Try to personalise from profile
-    profile = db.query(MetabolicProfile).filter(MetabolicProfile.user_id == user_id).first()
-    if profile:
-        p_dict = {
-            "sex": profile.sex,
-            "weight_lb": profile.weight_lb,
-            "goal": profile.goal,
-            "target_weight_lb": profile.target_weight_lb,
-        }
-        budget.protein_target_g = derive_protein_target_g(p_dict)
-        budget.sugar_ceiling_g = derive_sugar_ceiling(p_dict)
-
     db.add(budget)
     db.commit()
     db.refresh(budget)
@@ -1097,6 +1477,135 @@ def load_budget_for_user(db: Session, user_id: str) -> ComputedBudget:
     )
 
     return build_metabolic_budget(profile_input)
+
+
+def sync_budget_from_profile(db: Session, user_id: str) -> ComputedBudget:
+    """Recompute full budget from profile and persist to ORM MetabolicBudget.
+
+    This is the single authoritative way to keep the DB budget in sync with
+    the user's metabolic profile.  Returns the fresh ComputedBudget.
+    """
+    computed = load_budget_for_user(db, user_id)
+
+    budget = db.query(MetabolicBudget).filter(MetabolicBudget.user_id == user_id).first()
+    if not budget:
+        budget = MetabolicBudget(user_id=user_id)
+        db.add(budget)
+
+    # Sync all guardrail targets
+    budget.protein_target_g = computed.protein_g
+    budget.fiber_floor_g = computed.fiber_g
+    budget.sugar_ceiling_g = computed.carb_ceiling_g
+    budget.fat_target_g = computed.fat_g
+
+    # Sync computed fields
+    budget.tdee = computed.tdee
+    budget.calorie_target_kcal = computed.calorie_target_kcal
+    budget.ism = computed.ism
+
+    # Sync personalized weights (include ISM adjustment)
+    budget.weight_sugar = computed.weights.gis
+    budget.weight_protein = computed.weights.protein
+    budget.weight_fiber = computed.weights.fiber
+    budget.weight_fat = computed.weights.fat
+
+    # Sync tier thresholds
+    budget.tier_thresholds_json = computed.tier_thresholds
+
+    db.commit()
+    db.refresh(budget)
+    return computed
+
+
+def _group_logs_by_pairing_candidate(logs: list[FoodLog]) -> dict[str, list[FoodLog]]:
+    grouped: dict[str, list[FoodLog]] = {}
+    for log in logs:
+        if not log.group_id:
+            continue
+        grouped.setdefault(str(log.group_id), []).append(log)
+    return grouped
+
+
+def compute_pairing_adjusted_daily_bonus(
+    db: Session,
+    user_id: str,
+    day: date,
+    budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+) -> dict[str, Any]:
+    logs = db.query(FoodLog).filter(FoodLog.user_id == user_id, FoodLog.date == day).all()
+    group_map = _group_logs_by_pairing_candidate(logs)
+    sources: list[dict[str, Any]] = []
+    total_bonus = 0.0
+
+    for group_id, group_logs in group_map.items():
+        if len(group_logs) < 2:
+            continue
+
+        pairing_log: FoodLog | None = None
+        pairing_recipe: Recipe | None = None
+        for log in group_logs:
+            if str(log.source_type or "") != "recipe" or not log.source_id:
+                continue
+            recipe = db.query(Recipe).filter(Recipe.id == log.source_id).first()
+            if recipe and _pairing_profile_from_recipe(recipe):
+                pairing_log = log
+                pairing_recipe = recipe
+                break
+
+        if pairing_log is None or pairing_recipe is None:
+            continue
+
+        base_nutrition: dict[str, float] = {}
+        for log in group_logs:
+            if log.id == pairing_log.id:
+                continue
+            base_nutrition = _combine_nutrition(base_nutrition, log.nutrition_snapshot or {})
+        if not base_nutrition:
+            continue
+
+        paired = compute_meal_mes_with_pairing(
+            base_nutrition,
+            pairing_recipe=pairing_recipe,
+            budget=budget,
+            pairing_nutrition=pairing_log.nutrition_snapshot or {},
+        )
+        if not paired["pairing_applied"]:
+            continue
+
+        macro_score = float((paired.get("macro_only_score") or {}).get("total_score", 0) or 0)
+        adjusted_score = float((paired.get("score") or {}).get("total_score", 0) or 0)
+        delta = round(max(0.0, adjusted_score - macro_score), 1)
+        if delta <= 0:
+            continue
+
+        total_bonus += delta
+        sources.append({
+            "group_id": group_id,
+            "pairing_recipe_id": str(pairing_recipe.id),
+            "pairing_title": pairing_recipe.title,
+            "pairing_gis_bonus": paired["pairing_gis_bonus"],
+            "pairing_synergy_bonus": paired["pairing_synergy_bonus"],
+            "pairing_reasons": paired["pairing_reasons"],
+            "pairing_delta": delta,
+        })
+
+    capped = min(DAILY_PAIRING_BONUS_CAP, round(total_bonus, 1))
+    if capped < total_bonus and sources:
+        running = 0.0
+        trimmed: list[dict[str, Any]] = []
+        for source in sorted(sources, key=lambda item: float(item.get("pairing_delta", 0)), reverse=True):
+            remaining = round(DAILY_PAIRING_BONUS_CAP - running, 1)
+            if remaining <= 0:
+                break
+            delta = min(float(source.get("pairing_delta", 0) or 0), remaining)
+            trimmed.append({**source, "pairing_delta": round(delta, 1)})
+            running += delta
+        sources = trimmed
+
+    return {
+        "pairing_synergy_daily_bonus": capped,
+        "pairing_synergy_sources": sources,
+    }
 
 
 def aggregate_daily_totals(db: Session, user_id: str, day: date) -> dict[str, float]:
@@ -1270,6 +1779,10 @@ def recompute_daily_score(
 
     totals = aggregate_daily_totals(db, user_id, day)
     result = compute_daily_mes(totals, computed)
+    pairing_daily = compute_pairing_adjusted_daily_bonus(db, user_id, day, computed)
+    pairing_bonus = float(pairing_daily.get("pairing_synergy_daily_bonus", 0) or 0)
+    adjusted_total = min(100.0, round(float(result.get("total_score", 0) or 0) + pairing_bonus, 1))
+    adjusted_tier = score_to_tier(adjusted_total, computed.tier_thresholds)
 
     score = (
         db.query(MetabolicScore)
@@ -1292,10 +1805,10 @@ def recompute_daily_score(
     score.protein_score = result["protein_score"]
     score.fiber_score = result["fiber_score"]
     score.sugar_score = result["sugar_score"]
-    score.total_score = result["total_score"]
-    score.display_score = result["display_score"]
-    score.tier = result["tier"]
-    score.display_tier = result["display_tier"]
+    score.total_score = adjusted_total
+    score.display_score = adjusted_total
+    score.tier = adjusted_tier
+    score.display_tier = adjusted_tier
     score.protein_g = result["protein_g"]
     score.fiber_g = result["fiber_g"]
     score.sugar_g = result["sugar_g"]
@@ -1314,6 +1827,9 @@ def recompute_daily_score(
         "weights_used": result.get("weights_used"),
         "net_carbs_g": result.get("net_carbs_g"),
         "fat_g": result.get("fat_g"),
+        "macro_only_total_score": result.get("total_score"),
+        "pairing_synergy_daily_bonus": pairing_bonus,
+        "pairing_synergy_sources": pairing_daily.get("pairing_synergy_sources") or [],
     }
 
     db.commit()
@@ -1525,7 +2041,8 @@ def compute_mea_score(
 
     Returns dict with mea_score, caloric_adequacy, macro_balance, energy_prediction, tier.
     """
-    cal_score = _caloric_adequacy(consumed_kcal, budget.tdee)
+    cal_target = getattr(budget, "calorie_target_kcal", None) or budget.tdee
+    cal_score = _caloric_adequacy(consumed_kcal, cal_target)
     macro_score = _macro_balance(
         protein_g, carbs_g, fat_g,
         budget.protein_g, budget.carb_ceiling_g, budget.fat_g,

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { recipeApi, gameApi } from '../services/api';
+import { maybePromptForPush } from '../services/notifications';
 
 export interface SavedRecipe {
   id: string;
@@ -55,6 +56,7 @@ export const useSavedRecipesStore = create<SavedRecipesState>((set, get) => ({
       get().fetchSaved();
       // Award XP for saving a recipe
       gameApi.awardXP(10, 'save_recipe').catch(() => {});
+      maybePromptForPush('save_recipe').catch(() => {});
       return result;
     } catch {
       set((s) => {
@@ -83,6 +85,7 @@ export const useSavedRecipesStore = create<SavedRecipesState>((set, get) => ({
       await get().fetchSaved();
       // Award XP for saving a generated recipe
       gameApi.awardXP(10, 'save_recipe').catch(() => {});
+      maybePromptForPush('save_recipe').catch(() => {});
       return result?.recipe_id || null;
     } catch {
       return null;

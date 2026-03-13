@@ -32,7 +32,9 @@ import { useGamificationStore } from '../../stores/gamificationStore';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
 import { gameApi, recipeApi, nutritionApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
+import { useEntranceAnimation } from '../../hooks/useAnimations';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.42;
@@ -234,6 +236,9 @@ export default function HomeScreen() {
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
   const [xpToast, setXpToast] = useState<string | null>(null);
   const [xpToastIcon, setXpToastIcon] = useState<string>('flash');
+  const heroEntrance = useEntranceAnimation(0);
+  const chronoEntrance = useEntranceAnimation(80);
+  const actionsEntrance = useEntranceAnimation(160);
   const [chronoPanelView, setChronoPanelView] = useState<'snapshot' | 'logged' | 'activity'>('snapshot');
   const [previousChronoPanelView, setPreviousChronoPanelView] = useState<'snapshot' | 'logged' | 'activity' | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<string>(() => toDateKey(new Date()));
@@ -593,7 +598,7 @@ export default function HomeScreen() {
                   <View style={[styles.chronoPill, { backgroundColor: 'rgba(245,158,11,0.14)' }]}>
                     <Ionicons name="leaf-outline" size={12} color="#D97706" />
                     <Text style={[styles.chronoPillText, { color: '#D97706' }]}>
-                      {Math.round(remainingBudget?.sugar_headroom_g ?? 0)}g carb room
+                      {Math.round(remainingBudget?.carb_headroom_g ?? remainingBudget?.sugar_headroom_g ?? 0)}g carb room
                     </Text>
                   </View>
                 </View>
@@ -789,10 +794,10 @@ export default function HomeScreen() {
           </View>
           <View style={styles.activityGrid}>
             {[
-              { label: 'Steps', value: '7,842', sub: 'of 10,000', icon: 'walk-outline' as const, color: '#22C55E' },
-              { label: 'Active Min', value: '42', sub: 'of 60', icon: 'time-outline' as const, color: '#F59E0B' },
-              { label: 'Distance', value: '3.9 mi', sub: 'goal 5.0', icon: 'map-outline' as const, color: '#3B82F6' },
-              { label: 'Burned', value: '468', sub: 'calories active', icon: 'flame-outline' as const, color: '#EF4444' },
+              { label: 'Steps', value: '—', sub: '', icon: 'walk-outline' as const, color: '#22C55E' },
+              { label: 'Active Min', value: '—', sub: '', icon: 'time-outline' as const, color: '#F59E0B' },
+              { label: 'Distance', value: '—', sub: '', icon: 'map-outline' as const, color: '#3B82F6' },
+              { label: 'Burned', value: '—', sub: '', icon: 'flame-outline' as const, color: '#EF4444' },
             ].map((item) => (
               <View
                 key={item.label}
@@ -804,9 +809,9 @@ export default function HomeScreen() {
                 <View style={[styles.activityIcon, { backgroundColor: item.color + '18' }]}>
                   <Ionicons name={item.icon} size={14} color={item.color} />
                 </View>
-                <Text style={[styles.activityValue, { color: theme.text }]}>{item.value}</Text>
+                <Text style={[styles.activityValue, { color: theme.textTertiary }]}>{item.value}</Text>
                 <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{item.label}</Text>
-                <Text style={[styles.activitySub, { color: theme.textTertiary }]}>{item.sub}</Text>
+                <Text style={[styles.activitySub, { color: theme.textTertiary }]}>Coming soon</Text>
               </View>
             ))}
           </View>
@@ -911,6 +916,7 @@ export default function HomeScreen() {
           style={s.recCard}
         >
           <Ionicons name="restaurant" size={28} color="rgba(255,255,255,0.25)" style={{ position: 'absolute', top: 12, right: 12 }} />
+          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, borderBottomLeftRadius: BorderRadius.xl, borderBottomRightRadius: BorderRadius.xl }} />
           <View style={{ flex: 1, justifyContent: 'flex-end' }}>
             <Text style={s.recTitle} numberOfLines={2}>{item.title}</Text>
             <View style={s.recMeta}>
@@ -986,7 +992,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
-                style={styles.profileButton}
+                style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -1044,7 +1050,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
-                style={styles.profileButton}
+                style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -1151,7 +1157,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Chronometer Snapshot / Logged Panel */}
-        <View style={styles.chronoWrap}>
+        <Animated.View style={[styles.chronoWrap, chronoEntrance.style]}>
           <Animated.View
             style={[
               styles.chronoMain,
@@ -1261,7 +1267,7 @@ export default function HomeScreen() {
               <Ionicons name="walk-outline" size={18} color={chronoPanelView === 'activity' ? theme.primary : theme.textSecondary} />
             </TouchableOpacity>
           </BlurView>
-        </View>
+        </Animated.View>
 
         {/* ── Today's Plan ─────────────────────────────────────────────── */}
         <View style={{ marginBottom: Spacing.xl }}>
@@ -1351,6 +1357,7 @@ export default function HomeScreen() {
         </Card>
 
         {/* Quick Actions */}
+        <Animated.View style={actionsEntrance.style}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {quickActions.map((action, index) => (
@@ -1365,19 +1372,31 @@ export default function HomeScreen() {
                 style={[
                   styles.actionCardInner,
                   {
-                    backgroundColor: '#FBFAF7',
+                    backgroundColor: isDarkTheme ? theme.surfaceElevated : '#FBFAF7',
                     borderColor: theme.border,
                   },
                 ]}
               >
                 <View style={styles.actionCardTopRow}>
-                  <View style={[styles.actionIcon, { backgroundColor: action.accentBg }]}>
+                  <View
+                    style={[
+                      styles.actionIcon,
+                      { backgroundColor: isDarkTheme ? action.accent + '1A' : action.accentBg },
+                    ]}
+                  >
                     <Ionicons name={action.icon} size={19} color={action.accent} />
                   </View>
-                  <Ionicons name="chevron-forward" size={15} color={theme.textTertiary} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={15}
+                    color={isDarkTheme ? theme.textSecondary : theme.textTertiary}
+                  />
                 </View>
                 <View style={styles.actionCopy}>
-                  <Text style={[styles.actionLabel, { color: theme.text }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.actionLabel, { color: isDarkTheme ? '#F3F4F6' : theme.text }]}
+                    numberOfLines={1}
+                  >
                     {action.label}
                   </Text>
                   <Text style={[styles.actionDescription, { color: theme.textSecondary }]} numberOfLines={2}>
@@ -1388,15 +1407,17 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        </Animated.View>
 
         {/* Hero Card */}
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/chat')} style={{ marginTop: Spacing.xl }}>
           <LinearGradient
-            colors={theme.gradient.hero}
+            colors={['#16A34A', '#0D9488', '#0E7490'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroCard}
           >
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(255,255,255,0.06)', borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl }} />
             <View style={styles.heroContent}>
               <Text style={styles.heroTitle}>Transform Your{'\n'}Favorite Foods</Text>
               <Text style={styles.heroSubtitle}>
@@ -1414,7 +1435,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Today's Tip */}
-        <Card style={{ marginTop: Spacing.md }}>
+        <Card style={{ marginTop: Spacing.md, borderLeftWidth: 3, borderLeftColor: theme.accent }}>
           <View style={styles.tipHeader}>
             <Ionicons name="bulb" size={20} color={theme.accent} />
             <Text style={[styles.tipTitle, { color: theme.accent }]}>Daily Tip</Text>
@@ -1537,21 +1558,21 @@ export default function HomeScreen() {
         ) : (
         <>
         <View style={styles.statsRow}>
-          <Card style={styles.statCard} padding={Spacing.md}>
+          <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.primary }]} padding={Spacing.md}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>{weeklyStats.meals_cooked}</Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Meals Cooked</Text>
           </Card>
-          <Card style={styles.statCard} padding={Spacing.md}>
+          <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.md}>
             <Text style={[styles.statNumber, { color: theme.accent }]}>{weeklyStats.recipes_saved}</Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Recipes Saved</Text>
           </Card>
         </View>
         <View style={[styles.statsRow, { marginTop: Spacing.md }]}>
-          <Card style={styles.statCard} padding={Spacing.md}>
+          <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: '#8B5CF6' }]} padding={Spacing.md}>
             <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{weeklyStats.foods_explored}</Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Foods Explored</Text>
           </Card>
-          <Card style={styles.statCard} padding={Spacing.md}>
+          <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.info }]} padding={Spacing.md}>
             <Text style={[styles.statNumber, { color: theme.info }]}>{weeklyStats.xp_earned}</Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>XP Earned</Text>
           </Card>
@@ -1606,15 +1627,15 @@ const s = StyleSheet.create({
   recPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: Spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   recPillText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   // Today card
@@ -1704,12 +1725,12 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
   macroBadgePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   macroBadgeStatus: {
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -1725,7 +1746,7 @@ const s = StyleSheet.create({
   trackCtaIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: BorderRadius.full,
     backgroundColor: 'rgba(139,92,246,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1743,7 +1764,7 @@ const s = StyleSheet.create({
 const styles = StyleSheet.create({
   scroll: {
     paddingTop: Spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   stickyHeader: {
     position: 'absolute',
@@ -1768,9 +1789,9 @@ const styles = StyleSheet.create({
   calendarPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
   },
@@ -1790,18 +1811,13 @@ const styles = StyleSheet.create({
   profileButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
   },
   profileGradient: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1816,9 +1832,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   name: {
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xxxl,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -1,
   },
   chronoWrap: {
     marginBottom: Spacing.xl,
@@ -1866,7 +1882,7 @@ const styles = StyleSheet.create({
   chronoValueRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    gap: Spacing.sm,
     minWidth: 0,
     flexWrap: 'nowrap',
   },
@@ -1881,16 +1897,16 @@ const styles = StyleSheet.create({
   chronoLabelInline: {
     fontSize: FontSize.md,
     fontWeight: '600',
-    marginBottom: 7,
+    marginBottom: Spacing.sm,
     flexShrink: 0,
   },
   chronoMesPill: {
     alignSelf: 'flex-start',
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: Spacing.xs,
   },
   chronoMesPillText: {
     fontSize: FontSize.xs,
@@ -1899,15 +1915,15 @@ const styles = StyleSheet.create({
   chronoPillsRow: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 6,
-    marginTop: Spacing.xs + 2,
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
   },
   chronoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: Spacing.xs,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   chronoPillText: {
@@ -1925,16 +1941,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   chronoHeroScorePanel: {
-    borderRadius: 24,
+    borderRadius: BorderRadius.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm + 2,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xs,
   },
   chronoRingWrap: {
     width: 104,
     height: 104,
-    borderRadius: 52,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1951,16 +1967,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 8,
-    marginTop: 8,
+    rowGap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   chronoMiniCard: {
     width: '48%',
     borderWidth: 1,
     borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    gap: 6,
+    gap: Spacing.xs,
     overflow: 'hidden',
   },
   chronoMiniAccentTrack: {
@@ -1977,7 +1993,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: Spacing.sm,
   },
   chronoMiniValue: {
     fontSize: FontSize.xl,
@@ -1996,7 +2012,7 @@ const styles = StyleSheet.create({
   chronoMiniIcon: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -2050,7 +2066,7 @@ const styles = StyleSheet.create({
   chronoLoggedIcon: {
     width: 30,
     height: 30,
-    borderRadius: 10,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2077,13 +2093,13 @@ const styles = StyleSheet.create({
   homeLoggedTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.xs,
   },
   homeLoggedBadgeWrap: {
     borderWidth: 1,
     borderRadius: BorderRadius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     flexShrink: 0,
   },
   homeLoggedBadgeText: {
@@ -2093,20 +2109,20 @@ const styles = StyleSheet.create({
   homeLoggedSideRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: Spacing.xs,
     paddingLeft: 32 + Spacing.md,
   },
   homeLoggedSideDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: BorderRadius.full,
     backgroundColor: '#22C55E',
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   homeLoggedMacroRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 6,
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
     paddingLeft: 32 + Spacing.md,
     flexWrap: 'wrap',
   },
@@ -2139,7 +2155,7 @@ const styles = StyleSheet.create({
   activityIcon: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2157,11 +2173,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   chronoModeBar: {
-    marginTop: 8,
+    marginTop: Spacing.sm,
     alignSelf: 'center',
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    paddingVertical: 3,
+    paddingVertical: Spacing.xs,
     paddingHorizontal: CHRONO_MODE_BAR_INSET,
     flexDirection: 'row',
     alignItems: 'center',
@@ -2215,7 +2231,7 @@ const styles = StyleSheet.create({
   weekRing: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BorderRadius.full,
     borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -2230,7 +2246,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   heroCard: {
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.xxl,
     padding: Spacing.xxl,
     overflow: 'hidden',
     flexDirection: 'row',
@@ -2357,12 +2373,12 @@ const styles = StyleSheet.create({
   },
   questProgressTrack: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   questProgressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: BorderRadius.full,
   },
   questItem: {
     flexDirection: 'row',
@@ -2375,7 +2391,7 @@ const styles = StyleSheet.create({
   questIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2402,13 +2418,13 @@ const styles = StyleSheet.create({
   },
   questMiniTrack: {
     height: 4,
-    borderRadius: 2,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
-    marginBottom: 3,
+    marginBottom: Spacing.xs,
   },
   questMiniFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: BorderRadius.full,
   },
   questMeta: {
     fontSize: FontSize.xs - 1,

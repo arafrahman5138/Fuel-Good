@@ -10,6 +10,7 @@ export default function TabLayout() {
   const theme = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
@@ -20,6 +21,10 @@ export default function TabLayout() {
 
   if (needsOnboarding) {
     return <Redirect href={"/(auth)/onboarding" as any} />;
+  }
+
+  if (!hasPremiumAccess) {
+    return <Redirect href="/subscribe" />;
   }
 
   return (

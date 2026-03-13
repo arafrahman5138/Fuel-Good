@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState, useRef } from 'react';
 import {
   Alert,
   Animated,
@@ -6,14 +6,18 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
+  useWindowDimensions,
+  useColorScheme,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
 import { Button } from '../../components/Button';
@@ -22,8 +26,11 @@ import { useChatStore } from '../../stores/chatStore';
 import { useSavedRecipesStore } from '../../stores/savedRecipesStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { chatApi } from '../../services/api';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
+import { useThemeStore } from '../../stores/themeStore';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
+import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 import {
   type RecipeData,
   type RecipeDraft,
@@ -32,8 +39,9 @@ import {
   recipeKeyFor,
   toStringValue,
 } from '../../utils/chatParser';
+import { getTierConfig } from '../../stores/metabolicBudgetStore';
 
-const SUGGESTIONS = [
+const FALLBACK_SUGGESTIONS = [
   'Mac and Cheese',
   'Pizza',
   'Fried Chicken',
@@ -44,15 +52,27 @@ const SUGGESTIONS = [
   'Pancakes',
 ];
 
+const MAX_CHAT_WIDTH = 860;
+const MAX_BUBBLE_WIDTH = 720;
+
 export default function ChatScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 410;
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const [input, setInput] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
+  const listRef = useRef<FlatList<any> | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [recipeDraft, setRecipeDraft] = useState<RecipeDraft | null>(null);
   const [recipeOverrides, setRecipeOverrides] = useState<Record<string, RecipeData>>({});
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean[]>>({});
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [questToast, setQuestToast] = useState<string | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const {
@@ -74,16 +94,50 @@ export default function ChatScreen() {
   const removeRecipe = useSavedRecipesStore((s) => s.removeRecipe);
   const isSavedRecipe = useSavedRecipesStore((s) => s.isSaved);
   const fetchSaved = useSavedRecipesStore((s) => s.fetchSaved);
+  const [suggestions, setSuggestions] = useState<string[]>(FALLBACK_SUGGESTIONS);
+  const composerBottomInset = Math.max(insets.bottom, 10);
+  const floatingBarOffset = Math.max(tabBarHeight - insets.bottom, 74);
+  const composerLift = Math.max(floatingBarOffset - 40, 26);
+  const maxContentWidth = Math.min(MAX_CHAT_WIDTH, Math.max(width - Spacing.xl * 2, 0));
+  const introWidth = Math.min(maxContentWidth, 620);
+  const bubbleMaxWidth = Math.min(Math.max(width * 0.82, 280), MAX_BUBBLE_WIDTH);
+  const deferredMessages = useDeferredValue(messages);
 
   useEffect(() => {
     fetchSaved();
     loadLastSession();
+    chatApi.getSuggestions().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setSuggestions(data.map((s) => s.label || s.query));
+      }
+    }).catch(() => {});
   }, [fetchSaved]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setKeyboardVisible(true);
+      if (messages.length > 0) {
+        requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+      }
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+      setKeyboardVisible(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [messages.length]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
     setInput('');
+    Keyboard.dismiss();
     addMessage({ role: 'user', content: userMessage });
     setLoading(true);
     setStreamingText('');
@@ -103,11 +157,12 @@ export default function ChatScreen() {
         recipe: normalized.recipe,
         swaps: normalized.swaps,
         nutrition: normalized.nutrition,
+        mes_score: response.mes_score || null,
       });
       // Award XP for healthify usage
       awardXP(25, 'healthify').then((res) => {
         if (res.xp_gained > 0) showQuestToast(`+${res.xp_gained} XP · Healthify`);
-      });
+      }).catch(() => {});
     } catch (err: any) {
       const rawMessage = String(err?.message || '');
       const friendlyMessage =
@@ -150,11 +205,12 @@ export default function ChatScreen() {
             recipe: normalized.recipe,
             swaps: normalized.swaps,
             nutrition: normalized.nutrition,
+            mes_score: response.mes_score || null,
           });
           // Award XP for healthify usage
           awardXP(25, 'healthify').then((res) => {
             if (res.xp_gained > 0) showQuestToast(`+${res.xp_gained} XP · Healthify`);
-          });
+          }).catch(() => {});
         })
         .catch((err: any) => {
           const rawMessage = String(err?.message || '');
@@ -267,7 +323,7 @@ export default function ChatScreen() {
 
   const normalizedMessages = useMemo(
     () =>
-      messages.map((msg) =>
+      deferredMessages.map((msg) =>
         msg.role === 'assistant'
           ? {
               ...msg,
@@ -280,52 +336,103 @@ export default function ChatScreen() {
             }
           : { ...msg, normalized: null }
       ),
-    [messages]
+    [deferredMessages]
   );
+
+  const conversationData = useMemo(
+    () => normalizedMessages.map((msg, index) => ({ ...msg, key: String(index), index })),
+    [normalizedMessages]
+  );
+
+  useEffect(() => {
+    if (!conversationData.length) return;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+  }, [conversationData.length, isLoading]);
 
   return (
     <ScreenContainer padded={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}
+      <View
+        style={{ flex: 1, paddingBottom: keyboardVisible ? Math.max(0, keyboardHeight - insets.bottom) : 0 }}
       >
+        <View
+          pointerEvents="none"
+          style={[
+            styles.backgroundGlow,
+            {
+              backgroundColor: theme.primaryMuted,
+              top: -40,
+              left: -80,
+            },
+          ]}
+        />
+        <View
+          pointerEvents="none"
+          style={[
+            styles.backgroundGlow,
+            styles.backgroundGlowSecondary,
+            {
+              backgroundColor: theme.infoMuted,
+              bottom: composerLift + 32,
+              right: -100,
+            },
+          ]}
+        />
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <View style={styles.headerContent}>
-            <LinearGradient
-              colors={theme.gradient.primary}
-              style={styles.headerIcon}
-            >
-              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-            </LinearGradient>
-            <View style={styles.headerTextWrap}>
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Healthify</Text>
-              <Text style={[styles.headerSubtitle, { color: theme.textTertiary }]} numberOfLines={1}>
-                Transform any food into a whole-food version
-              </Text>
+        <View style={[styles.headerShell, { borderBottomColor: theme.border + '99' }]}>
+          <View style={[styles.header, { maxWidth: maxContentWidth }]}>
+            <View style={styles.headerContent}>
+              <LinearGradient
+                colors={theme.gradient.primary}
+                style={styles.headerIcon}
+              >
+                <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+              </LinearGradient>
+              <View style={styles.headerTextWrap}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Healthify</Text>
+                <Text
+                  style={[
+                    styles.headerSubtitle,
+                    isCompact && styles.headerSubtitleCompact,
+                    { color: theme.textTertiary },
+                  ]}
+                  numberOfLines={1}
+                  allowFontScaling={false}
+                >
+                  Whole-food swaps, cleaner recipes, better macros
+                </Text>
+              </View>
             </View>
-          </View>
-          <TouchableOpacity
-            style={[styles.savedPill, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-            onPress={() => router.push('/saved')}
-            activeOpacity={0.75}
-          >
-            <Ionicons name="bookmark" size={14} color={theme.primary} />
-            <Text style={[styles.savedPillText, { color: theme.text }]}>
-              Saved {savedRecipes.length}
-            </Text>
-          </TouchableOpacity>
-          {messages.length > 0 && (
             <TouchableOpacity
-              style={[styles.savedPill, { backgroundColor: theme.surfaceElevated, borderColor: theme.border, marginLeft: Spacing.xs }]}
-              onPress={clearChat}
+              style={[
+                styles.savedPill,
+                isCompact && styles.savedPillCompact,
+                { backgroundColor: theme.surfaceElevated, borderColor: theme.border, marginLeft: Spacing.xs },
+              ]}
+              onPress={() => router.push('/saved')}
               activeOpacity={0.75}
             >
-              <Ionicons name="add" size={14} color={theme.primary} />
-              <Text style={[styles.savedPillText, { color: theme.text }]}>New</Text>
+              <Ionicons name="bookmark" size={14} color={theme.primary} />
+              <Text style={[styles.savedPillText, { color: theme.text }]}>
+                Saved {savedRecipes.length}
+              </Text>
             </TouchableOpacity>
-          )}
+            {messages.length > 0 && (
+              <TouchableOpacity
+                style={[
+                  styles.savedPill,
+                  isCompact && styles.savedPillCompact,
+                  { backgroundColor: theme.surfaceElevated, borderColor: theme.border, marginLeft: Spacing.xs },
+                ]}
+                onPress={clearChat}
+                activeOpacity={0.75}
+              >
+                <Ionicons name="add" size={14} color={theme.primary} />
+                <Text style={[styles.savedPillText, { color: theme.text }]}>New</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {questToast ? (
@@ -353,15 +460,24 @@ export default function ChatScreen() {
         ) : null}
 
         {/* Messages */}
-        <ScrollView
-          ref={scrollRef}
+        <FlatList
+          ref={listRef}
           style={styles.messages}
-          contentContainerStyle={styles.messagesContent}
+          data={conversationData}
+          keyExtractor={(item) => item.key}
+          windowSize={7}
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          removeClippedSubviews={Platform.OS === 'android'}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-        >
-          {showSavedRecipes && savedRecipes.length > 0 && (
-            <Card style={styles.savedListCard} padding={Spacing.md}>
+          contentContainerStyle={[
+            styles.messagesContent,
+            {
+              paddingBottom: composerLift + 28,
+            },
+          ]}
+          ListHeaderComponent={showSavedRecipes && savedRecipes.length > 0 ? (
+            <Card style={[styles.savedListCard, styles.contentColumn, { maxWidth: maxContentWidth }]} padding={Spacing.md}>
               <Text style={[styles.savedListTitle, { color: theme.text }]}>Saved recipes</Text>
               {savedRecipes.map((saved) => (
                 <View key={saved.id} style={[styles.savedListItem, { borderBottomColor: theme.border }]}>
@@ -381,43 +497,52 @@ export default function ChatScreen() {
                 </View>
               ))}
             </Card>
-          )}
-
-          {messages.length === 0 ? (
-            <View style={styles.emptyState}>
+          ) : null}
+          ListEmptyComponent={
+            <View style={[styles.emptyState, { maxWidth: introWidth, alignSelf: 'center' }]}>
               <LinearGradient
                 colors={theme.gradient.hero}
                 style={styles.emptyIcon}
               >
-                <Ionicons name="nutrition" size={40} color="#FFFFFF" />
+                <Ionicons name="nutrition" size={32} color="#FFFFFF" />
               </LinearGradient>
+              <Text style={[styles.emptyEyebrow, { color: theme.primary }]}>Healthify AI</Text>
               <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                What's your guilty pleasure?
+                What are you craving?
               </Text>
-              <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-                Tell me your favorite unhealthy food and I'll create a delicious, whole-food version with all the flavor.
+              <Text
+                style={[
+                  styles.emptySubtitle,
+                  isCompact && styles.emptySubtitleCompact,
+                  { color: theme.textSecondary },
+                ]}
+              >
+                Drop in any comfort food and get a cleaner whole-food version with smarter swaps, a full recipe, and clearer nutrition tradeoffs.
               </Text>
 
-              <Text style={[styles.suggestionsTitle, { color: theme.textTertiary }]}>
-                Try one of these:
-              </Text>
-              <View style={styles.suggestionsGrid}>
-                {SUGGESTIONS.map((s, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => handleSuggestion(s)}
-                    activeOpacity={0.7}
-                    style={[styles.suggestionChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
-                  >
-                    <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={[styles.emptyPanel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.suggestionsTitle, { color: theme.textTertiary }]}>
+                  Quick starts
+                </Text>
+                <View style={styles.suggestionsGrid}>
+                  {suggestions.map((s, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => handleSuggestion(s)}
+                      activeOpacity={0.7}
+                      style={[styles.suggestionChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                    >
+                      <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
-          ) : (
-            normalizedMessages.map((msg, index) => {
+          }
+          renderItem={({ item }) => {
+              const msg = item;
               const payload = msg.normalized;
-              const key = recipeKeyFor(index);
+              const key = recipeKeyFor(msg.index);
               const recipe = payload?.recipe ? recipeOverrides[key] || payload.recipe : null;
               const isEditing = editingKey === key;
               const isSaved = recipe?.id ? isSavedRecipe(recipe.id) : false;
@@ -425,10 +550,11 @@ export default function ChatScreen() {
 
               return (
               <View
-                key={index}
                 style={[
                   styles.messageBubble,
-                  msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                  msg.role === 'user'
+                    ? [styles.userBubble, { maxWidth: bubbleMaxWidth }]
+                    : styles.assistantBubble,
                 ]}
               >
                 {msg.role === 'assistant' && (
@@ -439,23 +565,29 @@ export default function ChatScreen() {
                     <Text style={[styles.assistantLabel, { color: theme.primary }]}>Healthify AI</Text>
                   </View>
                 )}
-                <View
-                  style={[
-                    styles.bubbleContent,
-                    msg.role === 'user'
-                      ? { backgroundColor: theme.primary }
-                      : { backgroundColor: theme.surfaceElevated },
-                  ]}
-                >
-                  <Text
+                {msg.role === 'user' ? (
+                  <LinearGradient
+                    colors={['#22C55E', '#16A34A'] as const}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.bubbleContent, styles.userBubbleContent]}
+                  >
+                    <Text style={[styles.messageText, { color: '#FFFFFF' }]}>
+                      {payload?.message || msg.content}
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View
                     style={[
-                      styles.messageText,
-                      { color: msg.role === 'user' ? '#FFFFFF' : theme.text },
+                      styles.bubbleContent,
+                      { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border },
                     ]}
                   >
-                    {payload?.message || msg.content}
-                  </Text>
-                </View>
+                    <Text style={[styles.messageText, { color: theme.text }]}>
+                      {payload?.message || msg.content}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Recipe Card */}
                 {recipe && (
@@ -513,6 +645,35 @@ export default function ChatScreen() {
                         </View>
                       ) : null}
                     </View>
+
+                    {msg.mes_score && msg.mes_score.meal_score != null && (
+                      <View style={styles.mesBadgeRow}>
+                        {(() => {
+                          const tc = getTierConfig(msg.mes_score.meal_tier);
+                          return (
+                            <>
+                              <View style={[styles.mesPill, { backgroundColor: tc.color + '20' }]}>
+                                <Ionicons name={tc.icon as any} size={11} color={tc.color} />
+                                <Text style={[styles.mesPillText, { color: tc.color }]}>
+                                  This meal: {Math.round(msg.mes_score.meal_score)} MES
+                                </Text>
+                              </View>
+                              {msg.mes_score.projected_daily_score != null && (() => {
+                                const dtc = getTierConfig(msg.mes_score.projected_daily_tier || msg.mes_score.meal_tier);
+                                return (
+                                  <View style={[styles.mesPill, { backgroundColor: dtc.color + '15' }]}>
+                                    <Ionicons name="today-outline" size={11} color={dtc.color} />
+                                    <Text style={[styles.mesPillText, { color: dtc.color }]}>
+                                      Your day: {Math.round(msg.mes_score.projected_daily_score)} MES
+                                    </Text>
+                                  </View>
+                                );
+                              })()}
+                            </>
+                          );
+                        })()}
+                      </View>
+                    )}
 
                     {isEditing && recipeDraft ? (
                       <View style={styles.editPanel}>
@@ -623,7 +784,7 @@ export default function ChatScreen() {
                                   },
                                 ]}
                               >
-                                {toStringValue(ing.quantity)} {toStringValue(ing.unit)} {ing.name}
+                                {formatIngredientDisplayLine(ing)}
                               </Text>
                             </TouchableOpacity>
                           );
@@ -657,13 +818,21 @@ export default function ChatScreen() {
                     {payload.swaps.map((swap: any, i: number) => (
                       <View key={i} style={[styles.swapItem, { borderBottomColor: theme.border }]}>
                         <View style={styles.swapNames}>
-                          <Text style={[styles.swapOld, { color: theme.error }]}>
-                            {swap.original}
-                          </Text>
-                          <Ionicons name="arrow-down" size={14} color={theme.textTertiary} style={{ alignSelf: 'center' }} />
-                          <Text style={[styles.swapNew, { color: theme.primary }]}>
-                            {swap.replacement}
-                          </Text>
+                          <View style={styles.swapRow}>
+                            <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Instead of</Text>
+                            <Text style={[styles.swapOld, { color: theme.error }]}>
+                              {swap.original}
+                            </Text>
+                          </View>
+                          <View style={styles.swapArrowWrap}>
+                            <Ionicons name="arrow-down" size={14} color={theme.textTertiary} />
+                          </View>
+                          <View style={styles.swapRow}>
+                            <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Use</Text>
+                            <Text style={[styles.swapNew, { color: theme.primary }]}>
+                              {swap.replacement}
+                            </Text>
+                          </View>
                         </View>
                         <Text style={[styles.swapReason, { color: theme.textTertiary }]}>
                           {swap.reason}
@@ -672,14 +841,53 @@ export default function ChatScreen() {
                     ))}
                   </Card>
                 )}
+
+                {/* Nutrition Comparison */}
+                {payload?.nutrition?.original_estimate && payload?.nutrition?.healthified_estimate && (
+                  <Card style={styles.swapsCard} padding={Spacing.md}>
+                    <View style={styles.swapsHeader}>
+                      <Ionicons name="analytics-outline" size={16} color={theme.primary} />
+                      <Text style={[styles.recipeName, { color: theme.text }]}>
+                        Nutrition Impact
+                      </Text>
+                    </View>
+                    <View style={styles.nutritionCompareRow}>
+                      <View style={{ flex: 1 }} />
+                      <Text style={[styles.nutritionColumnLabel, { color: theme.textTertiary }]}>Original</Text>
+                      <Text style={[styles.nutritionColumnLabel, { color: theme.primary }]}>Healthified</Text>
+                    </View>
+                    {(['calories', 'protein', 'carbs', 'fat', 'fiber'] as const).map((key) => {
+                      const orig = Number(payload.nutrition.original_estimate[key] || 0);
+                      const healthified = Number(payload.nutrition.healthified_estimate[key] || 0);
+                      const diff = healthified - orig;
+                      const unit = key === 'calories' ? '' : 'g';
+                      const improved = key === 'protein' || key === 'fiber' ? diff > 0 : diff < 0;
+                      return (
+                        <View key={key} style={[styles.nutritionCompareRow, { borderTopWidth: 1, borderTopColor: theme.surfaceHighlight, paddingVertical: Spacing.xs + 2 }]}>
+                          <Text style={[styles.nutritionMacroLabel, { color: theme.textSecondary }]}>
+                            {key.charAt(0).toUpperCase() + key.slice(1)}
+                          </Text>
+                          <Text style={[styles.nutritionValue, { color: theme.textTertiary }]}>
+                            {Math.round(orig)}{unit}
+                          </Text>
+                          <Text style={[styles.nutritionValue, { color: theme.text, fontWeight: '700' }]}>
+                            {Math.round(healthified)}{unit}
+                            {diff !== 0 && (
+                              <Text style={{ color: improved ? theme.primary : theme.error, fontSize: 11 }}>
+                                {' '}{diff > 0 ? '+' : ''}{Math.round(diff)}
+                              </Text>
+                            )}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </Card>
+                )}
               </View>
             );
-            })
-          )}
-
-          {/* Streaming indicator */}
-          {isLoading && (
-            <View style={[styles.messageBubble, styles.assistantBubble]}>
+          }}
+          ListFooterComponent={isLoading ? (
+            <View style={[styles.messageBubble, styles.assistantBubble, { width: '100%' }]}>
               <View style={styles.assistantHeader}>
                 <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
                   <Ionicons name="sparkles" size={10} color="#FFF" />
@@ -692,58 +900,94 @@ export default function ChatScreen() {
                 </Text>
               </View>
             </View>
-          )}
-        </ScrollView>
+          ) : null}
+        />
 
         {/* Input Bar */}
-        <View style={[styles.inputBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-          <TextInput
+        <View
+          style={[
+            styles.inputBar,
+            {
+              backgroundColor: theme.background + 'F2',
+              borderTopColor: 'transparent',
+              marginBottom: keyboardVisible ? 0 : composerLift,
+              paddingBottom: keyboardVisible ? Spacing.xs : composerBottomInset + 6,
+            },
+          ]}
+        >
+          <View
             style={[
-              styles.textInput,
-              {
-                backgroundColor: theme.surfaceElevated,
-                color: theme.text,
-                borderColor: theme.border,
-              },
+              styles.inputCard,
+              isCompact && styles.inputCardCompact,
+              Shadows.md(isDark),
+              { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Tell me your favorite food..."
-            placeholderTextColor={theme.textTertiary}
-            multiline
-            maxLength={500}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-          />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!input.trim() || isLoading}
-            activeOpacity={0.7}
           >
-            <LinearGradient
-              colors={input.trim() ? theme.gradient.primary : [theme.surfaceHighlight, theme.surfaceHighlight]}
-              style={styles.sendButton}
+            <TextInput
+              style={[
+                styles.textInput,
+                isCompact && styles.textInputCompact,
+                {
+                  color: theme.text,
+                },
+              ]}
+              value={input}
+              onChangeText={setInput}
+              placeholder={isCompact ? 'Describe a food...' : 'Describe a food you want to clean up...'}
+              placeholderTextColor={theme.textTertiary}
+              multiline
+              maxLength={500}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+              allowFontScaling={false}
+            />
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={!input.trim() || isLoading}
+              activeOpacity={0.7}
             >
-              <Ionicons
-                name="arrow-up"
-                size={20}
-                color={input.trim() ? '#FFFFFF' : theme.textTertiary}
-              />
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={input.trim() ? (['#16A34A', '#0D9488'] as const) : [theme.surfaceHighlight, theme.surfaceHighlight]}
+                style={[styles.sendButton, isCompact && styles.sendButtonCompact]}
+              >
+                <Ionicons
+                  name="arrow-up"
+                  size={isCompact ? 18 : 20}
+                  color={input.trim() ? '#FFFFFF' : theme.textTertiary}
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
+  backgroundGlow: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 999,
+    opacity: 0.35,
+  },
+  backgroundGlowSecondary: {
+    width: 220,
+    height: 220,
+    opacity: 0.22,
+  },
+  headerShell: {
     borderBottomWidth: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  header: {
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: Spacing.md,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   headerContent: {
@@ -752,7 +996,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     flex: 1,
     minWidth: 0,
-    paddingRight: Spacing.sm,
+    paddingRight: Spacing.xs,
   },
   headerTextWrap: {
     flex: 1,
@@ -767,6 +1011,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 1,
     marginLeft: Spacing.sm,
+  },
+  savedPillCompact: {
+    paddingHorizontal: Spacing.sm + 2,
   },
   savedPillText: {
     fontSize: FontSize.xs,
@@ -802,68 +1049,99 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: FontSize.xs,
   },
+  headerSubtitleCompact: {
+    fontSize: 11,
+  },
   messages: {
     flex: 1,
   },
   messagesContent: {
-    padding: Spacing.xl,
-    paddingBottom: 100,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Layout.scrollBottomPadding,
+  },
+  contentColumn: {
+    width: '100%',
+    alignSelf: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    paddingTop: Spacing.huge,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
   emptyIcon: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.md,
+  },
+  emptyEyebrow: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
   },
   emptyTitle: {
-    fontSize: FontSize.xl,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   emptySubtitle: {
     fontSize: FontSize.md,
     textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing.lg,
+  },
+  emptySubtitleCompact: {
+    fontSize: FontSize.sm,
     lineHeight: 22,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xxl,
+  },
+  emptyPanel: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: BorderRadius.xl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   suggestionsTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    marginBottom: Spacing.md,
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    textAlign: 'center',
   },
   suggestionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   suggestionChip: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   suggestionText: {
     fontSize: FontSize.sm,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   messageBubble: {
     marginBottom: Spacing.lg,
-    maxWidth: '92%',
   },
   userBubble: {
     alignSelf: 'flex-end',
   },
   assistantBubble: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
+    width: '100%',
   },
   assistantHeader: {
     flexDirection: 'row',
@@ -881,15 +1159,23 @@ const styles = StyleSheet.create({
   assistantLabel: {
     fontSize: FontSize.xs,
     fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   bubbleContent: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md + 2,
+    borderRadius: BorderRadius.xl,
+  },
+  userBubbleContent: {
+    alignSelf: 'flex-end',
   },
   messageText: {
     fontSize: FontSize.md,
     lineHeight: 22,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   recipeCard: {
     marginTop: Spacing.sm,
@@ -946,6 +1232,24 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     marginBottom: Spacing.sm,
   },
+  mesBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  mesPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.sm,
+    gap: 4,
+  },
+  mesPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -982,8 +1286,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   swapNames: {
-    gap: 4,
+    gap: 6,
     marginBottom: 6,
+  },
+  swapRow: {
+    gap: 2,
+  },
+  swapArrowWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 16,
+  },
+  swapLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   swapOld: {
     fontSize: FontSize.sm,
@@ -999,6 +1317,30 @@ const styles = StyleSheet.create({
   swapReason: {
     fontSize: FontSize.xs,
     lineHeight: 18,
+    marginTop: 2,
+  },
+  nutritionCompareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  nutritionColumnLabel: {
+    width: 80,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    textAlign: 'right',
+  },
+  nutritionMacroLabel: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  nutritionValue: {
+    width: 80,
+    fontSize: FontSize.sm,
+    textAlign: 'right',
   },
   savedListCard: {
     marginBottom: Spacing.md,
@@ -1070,22 +1412,41 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
   },
   inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    gap: Spacing.sm,
+    paddingTop: Spacing.sm,
+  },
+  inputCard: {
+    width: '100%',
+    maxWidth: MAX_CHAT_WIDTH,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderRadius: BorderRadius.pill,
+    paddingLeft: Spacing.md,
+    paddingRight: Spacing.xs,
+    paddingVertical: Spacing.xs,
+  },
+  inputCardCompact: {
+    paddingLeft: Spacing.sm + 2,
+    paddingVertical: 6,
   },
   textInput: {
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
     fontSize: FontSize.md,
+    textAlignVertical: 'center',
+  },
+  textInputCompact: {
+    minHeight: 40,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSize.sm,
   },
   sendButton: {
     width: 44,
@@ -1093,5 +1454,10 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sendButtonCompact: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
 });

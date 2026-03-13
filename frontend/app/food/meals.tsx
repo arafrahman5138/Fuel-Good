@@ -47,6 +47,32 @@ interface SearchResult {
   calories_kcal?: number;
 }
 
+function cleanScanTitle(raw: string | undefined, snap: Record<string, any>) {
+  const value = String(raw || '').trim();
+  if (
+    value &&
+    value.length > 3 &&
+    !/[+\-]$/.test(value) &&
+    !/\b(with|and|in|on|over|with\s*)$/i.test(value)
+  ) {
+    return value;
+  }
+
+  const estimated = Array.isArray(snap?.estimated_ingredients) ? snap.estimated_ingredients : [];
+  const normalized = Array.isArray(snap?.normalized_ingredients) ? snap.normalized_ingredients : [];
+  const ingredients = (estimated.length ? estimated : normalized)
+    .map((item: unknown) => String(item || '').trim())
+    .filter(Boolean);
+
+  if (ingredients.length >= 2) return `${ingredients[0]} + ${ingredients[1]}`;
+  if (ingredients.length === 1) return ingredients[0];
+  return value || 'Scanned food';
+}
+
+function isScanSnack(snap: Record<string, any>, sourceType?: string) {
+  return sourceType === 'scan' && snap?.meal_context === 'snack';
+}
+
 // ── Component ──
 
 export default function TodaysMealsScreen() {
@@ -64,10 +90,12 @@ export default function TodaysMealsScreen() {
 
   const fetchLogs = useCallback(async () => {
     try {
-      const data = await nutritionApi.getDaily();
+      const d = new Date();
+      const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const data = await nutritionApi.getDaily(localDate);
       setLogs(data?.logs || []);
-    } catch (e) {
-      console.error('Failed to fetch logs', e);
+    } catch {
+      // silent
     }
   }, []);
 
@@ -103,7 +131,6 @@ export default function TodaysMealsScreen() {
             await fetchLogs();
           } catch (e) {
             const msg = e instanceof Error ? e.message : 'Failed to remove meal.';
-            console.error('Delete meal failed', { logId, title, error: msg });
             Alert.alert('Error', msg);
           } finally {
             setDeleting(null);
@@ -202,9 +229,14 @@ export default function TodaysMealsScreen() {
             // Use same formula as detail page: min(100, storedRawMes + mes_delta)
             const storedRawMes = Number(mainRecipe?.nutrition_info?.mes_score ?? 0);
             const hasStoredRawMes = Number.isFinite(storedRawMes) && storedRawMes > 0;
-            const score = hasStoredRawMes
-              ? Math.min(100, Number((storedRawMes + (matchedPair.mes_delta ?? 0)).toFixed(1)))
-              : Number(matchedPair.combined_display_score ?? matchedPair.combined_mes_score ?? 0);
+            const score = Number(
+              matchedPair.pairing_adjusted_score
+              ?? matchedPair.combined_display_score
+              ?? matchedPair.combined_mes_score
+              ?? (hasStoredRawMes
+                ? Math.min(100, Number((storedRawMes + (matchedPair.mes_delta ?? 0)).toFixed(1)))
+                : 0)
+            );
             const tier = score >= 80 ? 'optimal' : score >= 60 ? 'stable' : score >= 40 ? 'shaky' : 'crash_risk';
             if (score > 0 && !cancelled) {
               setBackfilledScores((prev) => ({ ...prev, [groupId]: { score, tier } }));
@@ -439,7 +471,9 @@ export default function TodaysMealsScreen() {
                         const pro = Number(snap.protein || 0);
                         const carb = Number(snap.carbs || 0);
                         const fat = Number(snap.fat || 0);
+                        const scanSnack = isScanSnack(snap, log.source_type);
                         const sourceIcon =
+                          log.source_type === 'scan' ? 'scan-outline' :
                           log.source_type === 'recipe' ? 'restaurant-outline' :
                           log.source_type === 'meal_plan' ? 'calendar-outline' : 'create-outline';
                         const isDeleting = deleting === log.id;
@@ -459,7 +493,7 @@ export default function TodaysMealsScreen() {
                               </LinearGradient>
                               <View style={{ flex: 1, minWidth: 0 }}>
                                 <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
-                                  {log.title || 'Untitled'}
+                                  {log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled')}
                                 </Text>
                                 <View style={s.mealMetaRow}>
                                   {log.meal_type && (
@@ -467,7 +501,7 @@ export default function TodaysMealsScreen() {
                                       {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
                                     </Text>
                                   )}
-                                  {mealMes && (
+                                  {!scanSnack && mealMes && (
                                     mealMes.score
                                       ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
                                       : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
@@ -643,7 +677,9 @@ export default function TodaysMealsScreen() {
                       const pro = Number(snap.protein || 0);
                       const carb = Number(snap.carbs || 0);
                       const fat = Number(snap.fat || 0);
+                      const scanSnack = isScanSnack(snap, log.source_type);
                       const sourceIcon =
+                        log.source_type === 'scan' ? 'scan-outline' :
                         log.source_type === 'recipe' ? 'restaurant-outline' :
                         log.source_type === 'meal_plan' ? 'calendar-outline' : 'create-outline';
                       const isDeleting = deleting === log.id;
@@ -663,7 +699,7 @@ export default function TodaysMealsScreen() {
                             </LinearGradient>
                             <View style={{ flex: 1, minWidth: 0 }}>
                               <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
-                                {log.title || 'Untitled'}
+                                {log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled')}
                               </Text>
                               <View style={s.mealMetaRow}>
                                 {log.meal_type && (
@@ -671,7 +707,7 @@ export default function TodaysMealsScreen() {
                                     {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
                                   </Text>
                                 )}
-                                {mealMes && (
+                                {!scanSnack && mealMes && (
                                   mealMes.score
                                     ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
                                     : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
@@ -733,7 +769,7 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xl,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
   },
   bannerTop: {
     flexDirection: 'row',
@@ -755,8 +791,8 @@ const s = StyleSheet.create({
   bannerCalBadge: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.lg,
   },
   bannerCalText: {
@@ -766,7 +802,7 @@ const s = StyleSheet.create({
   },
   bannerCalUnit: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
     marginTop: -2,
   },
@@ -787,7 +823,7 @@ const s = StyleSheet.create({
   },
   bannerMacroLabel: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '600',
     marginTop: 1,
   },
@@ -803,7 +839,7 @@ const s = StyleSheet.create({
   addBtnIcon: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -817,7 +853,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
   },
@@ -843,7 +879,7 @@ const s = StyleSheet.create({
   searchResultIcon: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -852,14 +888,14 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
   searchResultBrand: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     marginTop: 1,
   },
   searchResultCal: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
-    marginRight: 4,
+    marginRight: Spacing.xs,
   },
   quickAction: {
     flex: 1,
@@ -874,7 +910,7 @@ const s = StyleSheet.create({
   quickActionIcon: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -898,7 +934,7 @@ const s = StyleSheet.create({
   emptyIcon: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
@@ -927,7 +963,7 @@ const s = StyleSheet.create({
   mealIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -939,30 +975,30 @@ const s = StyleSheet.create({
   mealMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 3,
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
     flexWrap: 'wrap',
   },
   mealType: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   sideRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: Spacing.xs,
     paddingLeft: 40 + Spacing.md,
   },
   sideRowText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     flex: 1,
   },
   deleteBtn: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -970,18 +1006,18 @@ const s = StyleSheet.create({
   macroPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: Spacing.xs,
   },
   macroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   macroPillText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '700',
   },
 });

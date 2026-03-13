@@ -26,7 +26,8 @@ from app.agents.meal_planner_fallback import (
     get_replacement_candidates,
     get_shortlist_candidates,
 )
-from app.services.metabolic_engine import compute_meal_mes, get_or_create_budget
+from app.services.metabolic_engine import compute_meal_mes, load_budget_for_user
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -205,7 +206,7 @@ async def generate_meal_plan(
     prefs_dict = preferences.model_dump()
 
     result = generate_fallback_meal_plan(db, prefs_dict, str(current_user.id))
-    budget = get_or_create_budget(db, current_user.id)
+    budget = load_budget_for_user(db, current_user.id)
 
     meal_plan = MealPlan(
         user_id=current_user.id,
@@ -237,6 +238,15 @@ async def generate_meal_plan(
 
     db.commit()
     db.refresh(meal_plan)
+    record_notification_event(
+        db,
+        current_user.id,
+        "meal_plan_created",
+        properties={"meal_plan_id": str(meal_plan.id), "week_start": meal_plan.week_start.isoformat()},
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
+    db.commit()
     return _serialize_plan(meal_plan, budget, result.get("warnings", []))
 
 
@@ -349,7 +359,7 @@ async def replace_meal_plan_item(
     }
     db.commit()
     db.refresh(item.meal_plan)
-    budget = get_or_create_budget(db, current_user.id)
+    budget = load_budget_for_user(db, current_user.id)
     return _serialize_plan(item.meal_plan, budget)
 
 
@@ -365,7 +375,7 @@ async def get_current_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="No meal plan found")
 
-    budget = get_or_create_budget(db, current_user.id)
+    budget = load_budget_for_user(db, current_user.id)
     return _serialize_plan(plan, budget)
 
 
@@ -377,6 +387,6 @@ async def get_plan_history(
     plans = db.query(MealPlan).filter(
         MealPlan.user_id == current_user.id
     ).order_by(MealPlan.created_at.desc()).limit(10).all()
-    budget = get_or_create_budget(db, current_user.id)
+    budget = load_budget_for_user(db, current_user.id)
 
     return [_serialize_plan(plan, budget) for plan in plans]

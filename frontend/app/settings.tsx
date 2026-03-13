@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -14,8 +15,10 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useMetabolicBudgetStore } from '../stores/metabolicBudgetStore';
+import { billingService } from '../services/billing';
 import type { MetabolicProfile } from '../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../constants/Colors';
+import { APP_ENV, APP_STORE_MANAGE_SUBSCRIPTIONS_URL, APP_VERSION, PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../constants/Config';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -30,6 +33,35 @@ export default function SettingsScreen() {
   const [proteinW, setProteinW] = useState(0.4);
   const [fiberW, setFiberW] = useState(0.3);
   const [sugarW, setSugarW] = useState(0.3);
+
+  const openExternalLink = async (url: string, fallback?: string) => {
+    if (!url) {
+      Alert.alert('Unavailable', fallback || 'This link is not configured for this build yet.');
+      return;
+    }
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Unavailable', fallback || 'We could not open that link right now.');
+    }
+  };
+
+  const contactSupport = async () => {
+    try {
+      await Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+    } catch {
+      Alert.alert('Support', `Email us at ${SUPPORT_EMAIL}`);
+    }
+  };
+
+  const manageSubscription = async () => {
+    try {
+      const url = user?.entitlement?.manage_url || await billingService.getManageSubscriptionsUrl();
+      await Linking.openURL(url || APP_STORE_MANAGE_SUBSCRIPTIONS_URL);
+    } catch {
+      Alert.alert('Unavailable', 'We could not open App Store subscription management right now.');
+    }
+  };
 
   useEffect(() => {
     fetchBudget();
@@ -262,6 +294,124 @@ export default function SettingsScreen() {
         <TouchableOpacity
           activeOpacity={0.75}
           style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+          onPress={() => router.push('/notification-settings')}
+        >
+          <View style={[styles.settingsIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+            <Ionicons name="notifications" size={18} color="#3B82F6" />
+          </View>
+          <View style={styles.settingsInfo}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Push Notifications</Text>
+            <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+              Control meal reminders, streak saves, and Healthify follow-ups.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
+          Legal & Support
+        </Text>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+          onPress={manageSubscription}
+        >
+          <View style={[styles.settingsIcon, { backgroundColor: 'rgba(20,184,166,0.12)' }]}>
+            <Ionicons name="card" size={18} color="#0F766E" />
+          </View>
+          <View style={styles.settingsInfo}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Manage Subscription</Text>
+            <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+              {user?.entitlement?.subscription_state === 'trialing' ? 'Trial active' : 'Open App Store subscription settings'}
+            </Text>
+          </View>
+          <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+          onPress={() => openExternalLink(PRIVACY_POLICY_URL, 'Privacy policy URL has not been configured for this build.')}
+        >
+          <View style={[styles.settingsIcon, { backgroundColor: 'rgba(37,99,235,0.12)' }]}>
+            <Ionicons name="document-text" size={18} color="#2563EB" />
+          </View>
+          <View style={styles.settingsInfo}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Privacy Policy</Text>
+            <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+              Review how Fuel Good handles account, photo, and diagnostics data.
+            </Text>
+          </View>
+          <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+          onPress={() => openExternalLink(TERMS_URL, 'Terms of service URL has not been configured for this build.')}
+        >
+          <View style={[styles.settingsIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
+            <Ionicons name="shield-checkmark" size={18} color="#16A34A" />
+          </View>
+          <View style={styles.settingsInfo}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Terms of Service</Text>
+            <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+              Review wellness-only product terms and acceptable use.
+            </Text>
+          </View>
+          <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+          onPress={contactSupport}
+        >
+          <View style={[styles.settingsIcon, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
+            <Ionicons name="mail" size={18} color="#D97706" />
+          </View>
+          <View style={styles.settingsInfo}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Support</Text>
+            <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+              {SUPPORT_EMAIL}
+            </Text>
+          </View>
+          <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
+
+        {SUPPORT_URL ? (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+            onPress={() => openExternalLink(SUPPORT_URL)}
+          >
+            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(168,85,247,0.12)' }]}>
+              <Ionicons name="help-circle" size={18} color="#A855F7" />
+            </View>
+            <View style={styles.settingsInfo}>
+              <Text style={[styles.settingsLabel, { color: theme.text }]}>Support Center</Text>
+              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                Open the public support and status page.
+              </Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        ) : null}
+
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
+          Build Info
+        </Text>
+        <View style={[styles.infoCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Environment</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>{APP_ENV}</Text>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary, marginTop: Spacing.sm }]}>Version</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>{APP_VERSION}</Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.settingsRow, { borderBottomColor: theme.border }]}
           onPress={() => router.push('/saved')}
         >
           <View style={[styles.settingsIcon, { backgroundColor: theme.primaryMuted }]}>
@@ -368,13 +518,15 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scroll: {
     paddingTop: Spacing.xxxl,
-    paddingBottom: Spacing.huge,
-    paddingHorizontal: Spacing.md,
+    paddingBottom: Layout.scrollBottomPadding,
+    paddingHorizontal: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     marginBottom: Spacing.md,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   themeRow: {
     flexDirection: 'row',
@@ -403,7 +555,7 @@ const styles = StyleSheet.create({
   settingsIcon: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -417,6 +569,22 @@ const styles = StyleSheet.create({
   settingsDesc: {
     fontSize: FontSize.sm,
     marginTop: 1,
+  },
+  infoCard: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+  },
+  infoLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  infoValue: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    marginTop: 2,
   },
   signOutBtn: {
     flexDirection: 'row',

@@ -1,6 +1,9 @@
+import logging
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.db import get_db
 from app.auth import get_current_user
@@ -10,6 +13,7 @@ from app.models.local_food import LocalFood
 from app.models.meal_plan import MealPlanItem
 from app.models.nutrition import NutritionTarget, FoodLog, DailyNutritionSummary
 from app.models.scanned_meal import ScannedMealLog
+from app.models.metabolic_profile import MetabolicProfile
 from app.schemas.nutrition import (
     NutritionTargetsResponse,
     NutritionTargetsUpdate,
@@ -19,13 +23,15 @@ from app.schemas.nutrition import (
     DailyNutritionResponse,
 )
 from app.achievements_engine import award_xp, update_nutrition_streak, check_achievements
+from app.services.food_catalog import canonicalize_nutrition, resolve_food_db_nutrition
 from app.services.metabolic_engine import (
     on_food_log_created,
-    get_or_create_budget,
     recompute_daily_score,
     update_metabolic_streak,
+    load_budget_for_user,
 )
 from app.models.metabolic import MetabolicScore
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 
@@ -57,6 +63,19 @@ ESSENTIAL_MICROS_DEFAULTS = {
     "omega3_g": 1.6,
 }
 
+
+def _clear_scan_log_references(db: Session, log_ids: list[str]) -> None:
+    if not log_ids:
+        return
+    scans = (
+        db.query(ScannedMealLog)
+        .filter(ScannedMealLog.logged_food_log_id.in_(log_ids))
+        .all()
+    )
+    for scan in scans:
+        scan.logged_food_log_id = None
+        scan.logged_to_chronometer = False
+
 MACRO_KEYS = ["calories", "protein", "carbs", "fat", "fiber"]
 
 
@@ -71,17 +90,62 @@ def _default_targets() -> NutritionTarget:
     )
 
 
+def _profile_has_core_setup(profile: MetabolicProfile | None) -> bool:
+    return bool(
+        profile
+        and profile.sex
+        and profile.goal
+        and profile.activity_level
+        and profile.weight_lb is not None
+        and (profile.height_cm is not None or getattr(profile, "height_ft", None) is not None)
+    )
+
+
+def _target_matches_legacy_defaults(target: NutritionTarget) -> bool:
+    return (
+        float(target.calories_target or 0) == 2200
+        and float(target.protein_g_target or 0) == 130
+        and float(target.carbs_g_target or 0) == 250
+        and float(target.fat_g_target or 0) == 75
+        and float(target.fiber_g_target or 0) == 30
+    )
+
+
+def _sync_targets_from_profile_if_needed(
+    db: Session,
+    user_id: str,
+    target: NutritionTarget,
+) -> NutritionTarget:
+    profile = db.query(MetabolicProfile).filter(MetabolicProfile.user_id == user_id).first()
+    if not _profile_has_core_setup(profile):
+        return target
+
+    computed = load_budget_for_user(db, user_id)
+    target.calories_target = round(float(getattr(computed, "calorie_target_kcal", None) or computed.tdee or 0), 1)
+    target.protein_g_target = round(float(computed.protein_g or 0), 1)
+    target.carbs_g_target = round(float(computed.carb_ceiling_g or 0), 1)
+    target.fat_g_target = round(float(computed.fat_g or 0), 1)
+    target.fiber_g_target = round(float(computed.fiber_g or 0), 1)
+    return target
+
+
 def _get_or_create_targets(db: Session, user_id: str) -> NutritionTarget:
     target = db.query(NutritionTarget).filter(NutritionTarget.user_id == user_id).first()
     if target:
+        target = _sync_targets_from_profile_if_needed(db, user_id, target)
         if not target.micronutrient_targets:
             target.micronutrient_targets = ESSENTIAL_MICROS_DEFAULTS
+            db.commit()
+            db.refresh(target)
+            return target
+        if db.is_modified(target):
             db.commit()
             db.refresh(target)
         return target
 
     target = _default_targets()
     target.user_id = user_id
+    target = _sync_targets_from_profile_if_needed(db, user_id, target)
     db.add(target)
     db.commit()
     db.refresh(target)
@@ -135,6 +199,19 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
             recipe = db.query(Recipe).filter(Recipe.id == item.recipe_id).first()
             nutrition = recipe.nutrition_info if recipe else {}
         return title, nutrition or {}
+
+    if source_type == "food_db":
+        if not payload.source_id:
+            raise HTTPException(status_code=400, detail="source_id is required for food_db")
+        food = db.query(LocalFood).filter(LocalFood.id == payload.source_id, LocalFood.is_active.is_(True)).first()
+        if not food:
+            raise HTTPException(status_code=404, detail="Food catalog item not found")
+        selected = resolve_food_db_nutrition(
+            food,
+            serving_option_id=payload.serving_option_id,
+            grams=payload.grams,
+        )
+        return food.name, selected
 
     if source_type == "scan":
         if not payload.source_id:
@@ -302,7 +379,7 @@ async def create_log(
     title, base_nutrition = _resolve_source_nutrition(db, payload)
 
     factor = max(0.1, float(payload.servings or 1.0)) * max(0.1, float(payload.quantity or 1.0))
-    nutrition_snapshot = _scaled_nutrition(base_nutrition, factor)
+    nutrition_snapshot = canonicalize_nutrition(_scaled_nutrition(base_nutrition, factor))
 
     log = FoodLog(
         user_id=current_user.id,
@@ -336,7 +413,24 @@ async def create_log(
     try:
         on_food_log_created(db, current_user.id, log)
     except Exception:
-        pass  # MES is best-effort; don't break food logging
+        logger.warning("MES scoring failed for food log %s", log.id, exc_info=True)
+
+    record_notification_event(
+        db,
+        current_user.id,
+        "food_logged_today",
+        properties={"log_id": str(log.id), "meal_type": log.meal_type, "date": day.isoformat()},
+        source="server",
+    )
+    record_notification_event(
+        db,
+        current_user.id,
+        "daily_mes_updated",
+        properties={"date": day.isoformat(), "daily_score": daily_score},
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     return _serialize_log(log)
 
@@ -383,7 +477,7 @@ async def update_log(
 
     if payload.nutrition is not None:
         factor = max(0.1, float(log.servings or 1.0)) * max(0.1, float(log.quantity or 1.0))
-        log.nutrition_snapshot = _scaled_nutrition(payload.nutrition, factor)
+        log.nutrition_snapshot = canonicalize_nutrition(_scaled_nutrition(payload.nutrition, factor))
 
     db.commit()
     db.refresh(log)
@@ -409,6 +503,8 @@ async def delete_group_logs(
         raise HTTPException(status_code=404, detail="No logs found for this group")
 
     day = group_logs[0].date
+    group_log_ids = [str(log.id) for log in group_logs]
+    _clear_scan_log_references(db, group_log_ids)
 
     for log in group_logs:
         db.query(MetabolicScore).filter(
@@ -422,11 +518,11 @@ async def delete_group_logs(
     _compute_daily(db, current_user.id, day)
 
     try:
-        budget = get_or_create_budget(db, current_user.id)
+        budget = load_budget_for_user(db, current_user.id)
         daily = recompute_daily_score(db, current_user.id, day, budget)
         update_metabolic_streak(db, current_user.id, daily.total_score, day)
     except Exception:
-        pass
+        logger.warning("Metabolic streak update failed after group delete", exc_info=True)
 
     return {"ok": True, "deleted_count": len(group_logs)}
 
@@ -442,6 +538,7 @@ async def delete_log(
         raise HTTPException(status_code=404, detail="Log not found")
 
     day = log.date
+    _clear_scan_log_references(db, [str(log.id)])
 
     # Remove dependent per-meal MES rows first (metabolic_scores.food_log_id -> food_logs.id)
     # to avoid FK constraint failures when deleting a food log.
@@ -457,11 +554,11 @@ async def delete_log(
 
     # Keep metabolic daily score + streak in sync after deletion.
     try:
-        budget = get_or_create_budget(db, current_user.id)
+        budget = load_budget_for_user(db, current_user.id)
         daily = recompute_daily_score(db, current_user.id, day, budget)
         update_metabolic_streak(db, current_user.id, daily.total_score, day)
     except Exception:
-        pass
+        logger.warning("Metabolic streak update failed after log delete", exc_info=True)
 
     return {"ok": True}
 
@@ -588,10 +685,21 @@ async def get_nutrition_gaps(
             if not row:
                 row = LocalFood(
                     name=food_name,
+                    brand=None,
                     category="Coach Staples",
+                    source_kind="coach_staple",
+                    aliases=[],
+                    default_serving_label="1 serving",
+                    default_serving_grams=100,
+                    serving_options=[],
+                    nutrition_per_100g=default_food_profiles.get(food_name, {}),
+                    nutrition_per_serving=canonicalize_nutrition(default_food_profiles.get(food_name, {})),
+                    mes_ready_nutrition=canonicalize_nutrition(default_food_profiles.get(food_name, {})),
+                    micronutrients={},
                     serving="1 serving",
-                    nutrition_info=default_food_profiles.get(food_name, {}),
+                    nutrition_info=canonicalize_nutrition(default_food_profiles.get(food_name, {})),
                     tags=["coach", key],
+                    is_active=True,
                 )
                 db.add(row)
                 db.commit()
@@ -599,10 +707,10 @@ async def get_nutrition_gaps(
 
             suggestions_foods.append({
                 "for": key,
-                "food_id": f"local-{row.id}",
+                "food_id": str(row.id),
                 "name": row.name,
                 "category": row.category,
-                "nutrition_info": row.nutrition_info or {},
+                "nutrition_info": row.nutrition_per_serving or row.nutrition_info or {},
             })
 
     return {

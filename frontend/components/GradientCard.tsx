@@ -1,8 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
+import { Animated, View, StyleSheet, ViewStyle, StyleProp, TouchableOpacity, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BorderRadius, Spacing } from '../constants/Colors';
+import { Shadows } from '../constants/Shadows';
 import { useTheme } from '../hooks/useTheme';
+import { useThemeStore } from '../stores/themeStore';
+import { usePressScale } from '../hooks/useAnimations';
 
 interface GradientCardProps {
   children: React.ReactNode;
@@ -32,20 +35,31 @@ export function Card({
   style,
   padding,
   onPress,
+  shadow = 'none',
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   padding?: number;
   onPress?: () => void;
+  shadow?: 'none' | 'sm' | 'md';
 }) {
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
+  const press = usePressScale();
 
-  const content = (
-    <View
+  const shadowStyle = shadow !== 'none' ? Shadows[shadow](isDark) : {};
+
+  const cardView = (
+    <LinearGradient
+      colors={theme.gradient.card as readonly [string, string, ...string[]]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
       style={[
         styles.card,
+        shadowStyle,
         {
-          backgroundColor: theme.card.background,
           borderColor: theme.card.border,
           borderWidth: 1,
           padding: padding ?? Spacing.lg,
@@ -54,23 +68,30 @@ export function Card({
       ]}
     >
       {children}
-    </View>
+    </LinearGradient>
   );
 
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
-        {content}
-      </TouchableOpacity>
+      <Animated.View style={press.animatedStyle}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPress}
+          onPressIn={press.onPressIn}
+          onPressOut={press.onPressOut}
+        >
+          {cardView}
+        </TouchableOpacity>
+      </Animated.View>
     );
   }
 
-  return content;
+  return cardView;
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     overflow: 'hidden',
   },
 });

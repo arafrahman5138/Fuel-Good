@@ -26,7 +26,9 @@ export const Colors = {
       primary: ['#22C55E', '#16A34A'] as const,
       accent: ['#F59E0B', '#D97706'] as const,
       surface: ['#141419', '#0A0A0F'] as const,
-      hero: ['#22C55E', '#059669', '#047857'] as const,
+      hero: ['#16A34A', '#0D9488', '#0891B2'] as const,
+      heroSubtle: ['rgba(34,197,94,0.10)', 'rgba(13,148,136,0.06)'] as const,
+      card: ['#1C1C24', '#141419'] as const,
     },
     card: {
       background: '#141419',
@@ -66,7 +68,9 @@ export const Colors = {
       primary: ['#22C55E', '#16A34A'] as const,
       accent: ['#F59E0B', '#D97706'] as const,
       surface: ['#FFFFFF', '#FAFAF9'] as const,
-      hero: ['#22C55E', '#16A34A', '#15803D'] as const,
+      hero: ['#16A34A', '#0D9488', '#0E7490'] as const,
+      heroSubtle: ['rgba(22,163,74,0.08)', 'rgba(13,148,136,0.05)'] as const,
+      card: ['#FFFFFF', '#F9F9F7'] as const,
     },
     card: {
       background: '#FFFFFF',
@@ -95,11 +99,13 @@ export const Spacing = {
 };
 
 export const BorderRadius = {
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
   xxl: 24,
+  pill: 28,
   full: 9999,
 };
 
@@ -112,4 +118,19 @@ export const FontSize = {
   xxl: 24,
   xxxl: 32,
   hero: 40,
+};
+
+export const FontWeight = {
+  regular: '400' as const,
+  medium: '500' as const,
+  semibold: '600' as const,
+  bold: '700' as const,
+  black: '800' as const,
+};
+
+export const Layout = {
+  /** Bottom padding for scrollable content to clear the floating tab bar */
+  scrollBottomPadding: 120,
+  /** Standard horizontal content padding (matches ScreenContainer.padded) */
+  contentPaddingH: Spacing.xl,
 };

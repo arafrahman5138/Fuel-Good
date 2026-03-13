@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { APP_NAME } from '../constants/Config';
 
 export default function LogoHeader() {
   const theme = useTheme();
@@ -10,7 +11,7 @@ export default function LogoHeader() {
       <View style={styles.iconWrap}>
         <Ionicons name="leaf" size={20} color="#22C55E" />
       </View>
-      <Text style={[styles.text, { color: theme.text }]}>WholeFoodLabs</Text>
+      <Text style={[styles.text, { color: theme.text }]}>{APP_NAME}</Text>
     </View>
   );
 }

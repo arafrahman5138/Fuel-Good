@@ -28,7 +28,7 @@ export type RecipeData = {
 export type NormalizedAssistantPayload = {
   message: string;
   recipe: RecipeData | null;
-  swaps?: any[];
+  swaps?: Array<{ original: string; replacement: string; reason: string }>;
   nutrition?: any;
 };
 
@@ -358,6 +358,23 @@ export function toRecipeData(input: any): RecipeData | null {
   };
 }
 
+export function normalizeSwaps(input: unknown): Array<{ original: string; replacement: string; reason: string }> | undefined {
+  if (!Array.isArray(input)) return undefined;
+
+  const normalized = input
+    .map((swap) => {
+      if (!swap || typeof swap !== 'object') return null;
+      const original = toStringValue((swap as any).original).trim();
+      const replacement = toStringValue((swap as any).replacement).trim();
+      const reason = toStringValue((swap as any).reason).trim() || 'Cleaner whole-food alternative.';
+      if (!original || !replacement) return null;
+      return { original, replacement, reason };
+    })
+    .filter((swap): swap is { original: string; replacement: string; reason: string } => Boolean(swap));
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 export function normalizeAssistantPayload(msg: {
   content: string;
   recipe?: any;
@@ -382,7 +399,7 @@ export function normalizeAssistantPayload(msg: {
     return {
       message: fallbackMessage,
       recipe: toRecipeData(msg.recipe),
-      swaps: msg.swaps,
+      swaps: normalizeSwaps(msg.swaps),
       nutrition: msg.nutrition,
     };
   }
@@ -392,7 +409,7 @@ export function normalizeAssistantPayload(msg: {
     return {
       message: toStringValue(parsed.message || ''),
       recipe: toRecipeData(parsed.recipe),
-      swaps: Array.isArray(parsed.swaps) ? parsed.swaps : undefined,
+      swaps: normalizeSwaps(parsed.swaps),
       nutrition: parsed.nutrition,
     };
   }
@@ -402,7 +419,7 @@ export function normalizeAssistantPayload(msg: {
     return {
       message: looseMessage,
       recipe: null,
-      swaps: msg.swaps,
+      swaps: normalizeSwaps(msg.swaps),
       nutrition: msg.nutrition,
     };
   }
@@ -412,7 +429,7 @@ export function normalizeAssistantPayload(msg: {
     return {
       message: markdownFallback.message,
       recipe: toRecipeData(markdownFallback.recipe),
-      swaps: msg.swaps?.length ? msg.swaps : markdownFallback.swaps,
+      swaps: normalizeSwaps(msg.swaps?.length ? msg.swaps : markdownFallback.swaps),
       nutrition: msg.nutrition,
     };
   }
@@ -420,7 +437,7 @@ export function normalizeAssistantPayload(msg: {
   return {
     message: msg.content,
     recipe: null,
-    swaps: msg.swaps,
+    swaps: normalizeSwaps(msg.swaps),
     nutrition: msg.nutrition,
   };
 }

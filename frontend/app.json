@@ -1,8 +1,11 @@
 {
   "expo": {
-    "name": "WholeFoodLabs",
+    "name": "Fuel Good",
     "slug": "wholefoodlabs",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wholefoodlabs",
@@ -17,10 +20,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.wholefoodlabs.app",
       "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSCameraUsageDescription": "WholeFoodLabs uses the camera to scan barcodes and capture product labels.",
-        "NSPhotoLibraryUsageDescription": "WholeFoodLabs uses your photo library so you can attach ingredient and nutrition label photos.",
-        "NSPhotoLibraryAddUsageDescription": "WholeFoodLabs may save temporary label images you choose during scanning.",
+        "NSCameraUsageDescription": "Fuel Good uses the camera to scan barcodes and capture product labels.",
+        "NSPhotoLibraryUsageDescription": "Fuel Good uses your photo library so you can attach ingredient and nutrition label photos.",
+        "NSPhotoLibraryAddUsageDescription": "Fuel Good may save temporary label images you choose during scanning.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": ["wholefoodlabs", "com.wholefoodlabs.app"]
@@ -48,23 +54,27 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
       "expo-apple-authentication",
       [
         "expo-camera",
         {
-          "cameraPermission": "WholeFoodLabs uses the camera to scan barcodes and capture product labels."
+          "cameraPermission": "Fuel Good uses the camera to scan barcodes and capture product labels."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "WholeFoodLabs uses your photo library so you can attach ingredient and nutrition label photos.",
-          "cameraPermission": "WholeFoodLabs uses the camera so you can capture ingredient and nutrition label photos."
+          "photosPermission": "Fuel Good uses your photo library so you can attach ingredient and nutrition label photos.",
+          "cameraPermission": "Fuel Good uses the camera so you can capture ingredient and nutrition label photos."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
     }
   }
 }

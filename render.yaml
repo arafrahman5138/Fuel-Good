@@ -1,0 +1,79 @@
+services:
+  - type: web
+    name: fuel-good-api-staging
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: RUN_NOTIFICATION_SCHEDULER
+        value: "false"
+      - key: RUN_STARTUP_SEEDING
+        value: "false"
+      - key: ALLOW_DEV_DB_BOOTSTRAP
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini
+  - type: worker
+    name: fuel-good-notifications-staging
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: python run_notification_worker.py
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: RUN_NOTIFICATION_SCHEDULER
+        value: "true"
+      - key: RUN_STARTUP_SEEDING
+        value: "false"
+      - key: ALLOW_DEV_DB_BOOTSTRAP
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini
+  - type: web
+    name: fuel-good-api-production
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: RUN_NOTIFICATION_SCHEDULER
+        value: "false"
+      - key: RUN_STARTUP_SEEDING
+        value: "false"
+      - key: ALLOW_DEV_DB_BOOTSTRAP
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini
+  - type: worker
+    name: fuel-good-notifications-production
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: python run_notification_worker.py
+    autoDeploy: false
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: RUN_NOTIFICATION_SCHEDULER
+        value: "true"
+      - key: RUN_STARTUP_SEEDING
+        value: "false"
+      - key: ALLOW_DEV_DB_BOOTSTRAP
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini

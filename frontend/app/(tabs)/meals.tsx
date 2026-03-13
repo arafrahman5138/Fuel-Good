@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -19,7 +20,8 @@ import { BrowseView } from '../../components/MealsTab/BrowseView';
 import { MyPlanView } from '../../components/MealsTab/MyPlanView';
 import { SavedView } from '../../components/MealsTab/SavedView';
 import { GroceryView } from '../../components/MealsTab/GroceryView';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { Shadows } from '../../constants/Shadows';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = Spacing.md;
@@ -130,6 +132,7 @@ export default function MealsScreen() {
           <TouchableOpacity
             style={[
               styles.backBtn,
+              Shadows.sm(isDark),
               {
                 backgroundColor: theme.surfaceElevated,
                 borderColor: theme.border,
@@ -185,12 +188,14 @@ export default function MealsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Title */}
-        <View
+        <LinearGradient
+          colors={theme.gradient.heroSubtle as readonly [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={[
             styles.hero,
             {
-              backgroundColor: heroBg,
-              borderColor: heroBorder,
+              borderColor: theme.primary + '22',
             },
           ]}
         >
@@ -199,7 +204,7 @@ export default function MealsScreen() {
           <Text style={[styles.menuSubtitle, { color: theme.textSecondary }]}>
             What are you looking for?
           </Text>
-        </View>
+        </LinearGradient>
 
         {/* Card Grid */}
         <View style={styles.cardGrid}>
@@ -213,6 +218,7 @@ export default function MealsScreen() {
               <View
                 style={[
                   styles.card,
+                  Shadows.md(isDark),
                   {
                     borderColor: cardBorder,
                     overflow: 'hidden',
@@ -235,10 +241,10 @@ export default function MealsScreen() {
                 <View
                   style={[
                     styles.iconCircle,
-                    { backgroundColor: item.accentSoft },
+                    { backgroundColor: item.accentSoft, borderWidth: 1, borderColor: item.accent + '30' },
                   ]}
                 >
-                  <Ionicons name={item.icon} size={26} color={item.accent} />
+                  <Ionicons name={item.icon} size={28} color={item.accent} />
                 </View>
 
                 {/* Labels */}
@@ -254,8 +260,8 @@ export default function MealsScreen() {
                 {/* Arrow */}
                 <Ionicons
                   name="chevron-forward"
-                  size={16}
-                  color={theme.textTertiary}
+                  size={14}
+                  color={item.accent + 'AA'}
                   style={styles.cardArrow}
                 />
               </View>
@@ -283,15 +289,10 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: BorderRadius.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
   },
   backIcon: {
     transform: [{ translateX: 0 }],
@@ -302,13 +303,13 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   headerCapsule: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   headerCapsuleTint: {
     minHeight: 48,
     minWidth: 140,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
     flexDirection: 'row',
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   headerAccentDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: BorderRadius.xs,
   },
   headerTitle: {
     fontSize: FontSize.md,
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
   /* ── Menu ── */
   menuScroll: {
     paddingHorizontal: Spacing.xl,
-    paddingBottom: 120,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   hero: {
     borderRadius: 28,
@@ -373,17 +374,12 @@ const styles = StyleSheet.create({
     minHeight: 150,
     justifyContent: 'center',
     alignItems: 'flex-start',
-    // Glassmorphic shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 6,
+    // shadow applied inline via Shadows.md(isDark)
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,

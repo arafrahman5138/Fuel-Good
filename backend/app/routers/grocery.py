@@ -7,6 +7,7 @@ from app.models.meal_plan import MealPlan
 from app.models.grocery import GroceryList
 from app.schemas.grocery import GroceryListResponse, GroceryListGenerate, GroceryItem
 from typing import List
+from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 
@@ -105,6 +106,15 @@ async def generate_grocery_list(
     db.add(grocery_list)
     db.commit()
     db.refresh(grocery_list)
+    record_notification_event(
+        db,
+        current_user.id,
+        "grocery_generated",
+        properties={"grocery_list_id": str(grocery_list.id), "meal_plan_id": str(meal_plan.id)},
+        source="server",
+    )
+    process_user_notifications(db, current_user.id)
+    db.commit()
 
     return GroceryListResponse(
         id=str(grocery_list.id),
@@ -127,6 +137,15 @@ async def get_current_grocery_list(
 
     if not grocery_list:
         raise HTTPException(status_code=404, detail="No grocery list found")
+
+    record_notification_event(
+        db,
+        current_user.id,
+        "grocery_viewed",
+        properties={"grocery_list_id": str(grocery_list.id)},
+        source="server",
+    )
+    db.commit()
 
     return GroceryListResponse(
         id=str(grocery_list.id),

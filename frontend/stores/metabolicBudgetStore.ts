@@ -35,6 +35,10 @@ export interface MESScore {
   weights_used?: WeightsUsed;
   net_carbs_g?: number;
   fat_g?: number;
+  pairing_applied?: boolean;
+  pairing_gis_bonus?: number;
+  pairing_synergy_bonus?: number;
+  pairing_reasons?: string[];
 }
 
 export interface MetabolicBudget {
@@ -96,6 +100,8 @@ export interface DailyMES {
     mes_penalty_points: number;
     impact_level: 'none' | 'protected' | 'light' | 'impactful' | string;
   } | null;
+  pairing_synergy_daily_bonus?: number | null;
+  pairing_synergy_sources?: Array<Record<string, any>> | null;
 }
 
 export interface MealMES {
@@ -115,6 +121,12 @@ export interface CompositeMES {
   total_carbs_g: number;
   total_fat_g: number;
   total_fiber_g: number;
+  macro_only_combined_score?: number;
+  pairing_adjusted_score?: number;
+  pairing_gis_bonus?: number;
+  pairing_synergy_bonus?: number;
+  pairing_reasons?: string[];
+  pairing_applied?: boolean;
 }
 
 export interface MESHistoryEntry {
@@ -162,6 +174,8 @@ export const TIER_CONFIG = {
   moderate: { label: 'Steady Burn', color: '#FF9500', icon: 'battery-half' as const },
   good: { label: 'Momentum', color: '#4A90D9', icon: 'battery-charging' as const },
   optimal: { label: 'Elite Fuel', color: '#34C759', icon: 'battery-full' as const },
+  // Empty day — no meals logged yet
+  no_data: { label: 'No meals logged', color: '#9CA3AF', icon: 'ellipse-outline' as const },
   // Legacy aliases
   crash_risk: { label: 'Energy Drain', color: '#FF4444', icon: 'battery-dead' as const },
   shaky: { label: 'Steady Burn', color: '#FF9500', icon: 'battery-half' as const },
@@ -202,6 +216,11 @@ interface MetabolicBudgetState {
   // Loading
   loading: boolean;
 
+  // In-flight dedup
+  _inflightBudget: Promise<void> | null;
+  _inflightScore: Promise<void> | null;
+  _inflightAll: Promise<void> | null;
+
   // Actions
   fetchBudget: () => Promise<void>;
   updateBudget: (updates: Partial<MetabolicBudget>) => Promise<void>;
@@ -227,14 +246,23 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
   streak: null,
   profile: null,
   loading: false,
+  _inflightBudget: null,
+  _inflightScore: null,
+  _inflightAll: null,
 
   fetchBudget: async () => {
-    try {
-      const data = await metabolicApi.getBudget();
-      set({ budget: data, budgetLoaded: true });
-    } catch (e) {
-      console.warn('[MES] fetchBudget failed:', e);
-    }
+    const state = get();
+    if (state._inflightBudget) return state._inflightBudget;
+    const promise = (async () => {
+      try {
+        const data = await metabolicApi.getBudget();
+        set({ budget: data, budgetLoaded: true });
+      } catch {
+        // silent
+      }
+    })();
+    set({ _inflightBudget: promise });
+    try { await promise; } finally { set({ _inflightBudget: null }); }
   },
 
   updateBudget: async (updates) => {
@@ -247,20 +275,26 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
   },
 
   fetchDailyScore: async (date) => {
-    try {
-      const data = await metabolicApi.getDailyScore(date);
-      set({ dailyScore: data, remainingBudget: data.remaining });
-    } catch (e) {
-      console.warn('[MES] fetchDailyScore failed:', e);
-    }
+    const state = get();
+    if (state._inflightScore) return state._inflightScore;
+    const promise = (async () => {
+      try {
+        const data = await metabolicApi.getDailyScore(date);
+        set({ dailyScore: data, remainingBudget: data.remaining });
+      } catch {
+        // silent
+      }
+    })();
+    set({ _inflightScore: promise });
+    try { await promise; } finally { set({ _inflightScore: null }); }
   },
 
   fetchMealScores: async (date) => {
     try {
       const data = await metabolicApi.getMealScores(date);
       set({ mealScores: data ?? [] });
-    } catch (e) {
-      console.warn('[MES] fetchMealScores failed:', e);
+    } catch {
+      // silent
     }
   },
 
@@ -322,26 +356,31 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
   },
 
   fetchAll: async (date) => {
-    set({ loading: true });
-    try {
-      await Promise.all([
-        get().fetchBudget(),
-        get().fetchDailyScore(date),
-        get().fetchMealScores(date),
-        get().fetchStreak(),
-        get().fetchScoreHistory(),
-      ]);
-    } finally {
-      set({ loading: false });
-    }
+    const state = get();
+    if (state._inflightAll) return state._inflightAll;
+    const promise = (async () => {
+      set({ loading: true });
+      try {
+        await Promise.all([
+          get().fetchBudget(),
+          get().fetchDailyScore(date),
+          get().fetchMealScores(date),
+          get().fetchStreak(),
+          get().fetchScoreHistory(),
+        ]);
+      } finally {
+        set({ loading: false });
+      }
+    })();
+    set({ _inflightAll: promise });
+    try { await promise; } finally { set({ _inflightAll: null }); }
   },
 
   fetchCompositeMES: async (foodLogIds) => {
     try {
       const data = await metabolicApi.getCompositeMES(foodLogIds);
       return data as CompositeMES;
-    } catch (e) {
-      console.warn('[MES] fetchCompositeMES failed:', e);
+    } catch {
       return null;
     }
   },

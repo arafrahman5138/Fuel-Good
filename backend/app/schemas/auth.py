@@ -1,16 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from app.schemas.billing import EntitlementInfo
 
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
     name: str
 
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
 
 
 class SocialAuthRequest(BaseModel):
@@ -18,6 +19,7 @@ class SocialAuthRequest(BaseModel):
     token: str
     name: Optional[str] = None
     email: Optional[EmailStr] = None
+    provider_subject: Optional[str] = None
 
 
 class Token(BaseModel):
@@ -47,6 +49,7 @@ class UserProfile(BaseModel):
     xp_points: int
     current_streak: int
     longest_streak: int
+    entitlement: EntitlementInfo
 
     class Config:
         from_attributes = True

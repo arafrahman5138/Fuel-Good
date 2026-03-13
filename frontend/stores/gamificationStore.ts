@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { gameApi } from '../services/api';
+import { maybePromptForPush } from '../services/notifications';
 
 // ─── Types ───
 
@@ -168,6 +169,7 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       set({ lastStreakSync: today });
       // Refresh stats to pick up streak XP + achievements
       get().fetchStats();
+      maybePromptForPush('streak').catch(() => {});
     } catch {
       // Silent — streak will be synced on next foreground
     }

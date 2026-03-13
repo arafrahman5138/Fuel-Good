@@ -10,14 +10,15 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.recipe import Recipe
-from app.services.metabolic_engine import compute_meal_mes, get_or_create_budget
+from app.services.metabolic_engine import compute_meal_mes, load_budget_for_user
 
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 MEAL_SLOTS = ["breakfast", "lunch", "dinner"]
 TARGET_DISPLAY_MES = 70.0
-BREAKFAST_MAX_CARBS = 15.0
-BREAKFAST_MAX_CALORIES = 450.0
+BREAKFAST_MAX_CARBS_DEFAULT = 15.0
+BREAKFAST_MAX_CALORIES_DEFAULT = 450.0
+MEALS_PER_DAY = 3
 VARIETY_LIMITS = {
     "prep_heavy": {"breakfast": 2, "lunch": 2, "dinner": 2},
     "balanced": {"breakfast": 3, "lunch": 3, "dinner": 3},
@@ -91,7 +92,7 @@ def _matches_dietary(recipe: Recipe, dietary: list[str]) -> bool:
     return required.issubset(recipe_tags)
 
 
-def _is_breakfast_safe(recipe: Recipe) -> bool:
+def _is_breakfast_safe(recipe: Recipe, context: dict | None = None) -> bool:
     if "breakfast" not in (recipe.tags or []):
         return False
     if (recipe.recipe_role or "full_meal") != "full_meal" or bool(recipe.is_component):
@@ -99,8 +100,23 @@ def _is_breakfast_safe(recipe: Recipe) -> bool:
     if recipe.is_mes_scoreable is False:
         return False
 
+    # Derive limits from personalized budget when available
+    budget = context.get("budget") if context else None
+    if budget:
+        carb_ceiling = getattr(budget, "carb_ceiling_g", 0) or getattr(budget, "sugar_ceiling_g", 0) or 0
+        cal_target = getattr(budget, "calorie_target_kcal", 0) or 0
+        if carb_ceiling > 0 and cal_target > 0:
+            max_carbs = round(carb_ceiling / MEALS_PER_DAY * 0.4)
+            max_cals = round(cal_target / MEALS_PER_DAY * 0.85)
+        else:
+            max_carbs = BREAKFAST_MAX_CARBS_DEFAULT
+            max_cals = BREAKFAST_MAX_CALORIES_DEFAULT
+    else:
+        max_carbs = BREAKFAST_MAX_CARBS_DEFAULT
+        max_cals = BREAKFAST_MAX_CALORIES_DEFAULT
+
     nutrition = _recipe_nutrition(recipe)
-    if nutrition["carbs"] > BREAKFAST_MAX_CARBS or nutrition["calories"] > BREAKFAST_MAX_CALORIES:
+    if nutrition["carbs"] > max_carbs or nutrition["calories"] > max_cals:
         return False
 
     flavor_tags = {tag.lower() for tag in (recipe.flavor_profile or [])}
@@ -167,7 +183,7 @@ def _candidate_pool(
             continue
         if str(recipe.id) in avoided_recipe_ids:
             continue
-        if meal_type == "breakfast" and not _is_breakfast_safe(recipe):
+        if meal_type == "breakfast" and not _is_breakfast_safe(recipe, {"budget": budget}):
             continue
 
         ingredient_names = " ".join(ing.get("name", "") for ing in (recipe.ingredients or [])).lower()
@@ -370,7 +386,7 @@ def _preferences_context(preferences: dict[str, Any], db: Session, user_id: str 
         "avoided_recipe_ids": {str(item) for item in (preferences.get("avoided_recipe_ids", []) or [])},
         "household": int(preferences.get("household_size", 1) or 1),
         "variety_mode": preferences.get("variety_mode", "balanced") or "balanced",
-        "budget": get_or_create_budget(db, user_id) if user_id else None,
+        "budget": load_budget_for_user(db, user_id) if user_id else None,
     }
 
 
