@@ -118,16 +118,23 @@ def _validate_pgvector_readiness() -> None:
         vector_ok = conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")).scalar()
         if not vector_ok:
             raise RuntimeError("pgvector extension is not installed in the configured database.")
-        column_type = conn.execute(text(
-            "SELECT atttypmod "
-            "FROM pg_attribute "
-            "WHERE attrelid = 'recipe_embeddings'::regclass "
-            "AND attname = 'embedding' AND NOT attisdropped"
+        dimension = conn.execute(text(
+            "SELECT information_schema._pg_char_max_length("
+            "information_schema._pg_truetypid(a, t), "
+            "information_schema._pg_truetypmod(a, t)"
+            ") "
+            "FROM pg_attribute a "
+            "JOIN pg_class c ON a.attrelid = c.oid "
+            "JOIN pg_namespace n ON c.relnamespace = n.oid "
+            "JOIN pg_type t ON a.atttypid = t.oid "
+            "WHERE n.nspname = 'public' "
+            "AND c.relname = 'recipe_embeddings' "
+            "AND a.attname = 'embedding' "
+            "AND NOT a.attisdropped"
         )).scalar()
-        if column_type is None:
+        if dimension is None:
             raise RuntimeError("recipe_embeddings.embedding column is missing.")
-        dimension = int(column_type) - 4
-        if dimension != settings.embedding_dimension:
+        if int(dimension) != settings.embedding_dimension:
             raise RuntimeError(
                 f"Embedding dimension mismatch: database={dimension}, config={settings.embedding_dimension}."
             )
