@@ -9,6 +9,7 @@ python-multipart==0.0.12
 pydantic[email]==2.9.2
 pydantic-settings==2.5.2
 httpx==0.27.2
+pgvector==0.3.6
 langchain-openai
 langchain-anthropic
 langchain-google-genai

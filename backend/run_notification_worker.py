@@ -7,7 +7,7 @@ from app.main import _configure_logging, _validate_security_settings
 from app.services.notifications import notification_scheduler_loop
 
 
-logger = logging.getLogger("wholefoodlabs.notifications.worker")
+logger = logging.getLogger("fuelgood.notifications.worker")
 
 
 async def main() -> None:

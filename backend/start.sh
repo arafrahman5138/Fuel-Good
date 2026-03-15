@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")"
 
@@ -12,16 +12,14 @@ fi
 
 if command -v "$DOCKER_BIN" &>/dev/null; then
   CONTAINER="realfood-postgres"
-  if ! "$DOCKER_BIN" ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER}$"; then
-    echo "🐘 Starting PostgreSQL container..."
-    "$DOCKER_BIN" compose -f ../docker-compose.yml up -d
-    # Wait until it's ready
-    for i in $(seq 1 15); do
-      "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1 && break
-      sleep 1
-    done
-    echo "✅ PostgreSQL is ready"
-  fi
+  echo "🐘 Starting PostgreSQL container..."
+  "$DOCKER_BIN" compose -f ../docker-compose.yml up -d
+  for i in $(seq 1 30); do
+    "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1 && break
+    sleep 1
+  done
+  "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1
+  echo "✅ PostgreSQL is ready"
 else
   echo "⚠️  Docker not found — skipping PostgreSQL auto-start (using DATABASE_URL from .env)"
 fi
@@ -51,9 +49,34 @@ fi
 
 # Start the server
 echo ""
-echo "Starting WholeFoodLabs API..."
+echo "Starting Fuel Good API..."
 echo "Docs: http://localhost:8000/docs"
 echo ""
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
-"$VENV_PYTHON" -m alembic upgrade heads || true
+"$VENV_PYTHON" -m alembic upgrade heads
+"$VENV_PYTHON" - <<'PY'
+from sqlalchemy import create_engine, text
+from app.config import get_settings
+
+settings = get_settings()
+engine = create_engine(settings.database_url)
+
+with engine.begin() as conn:
+    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    vector_ok = conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")).scalar()
+    if not vector_ok:
+        raise SystemExit("pgvector extension is not installed.")
+    column_ok = conn.execute(text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'recipe_embeddings' AND column_name = 'embedding'"
+    )).scalar()
+    if not column_ok:
+        raise SystemExit("recipe_embeddings.embedding is missing.")
+    index_ok = conn.execute(text(
+        "SELECT 1 FROM pg_indexes "
+        "WHERE tablename = 'recipe_embeddings' AND indexdef ILIKE '%embedding%'"
+    )).scalar()
+    if not index_ok:
+        raise SystemExit("A pgvector index on recipe_embeddings.embedding is missing.")
+PY
 "$VENV_PYTHON" -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

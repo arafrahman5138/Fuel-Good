@@ -1,44 +1,5 @@
 services:
   - type: web
-    name: fuel-good-api-staging
-    runtime: python
-    rootDir: backend
-    plan: starter
-    buildCommand: pip install -r requirements.txt && alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
-    autoDeploy: true
-    envVars:
-      - key: ENVIRONMENT
-        value: staging
-      - key: RUN_NOTIFICATION_SCHEDULER
-        value: "false"
-      - key: RUN_STARTUP_SEEDING
-        value: "false"
-      - key: ALLOW_DEV_DB_BOOTSTRAP
-        value: "false"
-      - key: LLM_PROVIDER
-        value: gemini
-  - type: worker
-    name: fuel-good-notifications-staging
-    runtime: python
-    rootDir: backend
-    plan: starter
-    buildCommand: pip install -r requirements.txt && alembic upgrade head
-    startCommand: python run_notification_worker.py
-    autoDeploy: true
-    envVars:
-      - key: ENVIRONMENT
-        value: staging
-      - key: RUN_NOTIFICATION_SCHEDULER
-        value: "true"
-      - key: RUN_STARTUP_SEEDING
-        value: "false"
-      - key: ALLOW_DEV_DB_BOOTSTRAP
-        value: "false"
-      - key: LLM_PROVIDER
-        value: gemini
-  - type: web
     name: fuel-good-api-production
     runtime: python
     rootDir: backend
@@ -48,6 +9,8 @@ services:
     healthCheckPath: /health
     autoDeploy: false
     envVars:
+      - key: DATABASE_URL
+        sync: false
       - key: ENVIRONMENT
         value: production
       - key: RUN_NOTIFICATION_SCHEDULER
@@ -58,6 +21,64 @@ services:
         value: "false"
       - key: LLM_PROVIDER
         value: gemini
+      - key: CHAT_MODEL
+        value: gemini-2.5-flash
+      - key: SCAN_MODEL
+        value: gemini-2.5-flash
+      - key: EMBEDDING_PROVIDER
+        value: gemini
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: EMBEDDING_DIMENSION
+        value: "768"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: APPLE_BUNDLE_ID
+        value: com.fuelgood.app
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: PRIVACY_POLICY_URL
+        sync: false
+      - key: TERMS_URL
+        sync: false
+      - key: SUPPORT_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_MEAL_SCANS_BUCKET
+        value: meal-scans
+      - key: SUPABASE_STORAGE_LABEL_SCANS_BUCKET
+        value: label-scans
+      - key: SUPABASE_SIGNED_URL_TTL_SECONDS
+        value: "3600"
+      - key: EXPO_PUSH_ACCESS_TOKEN
+        sync: false
+      - key: REVENUECAT_SECRET_API_KEY
+        sync: false
+      - key: REVENUECAT_IOS_API_KEY
+        sync: false
+      - key: REVENUECAT_WEBHOOK_AUTHORIZATION
+        sync: false
+      - key: REVENUECAT_ENTITLEMENT_ID
+        value: premium
+      - key: REVENUECAT_OFFERING_ID
+        value: default
+      - key: REVENUECAT_MONTHLY_PRODUCT_ID
+        value: premium_monthly_999
+      - key: REVENUECAT_ANNUAL_PRODUCT_ID
+        value: premium_annual_4999
+      - key: REVENUECAT_TRIAL_DAYS
+        value: "7"
   - type: worker
     name: fuel-good-notifications-production
     runtime: python
@@ -67,6 +88,11 @@ services:
     startCommand: python run_notification_worker.py
     autoDeploy: false
     envVars:
+      - key: DATABASE_URL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: DATABASE_URL
       - key: ENVIRONMENT
         value: production
       - key: RUN_NOTIFICATION_SCHEDULER
@@ -77,3 +103,148 @@ services:
         value: "false"
       - key: LLM_PROVIDER
         value: gemini
+      - key: CHAT_MODEL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: CHAT_MODEL
+      - key: SCAN_MODEL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SCAN_MODEL
+      - key: EMBEDDING_PROVIDER
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: EMBEDDING_PROVIDER
+      - key: EMBEDDING_MODEL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: EMBEDDING_MODEL
+      - key: EMBEDDING_DIMENSION
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: EMBEDDING_DIMENSION
+      - key: SECRET_KEY
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SECRET_KEY
+      - key: CORS_ALLOWED_ORIGINS
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: CORS_ALLOWED_ORIGINS
+      - key: GOOGLE_API_KEY
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: GOOGLE_API_KEY
+      - key: GOOGLE_CLIENT_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: GOOGLE_CLIENT_ID
+      - key: GOOGLE_CLIENT_SECRET
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: GOOGLE_CLIENT_SECRET
+      - key: APPLE_BUNDLE_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: APPLE_BUNDLE_ID
+      - key: SUPPORT_EMAIL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPPORT_EMAIL
+      - key: PRIVACY_POLICY_URL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: PRIVACY_POLICY_URL
+      - key: TERMS_URL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: TERMS_URL
+      - key: SUPPORT_URL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPPORT_URL
+      - key: SUPABASE_URL
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPABASE_URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_STORAGE_MEAL_SCANS_BUCKET
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPABASE_STORAGE_MEAL_SCANS_BUCKET
+      - key: SUPABASE_STORAGE_LABEL_SCANS_BUCKET
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPABASE_STORAGE_LABEL_SCANS_BUCKET
+      - key: SUPABASE_SIGNED_URL_TTL_SECONDS
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: SUPABASE_SIGNED_URL_TTL_SECONDS
+      - key: EXPO_PUSH_ACCESS_TOKEN
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: EXPO_PUSH_ACCESS_TOKEN
+      - key: REVENUECAT_SECRET_API_KEY
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_SECRET_API_KEY
+      - key: REVENUECAT_IOS_API_KEY
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_IOS_API_KEY
+      - key: REVENUECAT_WEBHOOK_AUTHORIZATION
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_WEBHOOK_AUTHORIZATION
+      - key: REVENUECAT_ENTITLEMENT_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_ENTITLEMENT_ID
+      - key: REVENUECAT_OFFERING_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_OFFERING_ID
+      - key: REVENUECAT_MONTHLY_PRODUCT_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_MONTHLY_PRODUCT_ID
+      - key: REVENUECAT_ANNUAL_PRODUCT_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_ANNUAL_PRODUCT_ID
+      - key: REVENUECAT_TRIAL_DAYS
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_TRIAL_DAYS

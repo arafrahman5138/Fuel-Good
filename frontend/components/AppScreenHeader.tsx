@@ -38,7 +38,7 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
         onPress={() => router.back()}
         activeOpacity={0.7}
       >
-        <Ionicons name="chevron-back" size={24} color={theme.primary} />
+        <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ transform: [{ translateX: -1 }] }} />
       </TouchableOpacity>
 
       <View style={styles.center}>

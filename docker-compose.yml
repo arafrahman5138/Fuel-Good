@@ -1,12 +1,12 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: realfood-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: realfood
       POSTGRES_PASSWORD: realfood_local
-      POSTGRES_DB: wholefoodlabs
+      POSTGRES_DB: fuelgood
     ports:
       - "5432:5432"
     volumes:

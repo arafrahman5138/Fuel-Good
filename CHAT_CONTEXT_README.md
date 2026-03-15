@@ -49,7 +49,7 @@ The meal scan frontend was redesigned into 3 states:
 - Replaced the old stacked white-card scan page with a capture-first flow.
 - Added live `CameraView` usage when native camera support is available.
 - Added branded fallback background when live preview is unavailable.
-- Reworked the capture screen to use WholeFoodLabs colors instead of the earlier red placeholder.
+- Reworked the capture screen to use Fuel Good colors instead of the earlier red placeholder.
 - Added custom frame corners and a branded overlay.
 
 ### Review state
@@ -142,7 +142,7 @@ The user explicitly disliked:
 - duplicate help/question-mark actions
 - generic alert-style help popup
 - unfinished scan labels like `Chicken Patties with`
-- layouts that feel copied from another app instead of using WholeFoodLabs branding
+- layouts that feel copied from another app instead of using Fuel Good branding
 
 ## Current scan UX direction
 
@@ -151,7 +151,7 @@ The intended visual direction is:
 - modern
 - sleek
 - clean
-- clearly WholeFoodLabs branded
+- clearly Fuel Good branded
 - not a direct copy of the earlier reference image
 
 Design constraints called out by the user:

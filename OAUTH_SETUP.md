@@ -15,10 +15,10 @@ This guide explains how to set up Google and Apple OAuth for social authenticati
 3. Configure the OAuth consent screen if prompted
 4. Create two OAuth 2.0 Client IDs:
    - **iOS Client**: Select "iOS" as application type
-     - Bundle ID: `com.wholefoodlabs.app`
+     - Bundle ID: `com.fuelgood.app`
    - **Web Client**: Select "Web application" as application type (used for Expo Go)
      - Authorized redirect URIs: 
-       - `https://auth.expo.io/@YOUR_EXPO_USERNAME/wholefoodlabs`
+       - `https://auth.expo.io/@YOUR_EXPO_USERNAME/fuelgood`
        - Custom: based on your expo redirect URI
 
 ### 3. Update Configuration
@@ -57,12 +57,12 @@ Or check in code by logging `redirectUri` in login.tsx.
 ### 1. Configure App ID in Apple Developer Portal
 1. Go to [Apple Developer](https://developer.apple.com/account/)
 2. Navigate to **Certificates, Identifiers & Profiles** → **Identifiers**
-3. Select your App ID (`com.wholefoodlabs.app`) or create one
+3. Select your App ID (`com.fuelgood.app`) or create one
 4. Enable **Sign In with Apple** capability
 5. Save changes
 
 ### 2. Xcode Configuration
-1. Open `frontend/ios/WholeFoodLabs.xcworkspace` in Xcode
+1. Open `frontend/ios/FuelGood.xcworkspace` in Xcode
 2. Select the project in the navigator
 3. Go to **Signing & Capabilities** tab
 4. Click **+ Capability**

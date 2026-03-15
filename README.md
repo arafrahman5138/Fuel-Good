@@ -1,4 +1,4 @@
-# WholeFoodLabs
+# Fuel Good
 
 Eat real. Feel amazing. A mobile app that helps busy professionals transform their diet with whole, unprocessed foods.
 
@@ -92,7 +92,7 @@ cp .env.example .env
 
 Create the database:
 ```bash
-createdb wholefoodlabs
+createdb fuelgood
 alembic upgrade head
 ```
 
@@ -120,7 +120,7 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 ## Project Structure
 
 ```
-wholefoodlabs/
+fuelgood/
 ├── frontend/               # React Native + Expo
 │   ├── app/                # Expo Router screens
 │   │   ├── (auth)/         # Login/register

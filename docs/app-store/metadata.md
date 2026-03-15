@@ -2,7 +2,7 @@
 
 ## App Name
 
-WholeFoodLabs
+Fuel Good
 
 ## Subtitle
 
@@ -18,16 +18,16 @@ Scan meals, explore whole-food recipes, and get AI-powered wellness guidance des
 
 ## Description
 
-WholeFoodLabs helps you make more informed food choices with meal scanning, whole-food insights, and personalized wellness guidance.
+Fuel Good helps you make more informed food choices with meal scanning, whole-food insights, and personalized wellness guidance.
 
-Use WholeFoodLabs to:
+Use Fuel Good to:
 - Scan meals and labels for fast ingredient and nutrition feedback
 - Explore recipes built around whole-food principles
 - Track meals and see nutrition trends over time
 - Generate meal ideas based on your preferences
 - Chat with an AI wellness assistant for food and habit guidance
 
-WholeFoodLabs is built for general wellness and lifestyle support. It is not a medical device and does not diagnose, treat, cure, or prevent any disease. Always use your own judgment and consult a qualified professional for medical needs.
+Fuel Good is built for general wellness and lifestyle support. It is not a medical device and does not diagnose, treat, cure, or prevent any disease. Always use your own judgment and consult a qualified professional for medical needs.
 
 What to expect:
 - Secure account sign-in with email, Apple, or Google
@@ -35,11 +35,11 @@ What to expect:
 - Personalized food guidance based on your app profile and activity
 - Fast updates through TestFlight and ongoing product improvements
 
-Support: support@wholefoodlabs.com
+Support: support@fuelgood.com
 
 ## Support Text
 
-For support, bug reports, or account issues, email support@wholefoodlabs.com.
+For support, bug reports, or account issues, email support@fuelgood.com.
 
 ## Monetization Notes
 

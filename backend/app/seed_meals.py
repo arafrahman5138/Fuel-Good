@@ -1,5 +1,5 @@
 """
-150 whole-food meals for WholeFoodLabs.
+150 whole-food meals for Fuel Good.
 Every ingredient is a real, whole food.
 No seed oils. No refined sugars. No artificial ingredients.
 """

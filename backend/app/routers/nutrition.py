@@ -422,6 +422,14 @@ async def create_log(
         properties={"log_id": str(log.id), "meal_type": log.meal_type, "date": day.isoformat()},
         source="server",
     )
+    if payload.source_type == "cook_mode":
+        record_notification_event(
+            db,
+            current_user.id,
+            "cook_completed",
+            properties={"recipe_id": payload.source_id, "log_id": str(log.id), "date": day.isoformat()},
+            source="server",
+        )
     record_notification_event(
         db,
         current_user.id,

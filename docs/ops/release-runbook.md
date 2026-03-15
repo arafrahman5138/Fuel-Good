@@ -9,7 +9,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 | Environment | Mobile build profile | Backend target | Notes |
 | --- | --- | --- | --- |
 | Development | local Expo | local FastAPI | Developer workflow only |
-| Preview | `eas build --profile preview --platform ios` | staging backend | Internal TestFlight and QA |
+| Preview | `eas build --profile preview --platform ios` | production backend by default | Internal TestFlight and QA |
 | Production | `eas build --profile production --platform ios` | production backend | External TestFlight or App Store |
 
 ## Release Owners
@@ -21,24 +21,25 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 ## One-Time Setup
 
 1. Create or connect the Expo project to EAS.
-2. Add Apple credentials and confirm `com.wholefoodlabs.app`.
+2. Add Apple credentials and confirm `com.fuelgood.app`.
 3. Configure EAS secrets for all `EXPO_PUBLIC_*` release variables.
-4. Provision staging and production backend environments with separate API and notification worker services.
-5. Publish privacy policy, terms, and support pages to public HTTPS URLs.
-6. If monetization is included, create App Store subscription products. Do not use Stripe checkout for iOS digital access.
-7. Create RevenueCat products and entitlement mapping:
+4. Provision the production Render API and notification worker services. Add temporary staging only if you need a migration or notification rehearsal.
+5. Create the production Supabase project, enable `pgvector`, create private `meal-scans` and `label-scans` Storage buckets, and enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`.
+6. Publish privacy policy, terms, and support pages to public HTTPS URLs.
+7. If monetization is included, create App Store subscription products. Do not use Stripe checkout for iOS digital access.
+8. Create RevenueCat products and entitlement mapping:
    - entitlement: `premium`
    - offering: `default`
    - product ids: `premium_monthly_999`, `premium_annual_4999`
    - attach a `7-day` introductory free trial to both products in App Store Connect
-8. Configure backend env vars for `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and product metadata.
-9. Configure frontend release env vars for `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` and legal/support URLs.
-10. Register RevenueCat webhook delivery to the production `/api/billing/webhook/revenuecat` endpoint and verify the authorization header.
+9. Configure backend env vars for `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, product metadata, Supabase URL, service role key, and Supabase-backed `DATABASE_URL`.
+10. Configure frontend release env vars for `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and legal/support URLs.
+11. Register RevenueCat webhook delivery to the production `/api/billing/webhook/revenuecat` endpoint and verify the authorization header.
 
 ## Backend Release Procedure
 
 1. Confirm `ENVIRONMENT=production`, strong `SECRET_KEY`, non-local `CORS_ALLOWED_ORIGINS`, `LLM_PROVIDER=gemini`, and `RUN_STARTUP_SEEDING=false`.
-2. Run database migrations on staging, then production.
+2. Run database migrations against Supabase Postgres.
 3. Confirm RevenueCat API key, webhook authorization secret, product ids, and entitlement id are set in the backend environment.
 4. Deploy API service with `RUN_NOTIFICATION_SCHEDULER=false`.
 5. Deploy notification worker with `RUN_NOTIFICATION_SCHEDULER=true`.
@@ -47,13 +48,15 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 
 ## iOS Preview Release Procedure
 
-1. Set preview env vars and ensure staging backend is healthy.
+1. Set preview env vars and ensure the production backend is healthy unless you intentionally spun up temporary staging.
 2. Run `cd frontend && npm ci && npm run typecheck`.
 3. Run `eas build --profile preview --platform ios`.
 4. Install build via internal TestFlight.
 5. Execute [`docs/qa/testflight-qa-checklist.md`](../qa/testflight-qa-checklist.md).
-6. Validate push opt-in, token registration, and one scheduled notification on a physical device.
-7. Validate the paywall, monthly trial, annual trial, restore purchases, and App Store subscription management link.
+6. Execute [`docs/qa/paywall-device-readme.md`](../qa/paywall-device-readme.md) for subscription-specific device validation.
+7. Validate push opt-in, token registration, and one scheduled notification on a physical device.
+8. Validate the paywall, monthly trial, annual trial, restore purchases, and App Store subscription management link.
+9. Validate Supabase Storage uploads for meal scans and label scans, chronometer realtime refresh, and billing realtime refresh.
 
 ## Production Release Procedure
 

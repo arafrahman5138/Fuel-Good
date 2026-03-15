@@ -28,13 +28,13 @@ interface NotificationPreferences {
 }
 
 const CATEGORY_META: Array<{ key: NotificationCategoryKey; label: string; description: string }> = [
-  { key: 'plan', label: 'Meal planning', description: 'Weekly prompts to build or refresh your plan.' },
-  { key: 'cook', label: 'Cook reminders', description: 'Timely nudges when dinner is already picked.' },
-  { key: 'grocery', label: 'Grocery follow-through', description: 'Reminders to turn plans into a shopping list.' },
-  { key: 'streak', label: 'Streak protection', description: 'Only when you can still save today’s streak.' },
-  { key: 'quest', label: 'Quest progress', description: 'Sparse nudges when one more action closes the loop.' },
-  { key: 'reactivation', label: 'Reactivation', description: 'Return prompts after a few inactive days.' },
-  { key: 'healthify', label: 'Healthify follow-up', description: 'Pick up where you left off in chat.' },
+  { key: 'plan', label: 'Meal planning', description: 'About once a week when your current week is still unplanned.' },
+  { key: 'cook', label: 'Cook reminders', description: 'Up to twice a week when tonight’s dinner is already chosen.' },
+  { key: 'grocery', label: 'Grocery follow-through', description: 'Once per plan if you still have not turned it into a list.' },
+  { key: 'streak', label: 'Streak protection', description: 'Up to twice a week, only when today can still be saved.' },
+  { key: 'quest', label: 'Quest progress', description: 'At most weekly when you are one action away from finishing.' },
+  { key: 'reactivation', label: 'Reactivation', description: 'Only after a few inactive days, not as daily win-back spam.' },
+  { key: 'healthify', label: 'Healthify follow-up', description: 'About once every few days if a useful recipe thread was left unfinished.' },
 ];
 
 const QUIET_HOUR_OPTIONS = ['20:30', '21:00', '21:30', '22:00', '22:30'];
@@ -148,7 +148,7 @@ export default function NotificationSettingsScreen() {
             </View>
 
             <Text style={[styles.footer, { color: theme.textTertiary }]}>
-              {saving ? 'Saving changes...' : 'Time values cycle through launch presets to keep setup fast.'}
+              {saving ? 'Saving changes...' : 'Launch defaults stay restrained: no more than one push in 12 hours and roughly three per week for active users.'}
             </Text>
           </>
         ) : null}

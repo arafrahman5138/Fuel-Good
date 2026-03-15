@@ -22,6 +22,7 @@ import { Card } from '../../components/GradientCard';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../hooks/useTheme';
 import { nutritionApi, recipeApi, gameApi } from '../../services/api';
+import { trackBehaviorEvent } from '../../services/notifications';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 
@@ -310,6 +311,7 @@ export default function CookModeScreen() {
                                 servings: 1,
                                 quantity: 1,
                               });
+                              trackBehaviorEvent('cook_completed', { recipe_id: recipe.id });
                               setLoggedCook(true);
                               // Award XP for completing cook mode
                               gameApi.awardXP(50, 'cook_complete').catch(() => {});

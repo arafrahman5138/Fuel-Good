@@ -1,8 +1,8 @@
-# WholeFoodLabs Support
+# Fuel Good Support
 
 For product support, account issues, bug reports, or TestFlight feedback:
 
-- Email: support@wholefoodlabs.com
+- Email: support@fuelgood.com
 - Response target: within 2 business days
 
 ## Include in Your Message

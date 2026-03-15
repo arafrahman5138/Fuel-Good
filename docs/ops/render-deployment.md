@@ -2,22 +2,22 @@
 
 ## Services
 
-Use four Render services defined in [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml):
+Use two always-on Render services defined in [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml):
 
-- staging API web service
-- staging notification worker
 - production API web service
 - production notification worker
 
 The API service runs `uvicorn app.main:app`.  
 The worker runs `python run_notification_worker.py`.
 
+Production is the default hosted environment. Create temporary staging services only when you need to rehearse risky migrations or validate notification behavior before release.
+
 ## Required Environment Variables
 
-Set these in both staging and production:
+Set these in production:
 
 - `ENVIRONMENT`
-- `DATABASE_URL`
+- `DATABASE_URL` using the Supabase direct or pooler Postgres connection string
 - `SECRET_KEY`
 - `CORS_ALLOWED_ORIGINS`
 - `LLM_PROVIDER=gemini`
@@ -29,20 +29,28 @@ Set these in both staging and production:
 - `PRIVACY_POLICY_URL`
 - `TERMS_URL`
 - `SUPPORT_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_MEAL_SCANS_BUCKET`
+- `SUPABASE_STORAGE_LABEL_SCANS_BUCKET`
+- `SUPABASE_SIGNED_URL_TTL_SECONDS`
 - `EXPO_PUSH_ACCESS_TOKEN` if using Expo access-token-authenticated sends
 
 Role-specific flags:
 
 - API: `RUN_NOTIFICATION_SCHEDULER=false`
 - Worker: `RUN_NOTIFICATION_SCHEDULER=true`
-- Hosted envs: `RUN_STARTUP_SEEDING=false`
+- Hosted envs: `RUN_STARTUP_SEEDING=false`, `ALLOW_DEV_DB_BOOTSTRAP=false`
 
 ## Deploy Sequence
 
 1. Provision managed Postgres.
-2. Set all secrets in staging.
-3. Deploy staging API and worker.
-4. Confirm `GET /health` on staging returns `scheduler_enabled=false` and `llm_provider=gemini`.
-5. Run hosted smoke test:
-   `BASE_URL=https://<staging-api-host> MODE=health backend/scripts/smoke_test.sh`
-6. Repeat for production after staging signoff.
+   Supabase is the default production database provider.
+2. Set all production secrets.
+3. Deploy the production API.
+4. Deploy the production notification worker.
+5. Confirm `GET /health` returns `scheduler_enabled=false` and `llm_provider=gemini`.
+6. Run the hosted smoke test:
+   `BASE_URL=https://<production-api-host> MODE=health backend/scripts/smoke_test.sh`
+7. In Supabase, create private buckets `meal-scans` and `label-scans`, enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`, and verify `pgvector` is enabled.
+8. If needed, create temporary staging services for high-risk rehearsals only.

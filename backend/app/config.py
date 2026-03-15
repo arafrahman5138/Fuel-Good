@@ -4,20 +4,21 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "WholeFoodLabs API"
+    app_name: str = "Fuel Good API"
     environment: str = "development"  # development | staging | production
-    database_url: str = "postgresql://realfood:realfood_local@localhost:5432/wholefoodlabs"
+    database_url: str = "postgresql://realfood:realfood_local@localhost:5432/fuelgood"
     secret_key: str = "dev-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 90
+    password_reset_token_expire_minutes: int = 30
 
     # Security / network hardening
     cors_allowed_origins: str = "http://localhost:8081,http://localhost:3000"
     rate_limit_per_minute: int = 120
     auth_rate_limit_per_minute: int = 20
     social_auth_enabled: bool = True
-    apple_bundle_id: str = "com.wholefoodlabs.app"
+    apple_bundle_id: str = "com.fuelgood.app"
     google_userinfo_url: str = "https://openidconnect.googleapis.com/v1/userinfo"
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -27,11 +28,16 @@ class Settings(BaseSettings):
     enable_structured_logging: bool = True
     run_notification_scheduler: bool = False
     run_startup_seeding: bool = False
-    support_email: str = "support@wholefoodlabs.com"
+    support_email: str = "support@fuelgood.com"
     privacy_policy_url: str = ""
     terms_url: str = ""
     support_url: str = ""
     expo_push_access_token: str = ""
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_meal_scans_bucket: str = "meal-scans"
+    supabase_storage_label_scans_bucket: str = "label-scans"
+    supabase_signed_url_ttl_seconds: int = 3600
     revenuecat_secret_api_key: str = ""
     revenuecat_ios_api_key: str = ""
     revenuecat_webhook_authorization: str = ""
@@ -44,12 +50,17 @@ class Settings(BaseSettings):
     app_store_manage_subscriptions_url: str = "https://apps.apple.com/account/subscriptions"
 
     openai_api_key: str = ""
+    chat_model: str = "gemini-2.5-flash"
+    scan_model: str = "gemini-2.5-flash"
+    embedding_provider: str = "gemini"
+    embedding_model: str = "gemini-embedding-001"
+    embedding_dimension: int = 768
     openai_embedding_model: str = "text-embedding-3-small"
     anthropic_api_key: str = ""
     google_api_key: str = ""
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
-    gemini_embedding_model: str = "text-embedding-004"
+    gemini_embedding_model: str = "gemini-embedding-001"
     llm_provider: str = "gemini"  # "gemini", "openai", "anthropic", or "ollama"
     ollama_host: str = ""
     ollama_model: str = "qwen2.5-coder:14b"

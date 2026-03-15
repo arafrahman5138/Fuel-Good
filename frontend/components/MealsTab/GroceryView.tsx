@@ -18,6 +18,7 @@ import { useGamificationStore } from '../../stores/gamificationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { groceryApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { trackBehaviorEvent } from '../../services/notifications';
 
 interface GroceryItem {
   name: string;
@@ -78,6 +79,10 @@ export function GroceryView() {
       } catch {}
 
       setItems(fetchedItems);
+      trackBehaviorEvent('grocery_viewed', {
+        meal_plan_id: currentPlan?.id || null,
+        item_count: fetchedItems.length,
+      });
     } catch {
       setError('Unable to load grocery list.');
       setItems([]);
@@ -121,6 +126,10 @@ export function GroceryView() {
     AsyncStorage.setItem(GROCERY_CHECKED_KEY, JSON.stringify(checkedNames)).catch(() => {});
 
     if (!wasChecked) {
+      trackBehaviorEvent('grocery_check_progressed', {
+        grocery_list_id: currentPlan?.id || null,
+        item_name: items[index]?.name || null,
+      });
       const groceryQuest = quests.find((quest) => !quest.completed && /grocery/i.test(quest.title));
       if (groceryQuest) {
         const questResult = await updateQuestProgress(groceryQuest.id, 1);

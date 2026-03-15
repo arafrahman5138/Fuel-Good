@@ -30,6 +30,7 @@ import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
 import { ProjectedMESCard } from '../ProjectedMESCard';
 import { maybePromptForPush } from '../../services/notifications';
+import { trackBehaviorEvent } from '../../services/notifications';
 import { getTierConfig, useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -67,6 +68,14 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string 
   quick: { bg: 'rgba(34,197,94,0.12)', text: '#22C55E', label: 'Quick' },
   sit_down: { bg: 'rgba(245,158,11,0.12)', text: '#F59E0B', label: 'Meals' },
 };
+
+function getMealPlanDisplayMes(recipe: any): number {
+  return Number(recipe?.composite_display_score ?? recipe?.mes_display_score ?? 0);
+}
+
+function getMealPlanDisplayTier(recipe: any): string {
+  return String(recipe?.composite_display_tier || recipe?.mes_display_tier || 'critical');
+}
 
 export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = {}) {
   const insets = useSafeAreaInsets();
@@ -199,6 +208,12 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
       setGenerating(false);
     }
   };
+
+  useEffect(() => {
+    if (currentPlan?.id) {
+      trackBehaviorEvent('meal_plan_viewed', { meal_plan_id: currentPlan.id });
+    }
+  }, [currentPlan?.id]);
 
   const handleLoadShortlist = async () => {
     setShortlistLoading(true);
@@ -347,7 +362,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
     const projections = DAYS.map((day) => {
       const dayMeals = currentPlan.items.filter((m: any) => m.day_of_week === day);
       const serverScores = dayMeals
-        .map((meal: any) => Number(meal.recipe_data?.mes_display_score))
+        .map((meal: any) => getMealPlanDisplayMes(meal.recipe_data))
         .filter((score: number) => Number.isFinite(score) && score > 0);
 
       let displayScore = 0;
@@ -412,7 +427,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
       outputRange: [10, 0],
     });
     return (
-      <ScreenContainer safeArea={false}>
+      <ScreenContainer safeArea={false} padded={false}>
         <Animated.View
           style={[
             styles.plannerShell,
@@ -448,6 +463,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                   name={plannerStep === 'shortlist' ? 'chevron-back' : 'close'}
                   size={30}
                   color={theme.text}
+                  style={plannerStep === 'shortlist' ? { transform: [{ translateX: -1 }] } : undefined}
                 />
               </TouchableOpacity>
               <Text style={[styles.plannerHeaderTitle, { color: theme.text }]}>Meal Plan</Text>
@@ -675,7 +691,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                       {section.items.map((item) => {
                         const included = preferredRecipeIds.includes(item.id);
                         const avoided = avoidedRecipeIds.includes(item.id);
-                        const tierColor = getTierConfig(item.mes_display_tier || 'critical').color;
+                        const tierColor = getTierConfig(getMealPlanDisplayTier(item)).color;
                         return (
                           <View
                             key={item.id}
@@ -692,7 +708,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                                 {item.title}
                               </Text>
                               <View style={[styles.shortlistScoreRing, { borderColor: tierColor + '50', backgroundColor: tierColor + '10' }]}>
-                                <Text style={[styles.shortlistScoreText, { color: tierColor }]}>{Math.round(item.mes_display_score || 0)}</Text>
+                                <Text style={[styles.shortlistScoreText, { color: tierColor }]}>{Math.round(getMealPlanDisplayMes(item))}</Text>
                               </View>
                             </View>
                             <Text style={[styles.shortlistCardMeta, { color: theme.textSecondary }]}>
@@ -985,22 +1001,25 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             const recipe = meal.recipe_data || {};
             const cat = CATEGORY_COLORS[meal.meal_category] || CATEGORY_COLORS.quick;
             const recipeId = recipe.id;
-            const mesScore = Number(recipe.mes_display_score || 0);
+            const mesScore = getMealPlanDisplayMes(recipe);
             const totalMinutes = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0);
             const prepStatus = recipe.prep_status;
-            const mesTier =
-              mesScore >= 85 ? 'optimal' :
-              mesScore >= 70 ? 'good' :
-              mesScore >= 55 ? 'moderate' :
-              mesScore >= 40 ? 'low' :
-              'critical';
+            const mesTier = getMealPlanDisplayTier(recipe);
             const mesTierColor = getTierConfig(mesTier).color;
             return (
               <Card 
                 key={index}
                 style={[styles.mealCard, { borderColor: theme.border, backgroundColor: theme.surface }]} 
                 padding={Spacing.lg}
-                onPress={() => recipeId && router.push(`/browse/${recipeId}`)}
+                onPress={() => {
+                  if (!recipeId) return;
+                  trackBehaviorEvent('meal_plan_item_viewed', {
+                    meal_plan_item_id: meal.id,
+                    recipe_id: recipeId,
+                    meal_type: meal.meal_type,
+                  });
+                  router.push(`/browse/${recipeId}`);
+                }}
               >
                 <View style={styles.mealTopRow}>
                   <Text style={[styles.mealType, { color: theme.textTertiary }]}>
@@ -1190,7 +1209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: -Spacing.lg,
-    paddingHorizontal: 0,
+    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   plannerHeaderIconButton: {

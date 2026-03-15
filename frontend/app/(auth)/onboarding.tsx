@@ -434,6 +434,7 @@ export default function OnboardingScreen() {
             insulin_resistant: insulinResistant,
             prediabetes,
             type_2_diabetes: type2Diabetes,
+            onboarding_step_completed: 13,
           };
           if (bodyFatPct.trim()) {
             data.body_fat_pct = parseFloat(bodyFatPct);

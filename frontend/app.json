@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "Fuel Good",
-    "slug": "wholefoodlabs",
+    "slug": "fuelgood",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "wholefoodlabs",
+    "scheme": "fuelgood",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wholefoodlabs.app",
+      "bundleIdentifier": "com.fuelgood.app",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -29,7 +29,7 @@
         "NSPhotoLibraryAddUsageDescription": "Fuel Good may save temporary label images you choose during scanning.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["wholefoodlabs", "com.wholefoodlabs.app"]
+            "CFBundleURLSchemes": ["fuelgood", "com.fuelgood.app"]
           }
         ]
       }
@@ -39,7 +39,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
-      "package": "com.wholefoodlabs.app",
+      "package": "com.fuelgood.app",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",

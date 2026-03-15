@@ -42,6 +42,7 @@ export async function syncPushTokenWithBackend(): Promise<void> {
     device_id: String(Constants.sessionId || Constants.installationId || 'device'),
     platform: Platform.OS,
     app_version: APP_VERSION,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
   });
 }
 
@@ -105,4 +106,13 @@ export function registerNotificationListeners(): () => void {
   return () => {
     responseSub.remove();
   };
+}
+
+export function trackBehaviorEvent(eventType: string, properties: Record<string, any> = {}): void {
+  const now = new Date();
+  notificationsApi.ingestEvent(eventType, {
+    ...properties,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
+    local_hour: now.getHours(),
+  }).catch(() => {});
 }

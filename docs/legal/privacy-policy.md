@@ -1,8 +1,8 @@
-# WholeFoodLabs Privacy Policy
+# Fuel Good Privacy Policy
 
 _Last updated: March 10, 2026_
 
-WholeFoodLabs provides general wellness, nutrition, recipe, and meal-scanning features. This Privacy Policy explains what information we collect, how we use it, and the choices you have.
+Fuel Good provides general wellness, nutrition, recipe, and meal-scanning features. This Privacy Policy explains what information we collect, how we use it, and the choices you have.
 
 ## Information We Collect
 
@@ -32,7 +32,7 @@ Some features rely on third-party providers for authentication, AI processing, h
 
 ## Camera and Photos
 
-WholeFoodLabs accesses your camera or photo library only when you choose to scan a meal or label or upload an image.
+Fuel Good accesses your camera or photo library only when you choose to scan a meal or label or upload an image.
 
 ## Data Retention
 
@@ -48,14 +48,14 @@ You can:
 
 ## Children
 
-WholeFoodLabs is not intended for children under 13 and is not designed as a kids app.
+Fuel Good is not intended for children under 13 and is not designed as a kids app.
 
 ## Wellness Disclaimer
 
-WholeFoodLabs is for general wellness and informational use only. It does not provide medical advice or diagnosis.
+Fuel Good is for general wellness and informational use only. It does not provide medical advice or diagnosis.
 
 ## Contact
 
-Support: support@wholefoodlabs.com
+Support: support@fuelgood.com
 
 Before public release, publish this policy at the production privacy policy URL and review it with counsel if needed.

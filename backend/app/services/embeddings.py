@@ -16,13 +16,13 @@ class EmbeddingUnavailable(RuntimeError):
 
 
 def active_embedding_provider() -> tuple[str, str]:
-    provider = (settings.llm_provider or "").strip().lower()
+    provider = (settings.embedding_provider or "").strip().lower()
     if provider == "openai" and settings.openai_api_key:
-        return "openai", settings.openai_embedding_model
+        return "openai", settings.embedding_model or settings.openai_embedding_model
     if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
-        return "gemini", settings.gemini_embedding_model
+        return "gemini", settings.embedding_model or settings.gemini_embedding_model
     if provider == "ollama" and settings.ollama_host:
-        return "ollama", settings.ollama_embedding_model
+        return "ollama", settings.embedding_model or settings.ollama_embedding_model
     return "none", ""
 
 
@@ -43,6 +43,14 @@ async def embed_text(text: str) -> list[float]:
     raise EmbeddingUnavailable(f"Unsupported embedding provider: {provider}")
 
 
+def validate_embedding_vector(vector: list[float]) -> list[float]:
+    if len(vector) != settings.embedding_dimension:
+        raise EmbeddingUnavailable(
+            f"Embedding dimension mismatch: expected {settings.embedding_dimension}, got {len(vector)}."
+        )
+    return vector
+
+
 async def _embed_openai(text: str, model: str) -> list[float]:
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.post(
@@ -52,19 +60,22 @@ async def _embed_openai(text: str, model: str) -> list[float]:
         )
         response.raise_for_status()
         data = response.json()
-    return [float(x) for x in ((data.get("data") or [{}])[0].get("embedding") or [])]
+    return validate_embedding_vector([float(x) for x in ((data.get("data") or [{}])[0].get("embedding") or [])])
 
 
 async def _embed_gemini(text: str, model: str) -> list[float]:
     api_key = settings.google_api_key or settings.gemini_api_key
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent?key={api_key}"
-    payload = {"content": {"parts": [{"text": text}]}}
+    payload = {
+        "content": {"parts": [{"text": text}]},
+        "outputDimensionality": settings.embedding_dimension,
+    }
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
     values = ((data.get("embedding") or {}).get("values") or [])
-    return [float(x) for x in values]
+    return validate_embedding_vector([float(x) for x in values])
 
 
 async def _embed_ollama(text: str, model: str) -> list[float]:
@@ -78,7 +89,7 @@ async def _embed_ollama(text: str, model: str) -> list[float]:
         )
         response.raise_for_status()
         data = response.json()
-    return [float(x) for x in (data.get("embedding") or [])]
+    return validate_embedding_vector([float(x) for x in (data.get("embedding") or [])])
 
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:

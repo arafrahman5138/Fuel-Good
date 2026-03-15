@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import uuid
 from datetime import datetime
 from typing import Any, Optional
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.db import get_db
 from app.models.nutrition import FoodLog
+from app.models.product_label_scan import ProductLabelScan
 from app.models.recipe import Recipe
 from app.models.scanned_meal import ScannedMealLog
 from app.models.user import User
@@ -21,13 +23,22 @@ from app.routers.nutrition import _compute_daily
 from app.services.meal_scan import analyze_meal_scan, recompute_meal_scan
 from app.services.metabolic_engine import on_food_log_created
 from app.services.product_label_scan import analyze_product_label_image
+from app.services.supabase_storage import (
+    SupabaseStorageUnavailable,
+    build_private_object_path,
+    create_signed_object_url,
+    is_supabase_storage_configured,
+    upload_private_object,
+)
 from app.services.whole_food_scoring import analyze_whole_food_product
 from app.routers.whole_food_scan import WholeFoodAnalyzeRequest, _extract_product_payload
+from app.config import get_settings
 
 import httpx
 
 
 router = APIRouter()
+settings = get_settings()
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
@@ -109,6 +120,85 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
         "pairing_projected_delta": float(scan.pairing_projected_delta or 0) if scan.pairing_projected_delta is not None else None,
         "pairing_reasons": scan.pairing_reasons or [],
         "pairing_timing": scan.pairing_timing,
+        "image": _serialize_storage_reference(
+            bucket=scan.image_bucket,
+            path=scan.image_path,
+            mime_type=scan.image_mime_type,
+            fallback_url=scan.image_url,
+        ),
+    }
+
+
+def _extension_for_mime_type(mime_type: str) -> str:
+    guessed = mimetypes.guess_extension(mime_type or "")
+    if guessed:
+        return guessed.strip(".")
+    return "jpg"
+
+
+async def _store_scan_image(
+    *,
+    user_id: str,
+    namespace: str,
+    bucket: str,
+    image_bytes: bytes,
+    mime_type: str,
+) -> dict[str, Any]:
+    extension = _extension_for_mime_type(mime_type)
+    path = build_private_object_path(user_id=user_id, namespace=namespace, extension=extension)
+    await upload_private_object(bucket=bucket, path=path, content=image_bytes, mime_type=mime_type)
+    signed = await create_signed_object_url(bucket=bucket, path=path)
+    return {
+        "bucket": bucket,
+        "path": path,
+        "mime_type": mime_type,
+        "signed_url": signed["signed_url"],
+        "signed_url_expires_in": signed["expires_in"],
+    }
+
+
+def _serialize_storage_reference(
+    *,
+    bucket: str | None,
+    path: str | None,
+    mime_type: str | None,
+    fallback_url: str | None,
+) -> dict[str, Any] | None:
+    if not any([bucket, path, fallback_url]):
+        return None
+    payload: dict[str, Any] = {
+        "bucket": bucket,
+        "path": path,
+        "mime_type": mime_type,
+        "signed_url": fallback_url,
+    }
+    return payload
+
+
+async def _storage_reference_async(
+    *,
+    bucket: str | None,
+    path: str | None,
+    mime_type: str | None,
+    fallback_url: str | None,
+) -> dict[str, Any] | None:
+    if not any([bucket, path, fallback_url]):
+        return None
+    signed_url = fallback_url
+    expires_in = None
+    if bucket and path and is_supabase_storage_configured():
+        try:
+            signed = await create_signed_object_url(bucket=bucket, path=path)
+            signed_url = signed["signed_url"]
+            expires_in = signed["expires_in"]
+        except Exception:
+            signed_url = fallback_url
+    return {
+        "bucket": bucket,
+        "path": path,
+        "mime_type": mime_type,
+        "signed_url": signed_url,
+        "signed_url_expires_in": expires_in,
     }
 
 
@@ -205,8 +295,8 @@ async def analyze_product_image(
     image: UploadFile = File(...),
     capture_type: Optional[str] = Form(default="front_label"),
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    del current_user
     if image.content_type not in ALLOWED_IMAGE_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Packaged food scan requires an image upload.")
 
@@ -218,15 +308,54 @@ async def analyze_product_image(
         raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
 
     try:
-        return await analyze_product_label_image(
+        storage_ref = None
+        if is_supabase_storage_configured():
+            storage_ref = await _store_scan_image(
+                user_id=current_user.id,
+                namespace="label-scans",
+                bucket=settings.supabase_storage_label_scans_bucket,
+                image_bytes=image_bytes,
+                mime_type=image.content_type,
+            )
+
+        result = await analyze_product_label_image(
             image_bytes=image_bytes,
             mime_type=image.content_type,
             capture_type=(capture_type or "front_label").strip() or "front_label",
         )
+        record = ProductLabelScan(
+            user_id=current_user.id,
+            capture_type=(capture_type or "front_label").strip() or "front_label",
+            image_url=(storage_ref or {}).get("signed_url"),
+            image_bucket=(storage_ref or {}).get("bucket"),
+            image_path=(storage_ref or {}).get("path"),
+            image_mime_type=(storage_ref or {}).get("mime_type"),
+            product_name=result.get("product_name"),
+            brand=result.get("brand"),
+            ingredients_text=result.get("ingredients_text"),
+            confidence=float(result.get("confidence", 0) or 0),
+            confidence_breakdown=result.get("confidence_breakdown") or {},
+            analysis=result,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        return {
+            **result,
+            "scan_id": str(record.id),
+            "image": await _storage_reference_async(
+                bucket=record.image_bucket,
+                path=record.image_path,
+                mime_type=record.image_mime_type,
+                fallback_url=record.image_url,
+            ),
+        }
     except httpx.HTTPError:
         raise HTTPException(status_code=502, detail="Unable to analyze that label photo right now.")
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
+    except SupabaseStorageUnavailable as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.post("/meal")
@@ -267,9 +396,22 @@ async def scan_meal(
             "not_food_reason": result.get("not_food_reason", "No food detected in image"),
         }
 
+    storage_ref = None
+    if is_supabase_storage_configured():
+        storage_ref = await _store_scan_image(
+            user_id=current_user.id,
+            namespace="meal-scans",
+            bucket=settings.supabase_storage_meal_scans_bucket,
+            image_bytes=image_bytes,
+            mime_type=image.content_type,
+        )
+
     scan = ScannedMealLog(
         user_id=current_user.id,
-        image_url=None,
+        image_url=(storage_ref or {}).get("signed_url"),
+        image_bucket=(storage_ref or {}).get("bucket"),
+        image_path=(storage_ref or {}).get("path"),
+        image_mime_type=(storage_ref or {}).get("mime_type"),
         meal_label=result["meal_label"],
         scan_mode="meal",
         meal_context=result["meal_context"],
@@ -309,7 +451,14 @@ async def scan_meal(
     db.add(scan)
     db.commit()
     db.refresh(scan)
-    return _serialize_scan(scan)
+    serialized = _serialize_scan(scan)
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    return serialized
 
 
 @router.patch("/meal/{scan_id}")
@@ -369,7 +518,14 @@ async def update_meal_scan(
     scan.matched_recipe_confidence = result.get("matched_recipe_confidence")
     db.commit()
     db.refresh(scan)
-    return _serialize_scan(scan)
+    serialized = _serialize_scan(scan)
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    return serialized
 
 
 @router.post("/meal/{scan_id}/log")

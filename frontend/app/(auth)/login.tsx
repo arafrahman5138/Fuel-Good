@@ -22,16 +22,31 @@ import { useThemeStore } from '../../stores/themeStore';
 import { Button } from '../../components/Button';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
-import { useAuthStore } from '../../stores/authStore';
+import { hasActivePremiumAccess, useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../services/api';
 import { APP_NAME, GOOGLE_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, IS_GOOGLE_AUTH_CONFIGURED } from '../../constants/Config';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'wholefoodlabs',
+  scheme: 'fuelgood',
   path: 'auth',
 });
+
+function getPostLoginRoute(profile: any): string {
+  const needsOnboarding =
+    !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
+
+  if (needsOnboarding) {
+    return '/(auth)/onboarding';
+  }
+
+  if (hasActivePremiumAccess(profile?.entitlement)) {
+    return '/(tabs)';
+  }
+
+  return '/subscribe';
+}
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -85,9 +100,7 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      const needsOnboarding =
-        !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
+      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
     } finally {
@@ -122,9 +135,7 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      const needsOnboarding =
-        !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
+      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       if (err.code === 'ERR_CANCELED') {
         // User canceled the sign-in flow
@@ -157,9 +168,7 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      const needsOnboarding =
-        !profile?.flavor_preferences?.length || !profile?.dietary_preferences?.length;
-      router.replace((needsOnboarding ? '/(auth)/onboarding' : '/subscribe') as any);
+      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -306,6 +315,12 @@ export default function LoginScreen() {
             {fieldErrors.password && <Text style={[styles.fieldError, { color: theme.error }]}>{fieldErrors.password}</Text>}
           </View>
 
+          {!isRegister ? (
+            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} style={styles.forgotLink}>
+              <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
+            </TouchableOpacity>
+          ) : null}
+
           <Button
             title={isRegister ? 'Create Account' : 'Sign In'}
             onPress={handleSubmit}
@@ -419,6 +434,14 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     gap: Spacing.xs + 2,
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    marginTop: -4,
+  },
+  forgotText: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
   },
   inputLabel: {
     fontSize: FontSize.sm,

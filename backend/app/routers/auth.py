@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+import logging
 from typing import Any
 
 import httpx
@@ -9,15 +11,35 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.auth import get_password_hash, verify_password, create_token_pair, verify_refresh_token, get_current_user
+from app.auth import (
+    create_password_reset_token,
+    create_token_pair,
+    get_current_user,
+    get_password_hash,
+    verify_password,
+    verify_password_reset_token,
+    verify_refresh_token,
+)
 from app.models.user import User
 from app.schemas.billing import EntitlementInfo
-from app.schemas.auth import UserRegister, UserLogin, Token, UserProfile, UserPreferencesUpdate, SocialAuthRequest
+from app.schemas.auth import (
+    PasswordResetConfirm,
+    PasswordResetConfirmResponse,
+    PasswordResetRequest,
+    PasswordResetRequestResponse,
+    SocialAuthRequest,
+    Token,
+    UserLogin,
+    UserPreferencesUpdate,
+    UserProfile,
+    UserRegister,
+)
 from app.services.billing import build_entitlement_info
 from app.services.notifications import process_user_notifications, record_notification_event
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger("fuelgood.auth")
 APPLE_ISSUER = "https://appleid.apple.com"
 _apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
 
@@ -176,6 +198,55 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
     token = create_token_pair(str(user.id))
     return token
+
+
+@router.post("/forgot-password", response_model=PasswordResetRequestResponse)
+async def forgot_password(body: PasswordResetRequest, db: Session = Depends(get_db)):
+    normalized_email = _normalize_email(body.email)
+    user = db.query(User).filter(User.email == normalized_email).first()
+    message = "If an account exists for that email, password reset instructions have been generated."
+
+    if not user:
+        return PasswordResetRequestResponse(message=message)
+
+    reset_token = create_password_reset_token(str(user.id), user.email)
+    logger.info(
+        json.dumps(
+            {
+                "event": "auth.password_reset_requested",
+                "email": user.email,
+                "request_delivery": "dev_response" if (settings.environment or "").lower() in {"dev", "development"} else "email_pending",
+            }
+        )
+    )
+
+    if (settings.environment or "").lower() in {"dev", "development"}:
+        return PasswordResetRequestResponse(
+            message=message,
+            reset_token=reset_token,
+            expires_in_minutes=settings.password_reset_token_expire_minutes,
+        )
+    return PasswordResetRequestResponse(message=message)
+
+
+@router.post("/reset-password", response_model=PasswordResetConfirmResponse)
+async def reset_password(body: PasswordResetConfirm, db: Session = Depends(get_db)):
+    payload = verify_password_reset_token(body.token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    user_id = str(payload.get("sub") or "").strip()
+    email = _normalize_email(str(payload.get("email") or ""))
+    if not user_id or not email:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or _normalize_email(user.email) != email:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    user.hashed_password = get_password_hash(body.new_password)
+    db.commit()
+    return PasswordResetConfirmResponse(message="Password updated successfully.")
 
 
 @router.post("/social", response_model=Token)

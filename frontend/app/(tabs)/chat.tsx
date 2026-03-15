@@ -2,6 +2,7 @@ import React, { useDeferredValue, useEffect, useMemo, useState, useRef } from 'r
 import {
   Alert,
   Animated,
+  Easing,
   View,
   Text,
   TextInput,
@@ -13,7 +14,7 @@ import {
   useWindowDimensions,
   useColorScheme,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +30,11 @@ import { chatApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
 import { useThemeStore } from '../../stores/themeStore';
+import { TypingIndicator } from '../../components/TypingIndicator';
+import { LoadingPhaseText } from '../../components/LoadingPhaseText';
+import { ChatBubbleEntrance } from '../../components/ChatBubbleEntrance';
+import { RecipeCardShimmer } from '../../components/RecipeCardShimmer';
+import { MesBadgePopIn } from '../../components/MesBadgePopIn';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
 import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 import {
@@ -40,6 +46,7 @@ import {
   toStringValue,
 } from '../../utils/chatParser';
 import { getTierConfig } from '../../stores/metabolicBudgetStore';
+import { trackBehaviorEvent } from '../../services/notifications';
 
 const FALLBACK_SUGGESTIONS = [
   'Mac and Cheese',
@@ -60,6 +67,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { width } = useWindowDimensions();
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
   const isCompact = width < 410;
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
@@ -75,6 +83,7 @@ export default function ChatScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [questToast, setQuestToast] = useState<string | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
+  const lastUserInputRef = useRef<string>('');
   const {
     messages,
     isLoading,
@@ -84,6 +93,7 @@ export default function ChatScreen() {
     setSessionId,
     setLoading,
     setStreamingText,
+    appendStreamingText,
   } = useChatStore();
   const clearChat = useChatStore((s) => s.clearChat);
   const loadLastSession = useChatStore((s) => s.loadLastSession);
@@ -113,6 +123,13 @@ export default function ChatScreen() {
     }).catch(() => {});
   }, [fetchSaved]);
 
+  // Handle deep-link prefill from coach or other screens
+  useEffect(() => {
+    if (prefill && typeof prefill === 'string' && prefill.trim()) {
+      setInput(prefill.trim());
+    }
+  }, [prefill]);
+
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -133,33 +150,50 @@ export default function ChatScreen() {
     };
   }, [messages.length]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMessage = input.trim();
-    setInput('');
-    Keyboard.dismiss();
+  const shouldPreferStreaming = (message: string) => {
+    const normalized = message.trim().toLowerCase();
+    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+    return wordCount > 6 || /make|healthier|modify|swap|without|instead/.test(normalized);
+  };
+
+  const addAssistantPayload = (payload: any) => {
+    const normalized = normalizeAssistantPayload({
+      content: payload?.message?.content || payload?.message || '',
+      recipe: payload?.healthified_recipe || payload?.recipe,
+      swaps: payload?.ingredient_swaps || payload?.swaps,
+      nutrition: payload?.nutrition_comparison || payload?.nutrition,
+    });
+    addMessage({
+      role: 'assistant',
+      content: normalized.message,
+      recipe: normalized.recipe,
+      swaps: normalized.swaps,
+      nutrition: normalized.nutrition,
+      mes_score: payload?.mes_score || null,
+    });
+  };
+
+  const submitChatMessage = async (userMessage: string) => {
+    lastUserInputRef.current = userMessage;
     addMessage({ role: 'user', content: userMessage });
     setLoading(true);
     setStreamingText('');
-
     try {
-      const response = await chatApi.healthify(userMessage, sessionId || undefined);
-      if (response.session_id) setSessionId(response.session_id);
-      const normalized = normalizeAssistantPayload({
-        content: response.message?.content || response.message || '',
-        recipe: response.healthified_recipe,
-        swaps: response.ingredient_swaps,
-        nutrition: response.nutrition_comparison,
-      });
-      addMessage({
-        role: 'assistant',
-        content: normalized.message,
-        recipe: normalized.recipe,
-        swaps: normalized.swaps,
-        nutrition: normalized.nutrition,
-        mes_score: response.mes_score || null,
-      });
-      // Award XP for healthify usage
+      if (shouldPreferStreaming(userMessage)) {
+        await chatApi.streamHealthify(
+          userMessage,
+          sessionId || undefined,
+          (chunk) => appendStreamingText(chunk),
+          (done) => {
+            if (done?.session_id) setSessionId(done.session_id);
+            if (done?.payload) addAssistantPayload(done.payload);
+          }
+        );
+      } else {
+        const response = await chatApi.healthify(userMessage, sessionId || undefined);
+        if (response.session_id) setSessionId(response.session_id);
+        addAssistantPayload(response);
+      }
       awardXP(25, 'healthify').then((res) => {
         if (res.xp_gained > 0) showQuestToast(`+${res.xp_gained} XP · Healthify`);
       }).catch(() => {});
@@ -167,63 +201,32 @@ export default function ChatScreen() {
       const rawMessage = String(err?.message || '');
       const friendlyMessage =
         /quota|rate.?limit|resourceexhausted|429/i.test(rawMessage)
-          ? "The AI provider quota is currently exceeded. Please try again later, or switch the backend LLM provider/API key."
-          : rawMessage || "I couldn't reach Healthify right now. Please try again in a moment.";
-      addMessage({
-        role: 'assistant',
-        content: friendlyMessage,
-      });
+          ? "The AI provider quota is currently exceeded. Please try again later."
+          : "Something went wrong. Tap below to try again.";
+      addMessage({ role: 'assistant', content: friendlyMessage, isError: true } as any);
     } finally {
       setLoading(false);
       setStreamingText('');
     }
   };
 
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+    const userMessage = input.trim();
+    setInput('');
+    Keyboard.dismiss();
+    await submitChatMessage(userMessage);
+  };
+
   const handleSuggestion = (suggestion: string) => {
+    trackBehaviorEvent('healthify_suggestion_tapped', { suggestion });
     setInput(suggestion);
     // Auto-send after a microtask to let state update
     setTimeout(() => {
       const userMessage = suggestion.trim();
       if (!userMessage || isLoading) return;
       setInput('');
-      addMessage({ role: 'user', content: userMessage });
-      setLoading(true);
-      setStreamingText('');
-
-      chatApi.healthify(userMessage, sessionId || undefined)
-        .then((response) => {
-          if (response.session_id) setSessionId(response.session_id);
-          const normalized = normalizeAssistantPayload({
-            content: response.message?.content || response.message || '',
-            recipe: response.healthified_recipe,
-            swaps: response.ingredient_swaps,
-            nutrition: response.nutrition_comparison,
-          });
-          addMessage({
-            role: 'assistant',
-            content: normalized.message,
-            recipe: normalized.recipe,
-            swaps: normalized.swaps,
-            nutrition: normalized.nutrition,
-            mes_score: response.mes_score || null,
-          });
-          // Award XP for healthify usage
-          awardXP(25, 'healthify').then((res) => {
-            if (res.xp_gained > 0) showQuestToast(`+${res.xp_gained} XP · Healthify`);
-          }).catch(() => {});
-        })
-        .catch((err: any) => {
-          const rawMessage = String(err?.message || '');
-          const friendlyMessage =
-            /quota|rate.?limit|resourceexhausted|429/i.test(rawMessage)
-              ? "The AI provider quota is currently exceeded. Please try again later, or switch the backend LLM provider/API key."
-              : rawMessage || "I couldn't reach Healthify right now. Please try again in a moment.";
-          addMessage({ role: 'assistant', content: friendlyMessage });
-        })
-        .finally(() => {
-          setLoading(false);
-          setStreamingText('');
-        });
+      void submitChatMessage(userMessage);
     }, 0);
   };
 
@@ -478,16 +481,20 @@ export default function ChatScreen() {
           ]}
           ListHeaderComponent={showSavedRecipes && savedRecipes.length > 0 ? (
             <Card style={[styles.savedListCard, styles.contentColumn, { maxWidth: maxContentWidth }]} padding={Spacing.md}>
-              <Text style={[styles.savedListTitle, { color: theme.text }]}>Saved recipes</Text>
+              <Text style={[styles.savedListTitle, { color: theme.text }]}>Saved on this device</Text>
               {savedRecipes.map((saved) => (
                 <View key={saved.id} style={[styles.savedListItem, { borderBottomColor: theme.border }]}>
-                  <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    onPress={() => router.push(`/saved/${encodeURIComponent(saved.id)}`)}
+                    activeOpacity={0.7}
+                    style={{ flex: 1 }}
+                  >
                     <Text style={[styles.savedTitle, { color: theme.text }]}>{saved.title}</Text>
                     <Text style={[styles.savedMeta, { color: theme.textTertiary }]}>
                       {(saved.ingredients || []).length} ingredients
                       {saved.servings ? ` • ${saved.servings} servings` : ''}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => removeRecipe(saved.id)}
                     style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
@@ -547,16 +554,18 @@ export default function ChatScreen() {
               const isEditing = editingKey === key;
               const isSaved = recipe?.id ? isSavedRecipe(recipe.id) : false;
               const ingredientState = checkedIngredients[key] || [];
+              const isNewest = msg.index === conversationData.length - 1;
+              const shouldAnimate = isNewest && msg.role === 'assistant';
 
               return (
-              <View
-                style={[
-                  styles.messageBubble,
-                  msg.role === 'user'
-                    ? [styles.userBubble, { maxWidth: bubbleMaxWidth }]
-                    : styles.assistantBubble,
-                ]}
-              >
+                <ChatBubbleEntrance
+                  enabled={shouldAnimate}
+                  style={
+                    msg.role === 'user'
+                      ? [styles.messageBubble, styles.userBubble, { maxWidth: bubbleMaxWidth }]
+                      : [styles.messageBubble, styles.assistantBubble]
+                  }
+                >
                 {msg.role === 'assistant' && (
                   <View style={styles.assistantHeader}>
                     <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
@@ -576,6 +585,31 @@ export default function ChatScreen() {
                       {payload?.message || msg.content}
                     </Text>
                   </LinearGradient>
+                ) : (msg as any).isError ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (lastUserInputRef.current && !isLoading) {
+                        void submitChatMessage(lastUserInputRef.current);
+                      }
+                    }}
+                    style={[
+                      styles.bubbleContent,
+                      styles.errorBubble,
+                      { backgroundColor: theme.error + '14', borderWidth: 1, borderColor: theme.error + '40' },
+                    ]}
+                  >
+                    <View style={styles.errorRow}>
+                      <Ionicons name="warning-outline" size={16} color={theme.error} />
+                      <Text style={[styles.messageText, { color: theme.error, flex: 1 }]}>
+                        {payload?.message || msg.content}
+                      </Text>
+                    </View>
+                    <View style={styles.retryRow}>
+                      <Ionicons name="refresh" size={13} color={theme.textTertiary} />
+                      <Text style={[styles.retryText, { color: theme.textTertiary }]}>Tap to retry</Text>
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <View
                     style={[
@@ -591,35 +625,36 @@ export default function ChatScreen() {
 
                 {/* Recipe Card */}
                 {recipe && (
-                  <Card style={styles.recipeCard} padding={Spacing.md}>
-                    <View style={styles.recipeHeader}>
-                      <View style={styles.recipeHeaderLeft}>
-                        <Ionicons name="restaurant" size={16} color={theme.primary} style={{ marginTop: 3 }} />
-                        <Text style={[styles.recipeName, { color: theme.text, flex: 1 }]}>
-                          {recipe.title || 'Healthified Recipe'}
-                        </Text>
+                  <RecipeCardShimmer enabled={shouldAnimate}>
+                    <Card style={styles.recipeCard} padding={Spacing.md}>
+                      <View style={styles.recipeHeader}>
+                        <View style={styles.recipeHeaderLeft}>
+                          <Ionicons name="restaurant" size={16} color={theme.primary} style={{ marginTop: 3 }} />
+                          <Text style={[styles.recipeName, { color: theme.text, flex: 1 }]}>
+                            {recipe.title || 'Healthified Recipe'}
+                          </Text>
+                        </View>
+                        <View style={styles.recipeActions}>
+                          <TouchableOpacity
+                            style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
+                            onPress={() => toggleSaveRecipe(key, recipe)}
+                          >
+                            <Ionicons
+                              name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                              size={16}
+                              color={isSaved ? theme.primary : theme.textSecondary}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
+                            onPress={() =>
+                              isEditing ? cancelRecipeEdit() : startRecipeEdit(key, recipe)
+                            }
+                          >
+                            <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View style={styles.recipeActions}>
-                        <TouchableOpacity
-                          style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
-                          onPress={() => toggleSaveRecipe(key, recipe)}
-                        >
-                          <Ionicons
-                            name={isSaved ? 'bookmark' : 'bookmark-outline'}
-                            size={16}
-                            color={isSaved ? theme.primary : theme.textSecondary}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
-                          onPress={() =>
-                            isEditing ? cancelRecipeEdit() : startRecipeEdit(key, recipe)
-                          }
-                        >
-                          <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
 
                     {!!cleanRecipeDescription(recipe.description) && (
                       <Text style={[styles.recipeDescription, { color: theme.textSecondary }]}>
@@ -652,21 +687,25 @@ export default function ChatScreen() {
                           const tc = getTierConfig(msg.mes_score.meal_tier);
                           return (
                             <>
+                              <MesBadgePopIn delay={shouldAnimate ? 400 : 0}>
                               <View style={[styles.mesPill, { backgroundColor: tc.color + '20' }]}>
                                 <Ionicons name={tc.icon as any} size={11} color={tc.color} />
                                 <Text style={[styles.mesPillText, { color: tc.color }]}>
                                   This meal: {Math.round(msg.mes_score.meal_score)} MES
                                 </Text>
                               </View>
+                              </MesBadgePopIn>
                               {msg.mes_score.projected_daily_score != null && (() => {
                                 const dtc = getTierConfig(msg.mes_score.projected_daily_tier || msg.mes_score.meal_tier);
                                 return (
+                                  <MesBadgePopIn delay={shouldAnimate ? 550 : 0}>
                                   <View style={[styles.mesPill, { backgroundColor: dtc.color + '15' }]}>
                                     <Ionicons name="today-outline" size={11} color={dtc.color} />
                                     <Text style={[styles.mesPillText, { color: dtc.color }]}>
                                       Your day: {Math.round(msg.mes_score.projected_daily_score)} MES
                                     </Text>
                                   </View>
+                                  </MesBadgePopIn>
                                 );
                               })()}
                             </>
@@ -803,7 +842,8 @@ export default function ChatScreen() {
                         ))}
                       </View>
                     )}
-                  </Card>
+                    </Card>
+                  </RecipeCardShimmer>
                 )}
 
                 {/* Swaps */}
@@ -883,23 +923,31 @@ export default function ChatScreen() {
                     })}
                   </Card>
                 )}
-              </View>
+              </ChatBubbleEntrance>
             );
           }}
           ListFooterComponent={isLoading ? (
-            <View style={[styles.messageBubble, styles.assistantBubble, { width: '100%' }]}>
+            <Animated.View style={[styles.messageBubble, styles.assistantBubble, { width: '100%' }]}>
               <View style={styles.assistantHeader}>
                 <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
                   <Ionicons name="sparkles" size={10} color="#FFF" />
                 </LinearGradient>
                 <Text style={[styles.assistantLabel, { color: theme.primary }]}>Healthify AI</Text>
               </View>
-              <View style={[styles.bubbleContent, { backgroundColor: theme.surfaceElevated }]}>
-                <Text style={[styles.messageText, { color: theme.textTertiary }]}>
-                  {streamingText || 'Analyzing and creating your healthy version...'}
-                </Text>
+              <View style={[styles.bubbleContent, { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }]}>
+                {streamingText ? (
+                  <Text style={[styles.messageText, { color: theme.text }]}>
+                    {streamingText}
+                    <Text style={{ color: theme.primary }}>▍</Text>
+                  </Text>
+                ) : (
+                  <View style={styles.loadingContent}>
+                    <TypingIndicator color={theme.primary} iconColor={theme.primary} />
+                    <LoadingPhaseText color={theme.textTertiary} />
+                  </View>
+                )}
               </View>
-            </View>
+            </Animated.View>
           ) : null}
         />
 
@@ -1176,6 +1224,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     includeFontPadding: false,
     textAlignVertical: 'center',
+  },
+  loadingContent: {
+    gap: 6,
+  },
+  errorBubble: {
+    gap: 8,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  retryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  retryText: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
   },
   recipeCard: {
     marginTop: Spacing.sm,

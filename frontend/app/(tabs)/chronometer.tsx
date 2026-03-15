@@ -31,8 +31,10 @@ import { MetabolicCoach } from '../../components/MetabolicCoach';
 import { NutriScoreHeroCard } from '../../components/NutriScoreHeroCard';
 import { useTheme } from '../../hooks/useTheme';
 import { useThemeStore } from '../../stores/themeStore';
+import { useAuthStore } from '../../stores/authStore';
 import { Shadows } from '../../constants/Shadows';
 import { nutritionApi, metabolicApi, recipeApi } from '../../services/api';
+import { subscribeToChronometerChanges } from '../../services/supabase';
 import type { MealSuggestion } from '../../components/MetabolicCoach';
 import { useGamificationStore, type ScoreHistoryEntry } from '../../stores/gamificationStore';
 import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
@@ -213,6 +215,7 @@ function NutritionRing({ score, size = 140, strokeWidth = 8 }: {
 
 export default function ChronometerScreen() {
   const theme = useTheme();
+  const userId = useAuthStore((s) => s.user?.id);
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
@@ -265,6 +268,25 @@ export default function ChronometerScreen() {
       || metabolicProfile.height_ft != null
     )
   );
+  const hasCompletedOnboardingProfile = !!(
+    metabolicProfile
+    && (metabolicProfile.onboarding_step_completed || 0) >= 11
+  );
+  const hasPersonalizedMetabolicBudget = !!(
+    mesBudget
+    && (
+      mesBudget.tdee != null
+      || mesBudget.ism != null
+      || mesBudget.tier_thresholds != null
+      || mesBudget.threshold_context != null
+    )
+  );
+  const shouldShowProfilePrompt = !!(
+    metabolicProfile !== null
+    && !hasCoreProfileSetup
+    && !hasCompletedOnboardingProfile
+    && !hasPersonalizedMetabolicBudget
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -299,6 +321,21 @@ export default function ChronometerScreen() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = subscribeToChronometerChanges(userId, selectedDayKey, () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        refresh().catch(() => {});
+      }, 350);
+    });
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      unsubscribe?.();
+    };
+  }, [refresh, selectedDayKey, userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -770,7 +807,7 @@ export default function ChronometerScreen() {
             {viewMode === 'metabolic' && (
               <>
             {/* ── Profile Prompt (no profile yet) ── */}
-            {metabolicProfile !== null && !hasCoreProfileSetup && (
+            {shouldShowProfilePrompt && (
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => router.push('/metabolic-onboarding')}

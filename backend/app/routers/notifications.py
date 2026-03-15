@@ -45,7 +45,15 @@ async def register_notification_push_token(
     )
     pref = get_or_create_preferences(db, current_user.id)
     pref.push_enabled = True
-    record_notification_event(db, current_user.id, "push_token_registered", source="client")
+    if body.timezone:
+        pref.timezone = body.timezone
+    record_notification_event(
+        db,
+        current_user.id,
+        "push_token_registered",
+        source="client",
+        properties={"timezone": body.timezone} if body.timezone else None,
+    )
     db.commit()
     return {"id": str(token.id), "status": "registered", "push_enabled": pref.push_enabled}
 

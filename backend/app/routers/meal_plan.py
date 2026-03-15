@@ -34,6 +34,21 @@ logger = logging.getLogger(__name__)
 WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
+def _effective_recipe_mes(recipe_data: dict | None) -> tuple[float, str]:
+    data = recipe_data or {}
+    score = float(
+        data.get("composite_display_score")
+        or data.get("mes_display_score")
+        or 0
+    )
+    tier = (
+        data.get("composite_display_tier")
+        or data.get("mes_display_tier")
+        or "crash_risk"
+    )
+    return score, tier
+
+
 def _meal_item_response(item: MealPlanItem, budget) -> MealPlanItemResponse:
     recipe_data = dict(item.recipe_data or {})
     if "mes_display_score" not in recipe_data:
@@ -41,7 +56,11 @@ def _meal_item_response(item: MealPlanItem, budget) -> MealPlanItemResponse:
         mes = compute_meal_mes(nutrition, budget)
         recipe_data["mes_display_score"] = mes.get("display_score", 0)
         recipe_data["mes_display_tier"] = mes.get("display_tier", "crash_risk")
-        recipe_data["meets_mes_target"] = float(recipe_data["mes_display_score"] or 0) >= TARGET_DISPLAY_MES
+
+    effective_score, effective_tier = _effective_recipe_mes(recipe_data)
+    recipe_data["mes_display_score"] = effective_score
+    recipe_data["mes_display_tier"] = effective_tier
+    recipe_data["meets_mes_target"] = effective_score >= TARGET_DISPLAY_MES
 
     return MealPlanItemResponse(
         id=str(item.id),
@@ -60,7 +79,7 @@ def _build_quality_summary(items: list[MealPlanItemResponse]) -> tuple[MealPlanQ
     warnings: list[str] = []
 
     for item in items:
-        score = float((item.recipe_data or {}).get("mes_display_score", 0) or 0)
+        score, _ = _effective_recipe_mes(item.recipe_data)
         daily_scores.setdefault(item.day_of_week, []).append(score)
         if score >= TARGET_DISPLAY_MES:
             qualifying_meals += 1
@@ -375,6 +394,14 @@ async def get_current_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="No meal plan found")
 
+    record_notification_event(
+        db,
+        current_user.id,
+        "meal_plan_viewed",
+        properties={"meal_plan_id": str(plan.id)},
+        source="server",
+    )
+    db.commit()
     budget = load_budget_for_user(db, current_user.id)
     return _serialize_plan(plan, budget)
 

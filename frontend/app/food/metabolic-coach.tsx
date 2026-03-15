@@ -18,6 +18,25 @@ import { MetabolicRing } from '../../components/MetabolicRing';
 import { GuardrailBar } from '../../components/GuardrailBar';
 import { useTheme } from '../../hooks/useTheme';
 import { metabolicApi } from '../../services/api';
+
+// ── API Insight type ──
+interface ApiInsight {
+  icon: string;
+  title: string;
+  body: string;
+  accent: string;
+  action?: { type: string; query?: string } | null;
+}
+
+interface ApiFoodCategory {
+  category: string;
+  label: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  foods: { name: string; icon: string; detail: string }[];
+  search_query: string;
+}
 import {
   useMetabolicBudgetStore,
   getTierConfig,
@@ -387,6 +406,8 @@ export default function MetabolicCoachScreen() {
   const [mealSuggestions, setMealSuggestions] = useState<MealSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [apiInsights, setApiInsights] = useState<ApiInsight[] | null>(null);
+  const [apiFoodCategories, setApiFoodCategories] = useState<ApiFoodCategory[] | null>(null);
 
   const score = dailyMES?.score ?? null;
   const remaining = remainingBudget;
@@ -395,10 +416,11 @@ export default function MetabolicCoachScreen() {
   const tier = score ? getTierConfig(score.display_tier || score.tier) : null;
   const displayScore = score ? Math.round(score.display_score ?? score.total_score) : 0;
 
-  const insights = useMemo(
+  const localInsights = useMemo(
     () => generateDetailInsights(score, remaining, budget),
     [score, remaining, budget],
   );
+  const insights: { icon: string; title: string; body: string; accent: string; action?: { type: string; query?: string } | null }[] = apiInsights || localInsights;
 
   // Determine which foods to recommend based on remaining budget
   const recommendedFoods = useMemo(() => {
@@ -431,9 +453,23 @@ export default function MetabolicCoachScreen() {
     }
   };
 
+  const fetchCoachInsights = async () => {
+    try {
+      const data = await metabolicApi.getCoachInsights();
+      if (data?.insights && Array.isArray(data.insights)) {
+        setApiInsights(data.insights);
+      }
+      if (data?.suggested_foods && Array.isArray(data.suggested_foods)) {
+        setApiFoodCategories(data.suggested_foods);
+      }
+    } catch {
+      // silent — fall back to local generation
+    }
+  };
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchAll(), fetchSuggestions()]);
+    await Promise.all([fetchAll(), fetchSuggestions(), fetchCoachInsights()]);
     setRefreshing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAll]);
@@ -449,6 +485,7 @@ export default function MetabolicCoachScreen() {
   useEffect(() => {
     fetchAll();
     fetchSuggestions();
+    fetchCoachInsights();
   }, []);
 
   const tierGradient = tier
@@ -605,10 +642,45 @@ export default function MetabolicCoachScreen() {
                     <Text style={[styles.insightTitle, { color: theme.text }]}>{insight.title}</Text>
                   </View>
                   <Text style={[styles.insightBody, { color: theme.textSecondary }]}>{insight.body}</Text>
+                  {insight.action?.type === 'chat' && insight.action.query && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => router.push({ pathname: '/(tabs)/chat', params: { prefill: insight.action!.query } } as any)}
+                      style={[styles.insightCta, { backgroundColor: insight.accent + '14' }]}
+                    >
+                      <Ionicons name="chatbubble-outline" size={10} color={insight.accent} />
+                      <Text style={[styles.insightCtaText, { color: insight.accent }]}>Ask Healthify</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
           })}
+
+          {/* "What should I eat?" deep-link CTA */}
+          {remaining && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                const proteinLeft = Math.round(remaining.protein_remaining_g ?? 0);
+                const carbRoom = Math.round(remaining.carb_headroom_g ?? remaining.sugar_headroom_g ?? 999);
+                const fiberLeft = Math.round(remaining.fiber_remaining_g ?? 0);
+                const parts: string[] = [];
+                if (proteinLeft > 15) parts.push(`at least ${proteinLeft}g protein`);
+                if (carbRoom < 40) parts.push(`under ${carbRoom}g carbs`);
+                if (fiberLeft > 8) parts.push(`good fiber`);
+                const query = parts.length > 0
+                  ? `I need a meal with ${parts.join(', ')}`
+                  : 'What should I eat next?';
+                router.push({ pathname: '/(tabs)/chat', params: { prefill: query } } as any);
+              }}
+              style={[styles.eatNextBtn, { backgroundColor: 'rgba(34, 197, 94, 0.10)' }]}
+            >
+              <Ionicons name="chatbubble-ellipses" size={14} color="#22C55E" />
+              <Text style={styles.eatNextBtnText}>What should I eat next?</Text>
+              <Ionicons name="arrow-forward" size={14} color="#22C55E" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Recommended Meals ── */}
@@ -987,6 +1059,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
+  },
+  insightCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    marginTop: 4,
+  },
+  insightCtaText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  eatNextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.md,
+  },
+  eatNextBtnText: {
+    color: '#22C55E',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
   },
 
   // Meal rows

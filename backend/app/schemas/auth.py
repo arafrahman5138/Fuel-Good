@@ -22,6 +22,25 @@ class SocialAuthRequest(BaseModel):
     provider_subject: Optional[str] = None
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetRequestResponse(BaseModel):
+    message: str
+    reset_token: Optional[str] = None
+    expires_in_minutes: Optional[int] = None
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordResetConfirmResponse(BaseModel):
+    message: str
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str = ""

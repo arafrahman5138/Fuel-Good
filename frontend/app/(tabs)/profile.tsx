@@ -100,7 +100,7 @@ export default function ProfileScreen() {
               name="chevron-back"
               size={20}
               color={theme.text}
-              style={{ transform: [{ translateX: 1 }] }}
+              style={{ transform: [{ translateX: -1 }] }}
             />
           </TouchableOpacity>
           <TouchableOpacity

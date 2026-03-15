@@ -1,16 +1,16 @@
-# WholeFoodLabs Terms of Service
+# Fuel Good Terms of Service
 
 _Last updated: March 10, 2026_
 
-These Terms of Service govern your use of WholeFoodLabs.
+These Terms of Service govern your use of Fuel Good.
 
 ## Service Scope
 
-WholeFoodLabs provides general wellness, meal-scanning, nutrition, recipe, and AI-assisted food guidance features. The service is for informational and lifestyle support only.
+Fuel Good provides general wellness, meal-scanning, nutrition, recipe, and AI-assisted food guidance features. The service is for informational and lifestyle support only.
 
 ## No Medical Advice
 
-WholeFoodLabs is not a medical provider and does not diagnose, treat, cure, or prevent disease. Do not rely on the app for emergency or clinical decisions.
+Fuel Good is not a medical provider and does not diagnose, treat, cure, or prevent disease. Do not rely on the app for emergency or clinical decisions.
 
 ## Accounts
 
@@ -18,7 +18,7 @@ You are responsible for maintaining the security of your account and for activit
 
 ## Trials and Subscriptions
 
-WholeFoodLabs offers auto-renewing subscriptions billed through Apple for iOS digital access. Pricing and available plans may change, but the in-app paywall and App Store checkout screen control the active offer at purchase time.
+Fuel Good offers auto-renewing subscriptions billed through Apple for iOS digital access. Pricing and available plans may change, but the in-app paywall and App Store checkout screen control the active offer at purchase time.
 
 If offered, your subscription may begin with a free trial period. Unless you cancel at least 24 hours before the trial or current billing period ends, the subscription renews automatically at the then-current rate charged through your App Store account.
 
@@ -45,7 +45,7 @@ Some features depend on third-party providers such as Apple, Google, AI provider
 
 ## Limitation of Liability
 
-To the maximum extent permitted by law, WholeFoodLabs is provided on an “as is” and “as available” basis without warranties of any kind.
+To the maximum extent permitted by law, Fuel Good is provided on an “as is” and “as available” basis without warranties of any kind.
 
 ## Termination
 
@@ -53,6 +53,6 @@ We may suspend or terminate access for misuse, abuse, security concerns, or viol
 
 ## Contact
 
-Support: support@wholefoodlabs.com
+Support: support@fuelgood.com
 
 Before public release, publish these terms at the production terms URL and review them with counsel if needed.

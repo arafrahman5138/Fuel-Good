@@ -22,7 +22,7 @@ class UserPushToken(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="push_tokens")
 
 
 class NotificationPreference(Base):
@@ -37,7 +37,7 @@ class NotificationPreference(Base):
     preferred_meal_window_start = Column(String, default="17:00")
     preferred_meal_window_end = Column(String, default="19:30")
     max_notifications_per_day = Column(Integer, default=1)
-    max_notifications_per_week = Column(Integer, default=5)
+    max_notifications_per_week = Column(Integer, default=3)
     categories = Column(
         JSON,
         default=lambda: {

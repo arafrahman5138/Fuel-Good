@@ -41,35 +41,55 @@ NOTIFICATION_CATEGORIES = {
 }
 CATEGORY_PRIORITY = {
     "cook_tonight": 5,
-    "grocery_follow_through": 5,
-    "streak_protection": 4,
-    "plan_kickoff": 3,
-    "quest_progress": 3,
-    "healthify_callback": 2,
-    "reactivation_3d": 1,
-    "reactivation_7d": 1,
-    "reactivation_14d": 1,
+    "grocery_follow_through": 4,
+    "streak_protection": 3,
+    "plan_kickoff": 2,
+    "healthify_callback": 1,
+    "quest_progress": 0,
+    "reactivation_3d": -1,
+    "reactivation_7d": -1,
+    "reactivation_14d": -1,
+}
+CATEGORY_COOLDOWNS = {
+    "plan_kickoff": timedelta(days=7),
+    "cook_tonight": timedelta(days=3),
+    "grocery_follow_through": timedelta(days=14),
+    "streak_protection": timedelta(days=3),
+    "quest_progress": timedelta(days=7),
+    "healthify_callback": timedelta(days=3),
+    "reactivation_3d": timedelta(days=30),
+    "reactivation_7d": timedelta(days=30),
+    "reactivation_14d": timedelta(days=30),
 }
 TEMPLATES: dict[str, list[dict[str, str]]] = {
     "plan_kickoff": [
-        {"title": "Plan your week", "body": "Set up this week's meals in 2 minutes."},
-        {"title": "Make dinner easier", "body": "Build your meal plan now and make the week feel lighter."},
-        {"title": "Start with a plan", "body": "Pick this week's meals before the day gets away from you."},
+        {"title": "Plan your week", "body": "Set up this week before food decisions pile up."},
+        {"title": "Make this week easier", "body": "Your next meals will feel simpler if you plan them now."},
+        {"title": "Give this week a head start", "body": "Open your planner and lock in a few easy wins."},
+        {"title": "Use your week well", "body": "Start with your meal plan before the week gets noisy."},
+        {"title": "Own this week’s meals", "body": "Your plan works best when it’s ready before hunger hits."},
     ],
     "cook_tonight": [
-        {"title": "Tonight's dinner is ready", "body": "Start with {recipe_title} and keep dinner simple."},
-        {"title": "You've already picked dinner", "body": "Open {recipe_title} and start cooking."},
-        {"title": "Dinner is one tap away", "body": "Cook {recipe_title} tonight and keep your rhythm going."},
+        {"title": "Tonight's dinner is ready", "body": "Start {recipe_title} and make dinner easier on yourself."},
+        {"title": "You already picked dinner", "body": "Open {recipe_title} and skip the what-should-I-make loop."},
+        {"title": "Tonight is handled", "body": "Your dinner plan is set. Start with {recipe_title}."},
+        {"title": "One less decision tonight", "body": "Cook {recipe_title} and keep the evening simple."},
+        {"title": "Your dinner plan is waiting", "body": "Jump into {recipe_title} while tonight still feels easy."},
+        {"title": "Stay in your meal rhythm", "body": "Tonight’s dinner is already picked: {recipe_title}."},
     ],
     "grocery_follow_through": [
-        {"title": "Your plan is ready", "body": "Turn it into a shopping list before the week gets busy."},
-        {"title": "Finish the easy part", "body": "Your meal plan is waiting. Build the grocery list now."},
-        {"title": "Keep this week moving", "body": "Open your plan and turn it into a grocery list."},
+        {"title": "Your plan is ready", "body": "Your plan is useful once it becomes a list."},
+        {"title": "Finish the setup", "body": "Turn your meal plan into a grocery list before the week speeds up."},
+        {"title": "Make the plan real", "body": "Your grocery list is the next step that makes this week easier."},
+        {"title": "Keep your plan moving", "body": "Open your plan and build the shopping list now."},
+        {"title": "Give your plan teeth", "body": "One grocery list now saves a lot of food decisions later."},
+        {"title": "Don’t leave your plan half-done", "body": "Your next useful step is turning it into a list."},
     ],
     "streak_protection": [
-        {"title": "Keep your streak alive", "body": "You can still protect your streak with one quick check-in today."},
-        {"title": "You're still in it", "body": "Log one meal or open your plan to keep your streak going."},
-        {"title": "Don't lose today's momentum", "body": "One useful action today keeps your streak intact."},
+        {"title": "Keep today intact", "body": "You can still keep your streak with one quick action."},
+        {"title": "You’re still in it", "body": "Log one meal or open your plan and protect today’s progress."},
+        {"title": "Don’t let today slip", "body": "One useful action now keeps your streak alive."},
+        {"title": "Protect the rhythm", "body": "You’re one small step from keeping your streak intact."},
     ],
     "quest_progress": [
         {"title": "You're one step away", "body": "Finish one more action to close out today's progress."},
@@ -92,9 +112,12 @@ TEMPLATES: dict[str, list[dict[str, str]]] = {
         {"title": "Pick one good next step", "body": "Your saved meals and whole-food ideas are still here."},
     ],
     "healthify_callback": [
-        {"title": "Want to finish that recipe?", "body": "I can keep going on your whole-food version of {dish_name}."},
-        {"title": "Your Healthify idea is still here", "body": "Want me to finish the whole-food take on {dish_name}?"},
-        {"title": "Pick up where you left off", "body": "Jump back into Healthify and finish {dish_name}."},
+        {"title": "Pick up where you left off", "body": "Want to finish the whole-food version of {dish_name}?"},
+        {"title": "That recipe is still open", "body": "Jump back into Healthify and finish {dish_name}."},
+        {"title": "Keep that idea moving", "body": "Your whole-food take on {dish_name} is waiting for the next step."},
+        {"title": "Finish what you started", "body": "Open Healthify and keep going on {dish_name}."},
+        {"title": "Your last Healthify idea is ready", "body": "Pick up {dish_name} where you left it."},
+        {"title": "One more step on that dish", "body": "Come back to {dish_name} and turn it into something usable."},
     ],
 }
 CONVERSION_EVENT_TYPES = {
@@ -121,6 +144,10 @@ class CandidateNotification:
     body: str
 
 
+def _default_meal_window() -> tuple[str, str]:
+    return "17:00", "19:30"
+
+
 def default_categories() -> dict[str, bool]:
     return {
         "plan": True,
@@ -138,6 +165,10 @@ def get_or_create_preferences(db: Session, user_id: str) -> NotificationPreferen
     pref = db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).first()
     if pref:
         pref.categories = {**default_categories(), **(pref.categories or {})}
+        if (pref.max_notifications_per_week or 0) > 3:
+            pref.max_notifications_per_week = 3
+        if not pref.preferred_meal_window_start or not pref.preferred_meal_window_end:
+            pref.preferred_meal_window_start, pref.preferred_meal_window_end = _default_meal_window()
         return pref
 
     user = db.query(User).filter(User.id == user_id).first()
@@ -145,7 +176,15 @@ def get_or_create_preferences(db: Session, user_id: str) -> NotificationPreferen
     if user and getattr(user.last_active_date, "tzinfo", None) is not None:
         timezone = "UTC"
 
-    pref = NotificationPreference(user_id=user_id, timezone=timezone, categories=default_categories())
+    meal_window_start, meal_window_end = _default_meal_window()
+    pref = NotificationPreference(
+        user_id=user_id,
+        timezone=timezone,
+        categories=default_categories(),
+        max_notifications_per_week=3,
+        preferred_meal_window_start=meal_window_start,
+        preferred_meal_window_end=meal_window_end,
+    )
     db.add(pref)
     db.flush()
     return pref
@@ -217,6 +256,7 @@ def record_notification_event(
     )
     db.add(event)
     db.flush()
+    _apply_preference_inference(db, user_id, event)
     _apply_conversions_for_event(db, user_id, event)
     return event
 
@@ -368,6 +408,56 @@ def _in_meal_window(pref: NotificationPreference, local_now: datetime) -> bool:
     return start <= current <= end
 
 
+def _apply_preference_inference(db: Session, user_id: str, event: NotificationEvent) -> None:
+    pref = get_or_create_preferences(db, user_id)
+    timezone = (event.properties or {}).get("timezone")
+    if isinstance(timezone, str) and timezone.strip():
+        pref.timezone = timezone.strip()
+
+    if pref.preferred_meal_window_start != "17:00" or pref.preferred_meal_window_end != "19:30":
+        db.flush()
+        return
+
+    candidate_events = {"meal_plan_viewed", "meal_plan_item_viewed", "cook_started", "cook_completed", "food_logged_today"}
+    if event.event_type not in candidate_events:
+        db.flush()
+        return
+
+    rows = (
+        db.query(NotificationEvent)
+        .filter(
+            NotificationEvent.user_id == user_id,
+            NotificationEvent.event_type.in_(tuple(candidate_events)),
+        )
+        .order_by(NotificationEvent.occurred_at.desc())
+        .limit(6)
+        .all()
+    )
+    if len(rows) < 3:
+        db.flush()
+        return
+
+    local_hours: list[int] = []
+    for row in rows:
+        props = row.properties or {}
+        hour = props.get("local_hour")
+        try:
+            if hour is not None:
+                local_hours.append(int(hour))
+        except (TypeError, ValueError):
+            continue
+    if len(local_hours) < 3:
+        db.flush()
+        return
+
+    avg_hour = round(sum(local_hours) / len(local_hours))
+    start_hour = max(16, avg_hour - 1)
+    end_hour = min(21, avg_hour + 1)
+    pref.preferred_meal_window_start = f"{start_hour:02d}:00"
+    pref.preferred_meal_window_end = f"{end_hour:02d}:30"
+    db.flush()
+
+
 def _passes_send_caps(
     db: Session,
     user: User,
@@ -401,9 +491,9 @@ def _passes_send_caps(
     if sent_today >= (pref.max_notifications_per_day or 1):
         return False
 
-    weekly_cap = pref.max_notifications_per_week or 5
+    weekly_cap = min(pref.max_notifications_per_week or 3, 3)
     if not user.last_active_date or (now_utc.date() - user.last_active_date.date()).days >= 7:
-        weekly_cap = min(weekly_cap, 3)
+        weekly_cap = min(weekly_cap, 2)
     week_ago = now_utc - timedelta(days=7)
     sent_week = (
         db.query(NotificationDelivery)
@@ -441,6 +531,20 @@ def _passes_send_caps(
     )
     for delivery in same_day_higher_priority:
         if CATEGORY_PRIORITY.get(delivery.category, 0) >= CATEGORY_PRIORITY.get(category, 0):
+            return False
+
+    if not category.startswith("reactivation"):
+        ignored_pushes = (
+            db.query(NotificationDelivery)
+            .filter(
+                NotificationDelivery.user_id == user.id,
+                NotificationDelivery.status == "sent",
+                NotificationDelivery.opened_at.is_(None),
+                NotificationDelivery.conversion_at.is_(None),
+            )
+            .count()
+        )
+        if ignored_pushes >= 3:
             return False
 
     return True
@@ -491,11 +595,19 @@ def _build_candidates(
         if candidate:
             candidates.append(candidate)
 
-    return [c for c in candidates if not _already_sent_recently(db, user.id, c.category, now_utc)]
+    return [c for c in candidates if not _already_sent_recently(db, user.id, c.category, now_utc, c.metadata)]
 
 
-def _already_sent_recently(db: Session, user_id: str, category: str, now_utc: datetime) -> bool:
-    lookback = now_utc - timedelta(days=7 if category.startswith("reactivation") else 2)
+def _already_sent_recently(db: Session, user_id: str, category: str, now_utc: datetime, metadata: Optional[dict[str, Any]] = None) -> bool:
+    if category == "grocery_follow_through" and metadata and metadata.get("meal_plan_id"):
+        deliveries = db.query(NotificationDelivery).filter(
+            NotificationDelivery.user_id == user_id,
+            NotificationDelivery.category == category,
+            NotificationDelivery.status == "sent",
+        ).all()
+        return any((d.metadata_json or {}).get("meal_plan_id") == metadata.get("meal_plan_id") for d in deliveries)
+
+    lookback = now_utc - CATEGORY_COOLDOWNS.get(category, timedelta(days=2))
     return (
         db.query(NotificationDelivery)
         .filter(
@@ -520,7 +632,7 @@ def _last_event_time(db: Session, user_id: str, event_type: str) -> Optional[dat
 
 
 def _candidate_plan_kickoff(db: Session, user: User, local_now: datetime, now_utc: datetime) -> Optional[CandidateNotification]:
-    if local_now.weekday() not in {0, 6} or local_now.hour < 9:
+    if not ((local_now.weekday() == 6 and local_now.hour >= 17) or (local_now.weekday() == 0 and 7 <= local_now.hour <= 11)):
         return None
 
     latest_plan = (
@@ -529,8 +641,12 @@ def _candidate_plan_kickoff(db: Session, user: User, local_now: datetime, now_ut
         .order_by(MealPlan.created_at.desc())
         .first()
     )
-    this_week_start = date.today() - timedelta(days=date.today().weekday())
+    this_week_start = local_now.date() - timedelta(days=local_now.date().weekday())
     if latest_plan and latest_plan.week_start >= this_week_start:
+        return None
+
+    plan_viewed = _last_event_time(db, user.id, "meal_plan_viewed")
+    if plan_viewed and plan_viewed.date() >= this_week_start:
         return None
 
     title, body = _pick_template("plan_kickoff", user.id, {})
@@ -583,12 +699,14 @@ def _candidate_cook_tonight(db: Session, user: User, pref: NotificationPreferenc
     route = f"/cook/{dinner_item.recipe_id}" if dinner_item.recipe_id else "/(tabs)/meals?tab=plan"
     context = {"recipe_title": recipe_title}
     title, body = _pick_template("cook_tonight", user.id, context)
+    engagement_state = _engagement_state(db, user, local_now.replace(tzinfo=None))
+    behavior_match = 4 if engagement_state in {"planner", "tracker"} else 3
     return CandidateNotification(
         category="cook_tonight",
         route=route,
         metadata={"recipe_id": dinner_item.recipe_id, "recipe_title": recipe_title},
         triggered_by_event="schedule",
-        score=_score_candidate("cook_tonight", recency_fit=3, behavior_match=3, goal_relevance=4),
+        score=_score_candidate("cook_tonight", recency_fit=3, behavior_match=behavior_match, goal_relevance=4),
         title=title,
         body=body,
     )
@@ -662,6 +780,19 @@ def _candidate_quest_progress(db: Session, user: User, local_now: datetime) -> O
     remaining = (quest.target_value or 0) - (quest.current_value or 0)
     if remaining > 1:
         return None
+    week_ago = local_now - timedelta(days=7)
+    already_nudged = (
+        db.query(NotificationDelivery)
+        .filter(
+            NotificationDelivery.user_id == user.id,
+            NotificationDelivery.category == "quest_progress",
+            NotificationDelivery.status == "sent",
+            NotificationDelivery.sent_at >= week_ago,
+        )
+        .count()
+    )
+    if already_nudged:
+        return None
 
     title, body = _pick_template("quest_progress", user.id, {})
     return CandidateNotification(
@@ -689,7 +820,13 @@ def _candidate_healthify_callback(db: Session, user: User, now_utc: datetime) ->
     if age < timedelta(hours=4) or age > timedelta(hours=36):
         return None
 
-    if _last_event_time(db, user.id, "recipe_saved") and _last_event_time(db, user.id, "recipe_saved") >= session.updated_at:
+    subsequent_events = [
+        _last_event_time(db, user.id, "recipe_saved"),
+        _last_event_time(db, user.id, "meal_plan_created"),
+        _last_event_time(db, user.id, "cook_started"),
+        _last_event_time(db, user.id, "cook_completed"),
+    ]
+    if any(event_time and event_time >= session.updated_at for event_time in subsequent_events):
         return None
 
     messages = session.messages or []
@@ -718,9 +855,7 @@ def _candidate_reactivation(db: Session, user: User, now_utc: datetime) -> Optio
         return None
 
     category = f"reactivation_{inactive_days}d"
-    route = "/(tabs)/meals?tab=plan"
-    if db.query(SavedRecipe).filter(SavedRecipe.user_id == user.id).count() > 0:
-        route = "/saved"
+    route = _reactivation_route(db, user)
     title, body = _pick_template(category, user.id, {})
     return CandidateNotification(
         category=category,
@@ -735,6 +870,36 @@ def _candidate_reactivation(db: Session, user: User, now_utc: datetime) -> Optio
 
 def _score_candidate(category: str, recency_fit: int, behavior_match: int, goal_relevance: int) -> int:
     return CATEGORY_PRIORITY.get(category, 0) + recency_fit + behavior_match + goal_relevance
+
+
+def _engagement_state(db: Session, user: User, now_local: datetime) -> str:
+    if not user.last_active_date:
+        return "new"
+    inactive_days = (now_local.date() - user.last_active_date.date()).days
+    if inactive_days >= 7:
+        return "cooling_off"
+    recent_plan = _last_event_time(db, user.id, "meal_plan_created") or _last_event_time(db, user.id, "meal_plan_viewed")
+    recent_food_log = _last_event_time(db, user.id, "food_logged_today")
+    recent_saved = _last_event_time(db, user.id, "saved_recipes_viewed") or _last_event_time(db, user.id, "recipe_saved")
+    if recent_food_log and (not recent_plan or recent_food_log >= recent_plan):
+        return "tracker"
+    if recent_plan:
+        return "planner"
+    if recent_saved:
+        return "exploring"
+    return "new"
+
+
+def _reactivation_route(db: Session, user: User) -> str:
+    last_events: list[tuple[str, Optional[datetime]]] = [
+        ("/(tabs)/meals?tab=plan", max(filter(None, [_last_event_time(db, user.id, "meal_plan_viewed"), _last_event_time(db, user.id, "meal_plan_created")]), default=None)),
+        ("/saved", max(filter(None, [_last_event_time(db, user.id, "saved_recipes_viewed"), _last_event_time(db, user.id, "recipe_saved"), _last_event_time(db, user.id, "recipe_browsed")]), default=None)),
+        ("/(tabs)/chat", max(filter(None, [_last_event_time(db, user.id, "healthify_started"), _last_event_time(db, user.id, "healthify_suggestion_tapped")]), default=None)),
+    ]
+    valid = [(route, ts) for route, ts in last_events if ts is not None]
+    if not valid:
+        return "/(tabs)/meals?tab=plan"
+    return sorted(valid, key=lambda item: item[1], reverse=True)[0][0]
 
 
 def _pick_template(category: str, user_id: str, context: dict[str, Any]) -> tuple[str, str]:
@@ -802,6 +967,23 @@ def _send_expo_push(db: Session, token: UserPushToken, delivery: NotificationDel
 
 
 def _apply_conversions_for_event(db: Session, user_id: str, event: NotificationEvent) -> None:
+    delivery_id = (event.properties or {}).get("delivery_id")
+    if event.event_type in {"notification_opened", "notification_deep_linked"} and delivery_id:
+        delivery = (
+            db.query(NotificationDelivery)
+            .filter(
+                NotificationDelivery.user_id == user_id,
+                NotificationDelivery.id == str(delivery_id),
+                NotificationDelivery.status == "sent",
+            )
+            .first()
+        )
+        if delivery:
+            if event.event_type == "notification_opened":
+                delivery.opened_at = event.occurred_at
+            db.flush()
+        return
+
     deliveries = (
         db.query(NotificationDelivery)
         .filter(

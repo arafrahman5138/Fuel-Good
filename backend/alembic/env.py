@@ -1,6 +1,7 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool, create_engine, String
+from sqlalchemy import create_engine, inspect, pool, text
 from alembic import context
+from alembic.script import ScriptDirectory
 from app.config import get_settings
 from app.db import Base, GUID
 
@@ -8,7 +9,8 @@ from app.db import Base, GUID
 from app.models import (  # noqa: F401
     user, meal_plan, recipe, grocery, gamification,
     saved_recipe, nutrition, local_food,
-    metabolic, metabolic_profile,
+    metabolic, metabolic_profile, scanned_meal,
+    recipe_embedding, notification, product_label_scan, chat_usage,
 )
 
 config = context.config
@@ -20,6 +22,12 @@ settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
+LEGACY_SCHEMA_SENTINEL_TABLES = {
+    "users",
+    "recipes",
+    "meal_plans",
+    "achievements",
+}
 
 
 def render_item(type_, obj, autogen_context):
@@ -40,9 +48,32 @@ def run_migrations_online() -> None:
     url = config.get_main_option("sqlalchemy.url")
     connectable = create_engine(url, poolclass=pool.NullPool)
     with connectable.connect() as connection:
+        _bootstrap_existing_schema(connection)
         context.configure(connection=connection, target_metadata=target_metadata, render_item=render_item)
         with context.begin_transaction():
             context.run_migrations()
+
+
+def _bootstrap_existing_schema(connection) -> None:
+    inspector = inspect(connection)
+    table_names = set(inspector.get_table_names())
+    if "alembic_version" in table_names:
+        return
+    if not LEGACY_SCHEMA_SENTINEL_TABLES.issubset(table_names):
+        return
+
+    script = ScriptDirectory.from_config(config)
+    heads = script.get_heads()
+    if not heads:
+        return
+
+    connection.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"))
+    for head in heads:
+        connection.execute(
+            text("INSERT INTO alembic_version (version_num) VALUES (:version_num) ON CONFLICT (version_num) DO NOTHING"),
+            {"version_num": head},
+        )
+    connection.commit()
 
 
 if context.is_offline_mode():

@@ -50,7 +50,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'mealprep', label: 'Meal Prep', icon: 'layers-outline', subtitle: 'Components', accent: '#14B8A6', accentSoft: 'rgba(20,184,166,0.12)', glow: 'rgba(20,184,166,0.18)' },
   { id: 'desserts', label: 'Desserts', icon: 'ice-cream-outline', subtitle: 'Sweet treats', accent: '#F59E0B', accentSoft: 'rgba(245,158,11,0.12)', glow: 'rgba(245,158,11,0.18)' },
   { id: 'plan', label: 'My Plan', icon: 'calendar-outline', subtitle: 'Weekly plan', accent: '#3B82F6', accentSoft: 'rgba(59,130,246,0.12)', glow: 'rgba(59,130,246,0.18)' },
-  { id: 'saved', label: 'Saved Meals', icon: 'bookmark-outline', subtitle: 'Your favorites', accent: '#8B5CF6', accentSoft: 'rgba(139,92,246,0.12)', glow: 'rgba(139,92,246,0.18)' },
+  { id: 'saved', label: 'Saved', icon: 'bookmark-outline', subtitle: 'On this device', accent: '#8B5CF6', accentSoft: 'rgba(139,92,246,0.12)', glow: 'rgba(139,92,246,0.18)' },
   { id: 'grocery', label: 'Grocery', icon: 'cart-outline', subtitle: 'Shopping list', accent: '#10B981', accentSoft: 'rgba(16,185,129,0.12)', glow: 'rgba(16,185,129,0.18)' },
 ];
 
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   backIcon: {
-    transform: [{ translateX: 0 }],
+    transform: [{ translateX: -1 }],
   },
   headerActions: {
     flex: 1,

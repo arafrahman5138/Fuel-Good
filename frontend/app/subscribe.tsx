@@ -20,7 +20,7 @@ import { useTheme } from '../hooks/useTheme';
 import { billingApi } from '../services/api';
 import { billingService } from '../services/billing';
 import { useAuthStore } from '../stores/authStore';
-import { APP_STORE_MANAGE_SUBSCRIPTIONS_URL, PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../constants/Config';
+import { API_URL, APP_ENV, APP_STORE_MANAGE_SUBSCRIPTIONS_URL, PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../constants/Config';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 
 interface BillingConfig {
@@ -289,6 +289,21 @@ export default function SubscribeScreen() {
           >
             <Text style={[styles.linkText, { color: theme.textTertiary }]}>Log out</Text>
           </TouchableOpacity>
+
+          {__DEV__ ? (
+            <View style={[styles.debugCard, { borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}>
+              <Text style={[styles.debugTitle, { color: theme.text }]}>Debug</Text>
+              <Text style={[styles.debugText, { color: theme.textSecondary }]}>env: {APP_ENV}</Text>
+              <Text style={[styles.debugText, { color: theme.textSecondary }]}>api: {API_URL}</Text>
+              <Text style={[styles.debugText, { color: theme.textSecondary }]}>email: {user?.email || 'none'}</Text>
+              <Text style={[styles.debugText, { color: theme.textSecondary }]}>
+                entitlement: {user?.entitlement?.access_level || 'none'} / {user?.entitlement?.subscription_state || 'inactive'}
+              </Text>
+              <Text style={[styles.debugText, { color: theme.textSecondary }]}>
+                store: {user?.entitlement?.store || 'none'} / requires_paywall: {String(user?.entitlement?.requires_paywall ?? true)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -417,5 +432,21 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: FontSize.sm,
     fontWeight: '600',
+  },
+  debugCard: {
+    marginTop: Spacing.lg,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: 4,
+  },
+  debugTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  debugText: {
+    fontSize: FontSize.xs,
+    lineHeight: 18,
   },
 });

@@ -59,7 +59,7 @@ def canonicalize_nutrition(nutrition: dict[str, Any]) -> dict[str, float]:
 
 
 def _catalog_id(name: str) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"wholefoodlabs.food.{name.strip().lower()}"))
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"fuelgood.food.{name.strip().lower()}"))
 
 
 def _build_serving_options(seed: dict[str, Any], per_100g: dict[str, Any]) -> list[dict[str, Any]]:

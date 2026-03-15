@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
 router = APIRouter()
-logger = logging.getLogger("wholefoodlabs.telemetry")
+logger = logging.getLogger("fuelgood.telemetry")
 
 
 class ClientErrorReport(BaseModel):

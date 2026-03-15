@@ -12,6 +12,7 @@ import { preloadReduceMotion } from '../hooks/useAnimations';
 import { billingApi } from '../services/api';
 import { billingService } from '../services/billing';
 import { registerNotificationListeners, syncPushTokenWithBackend } from '../services/notifications';
+import { subscribeToBillingChanges } from '../services/supabase';
 
 export default function RootLayout() {
   const theme = useTheme();
@@ -82,6 +83,20 @@ export default function RootLayout() {
       unsubscribe();
     };
   }, [token, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubscribe = subscribeToBillingChanges(user.id, () => {
+      billingApi.sync(false).then((status) => {
+        if (status?.entitlement) {
+          useAuthStore.getState().setEntitlement(status.entitlement);
+        }
+      }).catch(() => {});
+    });
+    return () => {
+      unsubscribe?.();
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoading || isBillingLoading) return;
@@ -158,7 +173,7 @@ export default function RootLayout() {
                   name="chevron-back"
                   size={28}
                   color={tintColor || theme.text}
-                  style={{ transform: [{ translateX: 1 }] }}
+                  style={{ transform: [{ translateX: -1 }] }}
                 />
               </TouchableOpacity>
             ) : null,
@@ -244,6 +259,12 @@ export default function RootLayout() {
             headerTitle: 'Saved Recipes',
             headerStyle: { backgroundColor: theme.surface },
             headerTintColor: theme.text,
+          }}
+        />
+        <Stack.Screen
+          name="saved/[id]"
+          options={{
+            headerShown: false,
           }}
         />
         <Stack.Screen

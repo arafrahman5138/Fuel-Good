@@ -12,7 +12,7 @@ class MealPlanState(TypedDict):
     final_response: str
 
 
-SYSTEM_PROMPT = """You are a meal planning expert at WholeFoodLabs. You create personalized weekly meal plans 
+SYSTEM_PROMPT = """You are a meal planning expert at Fuel Good. You create personalized weekly meal plans 
 using ONLY whole, unprocessed foods. No refined sugars, no seed oils, no artificial ingredients.
 
 Given user preferences, generate a 7-day meal plan (Monday through Sunday) with the following structure:

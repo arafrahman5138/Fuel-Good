@@ -70,6 +70,7 @@ class MetabolicProfileCreate(BaseModel):
     fasting_glucose_mgdl: Optional[float] = None
     hba1c_pct: Optional[float] = None
     triglycerides_mgdl: Optional[float] = None
+    onboarding_step_completed: Optional[int] = None
 
 
 class MetabolicProfileResponse(BaseModel):

@@ -60,7 +60,7 @@ interface AuthState {
 
 const AUTH_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-  keychainService: 'com.wholefoodlabs.auth',
+  keychainService: 'com.fuelgood.auth',
 };
 
 function secureSetItem(key: string, value: string) {
@@ -95,6 +95,16 @@ export function getDefaultEntitlement(): UserEntitlement {
 export function hasActivePremiumAccess(entitlement?: UserEntitlement | null): boolean {
   return entitlement?.access_level === 'premium'
     && ['trialing', 'active', 'grace_period'].includes(entitlement.subscription_state);
+}
+
+function shouldPreserveCurrentEntitlement(
+  currentEntitlement?: UserEntitlement | null,
+  nextEntitlement?: UserEntitlement | null,
+): boolean {
+  if (!currentEntitlement || !nextEntitlement) return false;
+  return currentEntitlement.store === 'manual_override'
+    && hasActivePremiumAccess(currentEntitlement)
+    && !hasActivePremiumAccess(nextEntitlement);
 }
 
 function normalizeUser(profile: any): UserProfile {
@@ -141,7 +151,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setEntitlement: (entitlement) =>
     set((state) => {
       if (!state.user) return { hasPremiumAccess: hasActivePremiumAccess(entitlement) };
-      const user = { ...state.user, entitlement: { ...getDefaultEntitlement(), ...entitlement } };
+      const nextEntitlement = { ...getDefaultEntitlement(), ...entitlement };
+      const effectiveEntitlement = shouldPreserveCurrentEntitlement(state.user.entitlement, nextEntitlement)
+        ? state.user.entitlement
+        : nextEntitlement;
+      const user = { ...state.user, entitlement: effectiveEntitlement };
       return { user, hasPremiumAccess: hasActivePremiumAccess(user.entitlement) };
     }),
   addXp: (xp) =>

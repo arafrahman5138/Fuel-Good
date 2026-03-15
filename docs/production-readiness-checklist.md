@@ -47,7 +47,7 @@ Status legend: `Present`, `Partial`, `Missing`, `Deferred`, `Blocked`
 | --- | --- | --- | --- | --- |
 | Apple Developer Program active | Blocked | Founder/Ops | External payment | Account is active and Team access granted |
 | Google Play Console active | Deferred | Founder/Ops | Android not in first milestone | Required before Android release work starts |
-| Bundle ID consistent across app, Apple services, OAuth | Partial | Engineering | Final Apple/OAuth console validation | Bundle ID matches `com.wholefoodlabs.app` everywhere |
+| Bundle ID consistent across app, Apple services, OAuth | Partial | Engineering | Final Apple/OAuth console validation | Bundle ID matches `com.fuelgood.app` everywhere |
 | Certificates/profiles ownership | Missing | Ops | Apple account access | Release runbook documents owner and renewal checks |
 
 ## Cost and Operations

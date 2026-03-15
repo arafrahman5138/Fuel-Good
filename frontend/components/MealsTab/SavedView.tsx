@@ -27,12 +27,12 @@ export function SavedView() {
         <View style={styles.emptyWrap}>
           <Ionicons name="bookmark-outline" size={42} color={theme.textTertiary} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No saved recipes yet</Text>
-          <Text style={[styles.emptySub, { color: theme.textSecondary }]}>Save a recipe from Browse and it will appear here.</Text>
+          <Text style={[styles.emptySub, { color: theme.textSecondary }]}>Save recipes to keep them on this device.</Text>
         </View>
       ) : (
         recipes.map((recipe) => (
           <Card key={recipe.id} style={styles.recipeCard} padding={Spacing.md}>
-            <TouchableOpacity onPress={() => router.push(`/browse/${recipe.id}`)} activeOpacity={0.75}>
+            <TouchableOpacity onPress={() => router.push(`/saved/${encodeURIComponent(recipe.id)}`)} activeOpacity={0.75}>
               <Text style={[styles.title, { color: theme.text }]}>{recipe.title}</Text>
               {!!cleanRecipeDescription(recipe.description) && (
                 <Text style={[styles.desc, { color: theme.textSecondary }]} numberOfLines={2}>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, View, Text, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useStaggeredEntrance } from '../hooks/useAnimations';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 import type { MESScore, RemainingBudget, MetabolicBudget} from '../stores/metabolicBudgetStore';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
+import { metabolicApi } from '../services/api';
 
 const COACH_BLUE = '#3B82F6';
 const COACH_BLUE_DARK = '#2563EB';
@@ -20,6 +21,7 @@ interface CoachInsight {
   body: string;
   accent: string;           // pill / icon tint color
   accentBg: string;         // subtle background
+  action?: { type: string; query?: string } | null;
 }
 
 export interface MealSuggestion {
@@ -202,10 +204,28 @@ function getSuggestedFoods(remaining: RemainingBudget | null): QuickFood[] {
 
 export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSuggestions = [], style }: MetabolicCoachProps) {
   const theme = useTheme();
-  const insights = useMemo(
+  const [apiInsights, setApiInsights] = useState<CoachInsight[] | null>(null);
+
+  useEffect(() => {
+    metabolicApi.getCoachInsights().then((data) => {
+      if (data?.insights && Array.isArray(data.insights)) {
+        setApiInsights(data.insights.map((i: any) => ({
+          icon: i.icon || 'sparkles',
+          title: i.title,
+          body: i.body,
+          accent: i.accent || '#3B82F6',
+          accentBg: (i.accent || '#3B82F6') + '18',
+          action: i.action || null,
+        })));
+      }
+    }).catch(() => {});
+  }, [score?.total_score, mealsLogged]);
+
+  const localInsights = useMemo(
     () => generateInsights(score, remaining, budget, mealsLogged),
     [score, remaining, budget, mealsLogged],
   );
+  const insights = apiInsights || localInsights;
   const suggestedFoods = useMemo(() => getSuggestedFoods(remaining), [remaining]);
   const insightStagger = useStaggeredEntrance(insights.length, 60);
 
@@ -269,6 +289,16 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
                   <Text style={[styles.insightBody, { color: theme.textSecondary }]} numberOfLines={2}>
                     {insight.body}
                   </Text>
+                  {insight.action?.type === 'chat' && insight.action.query && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => router.push({ pathname: '/(tabs)/chat', params: { prefill: insight.action!.query } } as any)}
+                      style={[styles.insightCta, { backgroundColor: insight.accent + '14' }]}
+                    >
+                      <Ionicons name="chatbubble-outline" size={10} color={insight.accent} />
+                      <Text style={[styles.insightCtaText, { color: insight.accent }]}>Ask Healthify</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
               </Animated.View>
@@ -430,6 +460,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
+  },
+  insightCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    marginTop: 4,
+  },
+  insightCtaText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
 
   // Suggested sections

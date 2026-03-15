@@ -2,6 +2,8 @@
 
 Run this on at least two physical iPhones before external TestFlight.
 
+For subscription and paywall validation, also run [`paywall-device-readme.md`](./paywall-device-readme.md).
+
 ## Auth
 
 - Email registration succeeds.

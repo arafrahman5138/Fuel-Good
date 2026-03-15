@@ -13,6 +13,19 @@ if ! command -v docker &>/dev/null; then
 fi
 
 DB_CONTAINER="realfood-postgres"
+RESET_DB=false
+RUN_BACKUP=true
+RUN_SEED=true
+RUN_EMBEDDINGS=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --reset) RESET_DB=true ;;
+    --skip-backup) RUN_BACKUP=false ;;
+    --skip-seed) RUN_SEED=false ;;
+    --backfill-embeddings) RUN_EMBEDDINGS=true ;;
+  esac
+done
 
 # ── 1. Start Docker Compose ────────────────────────────
 echo "🐘 Starting PostgreSQL via Docker Compose..."
@@ -30,9 +43,13 @@ docker exec "$DB_CONTAINER" pg_isready -U realfood > /dev/null 2>&1 || {
 echo "✅ PostgreSQL is ready"
 
 # ── 2. Optional reset ──────────────────────────────────
-if [[ "${1:-}" == "--reset" ]]; then
+if [[ "$RUN_BACKUP" == true ]]; then
+  ./scripts/backup_local_db.sh
+fi
+
+if [[ "$RESET_DB" == true ]]; then
   echo "🗑  Resetting database..."
-  docker exec "$DB_CONTAINER" psql -U realfood -d wholefoodlabs -c \
+  docker exec "$DB_CONTAINER" psql -U realfood -d fuelgood -c \
     "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
   echo "✅ Database reset"
 fi
@@ -46,11 +63,42 @@ fi
 
 echo "📦 Running Alembic migrations..."
 PYTHONPATH=. alembic upgrade head
+python - <<'PY'
+from sqlalchemy import create_engine, text
+from app.config import get_settings
+
+settings = get_settings()
+engine = create_engine(settings.database_url)
+
+with engine.begin() as conn:
+    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    checks = {
+        "pgvector extension": "SELECT 1 FROM pg_extension WHERE extname = 'vector'",
+        "embedding column": (
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'recipe_embeddings' AND column_name = 'embedding'"
+        ),
+        "embedding index": (
+            "SELECT 1 FROM pg_indexes "
+            "WHERE tablename = 'recipe_embeddings' AND indexdef ILIKE '%embedding%'"
+        ),
+    }
+    for label, query in checks.items():
+        if not conn.execute(text(query)).scalar():
+            raise SystemExit(f"Missing required database feature: {label}")
+PY
 
 # ── 4. Seed data ───────────────────────────────────────
-echo "🌱 Seeding database..."
-python seed_db.py 2>/dev/null || echo "  (seed_db.py skipped or not needed)"
+if [[ "$RUN_SEED" == true ]]; then
+  echo "🌱 Seeding database..."
+  python seed_db.py 2>/dev/null || echo "  (seed_db.py skipped or not needed)"
+fi
+
+if [[ "$RUN_EMBEDDINGS" == true ]]; then
+  echo "🧠 Backfilling recipe embeddings..."
+  python scripts/backfill_recipe_embeddings.py
+fi
 
 echo ""
 echo "🎉 Local database is ready!"
-echo "   Connection: postgresql://realfood:realfood_local@localhost:5432/wholefoodlabs"
+echo "   Connection: postgresql://realfood:realfood_local@localhost:5432/fuelgood"

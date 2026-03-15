@@ -51,6 +51,15 @@ class ApiClient {
     return status >= 500 || status === 408 || status === 429;
   }
 
+  private shouldTreat401AsSessionExpiry(endpoint: string): boolean {
+    return !(
+      endpoint === '/auth/login'
+      || endpoint === '/auth/register'
+      || endpoint === '/auth/social'
+      || endpoint === '/auth/refresh'
+    );
+  }
+
   private async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
@@ -116,7 +125,7 @@ class ApiClient {
         const refreshToken = useAuthStore.getState().refreshToken
           || await SecureStore.getItemAsync('refresh_token', {
             keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            keychainService: 'com.wholefoodlabs.auth',
+            keychainService: 'com.fuelgood.auth',
           });
         if (!refreshToken) return false;
 
@@ -141,10 +150,10 @@ class ApiClient {
     return this.refreshPromise;
   }
 
-  private async parseAndThrow(response: Response): Promise<never> {
+  private async parseAndThrow(response: Response, endpoint: string): Promise<never> {
     const error = await response.json().catch(() => ({}));
 
-    if (response.status === 401) {
+    if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
       useAuthStore.getState().logout();
       throw new Error('Your session has expired. Please sign in again.');
     }
@@ -185,14 +194,14 @@ class ApiClient {
     let response = await doFetch();
 
     // On 401, try a silent refresh and retry once
-    if (response.status === 401) {
+    if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
       const refreshed = await this.tryRefresh();
       if (refreshed) {
         response = await doFetch();
       }
     }
 
-    if (!response.ok) await this.parseAndThrow(response);
+    if (!response.ok) await this.parseAndThrow(response, endpoint);
     return response.json();
   }
 
@@ -229,14 +238,14 @@ class ApiClient {
       );
 
     let response = await doFetch();
-    if (response.status === 401) {
+    if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
       const refreshed = await this.tryRefresh();
       if (refreshed) {
         response = await doFetch();
       }
     }
 
-    if (!response.ok) await this.parseAndThrow(response);
+    if (!response.ok) await this.parseAndThrow(response, endpoint);
     return response.json();
   }
 
@@ -321,6 +330,10 @@ export const authApi = {
     api.post<{ access_token: string; refresh_token: string }>('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/login', data),
+  requestPasswordReset: (data: { email: string }) =>
+    api.post<{ message: string; reset_token?: string; expires_in_minutes?: number }>('/auth/forgot-password', data),
+  resetPassword: (data: { token: string; new_password: string }) =>
+    api.post<{ message: string }>('/auth/reset-password', data),
   socialAuth: (data: { provider: string; token: string; name?: string; email?: string; provider_subject?: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/social', data),
   refresh: (refreshToken: string) =>
@@ -525,7 +538,7 @@ export const gameApi = {
 };
 
 export const notificationsApi = {
-  registerPushToken: (data: { expo_push_token: string; device_id?: string; platform: string; app_version: string }) =>
+  registerPushToken: (data: { expo_push_token: string; device_id?: string; platform: string; app_version: string; timezone?: string }) =>
     api.post<any>('/notifications/push-token', data),
   removePushToken: (tokenId: string) =>
     api.delete<any>(`/notifications/push-token/${tokenId}`),
@@ -584,4 +597,8 @@ export const metabolicApi = {
       recipe_ids: recipeIds,
       servings: servings || recipeIds.map(() => 1),
     }),
+
+  // Coach insights — personalized insights + food suggestions
+  getCoachInsights: (date?: string) =>
+    api.get<any>(`/metabolic/coach-insights${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 };

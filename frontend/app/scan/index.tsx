@@ -39,6 +39,7 @@ const CameraModule: {
 })();
 
 const CameraView = CameraModule?.CameraView;
+const SCAN_IMAGE_QUALITY = 0.65;
 
 type ScanMode = 'meal' | 'product';
 type ScanStep = 'capture' | 'review' | 'result';
@@ -493,8 +494,8 @@ export default function ScanScreen() {
 
       const result =
         source === 'camera'
-          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] })
-          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] });
+          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       const uri = result.assets[0].uri;
       setMealImageUri(uri);
@@ -514,7 +515,7 @@ export default function ScanScreen() {
     try {
       setIsLoading(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: SCAN_IMAGE_QUALITY,
         skipProcessing: false,
       });
 
@@ -579,8 +580,8 @@ export default function ScanScreen() {
 
       const result =
         source === 'camera'
-          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] })
-          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.8, mediaTypes: ['images'] });
+          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       const uri = result.assets[0].uri;
       setProductImageUri(uri);
@@ -600,7 +601,7 @@ export default function ScanScreen() {
     try {
       setIsLoading(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: SCAN_IMAGE_QUALITY,
         skipProcessing: false,
       });
 
@@ -907,7 +908,7 @@ export default function ScanScreen() {
         activeOpacity={0.85}
         style={[styles.headerCircle, { borderColor: theme.border }]}
       >
-        <Ionicons name={showExit ? 'close' : 'chevron-back'} size={showExit ? 18 : 20} color={showExit ? theme.textSecondary : theme.primary} />
+        <Ionicons name={showExit ? 'close' : 'chevron-back'} size={showExit ? 18 : 20} color={showExit ? theme.textSecondary : theme.primary} style={showExit ? undefined : { transform: [{ translateX: -1 }] }} />
       </TouchableOpacity>
       <View style={[styles.headerCapsule, { borderColor: theme.border, backgroundColor: theme.surface }]}>
         <View style={[styles.headerDot, { backgroundColor: theme.primary }]} />
@@ -1546,7 +1547,10 @@ export default function ScanScreen() {
       <ChronometerSuccessModal
         visible={successModal.visible}
         message={successModal.message}
-        onPrimary={() => setSuccessModal({ visible: false, message: '' })}
+        onPrimary={() => {
+          setSuccessModal({ visible: false, message: '' });
+          router.push('/(tabs)/chronometer' as any);
+        }}
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
 

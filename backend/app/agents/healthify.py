@@ -25,6 +25,7 @@ from datetime import date
 
 PROMPT_VERSION = "healthify_v2_rag"
 RETRIEVAL_THRESHOLD = 0.72
+LEXICAL_RETRIEVAL_THRESHOLD = 0.74
 
 
 class RecipeIngredientSchema(BaseModel):
@@ -43,7 +44,7 @@ class RecipeSchema(BaseModel):
     servings: int = 1
 
 
-GENERATE_PROMPT = """You are WholeFoodLabs Healthify AI.
+GENERATE_PROMPT = """You are Fuel Good Healthify AI.
 
 Return strict JSON with keys: message, recipe, swaps, nutrition.
 
@@ -72,7 +73,7 @@ Nutrition schema:
 - nutrition.healthified_estimate: {calories, protein, carbs, fat, fiber}
 """
 
-GENERAL_PROMPT = """You are WholeFoodLabs Healthify AI.
+GENERAL_PROMPT = """You are Fuel Good Healthify AI.
 Return strict JSON with keys: message, recipe, swaps, nutrition.
 For general questions, provide a helpful answer in message and set recipe, swaps, and nutrition to null.
 """
@@ -98,8 +99,11 @@ def _recipe_to_payload(recipe: Recipe) -> dict[str, Any]:
     }
 
 
-def _retrieved_response(recipe: Recipe, confidence: float) -> dict[str, Any]:
-    message = f"I found an existing meal in our recipe library that closely matches what you asked for, so I’m using that instead of generating a new one."
+def _retrieved_response(recipe: Recipe, confidence: float, user_context: str = "") -> dict[str, Any]:
+    summary = recipe.description or "I found a close match in the recipe library."
+    message = f"{summary} I found a strong match for your request, so I'm using this saved meal instead of generating a new one."
+    if user_context:
+        message += " I also kept your current metabolic context in mind when choosing it."
     return {
         "message": message,
         "recipe": _recipe_to_payload(recipe),
@@ -396,6 +400,10 @@ def _extract_payload(raw_text: str) -> dict[str, Any]:
                     "recipe": parsed.get("recipe"),
                     "swaps": parsed.get("swaps"),
                     "nutrition": parsed.get("nutrition"),
+                    "response_mode": parsed.get("response_mode"),
+                    "matched_recipe_id": parsed.get("matched_recipe_id"),
+                    "retrieval_confidence": parsed.get("retrieval_confidence"),
+                    "prompt_version": parsed.get("prompt_version"),
                 }
         except Exception:
             pass
@@ -403,6 +411,15 @@ def _extract_payload(raw_text: str) -> dict[str, Any]:
     if markdown_payload:
         return markdown_payload
     return {"message": raw_text, "recipe": None, "swaps": None, "nutrition": None}
+
+
+def parse_healthify_response(raw_text: str) -> dict[str, Any]:
+    payload = _extract_payload(raw_text)
+    payload = _validate_recipe_payload(payload)
+    payload["swaps"] = _normalize_swaps(payload.get("swaps"))
+    if not _nutrition_is_plausible(payload.get("nutrition")):
+        payload["nutrition"] = None
+    return payload
 
 
 def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -484,7 +501,7 @@ async def _generate_healthified_payload(
     retrieved_context: list[dict[str, Any]],
     user_context: str = "",
 ) -> dict[str, Any]:
-    llm = get_llm()
+    llm = get_llm("chat")
     system_prompt = GENERATE_PROMPT
     if user_context:
         system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"
@@ -505,11 +522,7 @@ async def _generate_healthified_payload(
     )
 
     response = await llm.ainvoke(messages)
-    payload = _extract_payload(response.content)
-    payload = _validate_recipe_payload(payload)
-    payload["swaps"] = _normalize_swaps(payload.get("swaps"))
-    if not _nutrition_is_plausible(payload.get("nutrition")):
-        payload["nutrition"] = None
+    payload = parse_healthify_response(response.content)
 
     if not payload.get("recipe"):
         repair_prompt = """Your previous response did not include a valid recipe object.
@@ -538,9 +551,7 @@ Requirements:
                 HumanMessage(content=f"User request:\n{user_input}\n\nReturn JSON only.")
             )
         repair_response = await llm.ainvoke(repair_messages)
-        repaired_payload = _extract_payload(repair_response.content)
-        repaired_payload = _validate_recipe_payload(repaired_payload)
-        repaired_payload["swaps"] = _normalize_swaps(repaired_payload.get("swaps"))
+        repaired_payload = parse_healthify_response(repair_response.content)
         if _nutrition_is_plausible(repaired_payload.get("nutrition")):
             payload["nutrition"] = repaired_payload.get("nutrition") or payload.get("nutrition")
         if repaired_payload.get("recipe"):
@@ -558,7 +569,7 @@ Requirements:
 async def _answer_general_question(
     user_input: str, history: List[dict], user_context: str = ""
 ) -> dict[str, Any]:
-    llm = get_llm()
+    llm = get_llm("chat")
     system_prompt = GENERAL_PROMPT
     if user_context:
         system_prompt = f"{GENERAL_PROMPT}\n\n{user_context}"
@@ -570,9 +581,8 @@ async def _answer_general_question(
             messages.append(AIMessage(content=msg["content"]))
     messages.append(HumanMessage(content=user_input))
     response = await llm.ainvoke(messages)
-    payload = _extract_payload(response.content)
+    payload = parse_healthify_response(response.content)
     payload["recipe"] = None
-    payload["swaps"] = _normalize_swaps(payload.get("swaps"))
     payload["nutrition"] = payload.get("nutrition") if _nutrition_is_plausible(payload.get("nutrition")) else None
     payload["response_mode"] = "generated"
     payload["matched_recipe_id"] = None
@@ -601,9 +611,12 @@ async def healthify_agent(
 
     retrieval = await retrieve_recipe_candidates(db, user_input, limit=3, recipe_role="full_meal")
     top = (retrieval.get("results") or [None])[0]
-    if top and float(top.get("score") or 0) >= RETRIEVAL_THRESHOLD:
+    top_score = float((top or {}).get("score") or 0)
+    top_lexical = float((top or {}).get("lexical_score") or 0)
+    if top and (top_score >= RETRIEVAL_THRESHOLD or top_lexical >= LEXICAL_RETRIEVAL_THRESHOLD):
         recipe = top["recipe"]
-        payload = _retrieved_response(recipe, float(top["score"]))
+        payload = _retrieved_response(recipe, top_score, user_context)
+        payload["retrieval_debug"] = retrieval.get("timings_ms")
         # Compute MES for retrieved recipe
         nutrition = payload.get("nutrition")
         mes = _compute_recipe_mes(db, user_id, nutrition)
@@ -617,7 +630,7 @@ async def healthify_agent(
 
     retrieved_context = [_recipe_to_payload(item["recipe"]) for item in (retrieval.get("results") or [])[:3]]
     if stream:
-        llm = get_llm()
+        llm = get_llm("chat")
         system_prompt = GENERATE_PROMPT
         if user_context:
             system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"
@@ -643,6 +656,7 @@ async def healthify_agent(
     if top:
         payload["matched_recipe_id"] = str(top["recipe"].id)
         payload["retrieval_confidence"] = float(top.get("score") or 0)
+    payload["retrieval_debug"] = retrieval.get("timings_ms")
     # Compute MES for generated recipe
     nutrition = payload.get("nutrition")
     mes = _compute_recipe_mes(db, user_id, nutrition)

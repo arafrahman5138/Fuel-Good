@@ -34,7 +34,7 @@ function getDevApiUrl(): string {
 function getProdApiUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (!envUrl) {
-    return 'https://api.wholefoodlabs.com/api';
+    return 'https://api.fuelgood.com/api';
   }
   if (!envUrl.startsWith('https://')) {
     throw new Error('Production API URL must use HTTPS.');
@@ -54,7 +54,7 @@ export const EXPO_PROJECT_ID =
   process.env.EXPO_PUBLIC_EXPO_PROJECT_ID?.trim()
   || (Constants.expoConfig?.extra as any)?.eas?.projectId
   || '';
-export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@wholefoodlabs.com';
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@fuelgood.com';
 export const PRIVACY_POLICY_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
 export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL);
 export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL);
@@ -65,6 +65,9 @@ export const APP_STORE_MANAGE_SUBSCRIPTIONS_URL =
   process.env.EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL?.trim()
   || 'https://apps.apple.com/account/subscriptions';
 export const PREMIUM_ENTITLEMENT_ID = process.env.EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID?.trim() || 'premium';
+export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || '';
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+export const IS_SUPABASE_REALTIME_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 // OAuth Configuration
 export const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';

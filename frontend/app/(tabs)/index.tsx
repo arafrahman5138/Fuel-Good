@@ -35,6 +35,7 @@ import { gameApi, recipeApi, nutritionApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
 import { useEntranceAnimation } from '../../hooks/useAnimations';
+import { trackBehaviorEvent } from '../../services/notifications';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.42;
@@ -1364,7 +1365,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={index}
               activeOpacity={0.9}
-              onPress={() => router.push(action.route as any)}
+              onPress={() => {
+                trackBehaviorEvent('home_quick_action_used', { label: action.label, route: action.route });
+                router.push(action.route as any);
+              }}
               style={styles.actionCard}
             >
               <Card

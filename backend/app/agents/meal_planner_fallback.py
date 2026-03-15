@@ -10,7 +10,12 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.recipe import Recipe
-from app.services.metabolic_engine import compute_meal_mes, load_budget_for_user
+from app.services.metabolic_engine import (
+    compute_meal_mes,
+    compute_meal_mes_with_pairing,
+    display_tier,
+    load_budget_for_user,
+)
 
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -70,15 +75,39 @@ def _pick_default_pairing(recipe: Recipe, recipe_index: dict[str, Recipe]) -> Re
 def _meal_display_mes(recipe: Recipe, budget: Any, recipe_index: dict[str, Recipe]) -> dict[str, Any]:
     nutrition = _recipe_nutrition(recipe)
     paired_recipe = _pick_default_pairing(recipe, recipe_index)
-    if paired_recipe:
-        nutrition = _combine_nutrition(nutrition, _recipe_nutrition(paired_recipe))
+    stored_adjusted = (recipe.nutrition_info or {}).get("mes_default_pairing_adjusted_score")
+    stored_macro_paired = (recipe.nutrition_info or {}).get("mes_score_with_default_pairing")
 
-    mes = compute_meal_mes(nutrition, budget)
+    if paired_recipe:
+        paired = compute_meal_mes_with_pairing(
+            nutrition,
+            pairing_recipe=paired_recipe,
+            budget=budget,
+            pairing_nutrition=paired_recipe.nutrition_info or {},
+        )
+        mes = paired["score"]
+        macro_only_mes = paired.get("macro_only_score") or mes
+    else:
+        mes = compute_meal_mes(nutrition, budget)
+        macro_only_mes = mes
+
     display_score = float(mes.get("display_score", 0) or 0)
+    composite_display_score = None
+    if stored_adjusted is not None:
+        composite_display_score = float(stored_adjusted)
+    elif stored_macro_paired is not None:
+        composite_display_score = float(stored_macro_paired)
+
+    if composite_display_score is None and paired_recipe:
+        composite_display_score = display_score
+
     return {
         **mes,
         "display_score": display_score,
         "display_tier": mes.get("display_tier", "critical"),
+        "composite_display_score": round(composite_display_score, 1) if composite_display_score is not None else None,
+        "composite_display_tier": display_tier(composite_display_score) if composite_display_score is not None else None,
+        "macro_only_display_score": float(macro_only_mes.get("display_score", 0) or 0),
         "paired_recipe_id": str(paired_recipe.id) if paired_recipe else None,
         "paired_recipe_title": paired_recipe.title if paired_recipe else None,
     }
@@ -288,6 +317,8 @@ def _prep_summary_text(prep_day: str, recipe_title: str, covers_days: list[str],
 
 
 def _shortlist_recipe(recipe: Recipe, mes: dict[str, Any], meal_type: str) -> dict[str, Any]:
+    effective_display_score = float(mes.get("composite_display_score") or mes.get("display_score", 0) or 0)
+    effective_display_tier = mes.get("composite_display_tier") or mes.get("display_tier", "critical")
     return {
         "id": str(recipe.id),
         "title": recipe.title,
@@ -295,9 +326,13 @@ def _shortlist_recipe(recipe: Recipe, mes: dict[str, Any], meal_type: str) -> di
         "meal_type": meal_type,
         "total_time_min": (recipe.total_time_min or 0) or ((recipe.prep_time_min or 0) + (recipe.cook_time_min or 0)),
         "difficulty": recipe.difficulty or "easy",
-        "mes_display_score": float(mes.get("display_score", 0) or 0),
-        "mes_display_tier": mes.get("display_tier", "critical"),
-        "meets_mes_target": float(mes.get("display_score", 0) or 0) >= TARGET_DISPLAY_MES,
+        "mes_display_score": effective_display_score,
+        "mes_display_tier": effective_display_tier,
+        "composite_display_score": mes.get("composite_display_score"),
+        "composite_display_tier": mes.get("composite_display_tier"),
+        "paired_recipe_id": mes.get("paired_recipe_id"),
+        "paired_recipe_title": mes.get("paired_recipe_title"),
+        "meets_mes_target": effective_display_score >= TARGET_DISPLAY_MES,
     }
 
 
@@ -310,6 +345,8 @@ def _recipe_to_meal_data(
     prep_meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     display_score = float(mes.get("display_score", 0) or 0)
+    effective_display_score = float(mes.get("composite_display_score") or display_score or 0)
+    effective_display_tier = mes.get("composite_display_tier") or mes.get("display_tier", "critical")
     prep_meta = prep_meta or {}
     prep_group_id = prep_meta.get("prep_group_id")
     repeat_index = int(prep_meta.get("repeat_index", 0) or 0)
@@ -331,9 +368,13 @@ def _recipe_to_meal_data(
             "flavor_profile": recipe.flavor_profile or [],
             "dietary_tags": recipe.dietary_tags or [],
             "nutrition_estimate": _recipe_nutrition(recipe),
-            "mes_display_score": display_score,
-            "mes_display_tier": mes.get("display_tier", "critical"),
-            "meets_mes_target": display_score >= TARGET_DISPLAY_MES,
+            "mes_display_score": effective_display_score,
+            "mes_display_tier": effective_display_tier,
+            "composite_display_score": mes.get("composite_display_score"),
+            "composite_display_tier": mes.get("composite_display_tier"),
+            "paired_recipe_id": mes.get("paired_recipe_id"),
+            "paired_recipe_title": mes.get("paired_recipe_title"),
+            "meets_mes_target": effective_display_score >= TARGET_DISPLAY_MES,
             "prep_group_id": prep_group_id,
             "prep_day": prep_meta.get("prep_day"),
             "prep_label": prep_meta.get("prep_label"),

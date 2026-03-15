@@ -14,6 +14,9 @@ class ScannedMealLog(Base):
     user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
 
     image_url = Column(String, nullable=True)
+    image_bucket = Column(String, nullable=True)
+    image_path = Column(String, nullable=True)
+    image_mime_type = Column(String, nullable=True)
     meal_label = Column(String, nullable=False)
     scan_mode = Column(String, default="meal")
     meal_context = Column(String, nullable=True)

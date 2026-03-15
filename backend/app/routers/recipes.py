@@ -378,6 +378,14 @@ async def get_recipe(
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    record_notification_event(
+        db,
+        current_user.id,
+        "recipe_browsed",
+        properties={"recipe_id": recipe_id, "recipe_title": recipe.title},
+        source="server",
+    )
+    db.commit()
     return _serialize_recipe_full(recipe, db=db)
 
 
@@ -416,6 +424,14 @@ async def get_saved_recipes(
     recipe_ids = [str(s.recipe_id) for s in saved]
     recipes = db.query(Recipe).filter(Recipe.id.in_(recipe_ids)).all() if recipe_ids else []
     recipe_map = {str(r.id): r for r in recipes}
+    record_notification_event(
+        db,
+        current_user.id,
+        "saved_recipes_viewed",
+        properties={"count": len(recipe_ids)},
+        source="server",
+    )
+    db.commit()
     return {
         "items": [
             _serialize_recipe_card(recipe_map[rid], db, current_user)

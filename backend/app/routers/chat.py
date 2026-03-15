@@ -13,11 +13,12 @@ from app.models.user import User
 from app.models.meal_plan import ChatSession
 from app.models.metabolic_profile import MetabolicProfile
 from app.schemas.chat import ChatRequest, ChatResponse, ChatSessionSummary
-from app.agents.healthify import healthify_agent
+from app.agents.healthify import healthify_agent, parse_healthify_response
 from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
 from typing import List
 from datetime import date
 from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.chat_limits import acquire_chat_slot, enforce_chat_quota, record_chat_usage, release_chat_slot
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -38,137 +39,144 @@ async def healthify_food(
 ):
     request_id = str(uuid.uuid4())
     started_at = time.perf_counter()
-
-    logger.info(
-        "healthify.request.received request_id=%s user_id=%s session_id=%s chars=%s preview=%r",
-        request_id,
-        current_user.id,
-        request.session_id or "new",
-        len(request.message or ""),
-        _message_preview(request.message),
-    )
-
-    if request.session_id:
-        session = db.query(ChatSession).filter(
-            ChatSession.id == request.session_id,
-            ChatSession.user_id == current_user.id,
-        ).first()
-        if not session:
-            logger.warning(
-                "healthify.request.session_not_found request_id=%s user_id=%s session_id=%s",
-                request_id,
-                current_user.id,
-                request.session_id,
-            )
-            raise HTTPException(status_code=404, detail="Chat session not found")
-    else:
-        session = ChatSession(user_id=current_user.id, title=request.message[:50])
-        db.add(session)
-        db.commit()
-        db.refresh(session)
-        logger.info(
-            "healthify.request.session_created request_id=%s user_id=%s session_id=%s",
-            request_id,
-            current_user.id,
-            session.id,
-        )
-
-    messages = session.messages or []
-    messages.append({"role": "user", "content": request.message})
-    record_notification_event(
-        db,
-        current_user.id,
-        "healthify_started",
-        properties={"session_id": str(session.id), "message_preview": _message_preview(request.message, 60)},
-        source="server",
-    )
+    acquire_chat_slot(current_user)
 
     try:
-        result = await asyncio.wait_for(
-            healthify_agent(db, request.message, messages[:-1], user_id=current_user.id),
-            timeout=20,
+        logger.info(
+            "healthify.request.received request_id=%s user_id=%s session_id=%s chars=%s preview=%r",
+            request_id,
+            current_user.id,
+            request.session_id or "new",
+            len(request.message or ""),
+            _message_preview(request.message),
         )
-    except asyncio.TimeoutError:
+
+        enforce_chat_quota(db, current_user, route="healthify")
+
+        if request.session_id:
+            session = db.query(ChatSession).filter(
+                ChatSession.id == request.session_id,
+                ChatSession.user_id == current_user.id,
+            ).first()
+            if not session:
+                logger.warning(
+                    "healthify.request.session_not_found request_id=%s user_id=%s session_id=%s",
+                    request_id,
+                    current_user.id,
+                    request.session_id,
+                )
+                raise HTTPException(status_code=404, detail="Chat session not found")
+        else:
+            session = ChatSession(user_id=current_user.id, title=request.message[:50])
+            db.add(session)
+            db.commit()
+            db.refresh(session)
+            logger.info(
+                "healthify.request.session_created request_id=%s user_id=%s session_id=%s",
+                request_id,
+                current_user.id,
+                session.id,
+            )
+
+        messages = session.messages or []
+        messages.append({"role": "user", "content": request.message})
+        record_notification_event(
+            db,
+            current_user.id,
+            "healthify_started",
+            properties={"session_id": str(session.id), "message_preview": _message_preview(request.message, 60)},
+            source="server",
+        )
+        try:
+            result = await asyncio.wait_for(
+                healthify_agent(db, request.message, messages[:-1], user_id=current_user.id),
+                timeout=20,
+            )
+        except asyncio.TimeoutError:
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            logger.warning(
+                "healthify.request.timeout request_id=%s user_id=%s session_id=%s elapsed_ms=%s",
+                request_id,
+                current_user.id,
+                session.id,
+                elapsed_ms,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Healthify AI timed out. Please try again with a shorter prompt.",
+            )
+        except ResourceExhausted:
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            logger.warning(
+                "healthify.request.quota_exceeded request_id=%s user_id=%s session_id=%s elapsed_ms=%s",
+                request_id,
+                current_user.id,
+                session.id,
+                elapsed_ms,
+            )
+            raise HTTPException(
+                status_code=429,
+                detail="AI quota exceeded for the configured model. Please add billing, switch provider, or try again later.",
+            )
+        except Exception as exc:
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            logger.exception(
+                "healthify.request.failed request_id=%s user_id=%s session_id=%s elapsed_ms=%s error=%s",
+                request_id,
+                current_user.id,
+                session.id,
+                elapsed_ms,
+                exc,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Healthify AI is temporarily unavailable. Please try again shortly.",
+            )
+
+        assistant_message = {
+            "role": "assistant",
+            "content": result["message"],
+        }
+        messages.append(assistant_message)
+        session.messages = messages
+        db.commit()
+        record_chat_usage(db, str(current_user.id), "healthify", result.get("response_mode") or "unknown")
+        record_notification_event(
+            db,
+            current_user.id,
+            "healthify_completed",
+            properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
+            source="server",
+        )
+        process_user_notifications(db, current_user.id)
+        db.commit()
+
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.warning(
-            "healthify.request.timeout request_id=%s user_id=%s session_id=%s elapsed_ms=%s",
+        logger.info(
+            "healthify.request.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s has_recipe=%s swaps=%s has_nutrition=%s mode=%s matched_recipe_id=%s retrieval_confidence=%s retrieval_ms=%s",
             request_id,
             current_user.id,
             session.id,
             elapsed_ms,
-        )
-        raise HTTPException(
-            status_code=503,
-            detail="Healthify AI timed out. Please try again with a shorter prompt.",
-        )
-    except ResourceExhausted:
-        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.warning(
-            "healthify.request.quota_exceeded request_id=%s user_id=%s session_id=%s elapsed_ms=%s",
-            request_id,
-            current_user.id,
-            session.id,
-            elapsed_ms,
-        )
-        raise HTTPException(
-            status_code=429,
-            detail="AI quota exceeded for the configured model. Please add billing, switch provider, or try again later.",
-        )
-    except Exception as exc:
-        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.exception(
-            "healthify.request.failed request_id=%s user_id=%s session_id=%s elapsed_ms=%s error=%s",
-            request_id,
-            current_user.id,
-            session.id,
-            elapsed_ms,
-            exc,
-        )
-        raise HTTPException(
-            status_code=503,
-            detail="Healthify AI is temporarily unavailable. Please try again shortly.",
+            bool(result.get("recipe")),
+            len(result.get("swaps") or []),
+            bool(result.get("nutrition")),
+            result.get("response_mode"),
+            result.get("matched_recipe_id"),
+            result.get("retrieval_confidence"),
+            (result.get("retrieval_debug") or {}).get("total"),
         )
 
-    assistant_message = {
-        "role": "assistant",
-        "content": result["message"],
-    }
-    messages.append(assistant_message)
-    session.messages = messages
-    db.commit()
-    record_notification_event(
-        db,
-        current_user.id,
-        "healthify_completed",
-        properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
-        source="server",
-    )
-    process_user_notifications(db, current_user.id)
-    db.commit()
-
-    elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-    logger.info(
-        "healthify.request.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s has_recipe=%s swaps=%s has_nutrition=%s mode=%s matched_recipe_id=%s retrieval_confidence=%s",
-        request_id,
-        current_user.id,
-        session.id,
-        elapsed_ms,
-        bool(result.get("recipe")),
-        len(result.get("swaps") or []),
-        bool(result.get("nutrition")),
-        result.get("response_mode"),
-        result.get("matched_recipe_id"),
-        result.get("retrieval_confidence"),
-    )
-
-    return ChatResponse(
-        session_id=str(session.id),
-        message=assistant_message,
-        healthified_recipe=result.get("recipe"),
-        ingredient_swaps=result.get("swaps"),
-        nutrition_comparison=result.get("nutrition"),
-        mes_score=result.get("mes_score"),
-    )
+        return ChatResponse(
+            session_id=str(session.id),
+            message=assistant_message,
+            healthified_recipe=result.get("recipe"),
+            ingredient_swaps=result.get("swaps"),
+            nutrition_comparison=result.get("nutrition"),
+            mes_score=result.get("mes_score"),
+        )
+    finally:
+        release_chat_slot(str(current_user.id))
 
 
 @router.post("/healthify/stream")
@@ -179,108 +187,120 @@ async def healthify_food_stream(
 ):
     request_id = str(uuid.uuid4())
     started_at = time.perf_counter()
+    acquire_chat_slot(current_user)
 
-    logger.info(
-        "healthify.stream.received request_id=%s user_id=%s session_id=%s chars=%s preview=%r",
-        request_id,
-        current_user.id,
-        request.session_id or "new",
-        len(request.message or ""),
-        _message_preview(request.message),
-    )
-
-    if request.session_id:
-        session = db.query(ChatSession).filter(
-            ChatSession.id == request.session_id,
-            ChatSession.user_id == current_user.id,
-        ).first()
-        if not session:
-            logger.warning(
-                "healthify.stream.session_not_found request_id=%s user_id=%s session_id=%s",
-                request_id,
-                current_user.id,
-                request.session_id,
-            )
-            raise HTTPException(status_code=404, detail="Chat session not found")
-    else:
-        session = ChatSession(user_id=current_user.id, title=request.message[:50])
-        db.add(session)
-        db.commit()
-        db.refresh(session)
+    try:
         logger.info(
-            "healthify.stream.session_created request_id=%s user_id=%s session_id=%s",
+            "healthify.stream.received request_id=%s user_id=%s session_id=%s chars=%s preview=%r",
             request_id,
             current_user.id,
-            session.id,
+            request.session_id or "new",
+            len(request.message or ""),
+            _message_preview(request.message),
         )
 
-    messages = session.messages or []
-    messages.append({"role": "user", "content": request.message})
+        enforce_chat_quota(db, current_user, route="healthify")
 
-    async def generate():
-        full_response = ""
-        chunk_count = 0
-        try:
-            async with asyncio.timeout(20):
-                async for chunk in healthify_agent(db, request.message, messages[:-1], stream=True, user_id=current_user.id):
-                    full_response += chunk
-                    chunk_count += 1
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
-        except TimeoutError:
+        if request.session_id:
+            session = db.query(ChatSession).filter(
+                ChatSession.id == request.session_id,
+                ChatSession.user_id == current_user.id,
+            ).first()
+            if not session:
+                logger.warning(
+                    "healthify.stream.session_not_found request_id=%s user_id=%s session_id=%s",
+                    request_id,
+                    current_user.id,
+                    request.session_id,
+                )
+                raise HTTPException(status_code=404, detail="Chat session not found")
+        else:
+            session = ChatSession(user_id=current_user.id, title=request.message[:50])
+            db.add(session)
+            db.commit()
+            db.refresh(session)
+            logger.info(
+                "healthify.stream.session_created request_id=%s user_id=%s session_id=%s",
+                request_id,
+                current_user.id,
+                session.id,
+            )
+
+        messages = session.messages or []
+        messages.append({"role": "user", "content": request.message})
+
+        async def generate():
+            full_response = ""
+            chunk_count = 0
+            final_payload = None
+            try:
+                async with asyncio.timeout(20):
+                    async for chunk in healthify_agent(db, request.message, messages[:-1], stream=True, user_id=current_user.id):
+                        full_response += chunk
+                        chunk_count += 1
+                        yield f"data: {json.dumps({'content': chunk})}\n\n"
+            except TimeoutError:
+                elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+                logger.warning(
+                    "healthify.stream.timeout request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s",
+                    request_id,
+                    current_user.id,
+                    session.id,
+                    elapsed_ms,
+                    chunk_count,
+                )
+                yield f"data: {json.dumps({'error': 'Healthify AI timed out. Please try again with a shorter prompt.', 'done': True})}\n\n"
+                return
+            except ResourceExhausted:
+                elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+                logger.warning(
+                    "healthify.stream.quota_exceeded request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s",
+                    request_id,
+                    current_user.id,
+                    session.id,
+                    elapsed_ms,
+                    chunk_count,
+                )
+                yield f"data: {json.dumps({'error': 'AI quota exceeded for the configured model. Please try again later.', 'done': True})}\n\n"
+                return
+            except Exception as exc:
+                elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+                logger.exception(
+                    "healthify.stream.failed request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s error=%s",
+                    request_id,
+                    current_user.id,
+                    session.id,
+                    elapsed_ms,
+                    chunk_count,
+                    exc,
+                )
+                yield f"data: {json.dumps({'error': 'Healthify AI is temporarily unavailable.', 'done': True})}\n\n"
+                return
+            finally:
+                release_chat_slot(str(current_user.id))
+
+            final_payload = parse_healthify_response(full_response)
+            messages.append({"role": "assistant", "content": final_payload.get("message") or full_response})
+            session.messages = messages
+            db.commit()
+            record_chat_usage(db, str(current_user.id), "healthify", (final_payload or {}).get("response_mode") or "generated")
+
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.warning(
-                "healthify.stream.timeout request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s",
+            logger.info(
+                "healthify.stream.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s response_chars=%s",
                 request_id,
                 current_user.id,
                 session.id,
                 elapsed_ms,
                 chunk_count,
+                len(full_response),
             )
-            yield f"data: {json.dumps({'error': 'Healthify AI timed out. Please try again with a shorter prompt.', 'done': True})}\n\n"
-            return
-        except ResourceExhausted:
-            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.warning(
-                "healthify.stream.quota_exceeded request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s",
-                request_id,
-                current_user.id,
-                session.id,
-                elapsed_ms,
-                chunk_count,
-            )
-            yield f"data: {json.dumps({'error': 'AI quota exceeded for the configured model. Please try again later.', 'done': True})}\n\n"
-            return
-        except Exception as exc:
-            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.exception(
-                "healthify.stream.failed request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s error=%s",
-                request_id,
-                current_user.id,
-                session.id,
-                elapsed_ms,
-                chunk_count,
-                exc,
-            )
-            yield f"data: {json.dumps({'error': 'Healthify AI is temporarily unavailable.', 'done': True})}\n\n"
-            return
+            yield f"data: {json.dumps({'done': True, 'session_id': str(session.id), 'payload': final_payload})}\n\n"
 
-        messages.append({"role": "assistant", "content": full_response})
-        session.messages = messages
-        db.commit()
-
-        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.info(
-            "healthify.stream.completed request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s response_chars=%s",
-            request_id,
-            current_user.id,
-            session.id,
-            elapsed_ms,
-            chunk_count,
-            len(full_response),
-        )
-        yield f"data: {json.dumps({'done': True, 'session_id': str(session.id)})}\n\n"
-
-    return StreamingResponse(generate(), media_type="text/event-stream")
+        return StreamingResponse(generate(), media_type="text/event-stream")
+    except Exception:
+        release_chat_slot(str(current_user.id))
+        raise
 
 
 @router.get("/sessions", response_model=List[ChatSessionSummary])

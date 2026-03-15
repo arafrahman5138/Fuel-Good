@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.auth import get_current_user
+from app.auth import get_current_user, require_premium_user
 from app.models.user import User
 from app.models.metabolic import MetabolicBudget, MetabolicScore, MetabolicStreak
 from app.models.metabolic_profile import MetabolicProfile
@@ -190,6 +190,7 @@ async def get_budget(
 @router.put("/budget", response_model=MetabolicBudgetResponse)
 async def update_budget(
     payload: MetabolicBudgetUpdate,
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -245,6 +246,7 @@ async def save_profile(
         "goal", "activity_level", "target_weight_lb",
         "insulin_resistant", "prediabetes", "type_2_diabetes",
         "fasting_glucose_mgdl", "hba1c_pct", "triglycerides_mgdl",
+        "onboarding_step_completed",
     )
     for field in profile_fields:
         val = getattr(payload, field, None)
@@ -349,6 +351,7 @@ def _profile_response(profile: MetabolicProfile) -> MetabolicProfileResponse:
 @router.patch("/profile", response_model=MetabolicProfileResponse)
 async def patch_profile(
     payload: MetabolicProfileCreate,
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -404,6 +407,7 @@ async def patch_profile(
 @router.get("/score/daily", response_model=DailyMESResponse)
 async def get_daily_score(
     date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -444,6 +448,7 @@ async def get_daily_score(
 @router.get("/score/meals", response_model=list[MealMESResponse])
 async def get_meal_scores(
     date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -495,6 +500,7 @@ async def get_meal_scores(
 @router.get("/score/history", response_model=list[ScoreHistoryEntry])
 async def get_score_history(
     days: int = Query(default=14, ge=1, le=90),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -527,6 +533,7 @@ async def get_score_history(
 async def preview_meal_score(
     payload: MESPreviewRequest,
     date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -565,6 +572,7 @@ async def preview_meal_score(
 @router.post("/score/composite", response_model=CompositeMESResponse)
 async def compute_composite_score(
     payload: CompositeMESRequest,
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -651,6 +659,7 @@ async def compute_composite_score(
 
 @router.get("/streak", response_model=MetabolicStreakResponse)
 async def get_streak(
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -667,6 +676,7 @@ async def get_streak(
 @router.get("/remaining-budget", response_model=RemainingBudgetResponse)
 async def get_remaining_budget(
     date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -683,6 +693,7 @@ async def get_remaining_budget(
 async def get_meal_suggestions(
     date_str: str | None = Query(default=None, alias="date"),
     limit: int = Query(default=10, ge=1, le=50),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1024,6 +1035,7 @@ def _generate_food_suggestions(
 @router.get("/coach-insights", response_model=CoachInsightsResponse)
 async def get_coach_insights(
     date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1061,6 +1073,7 @@ async def get_pairing_suggestions(
     recipe_id: str = Query(..., description="Source recipe ID to find pairings for"),
     limit: int = Query(5, ge=1, le=20),
     side_type: str | None = Query(None, description="Filter by side type: veg_side, carb_base, protein_base, sauce"),
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1207,6 +1220,7 @@ async def get_pairing_suggestions(
 @router.post("/score/preview-composite")
 async def preview_composite_score(
     payload: dict,
+    _: User = Depends(require_premium_user),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

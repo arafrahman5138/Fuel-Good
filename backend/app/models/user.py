@@ -48,4 +48,4 @@ class User(Base):
     grocery_lists = relationship("GroceryList", back_populates="user")
     chat_sessions = relationship("ChatSession", back_populates="user")
     achievements = relationship("UserAchievement", back_populates="user")
-    push_tokens = relationship("UserPushToken")
+    push_tokens = relationship("UserPushToken", back_populates="user")

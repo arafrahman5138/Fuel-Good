@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import base64
-import difflib
 import json
+import logging
 import re
 from datetime import datetime
 from typing import Any
@@ -20,12 +20,12 @@ from app.services.metabolic_engine import (
     load_budget_for_user,
     should_score_meal,
 )
-from app.services.recipe_retrieval import retrieve_recipe_candidates
 from app.services.whole_food_scoring import analyze_whole_food_product
 
 
 settings = get_settings()
-MEAL_SCAN_PROMPT_VERSION = "meal_scan_v2_grounded"
+logger = logging.getLogger(__name__)
+MEAL_SCAN_PROMPT_VERSION = "meal_scan_v3_fast"
 
 SNACK_CALORIE_CEILING = 250.0
 SNACK_CARB_CEILING = 18.0
@@ -144,6 +144,7 @@ Rules:
 - if uncertain, choose medium confidence and say unknown less often than inventing ingredients
 - meal_label should be consumer friendly
 - use role "fruit" for fruit components (apple, banana, grapes, berries, melon, etc.)
+- keep the response compact and avoid extra explanation text
 """
 
 
@@ -186,7 +187,7 @@ async def _call_gemini_meal_extractor(
 
     prompt = MEAL_SCAN_PROMPT + "\n\nContext:\n" + json.dumps(context, indent=2)
     encoded = base64.b64encode(image_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.scan_model or settings.gemini_model}:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
@@ -215,61 +216,6 @@ async def _call_gemini_meal_extractor(
     if not text_part:
         raise RuntimeError("No scan payload returned.")
     return _extract_json(text_part)
-
-
-def _recipe_signature(recipe: Recipe) -> set[str]:
-    tokens = set(re.findall(r"[a-z]{3,}", (recipe.title or "").lower()))
-    for ingredient in recipe.ingredients or []:
-        tokens.update(re.findall(r"[a-z]{3,}", str((ingredient or {}).get("name", "")).lower()))
-    return tokens
-
-
-def _match_recipe_lexical(db: Session, meal_label: str, ingredients: list[str]) -> tuple[Recipe | None, float]:
-    recipes = (
-        db.query(Recipe)
-        .filter(Recipe.recipe_role == "full_meal", Recipe.is_component.is_(False))
-        .all()
-    )
-    label = (meal_label or "").lower().strip()
-    wanted = set(re.findall(r"[a-z]{3,}", label))
-    for ingredient in ingredients:
-        wanted.update(re.findall(r"[a-z]{3,}", ingredient))
-
-    best_recipe = None
-    best_score = 0.0
-    for recipe in recipes:
-        title_similarity = difflib.SequenceMatcher(None, label, (recipe.title or "").lower()).ratio()
-        signature = _recipe_signature(recipe)
-        overlap = len(signature & wanted) / max(len(wanted), 1)
-        score = (title_similarity * 0.6) + (overlap * 0.4)
-        if score > best_score:
-            best_recipe = recipe
-            best_score = score
-    return best_recipe, best_score
-
-
-async def _match_recipe(db: Session, meal_label: str, ingredients: list[str]) -> tuple[Recipe | None, float, list[dict[str, Any]], str]:
-    query = " ".join(part for part in [meal_label, *ingredients] if part)
-    retrieval = await retrieve_recipe_candidates(db, query, limit=3, recipe_role="full_meal")
-    results = retrieval.get("results") or []
-    if results:
-        best = results[0]
-        candidates = [
-            {
-                "recipe_id": str(item["recipe"].id),
-                "title": item["recipe"].title,
-                "score": round(float(item.get("score") or 0), 2),
-                "lexical_score": round(float(item.get("lexical_score") or 0), 2),
-                "vector_score": round(float(item.get("vector_score") or 0), 2),
-            }
-            for item in results
-        ]
-        return best["recipe"], float(best.get("score") or 0), candidates, retrieval.get("provider") or "unknown"
-    lexical_recipe, lexical_score = _match_recipe_lexical(db, meal_label, ingredients)
-    candidates = []
-    if lexical_recipe:
-        candidates.append({"recipe_id": str(lexical_recipe.id), "title": lexical_recipe.title, "score": round(lexical_score, 2)})
-    return lexical_recipe, lexical_score, candidates, "lexical_fallback"
 
 
 def _eligible_pairing_recipe(recipe: Recipe | None) -> bool:
@@ -615,6 +561,23 @@ def _upgrade_suggestions(
     fiber = float(nutrition.get("fiber", 0) or 0)
     net_carbs = max(0.0, carbs - fiber)
 
+    if meal_context == "snack":
+        if "likely seed oil fry medium" in reasons or "seed oil" in reasons or preparation_style == "fried":
+            suggestions.append("Pick a less fried snack next time so it stays lighter and less processed.")
+        if "added sugar" in reasons:
+            suggestions.append("Choose a snack with less added sugar or pair the sweet item with protein.")
+        if "refined flour" in reasons:
+            suggestions.append("Swap refined snack carbs for fruit, yogurt, nuts, or a more whole-food option.")
+        if net_carbs >= 20 and protein < 8:
+            suggestions.append("Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer.")
+        elif protein < 8:
+            suggestions.append("If you want this snack to hold you longer, add a little protein like yogurt, cheese, or nuts.")
+        if fiber < 3 and carbs >= 12:
+            suggestions.append("Add a little fiber next time with berries, chia, nuts, or crunchy vegetables.")
+        if not suggestions:
+            suggestions.append("This works fine as a light snack. No major upgrade needed.")
+        return suggestions[:3]
+
     if pairing_recommendation and meal_context == "full_meal":
         title = pairing_recommendation.get("pairing_recommended_title") or "a fiber-forward side"
         delta = pairing_recommendation.get("pairing_projected_delta")
@@ -681,6 +644,19 @@ def _recovery_plan(
     fiber = float(nutrition.get("fiber", 0) or 0)
     net_carbs = max(0.0, carbs - fiber)
 
+    if meal_context == "snack":
+        if protein_remaining > 20 and float(nutrition.get("protein", 0) or 0) < 10:
+            plan.append("Let your next meal do the heavy lifting with a real protein anchor.")
+        if fiber_remaining > 6 and fiber < 3:
+            plan.append("Use your next meal to catch up on fiber with vegetables, beans, lentils, or chia.")
+        if net_carbs >= 20 and float(nutrition.get("protein", 0) or 0) < 8:
+            plan.append("If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs.")
+        if whole_food_status != "pass":
+            plan.append(f"Keep the rest of the day a little cleaner so you preserve your remaining {round(carb_room)}g carb room.")
+        if not plan:
+            plan.append("No real recovery needed. Just keep your next meal balanced.")
+        return plan[:3]
+
     if protein_remaining > 20:
         plan.append(f"Aim for about {min(40, round(protein_remaining))}g protein at your next meal.")
     if fiber_remaining > 6:
@@ -738,6 +714,7 @@ async def analyze_meal_scan(
     mime_type: str,
     context: dict[str, Any],
 ) -> dict[str, Any]:
+    started = datetime.utcnow()
     extracted = await _call_gemini_meal_extractor(image_bytes, mime_type, context)
 
     # Reject non-food images immediately
@@ -776,23 +753,10 @@ async def analyze_meal_scan(
     ).strip().lower()
     preparation_style = str(extracted.get("preparation_style") or "unknown").strip().lower()
 
-    matched_recipe, recipe_match_score, grounding_candidates, grounding_provider = await _match_recipe(db, raw_meal_label, normalized_ingredients)
     heuristic_nutrition, heuristic_confidence = _estimate_from_components(components, portion_size)
-    if matched_recipe and recipe_match_score >= 0.76:
-        nutrition = _coerce_recipe_nutrition(matched_recipe.nutrition_info or {}, portion_size)
-        grounding_source = "recipe_match"
-        grounding_confidence = min(0.97, 0.62 + recipe_match_score * 0.35)
-    elif matched_recipe and recipe_match_score >= 0.48:
-        recipe_nutrition = _coerce_recipe_nutrition(matched_recipe.nutrition_info or {}, portion_size)
-        nutrition = _blend_nutrition(recipe_nutrition, heuristic_nutrition, recipe_match_score)
-        grounding_source = "blended_recipe_heuristic"
-        grounding_confidence = min(0.9, max(heuristic_confidence, recipe_match_score))
-    else:
-        nutrition = heuristic_nutrition
-        grounding_source = "heuristic_components"
-        grounding_confidence = heuristic_confidence
-
-    meal_label = _derive_stable_meal_label(raw_meal_label, components, matched_recipe, recipe_match_score)
+    nutrition = heuristic_nutrition
+    grounding_confidence = heuristic_confidence
+    meal_label = _derive_stable_meal_label(raw_meal_label, components, None, 0.0)
 
     ingredients_text = ", ".join(normalized_ingredients + hidden_ingredients)
     product_result = analyze_whole_food_product(
@@ -820,7 +784,7 @@ async def analyze_meal_scan(
             "tier": result["display_tier"],
             "sub_scores": result.get("sub_scores") or {},
         }
-        pairing_recommendation = _find_pairing_candidate(db, nutrition, matched_recipe, budget)
+        pairing_recommendation = _find_pairing_candidate(db, nutrition, None, budget)
 
     snack_profile = _snack_profile(meal_context, nutrition, whole_food_status, flags, meal_label, normalized_ingredients, components)
 
@@ -828,7 +792,7 @@ async def analyze_meal_scan(
     confidence_breakdown = {
         "extraction": float((extracted.get("confidence_breakdown") or {}).get("extraction", extracted.get("confidence", 0.72)) or 0.72),
         "portion": float((extracted.get("confidence_breakdown") or {}).get("portion", 0.68) or 0.68),
-        "grounding": round(recipe_match_score if matched_recipe else grounding_confidence, 2),
+        "grounding": round(grounding_confidence, 2),
         "nutrition": round(grounding_confidence, 2),
         "estimate_mode": estimate_mode,
         "review_required": estimate_mode == "low",
@@ -864,7 +828,7 @@ async def analyze_meal_scan(
         estimate_mode,
     )
 
-    return {
+    result = {
         "meal_label": meal_label,
         "meal_type": meal_type,
         "meal_context": meal_context,
@@ -883,14 +847,14 @@ async def analyze_meal_scan(
         "confidence_breakdown": confidence_breakdown,
         "upgrade_suggestions": upgrade_suggestions,
         "recovery_plan": recovery_plan,
-        "source_model": settings.gemini_model,
+        "source_model": settings.scan_model or settings.gemini_model,
         "prompt_version": MEAL_SCAN_PROMPT_VERSION,
-        "grounding_source": grounding_source,
-        "grounding_candidates": grounding_candidates,
-        "grounding_provider": grounding_provider,
-        "matched_recipe_id": str(matched_recipe.id) if matched_recipe else None,
-        "matched_recipe_title": matched_recipe.title if matched_recipe else None,
-        "matched_recipe_confidence": round(recipe_match_score, 2) if matched_recipe else 0,
+        "grounding_source": None,
+        "grounding_candidates": [],
+        "grounding_provider": None,
+        "matched_recipe_id": None,
+        "matched_recipe_title": None,
+        "matched_recipe_confidence": None,
         "whole_food_summary": product_result.get("summary"),
         "pairing_opportunity": bool((pairing_recommendation or {}).get("pairing_opportunity")),
         "pairing_recommended_recipe_id": (pairing_recommendation or {}).get("pairing_recommended_recipe_id"),
@@ -900,6 +864,13 @@ async def analyze_meal_scan(
         "pairing_reasons": (pairing_recommendation or {}).get("pairing_reasons") or [],
         "pairing_timing": (pairing_recommendation or {}).get("pairing_timing"),
     }
+    logger.info(
+        "meal_scan.completed bytes=%s extraction_model=%s total_ms=%s",
+        len(image_bytes),
+        settings.scan_model or settings.gemini_model,
+        int((datetime.utcnow() - started).total_seconds() * 1000),
+    )
+    return result
 
 
 async def recompute_meal_scan(
@@ -914,23 +885,10 @@ async def recompute_meal_scan(
 ) -> dict[str, Any]:
     normalized_ingredients = [_normalize_name(x) for x in ingredients if x.strip()]
     synthetic_components = [{"name": ingredient, "portion_factor": 1.0} for ingredient in normalized_ingredients]
-    matched_recipe, recipe_match_score, grounding_candidates, grounding_provider = await _match_recipe(db, meal_label, normalized_ingredients)
     heuristic_nutrition, heuristic_confidence = _estimate_from_components(synthetic_components, portion_size)
-    if matched_recipe and recipe_match_score >= 0.76:
-        nutrition = _coerce_recipe_nutrition(matched_recipe.nutrition_info or {}, portion_size)
-        grounding_source = "recipe_match"
-        grounding_confidence = min(0.97, 0.62 + recipe_match_score * 0.35)
-    elif matched_recipe and recipe_match_score >= 0.48:
-        recipe_nutrition = _coerce_recipe_nutrition(matched_recipe.nutrition_info or {}, portion_size)
-        nutrition = _blend_nutrition(recipe_nutrition, heuristic_nutrition, recipe_match_score)
-        grounding_source = "blended_recipe_heuristic"
-        grounding_confidence = min(0.9, max(heuristic_confidence, recipe_match_score))
-    else:
-        nutrition = heuristic_nutrition
-        grounding_source = "heuristic_components"
-        grounding_confidence = heuristic_confidence
-
-    meal_label = _derive_stable_meal_label(meal_label, synthetic_components, matched_recipe, recipe_match_score)
+    nutrition = heuristic_nutrition
+    grounding_confidence = heuristic_confidence
+    meal_label = _derive_stable_meal_label(meal_label, synthetic_components, None, 0.0)
 
     product_result = analyze_whole_food_product(
         {
@@ -957,7 +915,7 @@ async def recompute_meal_scan(
             "tier": result["display_tier"],
             "sub_scores": result.get("sub_scores") or {},
         }
-        pairing_recommendation = _find_pairing_candidate(db, nutrition, matched_recipe, budget)
+        pairing_recommendation = _find_pairing_candidate(db, nutrition, None, budget)
 
     snack_profile = _snack_profile(meal_context, nutrition, whole_food_status, flags, meal_label, normalized_ingredients, [])
 
@@ -965,7 +923,7 @@ async def recompute_meal_scan(
     confidence_breakdown = {
         "extraction": 0.7,
         "portion": 0.75,
-        "grounding": round(recipe_match_score if matched_recipe else grounding_confidence, 2),
+        "grounding": round(grounding_confidence, 2),
         "nutrition": round(grounding_confidence, 2),
         "estimate_mode": estimate_mode,
         "review_required": estimate_mode == "low",
@@ -1009,7 +967,6 @@ async def recompute_meal_scan(
         "normalized_ingredients": normalized_ingredients,
         "nutrition_estimate": nutrition,
         "whole_food_status": whole_food_status,
-        "whole_food_flags": flags,
         "suggested_swaps": product_result.get("processing_flags") or {},
         "mes": mes,
         "snack_profile": snack_profile,
@@ -1017,14 +974,14 @@ async def recompute_meal_scan(
         "confidence_breakdown": confidence_breakdown,
         "upgrade_suggestions": upgrade_suggestions,
         "recovery_plan": recovery_plan,
-        "source_model": existing_source_model or settings.gemini_model,
+        "source_model": existing_source_model or settings.scan_model or settings.gemini_model,
         "prompt_version": MEAL_SCAN_PROMPT_VERSION,
-        "grounding_source": grounding_source,
-        "grounding_candidates": grounding_candidates,
-        "grounding_provider": grounding_provider,
-        "matched_recipe_id": str(matched_recipe.id) if matched_recipe else None,
-        "matched_recipe_title": matched_recipe.title if matched_recipe else None,
-        "matched_recipe_confidence": round(recipe_match_score, 2) if matched_recipe else 0,
+        "grounding_source": None,
+        "grounding_candidates": [],
+        "grounding_provider": None,
+        "matched_recipe_id": None,
+        "matched_recipe_title": None,
+        "matched_recipe_confidence": None,
         "whole_food_summary": product_result.get("summary"),
         "pairing_opportunity": bool((pairing_recommendation or {}).get("pairing_opportunity")),
         "pairing_recommended_recipe_id": (pairing_recommendation or {}).get("pairing_recommended_recipe_id"),

@@ -91,8 +91,15 @@ def _migrate_pg_columns():
         ("scanned_meal_logs", "grounding_candidates", "ALTER TABLE scanned_meal_logs ADD COLUMN grounding_candidates JSON"),
         ("scanned_meal_logs", "prompt_version", "ALTER TABLE scanned_meal_logs ADD COLUMN prompt_version VARCHAR"),
         ("scanned_meal_logs", "matched_recipe_confidence", "ALTER TABLE scanned_meal_logs ADD COLUMN matched_recipe_confidence FLOAT DEFAULT 0"),
+        ("scanned_meal_logs", "image_bucket", "ALTER TABLE scanned_meal_logs ADD COLUMN image_bucket VARCHAR"),
+        ("scanned_meal_logs", "image_path", "ALTER TABLE scanned_meal_logs ADD COLUMN image_path VARCHAR"),
+        ("scanned_meal_logs", "image_mime_type", "ALTER TABLE scanned_meal_logs ADD COLUMN image_mime_type VARCHAR"),
     ]
     with engine.begin() as conn:
+        try:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        except Exception:
+            pass
         for table, col, ddl in migrations:
             try:
                 rows = conn.execute(text(
@@ -109,5 +116,9 @@ def _migrate_pg_columns():
             pass
         try:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_revenuecat_customer_id ON users(revenuecat_customer_id)"))
+        except Exception:
+            pass
+        try:
+            conn.execute(text(f"ALTER TABLE recipe_embeddings ADD COLUMN IF NOT EXISTS embedding vector({settings.embedding_dimension})"))
         except Exception:
             pass

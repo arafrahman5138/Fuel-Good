@@ -8,6 +8,7 @@ class PushTokenRegisterRequest(BaseModel):
     device_id: Optional[str] = None
     platform: str = "unknown"
     app_version: str = ""
+    timezone: Optional[str] = None
 
 
 class NotificationPreferenceResponse(BaseModel):

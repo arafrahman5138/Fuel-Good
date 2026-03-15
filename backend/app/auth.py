@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.models.user import User
+from app.services.billing import build_entitlement_info
 
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -41,6 +42,18 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
 
+def create_password_reset_token(user_id: str, email: str) -> str:
+    """Create a short-lived password reset token."""
+    expire = datetime.utcnow() + timedelta(minutes=settings.password_reset_token_expire_minutes)
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "exp": expire,
+        "type": "password_reset",
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+
 def verify_refresh_token(token: str) -> Optional[str]:
     """Verify a refresh token and return the user_id, or None if invalid."""
     try:
@@ -48,6 +61,17 @@ def verify_refresh_token(token: str) -> Optional[str]:
         if payload.get("type") != "refresh":
             return None
         return payload.get("sub")
+    except JWTError:
+        return None
+
+
+def verify_password_reset_token(token: str) -> Optional[dict]:
+    """Verify a password reset token and return its payload, or None if invalid."""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") != "password_reset":
+            return None
+        return payload
     except JWTError:
         return None
 
@@ -80,3 +104,15 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+async def require_premium_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    entitlement = build_entitlement_info(current_user)
+    if entitlement.access_level != "premium" or entitlement.requires_paywall:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Premium subscription required",
+        )
+    return current_user
