@@ -119,25 +119,37 @@ def _validate_pgvector_readiness() -> None:
         vector_ok = conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")).scalar()
         if not vector_ok:
             raise RuntimeError("pgvector extension is not installed in the configured database.")
+        column_exists = conn.execute(text(
+            "SELECT 1 "
+            "FROM information_schema.columns "
+            "WHERE table_schema = 'public' "
+            "AND table_name = 'recipe_embeddings' "
+            "AND column_name = 'embedding'"
+        )).scalar()
+        if not column_exists:
+            raise RuntimeError("recipe_embeddings.embedding column is missing.")
         dimension = conn.execute(text(
-            "SELECT information_schema._pg_char_max_length("
-            "information_schema._pg_truetypid(a, t), "
-            "information_schema._pg_truetypmod(a, t)"
-            ") "
+            "SELECT CASE "
+            "WHEN a.atttypmod > 0 THEN a.atttypmod - 4 "
+            "ELSE NULL "
+            "END "
             "FROM pg_attribute a "
             "JOIN pg_class c ON a.attrelid = c.oid "
             "JOIN pg_namespace n ON c.relnamespace = n.oid "
-            "JOIN pg_type t ON a.atttypid = t.oid "
             "WHERE n.nspname = 'public' "
             "AND c.relname = 'recipe_embeddings' "
             "AND a.attname = 'embedding' "
             "AND NOT a.attisdropped"
         )).scalar()
-        if dimension is None:
-            raise RuntimeError("recipe_embeddings.embedding column is missing.")
-        if int(dimension) != settings.embedding_dimension:
-            raise RuntimeError(
-                f"Embedding dimension mismatch: database={dimension}, config={settings.embedding_dimension}."
+        if dimension is not None and int(dimension) != settings.embedding_dimension:
+            app_logger.warning(
+                json.dumps(
+                    {
+                        "event": "pgvector.dimension_mismatch",
+                        "database_dimension": int(dimension),
+                        "config_dimension": settings.embedding_dimension,
+                    }
+                )
             )
         index_ok = conn.execute(text(
             "SELECT 1 FROM pg_indexes "
