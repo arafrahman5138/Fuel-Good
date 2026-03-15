@@ -11,6 +11,8 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: PYTHON_VERSION
+        value: "3.13.2"
       - key: ENVIRONMENT
         value: production
       - key: RUN_NOTIFICATION_SCHEDULER
@@ -79,6 +81,8 @@ services:
         value: premium_annual_4999
       - key: REVENUECAT_TRIAL_DAYS
         value: "7"
+      - key: CHAT_QUOTA_EXEMPT_EMAILS
+        value: arahman.usa500@gmail.com
   - type: worker
     name: fuel-good-notifications-production
     runtime: python
@@ -93,6 +97,11 @@ services:
           name: fuel-good-api-production
           type: web
           envVarKey: DATABASE_URL
+      - key: PYTHON_VERSION
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: PYTHON_VERSION
       - key: ENVIRONMENT
         value: production
       - key: RUN_NOTIFICATION_SCHEDULER
@@ -248,3 +257,8 @@ services:
           name: fuel-good-api-production
           type: web
           envVarKey: REVENUECAT_TRIAL_DAYS
+      - key: CHAT_QUOTA_EXEMPT_EMAILS
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: CHAT_QUOTA_EXEMPT_EMAILS

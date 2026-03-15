@@ -31,6 +31,20 @@ def _message_preview(message: str, limit: int = 120) -> str:
     return f"{compact[:limit]}…"
 
 
+def _apply_chat_limits_or_raise(db: Session, user: User) -> None:
+    try:
+        acquire_chat_slot(user)
+        enforce_chat_quota(db, user, route="healthify")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("healthify.quota_check.failed user_id=%s error=%s", user.id, exc)
+        raise HTTPException(
+            status_code=429,
+            detail="Chat limit check failed. Please try again in a moment.",
+        ) from exc
+
+
 @router.post("/healthify", response_model=ChatResponse)
 async def healthify_food(
     request: ChatRequest,
@@ -39,7 +53,7 @@ async def healthify_food(
 ):
     request_id = str(uuid.uuid4())
     started_at = time.perf_counter()
-    acquire_chat_slot(current_user)
+    _apply_chat_limits_or_raise(db, current_user)
 
     try:
         logger.info(
@@ -50,8 +64,6 @@ async def healthify_food(
             len(request.message or ""),
             _message_preview(request.message),
         )
-
-        enforce_chat_quota(db, current_user, route="healthify")
 
         if request.session_id:
             session = db.query(ChatSession).filter(
@@ -187,7 +199,7 @@ async def healthify_food_stream(
 ):
     request_id = str(uuid.uuid4())
     started_at = time.perf_counter()
-    acquire_chat_slot(current_user)
+    _apply_chat_limits_or_raise(db, current_user)
 
     try:
         logger.info(
@@ -198,8 +210,6 @@ async def healthify_food_stream(
             len(request.message or ""),
             _message_preview(request.message),
         )
-
-        enforce_chat_quota(db, current_user, route="healthify")
 
         if request.session_id:
             session = db.query(ChatSession).filter(

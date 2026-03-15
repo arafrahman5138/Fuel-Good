@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     revenuecat_annual_product_id: str = "premium_annual_4999"
     revenuecat_trial_days: int = 7
     app_store_manage_subscriptions_url: str = "https://apps.apple.com/account/subscriptions"
+    chat_quota_exempt_emails: str = ""
 
     openai_api_key: str = ""
     chat_model: str = "gemini-2.5-flash"

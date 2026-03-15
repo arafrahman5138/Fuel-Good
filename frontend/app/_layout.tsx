@@ -173,7 +173,6 @@ export default function RootLayout() {
                   name="chevron-back"
                   size={28}
                   color={tintColor || theme.text}
-                  style={{ transform: [{ translateX: -1 }] }}
                 />
               </TouchableOpacity>
             ) : null,
@@ -263,6 +262,12 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="saved/[id]"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="chat-recipe"
           options={{
             headerShown: false,
           }}

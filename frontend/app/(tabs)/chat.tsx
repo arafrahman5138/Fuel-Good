@@ -46,6 +46,7 @@ import {
   toStringValue,
 } from '../../utils/chatParser';
 import { getTierConfig } from '../../stores/metabolicBudgetStore';
+import { useRecipeViewStore } from '../../stores/recipeViewStore';
 import { trackBehaviorEvent } from '../../services/notifications';
 
 const FALLBACK_SUGGESTIONS = [
@@ -626,6 +627,18 @@ export default function ChatScreen() {
                 {/* Recipe Card */}
                 {recipe && (
                   <RecipeCardShimmer enabled={shouldAnimate}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      useRecipeViewStore.getState().set({
+                        recipe,
+                        swaps: payload?.swaps || null,
+                        nutrition: payload?.nutrition || null,
+                        mesScore: msg.mes_score || null,
+                      });
+                      router.push('/chat-recipe');
+                    }}
+                  >
                     <Card style={styles.recipeCard} padding={Spacing.md}>
                       <View style={styles.recipeHeader}>
                         <View style={styles.recipeHeaderLeft}>
@@ -843,6 +856,7 @@ export default function ChatScreen() {
                       </View>
                     )}
                     </Card>
+                  </TouchableOpacity>
                   </RecipeCardShimmer>
                 )}
 
@@ -858,21 +872,19 @@ export default function ChatScreen() {
                     {payload.swaps.map((swap: any, i: number) => (
                       <View key={i} style={[styles.swapItem, { borderBottomColor: theme.border }]}>
                         <View style={styles.swapNames}>
-                          <View style={styles.swapRow}>
-                            <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Instead of</Text>
-                            <Text style={[styles.swapOld, { color: theme.error }]}>
-                              {swap.original}
-                            </Text>
-                          </View>
-                          <View style={styles.swapArrowWrap}>
+                          <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Instead of</Text>
+                          <Text style={[styles.swapOld, { color: theme.error }]}>
+                            {swap.original}
+                          </Text>
+                          <View style={styles.swapArrowRow}>
+                            <View style={[styles.swapArrowLine, { backgroundColor: theme.border }]} />
                             <Ionicons name="arrow-down" size={14} color={theme.textTertiary} />
+                            <View style={[styles.swapArrowLine, { backgroundColor: theme.border }]} />
                           </View>
-                          <View style={styles.swapRow}>
-                            <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Use</Text>
-                            <Text style={[styles.swapNew, { color: theme.primary }]}>
-                              {swap.replacement}
-                            </Text>
-                          </View>
+                          <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Use</Text>
+                          <Text style={[styles.swapNew, { color: theme.primary }]}>
+                            {swap.replacement}
+                          </Text>
                         </View>
                         <Text style={[styles.swapReason, { color: theme.textTertiary }]}>
                           {swap.reason}
@@ -1355,16 +1367,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   swapNames: {
-    gap: 6,
+    gap: 4,
     marginBottom: 6,
   },
-  swapRow: {
-    gap: 2,
-  },
-  swapArrowWrap: {
+  swapArrowRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 16,
+    gap: 8,
+    paddingVertical: 4,
+  },
+  swapArrowLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
   },
   swapLabel: {
     fontSize: 11,

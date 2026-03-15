@@ -7,9 +7,10 @@ from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import func
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import ProgrammingError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import engine
 from app.models.chat_usage import ChatUsageEvent
 from app.models.user import User
@@ -18,6 +19,7 @@ from app.services.billing import build_entitlement_info
 
 _IN_FLIGHT_LOCK = Lock()
 _IN_FLIGHT_REQUESTS: dict[str, int] = defaultdict(int)
+settings = get_settings()
 
 
 QUOTA_CONFIG: dict[str, dict[str, Any]] = {
@@ -64,7 +66,32 @@ MODE_COST_UNITS = {
 }
 
 
+def _normalize_email(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _quota_exempt_emails() -> set[str]:
+    return {
+        _normalize_email(email)
+        for email in settings.chat_quota_exempt_emails.split(",")
+        if _normalize_email(email)
+    }
+
+
+def is_chat_quota_exempt(user: User) -> bool:
+    return _normalize_email(user.email) in _quota_exempt_emails()
+
+
 def _quota_config(user: User) -> dict[str, Any]:
+    if is_chat_quota_exempt(user):
+        return {
+            "window_minutes": 10,
+            "max_requests_per_window": 1_000_000,
+            "max_daily_requests": 1_000_000,
+            "max_daily_generated": 1_000_000,
+            "max_daily_cost_units": 1_000_000.0,
+            "max_concurrent": 25,
+        }
     entitlement = build_entitlement_info(user)
     return QUOTA_CONFIG.get(entitlement.subscription_state, DEFAULT_CONFIG)
 
@@ -74,6 +101,8 @@ def _ensure_usage_table() -> None:
 
 
 def acquire_chat_slot(user: User) -> None:
+    if is_chat_quota_exempt(user):
+        return
     config = _quota_config(user)
     with _IN_FLIGHT_LOCK:
         active = _IN_FLIGHT_REQUESTS[str(user.id)]
@@ -95,6 +124,9 @@ def release_chat_slot(user_id: str) -> None:
 
 
 def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> None:
+    if is_chat_quota_exempt(user):
+        return
+
     config = _quota_config(user)
     now = datetime.utcnow()
     window_start = now - timedelta(minutes=int(config["window_minutes"]))
@@ -111,6 +143,12 @@ def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> Non
         db.rollback()
         _ensure_usage_table()
         requests_in_window = base.filter(ChatUsageEvent.created_at >= window_start).count()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=429,
+            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
+        ) from exc
     if requests_in_window >= int(config["max_requests_per_window"]):
         raise HTTPException(
             status_code=429,
@@ -118,21 +156,42 @@ def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> Non
         )
 
     daily = base.filter(ChatUsageEvent.created_at >= day_start)
-    daily_requests = daily.count()
+    try:
+        daily_requests = daily.count()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=429,
+            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
+        ) from exc
     if daily_requests >= int(config["max_daily_requests"]):
         raise HTTPException(
             status_code=429,
             detail="Daily chat limit reached. Please try again tomorrow or upgrade for higher limits.",
         )
 
-    daily_generated = daily.filter(ChatUsageEvent.response_mode == "generated").count()
+    try:
+        daily_generated = daily.filter(ChatUsageEvent.response_mode == "generated").count()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=429,
+            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
+        ) from exc
     if daily_generated >= int(config["max_daily_generated"]):
         raise HTTPException(
             status_code=429,
             detail="Daily generated-chat limit reached. Please try again tomorrow or upgrade for higher limits.",
         )
 
-    daily_cost = daily.with_entities(func.coalesce(func.sum(ChatUsageEvent.cost_units), 0.0)).scalar() or 0.0
+    try:
+        daily_cost = daily.with_entities(func.coalesce(func.sum(ChatUsageEvent.cost_units), 0.0)).scalar() or 0.0
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=429,
+            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
+        ) from exc
     if float(daily_cost) >= float(config["max_daily_cost_units"]):
         raise HTTPException(
             status_code=429,
@@ -157,3 +216,5 @@ def record_chat_usage(db: Session, user_id: str, route: str, response_mode: str)
         _ensure_usage_table()
         db.add(event)
         db.commit()
+    except SQLAlchemyError:
+        db.rollback()

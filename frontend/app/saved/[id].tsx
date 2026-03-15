@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingLeft: 0,
   },
   pageHeaderTitle: {
     flex: 1,
