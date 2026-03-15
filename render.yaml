@@ -87,7 +87,7 @@ services:
     name: fuel-good-notifications-production
     runtime: python
     rootDir: backend
-    plan: starter
+    plan: basic
     buildCommand: pip install -r requirements.txt && alembic upgrade head
     startCommand: python run_notification_worker.py
     autoDeploy: false
