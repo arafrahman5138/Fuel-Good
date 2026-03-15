@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingRight: 2,
   },
   headerCenter: {
     flex: 1,

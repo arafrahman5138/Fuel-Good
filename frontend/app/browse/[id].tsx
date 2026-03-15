@@ -1564,9 +1564,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  navBackIcon: {
-    transform: [{ translateX: -1 }],
-  },
+  navBackIcon: {},
   pageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
