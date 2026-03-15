@@ -56,6 +56,10 @@ export default function SettingsScreen() {
 
   const manageSubscription = async () => {
     try {
+      if (billingService.isConfiguredForBuild()) {
+        await billingService.presentCustomerCenter();
+        return;
+      }
       const url = user?.entitlement?.manage_url || await billingService.getManageSubscriptionsUrl();
       await Linking.openURL(url || APP_STORE_MANAGE_SUBSCRIPTIONS_URL);
     } catch {
@@ -323,7 +327,11 @@ export default function SettingsScreen() {
           <View style={styles.settingsInfo}>
             <Text style={[styles.settingsLabel, { color: theme.text }]}>Manage Subscription</Text>
             <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-              {user?.entitlement?.subscription_state === 'trialing' ? 'Trial active' : 'Open App Store subscription settings'}
+              {billingService.isConfiguredForBuild()
+                ? 'Open RevenueCat Customer Center'
+                : user?.entitlement?.subscription_state === 'trialing'
+                  ? 'Trial active'
+                  : 'Open App Store subscription settings'}
             </Text>
           </View>
           <Ionicons name="open-outline" size={18} color={theme.textTertiary} />

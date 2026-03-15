@@ -281,7 +281,8 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        throw new Error(`Stream failed: ${response.status}`);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Stream failed: ${response.status}`);
       }
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body');
@@ -298,6 +299,9 @@ class ApiClient {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.done) {
+                if (data.error) {
+                  throw new Error(data.error);
+                }
                 onDone?.(data);
               } else if (data.content) {
                 onChunk(data.content);

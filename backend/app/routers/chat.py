@@ -148,6 +148,13 @@ async def healthify_food(
         assistant_message = {
             "role": "assistant",
             "content": result["message"],
+            "recipe": result.get("recipe"),
+            "swaps": result.get("swaps"),
+            "nutrition": result.get("nutrition"),
+            "mes_score": result.get("mes_score"),
+            "response_mode": result.get("response_mode"),
+            "matched_recipe_id": result.get("matched_recipe_id"),
+            "retrieval_confidence": result.get("retrieval_confidence"),
         }
         messages.append(assistant_message)
         session.messages = messages
@@ -290,7 +297,19 @@ async def healthify_food_stream(
                 release_chat_slot(str(current_user.id))
 
             final_payload = parse_healthify_response(full_response)
-            messages.append({"role": "assistant", "content": final_payload.get("message") or full_response})
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": final_payload.get("message") or full_response,
+                    "recipe": final_payload.get("recipe"),
+                    "swaps": final_payload.get("swaps"),
+                    "nutrition": final_payload.get("nutrition"),
+                    "mes_score": final_payload.get("mes_score"),
+                    "response_mode": final_payload.get("response_mode"),
+                    "matched_recipe_id": final_payload.get("matched_recipe_id"),
+                    "retrieval_confidence": final_payload.get("retrieval_confidence"),
+                }
+            )
             session.messages = messages
             db.commit()
             record_chat_usage(db, str(current_user.id), "healthify", (final_payload or {}).get("response_mode") or "generated")

@@ -72,13 +72,15 @@ services:
       - key: REVENUECAT_WEBHOOK_AUTHORIZATION
         sync: false
       - key: REVENUECAT_ENTITLEMENT_ID
-        value: premium
+        value: Fuel Good Premium
       - key: REVENUECAT_OFFERING_ID
         value: default
       - key: REVENUECAT_MONTHLY_PRODUCT_ID
-        value: premium_monthly_999
+        value: monthly
       - key: REVENUECAT_ANNUAL_PRODUCT_ID
-        value: premium_annual_4999
+        value: yearly
+      - key: REVENUECAT_LIFETIME_PRODUCT_ID
+        value: lifetime
       - key: REVENUECAT_TRIAL_DAYS
         value: "7"
       - key: CHAT_QUOTA_EXEMPT_EMAILS
@@ -252,6 +254,11 @@ services:
           name: fuel-good-api-production
           type: web
           envVarKey: REVENUECAT_ANNUAL_PRODUCT_ID
+      - key: REVENUECAT_LIFETIME_PRODUCT_ID
+        fromService:
+          name: fuel-good-api-production
+          type: web
+          envVarKey: REVENUECAT_LIFETIME_PRODUCT_ID
       - key: REVENUECAT_TRIAL_DAYS
         fromService:
           name: fuel-good-api-production

@@ -12,7 +12,9 @@
         "EXPO_PUBLIC_APP_ENV": "staging",
         "EXPO_PUBLIC_RELEASE_CHANNEL": "preview",
         "EXPO_PUBLIC_ENABLE_ERROR_REPORTING": "true",
-        "EXPO_PUBLIC_ENABLE_ANALYTICS": "false"
+        "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_pkQnpZsWQMeDLvqlLlVnHXtGiKk",
+        "EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID": "Fuel Good Premium"
       },
       "ios": {
         "simulator": false,
@@ -27,7 +29,9 @@
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
         "EXPO_PUBLIC_ENABLE_ERROR_REPORTING": "true",
-        "EXPO_PUBLIC_ENABLE_ANALYTICS": "true"
+        "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_pkQnpZsWQMeDLvqlLlVnHXtGiKk",
+        "EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID": "Fuel Good Premium"
       },
       "ios": {
         "image": "latest",

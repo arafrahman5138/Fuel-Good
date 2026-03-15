@@ -64,7 +64,7 @@ export const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API
 export const APP_STORE_MANAGE_SUBSCRIPTIONS_URL =
   process.env.EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL?.trim()
   || 'https://apps.apple.com/account/subscriptions';
-export const PREMIUM_ENTITLEMENT_ID = process.env.EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID?.trim() || 'premium';
+export const PREMIUM_ENTITLEMENT_ID = process.env.EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID?.trim() || 'Fuel Good Premium';
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || '';
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
 export const IS_SUPABASE_REALTIME_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);

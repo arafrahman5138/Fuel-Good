@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from copy import deepcopy
 from typing import Any, AsyncIterator, List
 
 from pydantic import BaseModel, Field, ValidationError
@@ -76,6 +77,20 @@ Nutrition schema:
 GENERAL_PROMPT = """You are Fuel Good Healthify AI.
 Return strict JSON with keys: message, recipe, swaps, nutrition.
 For general questions, provide a helpful answer in message and set recipe, swaps, and nutrition to null.
+"""
+
+MODIFY_PROMPT = """You are Fuel Good Healthify AI.
+
+Return strict JSON with keys: message, recipe, swaps, nutrition.
+
+You are updating an existing recipe, not inventing a different meal.
+Rules:
+- Preserve the same base dish, cuisine, and overall meal identity unless the user explicitly asks to change them.
+- Apply only the requested modification to the existing recipe.
+- Keep as many original ingredients and steps as possible.
+- If the user asks for a direct ingredient swap, update that ingredient throughout the recipe and do not turn the meal into a different dish.
+- If you include swaps, every swap must include `original`, `replacement`, and `reason`.
+- `recipe` must remain non-null and include non-empty ingredients and steps.
 """
 
 
@@ -231,7 +246,10 @@ def _classify_intent(user_input: str) -> str:
         return "general_nutrition_question"
     if any(token in text for token in ["protein", "fiber", "calories", "macros"]) and "?" in text:
         return "general_nutrition_question"
-    if any(token in text for token in ["change the", "modify", "swap", "instead of", "make it with", "without"]):
+    if (
+        any(token in text for token in ["change the", "modify", "swap", "instead of", "make it with", "without"])
+        or re.search(r"\b(change|replace)\b.+\b(to|with)\b", text)
+    ):
         return "modify_prior_recipe"
     if any(token in text for token in ["healthy version", "healthify", "clean up", "whole-food", "make this healthier"]):
         return "healthify_unhealthy_meal"
@@ -400,6 +418,7 @@ def _extract_payload(raw_text: str) -> dict[str, Any]:
                     "recipe": parsed.get("recipe"),
                     "swaps": parsed.get("swaps"),
                     "nutrition": parsed.get("nutrition"),
+                    "mes_score": parsed.get("mes_score"),
                     "response_mode": parsed.get("response_mode"),
                     "matched_recipe_id": parsed.get("matched_recipe_id"),
                     "retrieval_confidence": parsed.get("retrieval_confidence"),
@@ -410,7 +429,7 @@ def _extract_payload(raw_text: str) -> dict[str, Any]:
     markdown_payload = _parse_markdown_recipe(raw_text)
     if markdown_payload:
         return markdown_payload
-    return {"message": raw_text, "recipe": None, "swaps": None, "nutrition": None}
+    return {"message": raw_text, "recipe": None, "swaps": None, "nutrition": None, "mes_score": None}
 
 
 def parse_healthify_response(raw_text: str) -> dict[str, Any]:
@@ -493,6 +512,145 @@ def _normalize_swaps(swaps: Any) -> list[dict[str, str]]:
             }
         )
     return normalized
+
+
+def _find_last_recipe_message(history: List[dict[str, Any]]) -> dict[str, Any] | None:
+    for msg in reversed(history or []):
+        if msg.get("role") != "assistant":
+            continue
+        recipe = msg.get("recipe")
+        if isinstance(recipe, dict) and recipe.get("ingredients") and recipe.get("steps"):
+            return msg
+    return None
+
+
+def _extract_requested_swap(user_input: str) -> tuple[str, str] | None:
+    text = " ".join((user_input or "").strip().split())
+    patterns = [
+        r"(?:change|swap|replace)\s+(.+?)\s+(?:to|for|with)\s+(.+)$",
+        r"(?:make it|make this)\s+with\s+(.+?)\s+instead of\s+(.+)$",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            continue
+        if "instead of" in pattern:
+            replacement = match.group(1).strip(" .,!?:;")
+            original = match.group(2).strip(" .,!?:;")
+        else:
+            original = match.group(1).strip(" .,!?:;")
+            replacement = match.group(2).strip(" .,!?:;")
+        if original and replacement and original.lower() != replacement.lower():
+            return original, replacement
+    return None
+
+
+def _replace_case_insensitive(value: str, original: str, replacement: str) -> tuple[str, bool]:
+    if not value:
+        return value, False
+    pattern = re.compile(re.escape(original), re.IGNORECASE)
+    updated, count = pattern.subn(replacement, value)
+    return updated, count > 0
+
+
+def _apply_direct_recipe_swap(
+    recipe: dict[str, Any],
+    original: str,
+    replacement: str,
+) -> tuple[dict[str, Any], bool]:
+    updated_recipe = deepcopy(recipe)
+    changed = False
+
+    for key in ("title", "description"):
+        current = str(updated_recipe.get(key) or "")
+        replaced, did_change = _replace_case_insensitive(current, original, replacement)
+        if did_change:
+            updated_recipe[key] = replaced
+            changed = True
+
+    ingredients = []
+    for ingredient in list(updated_recipe.get("ingredients") or []):
+        item = deepcopy(ingredient)
+        name = str(item.get("name") or "")
+        replaced_name, did_change = _replace_case_insensitive(name, original, replacement)
+        if did_change:
+            item["name"] = replaced_name
+            changed = True
+        ingredients.append(item)
+    updated_recipe["ingredients"] = ingredients
+
+    steps = []
+    for step in list(updated_recipe.get("steps") or []):
+        replaced_step, did_change = _replace_case_insensitive(str(step), original, replacement)
+        if did_change:
+            changed = True
+        steps.append(replaced_step)
+    updated_recipe["steps"] = steps
+
+    return updated_recipe, changed
+
+
+async def _modify_prior_recipe(
+    user_input: str,
+    history: List[dict],
+    user_context: str = "",
+) -> dict[str, Any] | None:
+    prior_message = _find_last_recipe_message(history)
+    if not prior_message:
+        return None
+
+    prior_recipe = deepcopy(prior_message.get("recipe") or {})
+    prior_nutrition = deepcopy(prior_message.get("nutrition") or None)
+    prior_mes = deepcopy(prior_message.get("mes_score") or None)
+
+    requested_swap = _extract_requested_swap(user_input)
+    if requested_swap:
+        original, replacement = requested_swap
+        updated_recipe, changed = _apply_direct_recipe_swap(prior_recipe, original, replacement)
+        if changed:
+            return {
+                "message": f"Updated your {prior_recipe.get('title') or 'recipe'} by swapping {original} for {replacement}. I kept the rest of the meal the same.",
+                "recipe": updated_recipe,
+                "swaps": [
+                    {
+                        "original": original,
+                        "replacement": replacement,
+                        "reason": "Updated based on your request while keeping the same meal.",
+                    }
+                ],
+                "nutrition": None,
+                "mes_score": prior_mes,
+                "response_mode": "modified",
+                "matched_recipe_id": prior_message.get("matched_recipe_id"),
+                "retrieval_confidence": None,
+                "prompt_version": PROMPT_VERSION,
+            }
+
+    llm = get_llm("chat")
+    system_prompt = MODIFY_PROMPT
+    if user_context:
+        system_prompt = f"{MODIFY_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    messages.append(
+        HumanMessage(
+            content=(
+                "Existing recipe JSON:\n"
+                + json.dumps(prior_recipe, indent=2)
+                + "\n\nExisting nutrition JSON:\n"
+                + json.dumps(prior_nutrition, indent=2)
+                + f"\n\nUser modification request:\n{user_input}\n\nReturn JSON only."
+            )
+        )
+    )
+    response = await llm.ainvoke(messages)
+    payload = parse_healthify_response(response.content)
+    if not payload.get("recipe"):
+        return None
+    payload["response_mode"] = "modified"
+    payload["matched_recipe_id"] = prior_message.get("matched_recipe_id")
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
 
 
 async def _generate_healthified_payload(
@@ -608,6 +766,19 @@ async def healthify_agent(
                 yield json.dumps(payload)
             return _general_stream()
         return await _answer_general_question(user_input, history, user_context)
+
+    if intent == "modify_prior_recipe":
+        modified_payload = await _modify_prior_recipe(user_input, history, user_context)
+        if modified_payload:
+            nutrition = modified_payload.get("nutrition")
+            mes = _compute_recipe_mes(db, user_id, nutrition)
+            if mes:
+                modified_payload["mes_score"] = mes
+            if stream:
+                async def _modified_stream():
+                    yield json.dumps(modified_payload)
+                return _modified_stream()
+            return modified_payload
 
     retrieval = await retrieve_recipe_candidates(db, user_input, limit=3, recipe_role="full_meal")
     top = (retrieval.get("results") or [None])[0]

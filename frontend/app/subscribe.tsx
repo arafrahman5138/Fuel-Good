@@ -42,6 +42,7 @@ interface BillingConfig {
     subtitle: string;
     legal_copy: string;
     annual_savings_copy?: string;
+    customer_center_enabled?: boolean;
   };
 }
 
@@ -56,6 +57,7 @@ export default function SubscribeScreen() {
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [openingPaywall, setOpeningPaywall] = useState(false);
   const userHasDirectPremium = user?.entitlement?.access_level === 'premium' && user?.entitlement?.requires_paywall === false;
 
   useEffect(() => {
@@ -119,11 +121,30 @@ export default function SubscribeScreen() {
       }
       router.replace('/(tabs)' as any);
     } catch (err: any) {
-      if (!err?.userCancelled) {
+      if (!billingService.isUserCancelledPurchase(err)) {
         Alert.alert('Purchase failed', err?.message || 'We could not complete the subscription purchase.');
       }
     } finally {
       setPurchasingId(null);
+    }
+  };
+
+  const handleRevenueCatPaywall = async () => {
+    try {
+      setOpeningPaywall(true);
+      const outcome = await billingService.presentPaywallIfNeeded(offering);
+      setEntitlement(outcome.entitlement);
+      const synced = await billingApi.sync(true).catch(() => null);
+      if (synced?.entitlement) {
+        setEntitlement(synced.entitlement);
+      }
+      if (outcome.entitlement.access_level === 'premium') {
+        router.replace('/(tabs)' as any);
+      }
+    } catch (err: any) {
+      Alert.alert('Paywall unavailable', err?.message || 'Unable to open the RevenueCat paywall right now.');
+    } finally {
+      setOpeningPaywall(false);
     }
   };
 
@@ -172,7 +193,7 @@ export default function SubscribeScreen() {
   }
 
   const products = config?.products || [];
-  const billingSupported = Platform.OS === 'ios' && Boolean(config?.ios_supported);
+  const billingSupported = Platform.OS === 'ios' && Boolean(config?.ios_supported) && billingService.isConfiguredForBuild();
 
   return (
     <ScreenContainer safeArea={false} padded={false}>
@@ -187,7 +208,7 @@ export default function SubscribeScreen() {
             {[
               'Full access to chat, scans, meal plans, browse, and tracking',
               '7-day free trial before billing starts',
-              'Cancel anytime in App Store subscriptions',
+              'Manage, restore, or cancel with RevenueCat Customer Center',
             ].map((item) => (
               <View key={item} style={styles.featureRow}>
                 <Ionicons name="checkmark-circle" size={18} color="#86EFAC" />
@@ -198,10 +219,24 @@ export default function SubscribeScreen() {
         </LinearGradient>
 
         <View style={styles.content}>
+          <Button
+            title={openingPaywall ? 'Opening Paywall...' : 'Open RevenueCat Paywall'}
+            onPress={handleRevenueCatPaywall}
+            disabled={!billingSupported || openingPaywall}
+            loading={openingPaywall}
+            fullWidth
+            size="lg"
+          />
+
           {products.map((product) => {
             const rcPackage = packageMap.get(product.product_id);
             const displayPrice = rcPackage?.product.priceString || product.display_price;
-            const cadence = product.package_type === 'annual' ? 'per year' : 'per month';
+            const cadence =
+              product.package_type === 'yearly'
+                ? 'per year'
+                : product.package_type === 'lifetime'
+                  ? 'one-time'
+                  : 'per month';
             const isBusy = purchasingId === product.product_id;
             return (
               <View
@@ -217,7 +252,11 @@ export default function SubscribeScreen() {
                 <View style={styles.planTopRow}>
                   <View>
                     <Text style={[styles.planName, { color: theme.text }]}>
-                      {product.package_type === 'annual' ? 'Annual' : 'Monthly'}
+                      {product.package_type === 'yearly'
+                        ? 'Yearly'
+                        : product.package_type === 'lifetime'
+                          ? 'Lifetime'
+                          : 'Monthly'}
                     </Text>
                     <Text style={[styles.planPrice, { color: theme.text }]}>
                       {displayPrice} <Text style={[styles.planCadence, { color: theme.textSecondary }]}>{cadence}</Text>
@@ -231,14 +270,22 @@ export default function SubscribeScreen() {
                 </View>
 
                 <Text style={[styles.planTrial, { color: theme.textSecondary }]}>
-                  7 days free, then {displayPrice} {product.package_type === 'annual' ? 'yearly' : 'monthly'}.
+                  {product.package_type === 'lifetime'
+                    ? `${displayPrice} one-time purchase.`
+                    : `7 days free, then ${displayPrice} ${product.package_type === 'yearly' ? 'yearly' : 'monthly'}.`}
                 </Text>
-                {product.package_type === 'annual' && config?.paywall?.annual_savings_copy ? (
+                {product.package_type === 'yearly' && config?.paywall?.annual_savings_copy ? (
                   <Text style={[styles.savingsCopy, { color: theme.primary }]}>{config.paywall.annual_savings_copy}</Text>
                 ) : null}
 
                 <Button
-                  title={billingSupported ? `Start ${product.package_type === 'annual' ? 'Annual' : 'Monthly'} Trial` : 'Unavailable'}
+                  title={
+                    billingSupported
+                      ? product.package_type === 'lifetime'
+                        ? 'Buy Lifetime'
+                        : `Start ${product.package_type === 'yearly' ? 'Yearly' : 'Monthly'} Trial`
+                      : 'Unavailable'
+                  }
                   onPress={() => handlePurchase(product.product_id)}
                   disabled={!billingSupported || !rcPackage || isBusy}
                   loading={isBusy}
@@ -273,6 +320,22 @@ export default function SubscribeScreen() {
           >
             <Text style={[styles.secondaryActionText, { color: theme.text }]}>Manage Subscription</Text>
           </TouchableOpacity>
+
+          {config?.paywall?.customer_center_enabled ? (
+            <TouchableOpacity
+              style={[styles.secondaryAction, { borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+              onPress={async () => {
+                try {
+                  await billingService.presentCustomerCenter();
+                } catch (err: any) {
+                  Alert.alert('Customer Center unavailable', err?.message || 'Unable to open Customer Center right now.');
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.secondaryActionText, { color: theme.text }]}>Open Customer Center</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <View style={styles.linkRow}>
             <TouchableOpacity onPress={() => openUrl(TERMS_URL)}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Terms</Text></TouchableOpacity>

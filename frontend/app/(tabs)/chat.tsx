@@ -68,13 +68,14 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { width } = useWindowDimensions();
-  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
+  const { prefill, autoSend } = useLocalSearchParams<{ prefill?: string; autoSend?: string }>();
   const isCompact = width < 410;
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const [input, setInput] = useState('');
   const listRef = useRef<FlatList<any> | null>(null);
+  const lastAutoSubmittedPrefillRef = useRef<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [recipeDraft, setRecipeDraft] = useState<RecipeDraft | null>(null);
   const [recipeOverrides, setRecipeOverrides] = useState<Record<string, RecipeData>>({});
@@ -130,6 +131,18 @@ export default function ChatScreen() {
       setInput(prefill.trim());
     }
   }, [prefill]);
+
+  useEffect(() => {
+    const trimmedPrefill = typeof prefill === 'string' ? prefill.trim() : '';
+    const shouldAutoSend = autoSend === '1' || autoSend === 'true';
+    if (!shouldAutoSend || !trimmedPrefill || isLoading) return;
+    if (lastAutoSubmittedPrefillRef.current === trimmedPrefill) return;
+
+    lastAutoSubmittedPrefillRef.current = trimmedPrefill;
+    setInput('');
+    Keyboard.dismiss();
+    void submitChatMessage(trimmedPrefill);
+  }, [autoSend, prefill, isLoading]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

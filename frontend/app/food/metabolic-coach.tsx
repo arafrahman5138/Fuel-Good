@@ -645,7 +645,10 @@ export default function MetabolicCoachScreen() {
                   {insight.action?.type === 'chat' && insight.action.query && (
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => router.push({ pathname: '/(tabs)/chat', params: { prefill: insight.action!.query } } as any)}
+                      onPress={() => router.push({
+                        pathname: '/(tabs)/chat',
+                        params: { prefill: insight.action!.query, autoSend: '1' },
+                      } as any)}
                       style={[styles.insightCta, { backgroundColor: insight.accent + '14' }]}
                     >
                       <Ionicons name="chatbubble-outline" size={10} color={insight.accent} />
@@ -672,7 +675,10 @@ export default function MetabolicCoachScreen() {
                 const query = parts.length > 0
                   ? `I need a meal with ${parts.join(', ')}`
                   : 'What should I eat next?';
-                router.push({ pathname: '/(tabs)/chat', params: { prefill: query } } as any);
+                router.push({
+                  pathname: '/(tabs)/chat',
+                  params: { prefill: query, autoSend: '1' },
+                } as any);
               }}
               style={[styles.eatNextBtn, { backgroundColor: 'rgba(34, 197, 94, 0.10)' }]}
             >

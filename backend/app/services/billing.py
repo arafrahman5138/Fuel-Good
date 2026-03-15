@@ -240,11 +240,19 @@ def get_billing_config() -> dict[str, Any]:
             },
             {
                 "product_id": settings.revenuecat_annual_product_id,
-                "package_type": "annual",
+                "package_type": "yearly",
                 "display_price": annual_price,
                 "trial_days": settings.revenuecat_trial_days,
                 "highlight": True,
                 "badge": "Best value",
+            },
+            {
+                "product_id": settings.revenuecat_lifetime_product_id,
+                "package_type": "lifetime",
+                "display_price": "$149.99",
+                "trial_days": 0,
+                "highlight": False,
+                "badge": "One-time",
             },
         ],
         "paywall": {
@@ -252,5 +260,6 @@ def get_billing_config() -> dict[str, Any]:
             "subtitle": "Unlock the full app after onboarding with an iOS subscription.",
             "legal_copy": f"Free for {settings.revenuecat_trial_days} days, then auto-renews unless canceled at least 24 hours before renewal.",
             "annual_savings_copy": "Save over 58% with annual billing.",
+            "customer_center_enabled": True,
         },
     }
