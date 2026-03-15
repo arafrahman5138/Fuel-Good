@@ -30,7 +30,7 @@ export default function ChatRecipeDetailScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={24} color={theme.primary} />
+            <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ marginLeft: -2 }} />
           </TouchableOpacity>
           <View style={styles.headerCenter} />
           <View style={styles.headerSpacer} />
@@ -65,7 +65,7 @@ export default function ChatRecipeDetailScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={24} color={theme.primary} />
+          <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ marginLeft: -2 }} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
           {recipe.title || 'Recipe'}

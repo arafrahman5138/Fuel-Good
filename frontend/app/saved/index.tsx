@@ -21,7 +21,7 @@ export default function SavedRecipesScreen() {
   }, [fetchSaved]);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer safeArea={false}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {loading ? (
           <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: Spacing.huge }} />

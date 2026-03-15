@@ -26,7 +26,7 @@ export default function SavedRecipeDetailScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ transform: [{ translateX: 12 }] }} />
+            <Ionicons name="chevron-back" size={24} color={theme.primary} />
           </TouchableOpacity>
           <View style={styles.pageHeaderTitle}>
             <LogoHeader />
@@ -56,7 +56,7 @@ export default function SavedRecipeDetailScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ transform: [{ translateX: 12 }] }} />
+          <Ionicons name="chevron-back" size={24} color={theme.primary} />
         </TouchableOpacity>
         <View style={styles.pageHeaderTitle}>
           <LogoHeader />

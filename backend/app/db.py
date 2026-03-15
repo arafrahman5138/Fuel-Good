@@ -44,6 +44,7 @@ def init_db():
     """Create tables for local bootstrap scripts and backfill legacy Postgres columns."""
     Base.metadata.create_all(bind=engine)
     _migrate_pg_columns()
+    ensure_pgvector_schema()
 
 
 def _migrate_pg_columns():
@@ -120,5 +121,28 @@ def _migrate_pg_columns():
             pass
         try:
             conn.execute(text(f"ALTER TABLE recipe_embeddings ADD COLUMN IF NOT EXISTS embedding vector({settings.embedding_dimension})"))
+        except Exception:
+            pass
+
+
+def ensure_pgvector_schema() -> None:
+    from sqlalchemy import text
+
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        except Exception:
+            return
+
+        try:
+            conn.execute(text(f"ALTER TABLE recipe_embeddings ADD COLUMN IF NOT EXISTS embedding vector({settings.embedding_dimension})"))
+        except Exception:
+            return
+
+        try:
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_recipe_embeddings_embedding_ivfflat "
+                f"ON recipe_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+            ))
         except Exception:
             pass

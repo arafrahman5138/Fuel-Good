@@ -173,6 +173,7 @@ export default function RootLayout() {
                   name="chevron-back"
                   size={28}
                   color={tintColor || theme.text}
+                  style={{ marginLeft: 3 }}
                 />
               </TouchableOpacity>
             ) : null,

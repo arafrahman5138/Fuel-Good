@@ -14,7 +14,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.auth import require_premium_user
 from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan, telemetry, notifications
-from app.db import engine
+from app.db import engine, ensure_pgvector_schema
 from app.services.notifications import notification_scheduler_loop
 from app.services.embeddings import active_embedding_provider
 
@@ -114,6 +114,7 @@ def _validate_pgvector_readiness() -> None:
     provider, _ = active_embedding_provider()
     if provider == "none":
         return
+    ensure_pgvector_schema()
     with engine.begin() as conn:
         vector_ok = conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")).scalar()
         if not vector_ok:
