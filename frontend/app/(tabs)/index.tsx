@@ -30,7 +30,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
-import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
+import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../stores/metabolicBudgetStore';
 import { useFuelStore } from '../../stores/fuelStore';
 import { recipeApi, nutritionApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
@@ -464,8 +464,7 @@ export default function HomeScreen() {
   const weeklyMesScore = thisWeekScores.length > 0
     ? Math.round(thisWeekScores.reduce((sum, e) => sum + (e.display_score ?? e.total_score ?? 0), 0) / thisWeekScores.length)
     : 0;
-  const weeklyMesTierKey = weeklyMesScore >= 85 ? 'elite' : weeklyMesScore >= 70 ? 'strong' : weeklyMesScore >= 55 ? 'moderate' : weeklyMesScore >= 40 ? 'mixed' : 'critical';
-  const weeklyMesTierColor = getTierConfig(weeklyMesTierKey).color;
+  const weeklyMesTierColor = getTierConfig(getTierFromScore(weeklyMesScore)).color;
   // Homepage ring shows weekly avg — big-picture view; today's detail is in Chrono
   const fuelScoreValue = Math.round(fuelWeekly?.avg_fuel_score ?? fuelDaily?.avg_fuel_score ?? 0);
   const isDarkTheme = theme.background === '#0A0A0F';
