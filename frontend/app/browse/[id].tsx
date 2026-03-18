@@ -73,6 +73,7 @@ interface RecipeDetail {
   needs_default_pairing?: boolean | null;
   is_mes_scoreable?: boolean;
   components?: ComponentDetail[];
+  default_pairings?: ComponentDetail[];
   component_composition?: Record<string, any> | null;
   pairing_synergy_profile?: Record<string, any> | null;
 }
@@ -149,13 +150,46 @@ const DEFAULT_SERVINGS_OVERRIDES: Record<string, number> = {
 };
 
 const tierFromDisplayScore = (score: number): string => {
-  if (score >= 80) return 'optimal';
-  if (score >= 60) return 'stable';
-  if (score >= 40) return 'shaky';
+  if (score >= 82) return 'optimal';
+  if (score >= 65) return 'stable';
+  if (score >= 50) return 'shaky';
   return 'crash_risk';
 };
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const inferSectionRole = (title: string, defaultPairingTitle?: string | null): string => {
+  const normalized = title.trim().toLowerCase();
+  const normalizedPairingTitle = defaultPairingTitle?.trim().toLowerCase();
+
+  if (normalizedPairingTitle && normalized === normalizedPairingTitle) return 'veg_side';
+  if (/(salad|slaw|greens|vegetable|veggie)/i.test(title)) return 'veg_side';
+  if (/(rice|quinoa|potato|noodle|pasta|grain|bean)/i.test(title)) return 'carb_base';
+  if (/(sauce|dressing|chutney|salsa)/i.test(title)) return 'sauce';
+  return 'protein_base';
+};
+
+const deriveStepSections = (steps: string[], defaultPairingTitle?: string | null): ComponentDetail[] => {
+  const sections = steps.flatMap((step, index) => {
+    const match = step.match(/^([^:]+):\s*(.+)$/);
+    if (!match) return [];
+
+    const [, rawTitle, body] = match;
+    const title = rawTitle.trim();
+    const isGenericStepLabel = /^(step|part|phase)\s*\d+[a-z]?$/i.test(title);
+    if (!title || /^assembly$/i.test(title) || isGenericStepLabel) return [];
+
+    return [{
+      id: `derived-${index}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      title,
+      recipe_role: inferSectionRole(title, defaultPairingTitle),
+      steps: [body.trim()],
+      ingredients: [],
+    }];
+  });
+
+  return sections.length >= 2 ? sections : [];
+};
 
 const getDefaultServings = (recipe: Pick<RecipeDetail, 'title' | 'servings'> | null | undefined): number => {
   if (!recipe) return 1;
@@ -222,7 +256,9 @@ export default function RecipeDetailScreen() {
           // Award XP for browsing a recipe detail (fire-and-forget)
           gameApi.awardXP(5, 'browse_recipe').catch(() => {});
         })
-        .catch(() => {})
+        .catch((err: any) => {
+          console.warn('Failed to load recipe detail:', err?.message);
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -266,9 +302,13 @@ export default function RecipeDetailScreen() {
                 tier: preview?.score?.display_tier ?? preview?.display_tier ?? 'critical',
               });
             })
-            .catch(() => {});
+            .catch((err: any) => {
+              console.warn('Failed to preview composite MES:', err?.message);
+            });
         })
-        .catch(() => {})
+        .catch((err: any) => {
+          console.warn('Failed to load pairing suggestions:', err?.message);
+        })
         .finally(() => setLoadingPairings(false));
     } else {
       setPairings([]);
@@ -282,10 +322,21 @@ export default function RecipeDetailScreen() {
       setSelectedSideDetail(null);
       return;
     }
+    if (!recipe) return;
     // If the selected side already exists in expanded component payload,
     // reuse local data and skip an extra detail API request.
-    if ((recipe?.components || []).some((c) => c.id === selectedSide.recipe_id)) {
-      setSelectedSideDetail(null);
+    const existingExpandedRecipe = [...(recipe.components || []), ...(recipe.default_pairings || [])]
+      .find((component) => component.id === selectedSide.recipe_id);
+    if (existingExpandedRecipe) {
+      setSelectedSideDetail({
+        ...recipe,
+        ...existingExpandedRecipe,
+        default_pairing_ids: [],
+        default_pairings: [],
+        needs_default_pairing: null,
+        components: [],
+        component_composition: null,
+      });
       return;
     }
     let cancelled = false;
@@ -300,7 +351,7 @@ export default function RecipeDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [selectedSide?.recipe_id, recipe?.components]);
+  }, [selectedSide?.recipe_id, recipe?.components, recipe?.default_pairings]);
 
   useEffect(() => {
     setCheckedIngredients(new Set());
@@ -536,12 +587,14 @@ export default function RecipeDetailScreen() {
     : 'crash_risk';
   const mesTierConfig = getTierConfig(mesTier);
   const baseComponents = activeRecipe.components || [];
-  const baseVegComponent = baseComponents.find((component) => component.recipe_role === 'veg_side');
+  const defaultPairingComponents = activeRecipe.default_pairings || [];
+  const baseVegComponent = [...baseComponents, ...defaultPairingComponents].find((component) => component.recipe_role === 'veg_side');
   const inferredSimpleMealPairing =
     !activeRecipe.is_component &&
     !activeRecipe.component_composition &&
-    baseComponents.length > 0 &&
-    baseComponents.every((component) => component.recipe_role === 'veg_side');
+    baseComponents.length === 0 &&
+    defaultPairingComponents.length > 0 &&
+    defaultPairingComponents.every((component) => component.recipe_role === 'veg_side');
   const showMealPlusPairing = showDefaultPairingForMeal || inferredSimpleMealPairing;
   const fallbackDefaultPairingComponent = showMealPlusPairing
     ? (baseVegComponent || null)
@@ -581,6 +634,7 @@ export default function RecipeDetailScreen() {
               ingredients: selectedSideDetail.ingredients || [],
             }
           : displayedComponents.find((component) => component.id === selectedSide.recipe_id)
+            || defaultPairingComponents.find((component) => component.id === selectedSide.recipe_id)
             || {
               id: selectedSide.recipe_id,
               title: selectedSide.title,
@@ -590,12 +644,22 @@ export default function RecipeDetailScreen() {
             }
       )
     : fallbackDefaultPairingComponent;
-  const hasStructuredComponents =
-    displayedComponents.length > 0 &&
-    (
-      !!activeRecipe.component_composition
-      || displayedComponents.some((component) => component.recipe_role !== 'veg_side')
-    );
+  const derivedStepSections = displayedComponents.length === 0
+    ? deriveStepSections(activeRecipe.steps || [], selectedSideComponent?.title || selectedSide?.title || fallbackDefaultPairingComponent?.title || null)
+    : [];
+  const structuredComponentsWithPairing = displayedComponents.length > 0
+    ? [
+        ...displayedComponents,
+        ...(
+          showMealPlusPairing
+          && selectedSideComponent
+          && !displayedComponents.some((component) => component.id === selectedSideComponent.id)
+            ? [selectedSideComponent]
+            : []
+        ),
+      ]
+    : [];
+  const hasStructuredComponents = structuredComponentsWithPairing.length > 0;
   const pairingSections = showMealPlusPairing && selectedSideComponent && !hasStructuredComponents
     ? [
         {
@@ -609,12 +673,14 @@ export default function RecipeDetailScreen() {
       ]
     : [];
   const stepSections = hasStructuredComponents
-    ? displayedComponents
+    ? structuredComponentsWithPairing
+    : derivedStepSections.length > 0
+      ? derivedStepSections
     : pairingSections;
   const displayedIngredients = pairingSections.length > 0
     ? pairingSections.flatMap((section) => section.ingredients || [])
     : hasStructuredComponents
-      ? displayedComponents.flatMap((component) => component.ingredients || [])
+      ? structuredComponentsWithPairing.flatMap((component) => component.ingredients || [])
       : activeRecipe.ingredients;
   const ingredientGroups = (() => {
     const groups: Record<string, { ing: Ingredient; idx: number }[]> = {};
@@ -672,7 +738,7 @@ export default function RecipeDetailScreen() {
         message={successModal.message}
         onPrimary={() => {
           setSuccessModal({ visible: false, message: '' });
-          router.push('/(tabs)/chronometer' as any);
+          router.navigate('/(tabs)/chronometer' as any);
         }}
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import mimetypes
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ from app.models.scanned_meal import ScannedMealLog
 from app.models.user import User
 from app.routers.nutrition import _compute_daily
 from app.services.meal_scan import analyze_meal_scan, recompute_meal_scan
-from app.services.metabolic_engine import on_food_log_created
+from app.services.metabolic_engine import build_glycemic_nutrition_input, on_food_log_created
 from app.services.product_label_scan import analyze_product_label_image
 from app.services.supabase_storage import (
     SupabaseStorageUnavailable,
@@ -33,6 +33,7 @@ from app.services.supabase_storage import (
 from app.services.whole_food_scoring import analyze_whole_food_product
 from app.routers.whole_food_scan import WholeFoodAnalyzeRequest, _extract_product_payload
 from app.config import get_settings
+from app.services.fuel_score import compute_fuel_score
 
 import httpx
 
@@ -85,6 +86,8 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
             "score": float(scan.mes_score),
             "tier": scan.mes_tier,
             "sub_scores": scan.mes_sub_scores or {},
+            "ingredient_gis_adjustment": float((scan.nutrition_estimate or {}).get("ingredient_gis_adjustment", 0) or 0),
+            "ingredient_gis_reasons": (scan.nutrition_estimate or {}).get("ingredient_gis_reasons") or [],
         }
     return {
         "id": str(scan.id),
@@ -96,6 +99,7 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
         "estimated_ingredients": scan.estimated_ingredients or [],
         "normalized_ingredients": scan.normalized_ingredients or [],
         "nutrition_estimate": scan.nutrition_estimate or {},
+        "glycemic_profile": (scan.nutrition_estimate or {}).get("glycemic_profile"),
         "whole_food_status": scan.whole_food_status,
         "whole_food_flags": scan.whole_food_flags or [],
         "suggested_swaps": scan.suggested_swaps or {},
@@ -120,6 +124,7 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
         "pairing_projected_delta": float(scan.pairing_projected_delta or 0) if scan.pairing_projected_delta is not None else None,
         "pairing_reasons": scan.pairing_reasons or [],
         "pairing_timing": scan.pairing_timing,
+        "fuel_score": float(scan.fuel_score) if scan.fuel_score is not None else None,
         "image": _serialize_storage_reference(
             bucket=scan.image_bucket,
             path=scan.image_path,
@@ -406,6 +411,23 @@ async def scan_meal(
             mime_type=image.content_type,
         )
 
+    # ── Fuel Score for scanned meal ──
+    # Use the raw component dicts (name + role) so _score_scan can apply
+    # per-role adjustments (dessert penalty, refined-carb check, etc.)
+    try:
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            nutrition=result.get("nutrition_estimate"),
+            components=result.get("components") or [],
+            source_context=result.get("source_context"),
+            whole_food_status=result.get("whole_food_status"),
+            whole_food_flags=result.get("whole_food_flags"),
+        )
+        scan_fuel_score = fuel_result.score
+    except Exception:
+        logger.warning("Fuel score computation failed for scan", exc_info=True)
+        scan_fuel_score = None
+
     scan = ScannedMealLog(
         user_id=current_user.id,
         image_url=(storage_ref or {}).get("signed_url"),
@@ -447,6 +469,7 @@ async def scan_meal(
         prompt_version=result.get("prompt_version"),
         matched_recipe_id=result.get("matched_recipe_id"),
         matched_recipe_confidence=result.get("matched_recipe_confidence"),
+        fuel_score=scan_fuel_score,
     )
     db.add(scan)
     db.commit()
@@ -542,7 +565,7 @@ async def log_meal_scan(
     if scan.logged_food_log_id:
         return {"ok": True, "food_log_id": str(scan.logged_food_log_id), "already_logged": True}
 
-    log_date = datetime.utcnow().date()
+    log_date = datetime.now(UTC).date()
     if body.date:
         try:
             log_date = datetime.fromisoformat(body.date).date()
@@ -572,9 +595,9 @@ async def log_meal_scan(
             group_id = str(uuid.uuid4())
             group_mes_score = float(scan.pairing_projected_mes)
             group_mes_tier = (
-                "optimal" if group_mes_score >= 80
-                else "stable" if group_mes_score >= 60
-                else "shaky" if group_mes_score >= 40
+                "optimal" if group_mes_score >= 82
+                else "stable" if group_mes_score >= 65
+                else "shaky" if group_mes_score >= 50
                 else "crash_risk"
             )
 
@@ -591,6 +614,7 @@ async def log_meal_scan(
         servings=body.servings,
         quantity=body.quantity,
         nutrition_snapshot=nutrition_snapshot,
+        fuel_score=float(scan.fuel_score) if scan.fuel_score is not None else None,
     )
     db.add(log)
     db.commit()
@@ -614,7 +638,7 @@ async def log_meal_scan(
             title=paired_recipe.title,
             servings=1.0,
             quantity=1.0,
-            nutrition_snapshot=paired_recipe.nutrition_info or {},
+            nutrition_snapshot=build_glycemic_nutrition_input(paired_recipe.nutrition_info or {}, source=paired_recipe),
         )
         db.add(side_log)
         db.commit()
@@ -631,3 +655,101 @@ async def log_meal_scan(
     db.commit()
 
     return {"ok": True, "food_log_id": str(log.id), "meal_label": scan.meal_label}
+
+
+class MealScanCorrectionRequest(BaseModel):
+    correction_text: str = Field(..., min_length=3, max_length=500)
+
+
+@router.patch("/meal/{scan_id}/correct")
+async def correct_meal_scan(
+    scan_id: str,
+    body: MealScanCorrectionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Apply a user's text correction to a scanned meal and recompute scores.
+
+    The correction text is sent to Gemini along with the original scan data
+    to produce updated components and nutrition. Fuel Score and MES are
+    then recomputed on the updated data.
+    """
+    scan = (
+        db.query(ScannedMealLog)
+        .filter(ScannedMealLog.id == scan_id, ScannedMealLog.user_id == current_user.id)
+        .first()
+    )
+    if not scan:
+        raise HTTPException(status_code=404, detail="Meal scan not found.")
+
+    # Build a corrected ingredient list by merging user feedback
+    original_ingredients = [
+        comp.get("name", "") for comp in (scan.normalized_ingredients or scan.estimated_ingredients or [])
+    ]
+    corrected_ingredients = original_ingredients.copy()
+
+    # Simple heuristic: user says "X was actually Y" or "remove X" or "add Y"
+    correction_lower = body.correction_text.lower()
+    if corrected_ingredients or correction_lower:
+        # Re-run the scan pipeline with updated ingredient names
+        result = await recompute_meal_scan(
+            db=db,
+            user_id=current_user.id,
+            meal_label=scan.meal_label,
+            meal_type=scan.meal_type or "lunch",
+            portion_size=scan.portion_size or "medium",
+            source_context=scan.source_context or "home",
+            ingredients=original_ingredients,
+            existing_source_model=scan.source_model,
+            correction_text=body.correction_text,
+        )
+
+        scan.estimated_ingredients = result.get("estimated_ingredients", scan.estimated_ingredients)
+        scan.normalized_ingredients = result.get("normalized_ingredients", scan.normalized_ingredients)
+        scan.nutrition_estimate = {
+            **(result.get("nutrition_estimate") or {}),
+            "whole_food_summary": result.get("whole_food_summary"),
+            "correction_applied": body.correction_text,
+        }
+        scan.whole_food_status = result.get("whole_food_status", scan.whole_food_status)
+        scan.whole_food_flags = result.get("whole_food_flags", scan.whole_food_flags)
+        scan.upgrade_suggestions = result.get("upgrade_suggestions", scan.upgrade_suggestions)
+        scan.recovery_plan = result.get("recovery_plan", scan.recovery_plan)
+        scan.mes_score = (result.get("mes") or {}).get("score", scan.mes_score)
+        scan.mes_tier = (result.get("mes") or {}).get("tier", scan.mes_tier)
+        scan.mes_sub_scores = (result.get("mes") or {}).get("sub_scores") or scan.mes_sub_scores
+
+        # Recompute Fuel Score with corrected data
+        try:
+            fuel_result = compute_fuel_score(
+                source_type="scan",
+                nutrition=result.get("nutrition_estimate"),
+                components=result.get("normalized_ingredients") or result.get("estimated_ingredients"),
+                source_context=scan.source_context,
+                whole_food_status=result.get("whole_food_status"),
+                whole_food_flags=result.get("whole_food_flags"),
+            )
+            scan.fuel_score = fuel_result.score
+        except Exception:
+            logger.warning("Fuel score recomputation failed after correction", exc_info=True)
+
+    db.commit()
+    db.refresh(scan)
+
+    # If already logged to chronometer, update the linked FoodLog too
+    if scan.logged_food_log_id:
+        food_log = db.query(FoodLog).filter(FoodLog.id == scan.logged_food_log_id).first()
+        if food_log:
+            food_log.nutrition_snapshot = build_glycemic_nutrition_input(scan.nutrition_estimate or food_log.nutrition_snapshot)
+            food_log.fuel_score = scan.fuel_score
+            db.commit()
+            _compute_daily(db, current_user.id, food_log.date)
+
+    serialized = _serialize_scan(scan)
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    return serialized

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -17,7 +17,6 @@ from app.schemas.notification import (
 from app.services.notifications import (
     deactivate_push_token,
     get_or_create_preferences,
-    process_user_notifications,
     record_notification_event,
     register_push_token,
     send_test_notification_to_user,
@@ -155,7 +154,7 @@ async def send_test_notification(
         metadata_json=body.metadata,
         triggered_by_event="manual_test",
         failure_reason="no_candidate_or_token",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
     db.add(delivery)
     db.commit()
@@ -175,6 +174,5 @@ async def ingest_notification_event(
         properties=body.properties,
         source=body.source,
     )
-    deliveries = process_user_notifications(db, current_user.id)
     db.commit()
-    return {"status": "ok", "event_id": str(event.id), "notifications_sent": len(deliveries)}
+    return {"status": "ok", "event_id": str(event.id), "queued": True, "notifications_sent": 0}

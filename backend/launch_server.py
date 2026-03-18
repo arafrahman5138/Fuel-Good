@@ -12,7 +12,9 @@ python = main_venv_python if os.path.exists(main_venv_python) else sys.executabl
 
 os.environ['PYTHONPATH'] = worktree_backend
 
+port = os.environ.get('PORT', '8000')
+
 subprocess.run([
     python, '-m', 'uvicorn', 'app.main:app',
-    '--reload', '--host', '0.0.0.0', '--port', '8000'
+    '--reload', '--host', '0.0.0.0', '--port', port
 ], cwd=worktree_backend)

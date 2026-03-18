@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 
 import { APP_VERSION, EXPO_PROJECT_ID } from '../constants/Config';
 import { notificationsApi } from './api';
+import { reportClientError } from './errorReporting';
 import { useAuthStore } from '../stores/authStore';
 
 const PUSH_PROMPT_KEY = 'push_prompt_requested_v1';
@@ -73,9 +74,22 @@ export async function maybePromptForPush(trigger: 'meal_plan' | 'save_recipe' | 
   return true;
 }
 
+const ALLOWED_ROUTE_PREFIXES = [
+  '/(tabs)/',
+  '/food/',
+  '/cook/',
+  '/browse/',
+  '/scan/',
+  '/saved',
+  '/subscribe',
+  '/settings',
+];
+
 function routeFromNotification(data: Record<string, any>): string {
-  const route = typeof data?.route === 'string' ? data.route : '';
-  return route || '/(tabs)/index';
+  const route = typeof data?.route === 'string' ? data.route.trim() : '';
+  if (!route) return '/(tabs)/index';
+  const isAllowed = ALLOWED_ROUTE_PREFIXES.some((prefix) => route.startsWith(prefix));
+  return isAllowed ? route : '/(tabs)/index';
 }
 
 export function registerNotificationListeners(): () => void {
@@ -92,7 +106,9 @@ export function registerNotificationListeners(): () => void {
       delivery_id: deliveryId,
       category: data.category,
       route,
-    }).catch(() => {});
+    }).catch((err: any) => {
+      void reportClientError({ source: 'telemetry', message: 'notification_opened event failed', context: { error: err?.message } });
+    });
 
     router.push(route as any);
 
@@ -100,7 +116,9 @@ export function registerNotificationListeners(): () => void {
       delivery_id: deliveryId,
       category: data.category,
       route,
-    }).catch(() => {});
+    }).catch((err: any) => {
+      void reportClientError({ source: 'telemetry', message: 'notification_deep_linked event failed', context: { error: err?.message } });
+    });
   });
 
   return () => {
@@ -114,5 +132,7 @@ export function trackBehaviorEvent(eventType: string, properties: Record<string,
     ...properties,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
     local_hour: now.getHours(),
-  }).catch(() => {});
+  }).catch((err: any) => {
+    void reportClientError({ source: 'telemetry', message: `${eventType} event failed`, context: { error: err?.message } });
+  });
 }

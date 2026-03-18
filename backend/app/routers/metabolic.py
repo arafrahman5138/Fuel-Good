@@ -3,7 +3,7 @@ Metabolic Budget API router.
 
 Endpoints for budget settings, onboarding profile, scores, streak, preview, and remaining budget.
 """
-from datetime import datetime, date, timedelta
+from datetime import UTC, datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -35,6 +35,7 @@ from app.schemas.metabolic import (
 from app.models.recipe import Recipe
 from app.models.nutrition import FoodLog, NutritionTarget
 from app.services.metabolic_engine import (
+    build_glycemic_nutrition_input,
     get_or_create_budget,
     get_or_create_streak,
     compute_meal_mes,
@@ -89,7 +90,7 @@ def _sync_nutrition_targets_from_computed(db: Session, user_id: str, computed) -
 
 def _parse_date(value: str | None) -> date:
     if not value:
-        return datetime.utcnow().date()
+        return datetime.now(UTC).date()
     try:
         return datetime.fromisoformat(value).date()
     except Exception:
@@ -118,6 +119,8 @@ def _score_from_db(s: MetabolicScore) -> MESScoreResponse:
         weights_used=WeightsUsed(**weights) if weights else None,
         net_carbs_g=details.get("net_carbs_g"),
         fat_g=float(details.get("fat_g", 0) or 0) if details.get("fat_g") else None,
+        ingredient_gis_adjustment=float(details.get("ingredient_gis_adjustment", 0) or 0) if details.get("ingredient_gis_adjustment") is not None else None,
+        ingredient_gis_reasons=details.get("ingredient_gis_reasons") or [],
         pairing_applied=bool(details.get("pairing_applied")) if details.get("pairing_applied") is not None else None,
         pairing_gis_bonus=details.get("pairing_gis_bonus"),
         pairing_synergy_bonus=details.get("pairing_synergy_bonus"),
@@ -440,6 +443,8 @@ async def get_daily_score(
         remaining=rem,
         treat_impact=treat_impact,
         mea=mea,
+        ingredient_gis_daily_bonus=float(details.get("ingredient_gis_daily_bonus", 0) or 0),
+        ingredient_gis_sources=details.get("ingredient_gis_sources") or [],
         pairing_synergy_daily_bonus=float(details.get("pairing_synergy_daily_bonus", 0) or 0),
         pairing_synergy_sources=details.get("pairing_synergy_sources") or [],
     )
@@ -504,7 +509,7 @@ async def get_score_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=days - 1)
     scores = (
         db.query(MetabolicScore)
@@ -598,6 +603,9 @@ async def compute_composite_score(
 
     # Aggregate nutrition from all component logs
     agg = {"protein_g": 0.0, "fiber_g": 0.0, "carbs_g": 0.0, "sugar_g": 0.0, "calories": 0.0, "fat_g": 0.0}
+    agg_ingredients: list[str] = []
+    agg_carb_type: list[str] = []
+    agg_glycemic_profile = None
     for log in logs:
         snap = log.nutrition_snapshot or {}
         agg["protein_g"] += float(snap.get("protein", 0) or snap.get("protein_g", 0) or 0)
@@ -609,6 +617,15 @@ async def compute_composite_score(
         agg["sugar_g"] += float(snap.get("sugar", 0) or snap.get("sugar_g", 0) or 0)
         agg["calories"] += float(snap.get("calories", 0) or 0)
         agg["fat_g"] += float(snap.get("fat", 0) or snap.get("fat_g", 0) or 0)
+        agg_ingredients.extend(snap.get("ingredients") or [])
+        agg_carb_type.extend(snap.get("carb_type") or [])
+        agg_glycemic_profile = agg_glycemic_profile or snap.get("glycemic_profile")
+    agg = build_glycemic_nutrition_input(
+        agg,
+        glycemic_profile=agg_glycemic_profile,
+        ingredients=agg_ingredients,
+        carb_type=agg_carb_type,
+    )
 
     budget = get_or_create_budget(db, current_user.id)
     pairing_recipe = None
@@ -623,7 +640,7 @@ async def compute_composite_score(
             pairing_nutrition = log.nutrition_snapshot or {}
             break
     if pairing_recipe is not None:
-        base_nutrition = {}
+        base_nutrition = {"ingredients": [], "carb_type": []}
         for log in logs:
             if log.source_type == "recipe" and str(log.source_id) == str(pairing_recipe.id):
                 continue
@@ -631,6 +648,10 @@ async def compute_composite_score(
             for key, value in snap.items():
                 if key in {"protein", "protein_g", "fiber", "fiber_g", "carbs", "carbs_g", "sugar", "sugar_g", "calories", "fat", "fat_g"}:
                     base_nutrition[key] = float(base_nutrition.get(key, 0) or 0) + float(value or 0)
+            base_nutrition["ingredients"].extend(snap.get("ingredients") or [])
+            base_nutrition["carb_type"].extend(snap.get("carb_type") or [])
+            if base_nutrition.get("glycemic_profile") is None and snap.get("glycemic_profile") is not None:
+                base_nutrition["glycemic_profile"] = snap.get("glycemic_profile")
     paired_result = (
         compute_meal_mes_with_pairing(base_nutrition or agg, pairing_recipe, budget, pairing_nutrition)
         if pairing_recipe is not None
@@ -712,7 +733,7 @@ async def get_meal_suggestions(
 
     suggestions: list[dict] = []
     for recipe in recipes:
-        nutrition = recipe.nutrition_info or {}
+        nutrition = build_glycemic_nutrition_input(recipe.nutrition_info or {}, source=recipe)
         protein_g = float(nutrition.get("protein", 0) or nutrition.get("protein_g", 0) or 0)
         fiber_g = float(nutrition.get("fiber", 0) or nutrition.get("fiber_g", 0) or 0)
         carbs_g = float(nutrition.get("carbs", 0) or nutrition.get("carbs_g", 0) or 0)
@@ -728,8 +749,8 @@ async def get_meal_suggestions(
         daily_result = compute_daily_mes(projected_totals, budget)
         meal_result = compute_meal_mes(nutrition, budget)
 
-        # Only suggest meals that keep the user at stable (60+) or better
-        if daily_result["total_score"] >= 60:
+        # Only suggest meals that keep the user at good (65+) or better
+        if daily_result["total_score"] >= 65:
             suggestions.append({
                 "recipe_id": recipe.id,
                 "title": recipe.title,
@@ -771,6 +792,7 @@ def _generate_coach_insights(
     totals: dict,
     rem: dict,
     meals_logged: int,
+    fuel_context: dict | None = None,
 ) -> list[CoachInsight]:
     """Generate 3-6 personalized coach insights using full user context."""
     insights: list[CoachInsight] = []
@@ -798,8 +820,8 @@ def _generate_coach_insights(
             insights.append(CoachInsight(
                 icon="sunny",
                 title="Good morning — fuel up right",
-                body=f"Start with protein to set your MES trajectory. Aim for 30-40g in your first meal."
-                + (" Keep carbs moderate to protect your insulin sensitivity." if is_ir else ""),
+            body=f"Start with protein to set your MES trajectory. Aim for 30-40g in your first meal."
+                + (" Keep carbs more moderate to protect your insulin sensitivity." if is_ir else ""),
                 accent="#F59E0B",
                 priority=10,
                 action=CoachInsightAction(type="chat", query="high protein breakfast"),
@@ -849,7 +871,7 @@ def _generate_coach_insights(
         insights.append(CoachInsight(
             icon="alert-circle",
             title="Energy may fluctuate",
-            body=f"MES is {int(display_score)}. Prioritize protein and fiber in your next meal to stabilize."
+            body=f"MES is {int(display_score)}. Prioritize protein and fiber in your next meal to stabilize and smooth the carb load."
             + (" Watch your carb intake carefully." if is_ir else ""),
             accent="#FF9500", priority=9,
             action=CoachInsightAction(type="chat", query="balanced meal with protein and fiber"),
@@ -888,7 +910,7 @@ def _generate_coach_insights(
         insights.append(CoachInsight(
             icon="checkmark-done-circle",
             title="Protein target hit!",
-            body="You've met your protein target — the biggest factor in a high MES.",
+            body="You've met your protein target — a major driver of a strong MES.",
             accent="#34C759", priority=3,
         ))
 
@@ -940,6 +962,62 @@ def _generate_coach_insights(
             body="Protein target met with meals to spare. Distribute remaining carbs and fats to fuel your training.",
             accent="#22C55E", priority=2,
         ))
+
+    # ─── Fuel Score insights ───
+    if fuel_context:
+        fc = fuel_context
+        weekly_avg = fc.get("weekly_avg", 0)
+        fuel_target = fc.get("fuel_target", 80)
+        flex_remaining = fc.get("flex_remaining", 0)
+        streak = fc.get("streak", 0)
+        daily_avg = fc.get("daily_avg", 0)
+        daily_meals = fc.get("daily_meal_count", 0)
+
+        # Weekly fuel slipping
+        if weekly_avg > 0 and weekly_avg < fuel_target - 5 and daily_meals >= 2:
+            gap = round(fuel_target - weekly_avg, 0)
+            insights.append(CoachInsight(
+                icon="leaf",
+                title=f"Fuel Score {int(gap)} points below target",
+                body=f"Your weekly average is {weekly_avg:.0f} vs your {fuel_target} target. "
+                     f"Try adding a whole-food side to your next meal to close the gap.",
+                accent="#F59E0B", priority=7,
+                action=CoachInsightAction(type="browse", query="whole food side dish"),
+            ))
+        # Weekly fuel on track
+        elif weekly_avg >= fuel_target and daily_meals >= 1 and flex_remaining > 0:
+            insights.append(CoachInsight(
+                icon="leaf",
+                title=f"{flex_remaining} flex meal{'s' if flex_remaining != 1 else ''} available",
+                body=f"Your Fuel Score is {weekly_avg:.0f} — above your {fuel_target} target. "
+                     f"You’ve earned room for a flex meal. Enjoy it guilt-free!",
+                accent="#22C55E", priority=4,
+            ))
+        # Today's fuel is low
+        if daily_avg > 0 and daily_avg < 50 and daily_meals >= 2:
+            insights.append(CoachInsight(
+                icon="alert-circle",
+                title="Today's Fuel Score is low",
+                body=f"Your meals today average {daily_avg:.0f} Fuel Score. "
+                     "Balance it out with a whole-food dinner — grilled protein + veggies.",
+                accent="#EF4444", priority=8,
+                action=CoachInsightAction(type="chat", query="whole food dinner ideas"),
+            ))
+        # Streak celebration
+        if streak >= 4:
+            insights.append(CoachInsight(
+                icon="trophy",
+                title=f"{streak}-week Fuel Streak!",
+                body="You’ve been hitting your fuel target consistently. Your body is thanking you.",
+                accent="#FFD700", priority=3,
+            ))
+        elif streak >= 2:
+            insights.append(CoachInsight(
+                icon="ribbon",
+                title=f"{streak}-week streak building",
+                body="Keep the momentum going — one more week to build serious consistency.",
+                accent="#C0C0C0", priority=2,
+            ))
 
     # Sort by priority descending, return top 6
     insights.sort(key=lambda x: x.priority, reverse=True)
@@ -1060,7 +1138,50 @@ async def get_coach_insights(
     # Get daily score
     score_obj = recompute_daily_score(db, current_user.id, day, budget)
 
-    insights = _generate_coach_insights(profile, computed, score_obj, totals, rem, meals_logged)
+    # Build fuel context for fuel-aware insights
+    fuel_context = None
+    try:
+        from app.services.fuel_score import (
+            get_weekly_meal_scores,
+            get_week_bounds,
+            compute_flex_budget,
+            compute_fuel_streak,
+            DEFAULT_FUEL_TARGET,
+            DEFAULT_MEALS_PER_WEEK,
+        )
+        fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
+        expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+        week_start, _ = get_week_bounds(day)
+        weekly_scores = get_weekly_meal_scores(db, current_user.id, week_start)
+
+        # Daily fuel scores
+        daily_logs = (
+            db.query(FoodLog)
+            .filter(FoodLog.user_id == current_user.id, FoodLog.date == day, FoodLog.fuel_score.isnot(None))
+            .all()
+        )
+        daily_fuel_scores = [float(l.fuel_score) for l in daily_logs]
+
+        flex_data = compute_flex_budget(
+            fuel_target=fuel_target,
+            expected_meals=expected_meals,
+            meal_scores=weekly_scores,
+            week_start=week_start,
+        )
+        streak_data = compute_fuel_streak(db, current_user.id, fuel_target, day)
+
+        fuel_context = {
+            "weekly_avg": round(sum(weekly_scores) / len(weekly_scores), 1) if weekly_scores else 0,
+            "fuel_target": fuel_target,
+            "flex_remaining": flex_data.flex_meals_remaining,
+            "streak": streak_data["current_streak"],
+            "daily_avg": round(sum(daily_fuel_scores) / len(daily_fuel_scores), 1) if daily_fuel_scores else 0,
+            "daily_meal_count": len(daily_fuel_scores),
+        }
+    except Exception:
+        pass  # fuel data is optional enhancement
+
+    insights = _generate_coach_insights(profile, computed, score_obj, totals, rem, meals_logged, fuel_context)
     food_suggestions = _generate_food_suggestions(profile, rem)
 
     return CoachInsightsResponse(insights=insights, suggested_foods=food_suggestions)
@@ -1238,11 +1359,14 @@ async def preview_composite_score(
     recipe_map = {str(r.id): r for r in recipes}
 
     agg = {"protein_g": 0.0, "fiber_g": 0.0, "carbs_g": 0.0, "sugar_g": 0.0, "calories": 0.0, "fat_g": 0.0}
+    agg_ingredients: list[str] = []
+    agg_carb_type: list[str] = []
+    agg_glycemic_profile = None
     for i, rid in enumerate(recipe_ids):
         r = recipe_map.get(rid)
         if not r:
             continue
-        n = r.nutrition_info or {}
+        n = build_glycemic_nutrition_input(r.nutrition_info or {}, source=r)
         s = float(servings_list[i]) if i < len(servings_list) else 1.0
         agg["protein_g"] += float(n.get("protein", 0) or n.get("protein_g", 0) or 0) * s
         agg["fiber_g"] += float(n.get("fiber", 0) or n.get("fiber_g", 0) or 0) * s
@@ -1250,6 +1374,15 @@ async def preview_composite_score(
         agg["sugar_g"] += float(n.get("sugar", 0) or n.get("sugar_g", 0) or 0) * s
         agg["calories"] += float(n.get("calories", 0) or 0) * s
         agg["fat_g"] += float(n.get("fat", 0) or n.get("fat_g", 0) or 0) * s
+        agg_ingredients.extend(n.get("ingredients") or [])
+        agg_carb_type.extend(n.get("carb_type") or [])
+        agg_glycemic_profile = agg_glycemic_profile or n.get("glycemic_profile")
+    agg = build_glycemic_nutrition_input(
+        agg,
+        glycemic_profile=agg_glycemic_profile,
+        ingredients=agg_ingredients,
+        carb_type=agg_carb_type,
+    )
 
     budget = get_or_create_budget(db, current_user.id)
     pairing_recipe = None
@@ -1263,12 +1396,12 @@ async def preview_composite_score(
     base_nutrition = agg
     paired_result = None
     if pairing_recipe is not None and getattr(pairing_recipe, "pairing_synergy_profile", None):
-        base_nutrition = {"protein_g": 0.0, "fiber_g": 0.0, "carbs_g": 0.0, "sugar_g": 0.0, "calories": 0.0, "fat_g": 0.0}
+        base_nutrition = {"protein_g": 0.0, "fiber_g": 0.0, "carbs_g": 0.0, "sugar_g": 0.0, "calories": 0.0, "fat_g": 0.0, "ingredients": [], "carb_type": []}
         for i, rid in enumerate(recipe_ids):
             r = recipe_map.get(rid)
             if not r or str(r.id) == str(pairing_recipe.id):
                 continue
-            n = r.nutrition_info or {}
+            n = build_glycemic_nutrition_input(r.nutrition_info or {}, source=r)
             s = float(servings_list[i]) if i < len(servings_list) else 1.0
             base_nutrition["protein_g"] += float(n.get("protein", 0) or n.get("protein_g", 0) or 0) * s
             base_nutrition["fiber_g"] += float(n.get("fiber", 0) or n.get("fiber_g", 0) or 0) * s
@@ -1276,7 +1409,12 @@ async def preview_composite_score(
             base_nutrition["sugar_g"] += float(n.get("sugar", 0) or n.get("sugar_g", 0) or 0) * s
             base_nutrition["calories"] += float(n.get("calories", 0) or 0) * s
             base_nutrition["fat_g"] += float(n.get("fat", 0) or n.get("fat_g", 0) or 0) * s
+            base_nutrition["ingredients"].extend(n.get("ingredients") or [])
+            base_nutrition["carb_type"].extend(n.get("carb_type") or [])
+            if base_nutrition.get("glycemic_profile") is None and n.get("glycemic_profile") is not None:
+                base_nutrition["glycemic_profile"] = n.get("glycemic_profile")
         pairing_nutrition = {
+            **build_glycemic_nutrition_input(pairing_recipe.nutrition_info or {}, source=pairing_recipe),
             "protein_g": float((pairing_recipe.nutrition_info or {}).get("protein", 0) or (pairing_recipe.nutrition_info or {}).get("protein_g", 0) or 0) * (float(servings_list[pairing_index]) if pairing_index is not None and pairing_index < len(servings_list) else 1.0),
             "fiber_g": float((pairing_recipe.nutrition_info or {}).get("fiber", 0) or (pairing_recipe.nutrition_info or {}).get("fiber_g", 0) or 0) * (float(servings_list[pairing_index]) if pairing_index is not None and pairing_index < len(servings_list) else 1.0),
             "carbs_g": float((pairing_recipe.nutrition_info or {}).get("carbs", 0) or (pairing_recipe.nutrition_info or {}).get("carbs_g", 0) or 0) * (float(servings_list[pairing_index]) if pairing_index is not None and pairing_index < len(servings_list) else 1.0),

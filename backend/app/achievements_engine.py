@@ -4,7 +4,7 @@ Runs after user actions to check if new achievements should be awarded.
 """
 import uuid
 import logging
-from datetime import datetime, timedelta, date
+from datetime import UTC, datetime, timedelta, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.gamification import Achievement, UserAchievement, XPTransaction, NutritionStreak
@@ -300,7 +300,7 @@ ACHIEVEMENT_DEFS = [
     },
     {
         "name": "Full Power Week",
-        "description": "Hit 'Full Power' (MES ≥ 80) for 5 days in a week.",
+        "description": "Hit 'Full Power' (MES ≥ 82) for 5 days in a week.",
         "icon": "battery-full",
         "xp_reward": 500,
         "category": "metabolic",
@@ -396,6 +396,93 @@ ACHIEVEMENT_DEFS = [
         "category": "metabolic",
         "criteria": {"type": "triple_90_meal"},
     },
+    # ═══════════════════════════════════
+    # NEW — Fuel Score achievements
+    # ═══════════════════════════════════
+    # ── Weekly Fuel Streaks ──
+    {
+        "name": "Clean Week",
+        "description": "Meet your weekly Fuel Score target for the first time.",
+        "icon": "leaf",
+        "xp_reward": 200,
+        "category": "fuel",
+        "criteria": {"type": "fuel_streak_weeks", "target": 1},
+    },
+    {
+        "name": "Two-Week Streak",
+        "description": "Meet your Fuel Score target for 2 consecutive weeks.",
+        "icon": "leaf",
+        "xp_reward": 400,
+        "category": "fuel",
+        "criteria": {"type": "fuel_streak_weeks", "target": 2},
+    },
+    {
+        "name": "Month of Clean Fuel",
+        "description": "Meet your Fuel Score target for 4 consecutive weeks.",
+        "icon": "ribbon",
+        "xp_reward": 800,
+        "category": "fuel",
+        "criteria": {"type": "fuel_streak_weeks", "target": 4},
+    },
+    {
+        "name": "Fuel Master",
+        "description": "Meet your Fuel Score target for 8 consecutive weeks.",
+        "icon": "trophy",
+        "xp_reward": 1500,
+        "category": "fuel",
+        "criteria": {"type": "fuel_streak_weeks", "target": 8},
+    },
+    # ── Single-day Fuel Score ──
+    {
+        "name": "Perfect Fuel Day",
+        "description": "All meals in a day score Fuel Score ≥ 90.",
+        "icon": "star",
+        "xp_reward": 150,
+        "category": "fuel",
+        "criteria": {"type": "perfect_fuel_day", "target": 1},
+    },
+    {
+        "name": "Fuel Pro",
+        "description": "Achieve 5 perfect fuel days (all meals ≥ 90).",
+        "icon": "star",
+        "xp_reward": 500,
+        "category": "fuel",
+        "criteria": {"type": "perfect_fuel_day", "target": 5},
+    },
+    # ── Flex Mastery ──
+    {
+        "name": "Flex Master",
+        "description": "Use all flex meals in a week while still meeting your target.",
+        "icon": "thumbs-up",
+        "xp_reward": 100,
+        "category": "fuel",
+        "criteria": {"type": "flex_master"},
+    },
+    # ── Scanning ──
+    {
+        "name": "First Scan",
+        "description": "Scan your first meal.",
+        "icon": "camera",
+        "xp_reward": 50,
+        "category": "fuel",
+        "criteria": {"type": "scan_count", "target": 1},
+    },
+    {
+        "name": "Scan Regular",
+        "description": "Scan 10 meals.",
+        "icon": "camera",
+        "xp_reward": 200,
+        "category": "fuel",
+        "criteria": {"type": "scan_count", "target": 10},
+    },
+    {
+        "name": "Scan Master",
+        "description": "Scan 50 meals.",
+        "icon": "camera",
+        "xp_reward": 500,
+        "category": "fuel",
+        "criteria": {"type": "scan_count", "target": 50},
+    },
 ]
 
 
@@ -448,7 +535,7 @@ def award_xp(db: Session, user: User, amount: int, reason: str) -> dict:
 # ─── Nutrition streak updater ───
 def update_nutrition_streak(db: Session, user: User, daily_score: float, day: date | None = None) -> dict:
     """Call after daily score is computed. Updates the nutrition streak."""
-    today = day or datetime.utcnow().date()
+    today = day or datetime.now(UTC).date()
 
     ns = db.query(NutritionStreak).filter(NutritionStreak.user_id == user.id).first()
     if not ns:
@@ -518,7 +605,7 @@ def _count_nutrition_days(db: Session, user_id: str, min_score: float) -> int:
 
 def _check_weekly_nutrient(db: Session, user_id: str, nutrient: str, days_required: int) -> bool:
     """Check if user hit a specific nutrient target for N days in the last 7."""
-    week_ago = datetime.utcnow().date() - timedelta(days=7)
+    week_ago = datetime.now(UTC).date() - timedelta(days=7)
     summaries = db.query(DailyNutritionSummary).filter(
         DailyNutritionSummary.user_id == user_id,
         DailyNutritionSummary.date >= week_ago,
@@ -533,7 +620,7 @@ def _check_weekly_nutrient(db: Session, user_id: str, nutrient: str, days_requir
 
 def _check_macro_master(db: Session, user_id: str, days_required: int) -> bool:
     """All macros within 10% of targets for N days in last 7."""
-    week_ago = datetime.utcnow().date() - timedelta(days=7)
+    week_ago = datetime.now(UTC).date() - timedelta(days=7)
     summaries = db.query(DailyNutritionSummary).filter(
         DailyNutritionSummary.user_id == user_id,
         DailyNutritionSummary.date >= week_ago,
@@ -554,7 +641,7 @@ def _check_macro_master(db: Session, user_id: str, days_required: int) -> bool:
 
 def _check_whole_food_week(db: Session, user_id: str, meal_count: int) -> bool:
     """Check if user logged N meals from recipes in the last 7 days."""
-    week_ago = datetime.utcnow().date() - timedelta(days=7)
+    week_ago = datetime.now(UTC).date() - timedelta(days=7)
     recipe_logs = db.query(FoodLog).filter(
         FoodLog.user_id == user_id,
         FoodLog.date >= week_ago,
@@ -685,6 +772,65 @@ def _check_triple_90_meal(db: Session, user_id: str) -> bool:
     ).first() is not None
 
 
+def _check_fuel_streak_weeks(db: Session, user_id: str, target: int) -> bool:
+    """Check if the user met their Fuel Score target for `target` consecutive weeks."""
+    from app.models.fuel import WeeklyFuelSummary
+
+    weeks = (
+        db.query(WeeklyFuelSummary)
+        .filter(WeeklyFuelSummary.user_id == user_id)
+        .order_by(WeeklyFuelSummary.week_start.desc())
+        .all()
+    )
+    consecutive = 0
+    for w in weeks:
+        if w.target_met:
+            consecutive += 1
+            if consecutive >= target:
+                return True
+        else:
+            consecutive = 0
+    return False
+
+
+def _check_perfect_fuel_day(db: Session, user_id: str, target: int) -> bool:
+    """Check if the user has had `target` days where all meals scored ≥ 90."""
+    from app.models.fuel import DailyFuelSummary
+
+    days = (
+        db.query(DailyFuelSummary)
+        .filter(
+            DailyFuelSummary.user_id == user_id,
+            DailyFuelSummary.meal_count > 0,
+        )
+        .all()
+    )
+    perfect_count = 0
+    for d in days:
+        # A perfect fuel day: avg ≥ 90 and every meal was ≥ 90
+        # Since we only store avg, use avg ≥ 90 as the proxy
+        if (d.avg_fuel_score or 0) >= 90:
+            perfect_count += 1
+    return perfect_count >= target
+
+
+def _check_flex_master(db: Session, user_id: str) -> bool:
+    """Check if user used all flex meals in a week while still meeting their target."""
+    from app.models.fuel import WeeklyFuelSummary
+
+    return db.query(WeeklyFuelSummary).filter(
+        WeeklyFuelSummary.user_id == user_id,
+        WeeklyFuelSummary.target_met == True,
+        WeeklyFuelSummary.flex_budget_remaining == 0,
+    ).first() is not None
+
+
+def _count_scans(db: Session, user_id: str) -> int:
+    from app.models.scanned_meal import ScannedMealLog
+
+    return db.query(ScannedMealLog).filter(ScannedMealLog.user_id == user_id).count()
+
+
 def check_achievements(db: Session, user: User, context: dict | None = None) -> list[dict]:
     """
     Check all achievements against current user state.
@@ -791,9 +937,9 @@ def check_achievements(db: Session, user: User, context: dict | None = None) -> 
             ms = db.query(MetabolicStreak).filter(MetabolicStreak.user_id == user.id).first()
             met = (ms.current_streak if ms else 0) >= target
         elif ctype == "metabolic_days_stable":
-            met = _count_metabolic_days(db, user.id, 60) >= target
+            met = _count_metabolic_days(db, user.id, 65) >= target
         elif ctype == "metabolic_days_optimal":
-            met = _count_metabolic_days(db, user.id, 80) >= target
+            met = _count_metabolic_days(db, user.id, 82) >= target
         elif ctype == "guardrail_streak":
             guardrail = criteria.get("guardrail", "")
             met = _check_guardrail_streak(db, user.id, guardrail, target)
@@ -806,12 +952,25 @@ def check_achievements(db: Session, user: User, context: dict | None = None) -> 
         elif ctype == "triple_90_meal":
             met = _check_triple_90_meal(db, user.id)
 
+        # ── Fuel Score types ──
+        elif ctype == "fuel_streak_weeks":
+            met = _check_fuel_streak_weeks(db, user.id, target)
+        elif ctype == "perfect_fuel_day":
+            met = _check_perfect_fuel_day(db, user.id, target)
+        elif ctype == "flex_master":
+            met = _check_flex_master(db, user.id)
+        elif ctype == "scan_count":
+            count = ctx.get("scan_count")
+            if count is None:
+                count = _count_scans(db, user.id)
+            met = count >= target
+
         if met:
             ua = UserAchievement(
                 id=str(uuid.uuid4()),
                 user_id=user.id,
                 achievement_id=ach.id,
-                unlocked_at=datetime.utcnow(),
+                unlocked_at=datetime.now(UTC),
             )
             db.add(ua)
 

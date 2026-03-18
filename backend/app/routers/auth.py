@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 import json
 import logging
 from typing import Any
@@ -35,7 +35,7 @@ from app.schemas.auth import (
     UserRegister,
 )
 from app.services.billing import build_entitlement_info
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 
 router = APIRouter()
 settings = get_settings()
@@ -49,7 +49,7 @@ def _normalize_email(email: str) -> str:
 
 
 async def _fetch_apple_jwks() -> list[dict[str, Any]]:
-    now = datetime.utcnow().timestamp()
+    now = datetime.now(UTC).timestamp()
     cached_keys = _apple_jwks_cache.get("keys")
     if cached_keys and now - float(_apple_jwks_cache.get("fetched_at") or 0) < 3600:
         return cached_keys
@@ -154,7 +154,7 @@ def _serialize_profile(current_user: User) -> UserProfile:
 
 def _auto_update_streak(user: User, db: Session):
     """Silently update streak when user fetches profile."""
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     last_active = user.last_active_date.date() if user.last_active_date else None
     if last_active == today:
         return
@@ -164,7 +164,7 @@ def _auto_update_streak(user: User, db: Session):
         user.current_streak = 1
     if (user.current_streak or 0) > (user.longest_streak or 0):
         user.longest_streak = user.current_streak
-    user.last_active_date = datetime.utcnow()
+    user.last_active_date = datetime.now(UTC)
     db.commit()
 
 
@@ -339,7 +339,6 @@ async def get_profile(
 ):
     _auto_update_streak(current_user, db)
     record_notification_event(db, current_user.id, "app_opened", source="server")
-    process_user_notifications(db, current_user.id)
     db.commit()
     return _serialize_profile(current_user)
 

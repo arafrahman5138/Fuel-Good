@@ -152,6 +152,7 @@ class ApiClient {
 
   private async parseAndThrow(response: Response, endpoint: string): Promise<never> {
     const error = await response.json().catch(() => ({}));
+    const requestId = response.headers.get('x-request-id') || undefined;
 
     if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
       useAuthStore.getState().logout();
@@ -165,10 +166,12 @@ class ApiClient {
         context: {
           detail: error.detail || null,
           status: response.status,
+          requestId,
+          endpoint,
         },
       });
+      throw new Error('Something went wrong. Please try again.');
     }
-
     throw new Error(error.detail || `Request failed: ${response.status}`);
   }
 
@@ -306,7 +309,16 @@ class ApiClient {
               } else if (data.content) {
                 onChunk(data.content);
               }
-            } catch {}
+            } catch (parseErr: any) {
+              if (parseErr?.message && !parseErr.message.includes('JSON')) {
+                throw parseErr;
+              }
+              void reportClientError({
+                source: 'stream',
+                message: 'SSE parse error',
+                context: { line, error: parseErr?.message },
+              });
+            }
           }
         }
       }
@@ -448,6 +460,26 @@ export const wholeFoodScanApi = {
     const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     return api.post<any>(`/scan/meal/${scanId}/log`, { date: localDate, ...(data || {}) });
   },
+  correctMeal: (scanId: string, correctionText: string) =>
+    api.patch<any>(`/scan/meal/${scanId}/correct`, { correction_text: correctionText }),
+};
+
+// ── Fuel Score API ──
+export const fuelApi = {
+  getSettings: () => api.get<any>('/fuel/settings'),
+  updateSettings: (data: { fuel_target?: number; expected_meals_per_week?: number }) =>
+    api.put<any>('/fuel/settings', data),
+  getDaily: (date?: string) =>
+    api.get<any>(`/fuel/daily${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getWeekly: (date?: string) =>
+    api.get<any>(`/fuel/weekly${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getStreak: () => api.get<any>('/fuel/streak'),
+  getHealthPulse: (date?: string) =>
+    api.get<any>(`/fuel/health-pulse${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getCalendar: (month?: string) =>
+    api.get<any>(`/fuel/calendar${month ? `?month=${encodeURIComponent(month)}` : ''}`),
+  getFlexSuggestions: (date?: string) =>
+    api.get<any>(`/fuel/flex-suggestions${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 };
 
 export const recipeApi = {

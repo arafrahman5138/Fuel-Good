@@ -1,12 +1,27 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from app.schemas.billing import EntitlementInfo
+
+
+def _validate_password_strength(v: str) -> str:
+    if not any(c.isupper() for c in v):
+        raise ValueError('Password must contain at least one uppercase letter')
+    if not any(c.islower() for c in v):
+        raise ValueError('Password must contain at least one lowercase letter')
+    if not any(c.isdigit() for c in v):
+        raise ValueError('Password must contain at least one number')
+    return v
 
 
 class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     name: str
+
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
 
 
 class UserLogin(BaseModel):
@@ -35,6 +50,11 @@ class PasswordResetRequestResponse(BaseModel):
 class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator('new_password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
 
 
 class PasswordResetConfirmResponse(BaseModel):

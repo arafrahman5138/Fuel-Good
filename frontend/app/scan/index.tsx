@@ -21,10 +21,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { FuelScoreRing } from '../../components/FuelScoreRing';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
 import { useThemeStore } from '../../stores/themeStore';
+import { useFuelStore } from '../../stores/fuelStore';
 import { wholeFoodScanApi } from '../../services/api';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
 
@@ -117,6 +119,7 @@ interface MealResult {
     severity: string;
     inferred?: boolean;
   }>;
+  fuel_score?: number | null;
   mes?: {
     score: number;
     tier: string;
@@ -202,6 +205,7 @@ function normalizeMealResult(result: MealResult): MealResult {
     whole_food_flags: result.whole_food_flags || [],
     upgrade_suggestions: result.upgrade_suggestions || [],
     recovery_plan: result.recovery_plan || [],
+    fuel_score: result.fuel_score != null ? Number(result.fuel_score) : null,
     snack_profile: result.snack_profile || null,
     pairing_opportunity: Boolean(result.pairing_opportunity),
     pairing_recommended_recipe_id: result.pairing_recommended_recipe_id || null,
@@ -248,6 +252,8 @@ export default function ScanScreen() {
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
+  const fuelSettings = useFuelStore((s) => s.settings);
+  const fuelWeekly = useFuelStore((s) => s.weekly);
   const cameraRef = useRef<any>(null);
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -553,6 +559,10 @@ export default function ScanScreen() {
       setMealResult(next);
       setMealLabelDraft(next.meal_label);
       setIngredientDrafts(next.estimated_ingredients || []);
+      // Sync meal type chip with the AI's classification (e.g. desserts → snack)
+      if (next.meal_type && (['breakfast', 'lunch', 'dinner', 'snack'] as MealKind[]).includes(next.meal_type as MealKind)) {
+        setMealType(next.meal_type as MealKind);
+      }
     } catch (err: any) {
       Alert.alert('Meal scan failed', err?.message || 'Unable to analyze that meal right now.');
       setScanStep('capture');
@@ -666,6 +676,9 @@ export default function ScanScreen() {
       setMealResult(next);
       setMealLabelDraft(next.meal_label);
       setIngredientDrafts(next.estimated_ingredients || []);
+      if (next.meal_type && (['breakfast', 'lunch', 'dinner', 'snack'] as MealKind[]).includes(next.meal_type as MealKind)) {
+        setMealType(next.meal_type as MealKind);
+      }
     } catch (err: any) {
       Alert.alert('Recompute failed', err?.message || 'Unable to recompute this meal scan right now.');
     } finally {
@@ -674,7 +687,7 @@ export default function ScanScreen() {
   };
 
   const logMeal = async () => {
-    if (!mealResult) return;
+    if (!mealResult || isLoading) return;
     setIsLoading(true);
     try {
       await wholeFoodScanApi.logMeal(mealResult.id, {
@@ -1169,9 +1182,13 @@ export default function ScanScreen() {
     const displayBadgeText = mealResult.snack_profile?.label || mealStatusMeta.label;
     const displayBadgeColor = mealResult.snack_profile?.is_healthy_snack ? '#16A34A' : mealStatusMeta.color;
     const displayBadgeBg = mealResult.snack_profile ? '#DCFCE7' : mealStatusMeta.bg;
-    const mealContextCopy = mealResult.snack_profile
-      ? `${confidenceBand(mealResult.confidence)} · ${mealResult.snack_profile.label}`
-      : `${confidenceBand(mealResult.confidence)} · ${mealResult.meal_context === 'full_meal' ? 'Full meal' : 'Not scored as a full meal'}`;
+    const kindLabel =
+      mealResult.meal_type === 'snack' || mealResult.snack_profile
+        ? 'Snack'
+        : mealResult.meal_context === 'full_meal'
+        ? 'Full meal'
+        : 'Meal';
+    const mealContextCopy = `${confidenceBand(mealResult.confidence)} · ${kindLabel}`;
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
@@ -1196,22 +1213,48 @@ export default function ScanScreen() {
                 <Text style={[styles.statusChipText, { color: displayBadgeColor }]}>{displayBadgeText}</Text>
               </View>
             </View>
-            {mealResult.mes ? (
-              <View style={[styles.resultRing, { borderColor: theme.primary + '40' }]}>
-                <Text style={[styles.resultRingValue, { color: theme.primary }]}>{Math.round(mealResult.mes.score)}</Text>
-                <Text style={[styles.resultRingLabel, { color: theme.textSecondary }]}>MES</Text>
-              </View>
-            ) : mealResult.snack_profile ? (
-              <View style={[styles.snackSummaryCard, { backgroundColor: '#F7FFF9', borderColor: '#D6F5E1' }]}>
-                <Ionicons name="leaf-outline" size={18} color="#16A34A" />
-                <Text style={styles.snackSummaryTitle}>{mealResult.snack_profile.label}</Text>
-                <Text style={[styles.snackSummaryCopy, { color: theme.textSecondary }]}>No MES for snacks</Text>
-              </View>
-            ) : (
-              <View style={[styles.resultRing, { borderColor: theme.border }]}>
-                <Text style={[styles.resultRingFallback, { color: theme.textSecondary }]}>No MES</Text>
-              </View>
-            )}
+            {/* Fuel Score is always the primary score ring */}
+            <View style={styles.scoreColumn}>
+              <FuelScoreRing
+                score={mealResult.fuel_score != null ? Math.round(mealResult.fuel_score) : 0}
+                size={88}
+                showLabel
+                showIcon
+              />
+              {/* MES shown only as a secondary pill for full meals */}
+              {mealResult.mes != null && mealResult.meal_context === 'full_meal' && (
+                <View style={[styles.mesSecondaryPill, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+                  <Text style={[styles.mesSecondaryValue, { color: theme.textSecondary }]}>
+                    {Math.round(mealResult.mes.score)} MES
+                  </Text>
+                </View>
+              )}
+              {/* Flex impact messaging */}
+              {mealResult.fuel_score != null && fuelSettings && (() => {
+                const score = mealResult.fuel_score!;
+                const target = fuelSettings.fuel_target;
+                const remaining = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+                if (score >= target) {
+                  return (
+                    <View style={[styles.flexImpactPill, { backgroundColor: '#22C55E14', borderColor: '#22C55E30' }]}>
+                      <Ionicons name="trending-up" size={11} color="#22C55E" />
+                      <Text style={[styles.flexImpactText, { color: '#16A34A' }]}>
+                        Earned flex points
+                      </Text>
+                    </View>
+                  );
+                } else {
+                  return (
+                    <View style={[styles.flexImpactPill, { backgroundColor: '#F59E0B14', borderColor: '#F59E0B30' }]}>
+                      <Ionicons name="ticket" size={11} color="#F59E0B" />
+                      <Text style={[styles.flexImpactText, { color: '#D97706' }]}>
+                        Flex meal · {remaining} left
+                      </Text>
+                    </View>
+                  );
+                }
+              })()}
+            </View>
           </View>
           {mealResult.confidence < 0.6 && (
             <TouchableOpacity
@@ -1536,7 +1579,7 @@ export default function ScanScreen() {
                 <Ionicons name="refresh-outline" size={18} color={theme.textSecondary} />
                 <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Recompute</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={logMeal} activeOpacity={0.9} style={[styles.footerButtonPrimary, { backgroundColor: theme.primary }]}>
+              <TouchableOpacity onPress={logMeal} activeOpacity={0.9} disabled={isLoading} style={[styles.footerButtonPrimary, { backgroundColor: theme.primary, opacity: isLoading ? 0.6 : 1 }]}>
                 {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Log to Chronometer</Text>}
               </TouchableOpacity>
             </View>
@@ -1549,7 +1592,11 @@ export default function ScanScreen() {
         message={successModal.message}
         onPrimary={() => {
           setSuccessModal({ visible: false, message: '' });
-          router.push('/(tabs)/chronometer' as any);
+          resetMealState();
+          resetProductState();
+          setScanMode('meal');
+          setScanStep('capture');
+          router.replace('/(tabs)/chronometer' as any);
         }}
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
@@ -2151,6 +2198,34 @@ const styles = StyleSheet.create({
   statusChipText: {
     fontSize: FontSize.xs,
     fontWeight: '700',
+  },
+  scoreColumn: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  flexImpactPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  flexImpactText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  mesSecondaryPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  mesSecondaryValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   resultRing: {
     width: 80,

@@ -122,7 +122,9 @@ export default function ChatScreen() {
       if (Array.isArray(data) && data.length > 0) {
         setSuggestions(data.map((s) => s.label || s.query));
       }
-    }).catch(() => {});
+    }).catch((err: any) => {
+      console.warn('Failed to load chat suggestions:', err?.message);
+    });
   }, [fetchSaved]);
 
   // Handle deep-link prefill from coach or other screens

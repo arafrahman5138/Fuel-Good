@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from threading import Lock
 from typing import Any
 
@@ -128,7 +128,7 @@ def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> Non
         return
 
     config = _quota_config(user)
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     window_start = now - timedelta(minutes=int(config["window_minutes"]))
     day_start = now - timedelta(days=1)
 

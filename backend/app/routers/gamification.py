@@ -12,9 +12,9 @@ from app.schemas.gamification import (
     DailyQuestResponse, NutritionStreakResponse, ScoreHistoryEntry,
 )
 from app.achievements_engine import check_achievements, award_xp, update_nutrition_streak, level_title
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 from typing import List, Optional
-from datetime import datetime, timedelta, date
+from datetime import UTC, datetime, timedelta, date
 import uuid
 import random
 
@@ -139,7 +139,7 @@ async def get_weekly_stats(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(UTC) - timedelta(days=7)
     xp_this_week = (
         db.query(XPTransaction)
         .filter(XPTransaction.user_id == current_user.id, XPTransaction.created_at >= week_ago)
@@ -180,7 +180,7 @@ async def update_streak(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     last_active = current_user.last_active_date.date() if current_user.last_active_date else None
 
     if last_active == today:
@@ -196,7 +196,7 @@ async def update_streak(
     if current_user.current_streak > current_user.longest_streak:
         current_user.longest_streak = current_user.current_streak
 
-    current_user.last_active_date = datetime.utcnow()
+    current_user.last_active_date = datetime.now(UTC)
     db.commit()
 
     # Award daily streak XP (once per day)
@@ -217,7 +217,6 @@ async def update_streak(
         properties={"streak": current_user.current_streak},
         source="server",
     )
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return {"message": "Streak updated", "streak": current_user.current_streak}
@@ -253,7 +252,7 @@ async def get_score_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    start_date = datetime.utcnow().date() - timedelta(days=days)
+    start_date = datetime.now(UTC).date() - timedelta(days=days)
     summaries = (
         db.query(DailyNutritionSummary)
         .filter(
@@ -323,8 +322,19 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
     qual = random.choice(quality_pool)
     meta = random.choice(metabolic_pool)
 
+    # ── Fuel quest pool ──
+    fuel_target = getattr(user, "fuel_target", None) or 80
+    fuel_pool = [
+        (f"Fuel Score {fuel_target}+", f"Keep your daily Fuel Score average at {fuel_target} or above.", "daily_fuel_score", fuel_target, 60),
+        ("3 Whole-Food Meals", "Log 3 meals with Fuel Score ≥ 85 today.", "whole_food_meals", 3, 75),
+        ("Scan a Meal", "Scan a restaurant or takeout meal with your camera.", "scan_meal", 1, 40),
+        ("Fuel Score 90+ Meal", "Log one meal with a Fuel Score of 90 or higher.", "fuel_90_meal", 1, 50),
+        ("No Flex Meals Today", "Keep all meals above 70 Fuel Score today.", "no_flex_today", 70, 65),
+    ]
+    fuel = random.choice(fuel_pool)
+
     quests = []
-    for quest_type, (title, desc, meta_key, target, xp) in [("general", gen), ("logging", log), ("quality", qual), ("metabolic", meta)]:
+    for quest_type, (title, desc, meta_key, target, xp) in [("general", gen), ("logging", log), ("quality", qual), ("metabolic", meta), ("fuel", fuel)]:
         q = DailyQuest(
             id=str(uuid.uuid4()),
             user_id=user.id,
@@ -350,7 +360,7 @@ async def get_daily_quests(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     quests = (
         db.query(DailyQuest)
         .filter(DailyQuest.user_id == current_user.id, DailyQuest.date == today)
@@ -395,7 +405,7 @@ async def update_quest_progress(
     xp_gained = 0
     if quest.current_value >= quest.target_value:
         quest.completed = True
-        quest.completed_at = datetime.utcnow()
+        quest.completed_at = datetime.now(UTC)
         xp_result = award_xp(db, current_user, quest.xp_reward, f"quest:{quest.title}")
         xp_gained = quest.xp_reward
     db.commit()
@@ -411,7 +421,6 @@ async def update_quest_progress(
         },
         source="server",
     )
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return {

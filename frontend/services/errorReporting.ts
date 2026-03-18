@@ -2,7 +2,7 @@ import { API_URL, APP_ENV, APP_VERSION, CLIENT_ERROR_REPORTING_ENABLED, RELEASE_
 
 type ClientErrorPayload = {
   message: string;
-  source: 'global_js' | 'promise' | 'api' | 'ui';
+  source: 'global_js' | 'promise' | 'api' | 'ui' | 'securestore' | 'telemetry' | 'stream';
   isFatal?: boolean;
   stack?: string;
   context?: Record<string, unknown>;

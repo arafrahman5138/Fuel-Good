@@ -61,6 +61,10 @@ export default function ForgotPasswordScreen() {
       setError('Password must be at least 8 characters');
       return;
     }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setError('Password must contain uppercase, lowercase, and a number');
+      return;
+    }
 
     setLoading(true);
     try {

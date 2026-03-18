@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 90
+    refresh_token_expire_days: int = 30
     password_reset_token_expire_minutes: int = 30
 
     # Security / network hardening
@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     enable_structured_logging: bool = True
     run_notification_scheduler: bool = False
+    notification_runner_secret: str = ""
+    notification_cron_batch_size: int = 100
+    notification_cron_user_limit: int = 250
     run_startup_seeding: bool = False
     support_email: str = "support@fuelgood.com"
     privacy_policy_url: str = ""

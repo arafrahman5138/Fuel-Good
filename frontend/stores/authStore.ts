@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../constants/Config';
+import { reportClientError } from '../services/errorReporting';
 
 export type AccessLevel = 'none' | 'premium';
 export type SubscriptionState = 'inactive' | 'trialing' | 'active' | 'grace_period' | 'billing_issue' | 'expired';
@@ -64,11 +65,15 @@ const AUTH_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
 };
 
 function secureSetItem(key: string, value: string) {
-  return SecureStore.setItemAsync(key, value, AUTH_STORE_OPTIONS).catch(() => {});
+  return SecureStore.setItemAsync(key, value, AUTH_STORE_OPTIONS).catch((err) => {
+    void reportClientError({ source: 'securestore', message: `SecureStore set failed: ${key}`, context: { error: err?.message } });
+  });
 }
 
 function secureDeleteItem(key: string) {
-  return SecureStore.deleteItemAsync(key, AUTH_STORE_OPTIONS).catch(() => {});
+  return SecureStore.deleteItemAsync(key, AUTH_STORE_OPTIONS).catch((err) => {
+    void reportClientError({ source: 'securestore', message: `SecureStore delete failed: ${key}`, context: { error: err?.message } });
+  });
 }
 
 function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {

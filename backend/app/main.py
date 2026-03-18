@@ -13,8 +13,8 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.auth import require_premium_user
-from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan, telemetry, notifications
-from app.db import engine, ensure_pgvector_schema
+from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan, telemetry, notifications, internal, fuel
+from app.db import engine, ensure_legacy_schema_columns, ensure_pgvector_schema
 from app.services.notifications import notification_scheduler_loop
 from app.services.embeddings import active_embedding_provider
 
@@ -22,6 +22,7 @@ from app.services.embeddings import active_embedding_provider
 from app.models import user, meal_plan as mp_model, recipe, grocery as g_model, gamification as gm_model  # noqa: F401
 from app.models import saved_recipe as sr_model, nutrition as nt_model, local_food as lf_model  # noqa: F401
 from app.models import metabolic as met_model, metabolic_profile as met_profile_model, scanned_meal as scanned_meal_model  # noqa: F401
+from app.models import fuel as fuel_model  # noqa: F401
 from app.models import recipe_embedding as recipe_embedding_model, notification as notification_model, chat_usage as chat_usage_model  # noqa: F401
 
 settings = get_settings()
@@ -41,6 +42,7 @@ def _configure_logging() -> None:
 async def lifespan(app: FastAPI):
     _configure_logging()
     _validate_security_settings()
+    ensure_legacy_schema_columns()
     _seed_on_startup()
     scheduler_task = None
     if settings.run_notification_scheduler:
@@ -70,6 +72,8 @@ def _validate_security_settings() -> None:
             raise RuntimeError("CORS_ALLOWED_ORIGINS contains development or wildcard origins in non-development environment.")
         if settings.run_startup_seeding:
             raise RuntimeError("RUN_STARTUP_SEEDING must be false in non-development environments.")
+        if not settings.notification_runner_secret or len(settings.notification_runner_secret) < 16:
+            raise RuntimeError("NOTIFICATION_RUNNER_SECRET must be set to a strong value in non-development environments.")
 
     _validate_ai_settings(env)
 
@@ -198,6 +202,18 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if settings.environment not in ("dev", "development"):
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 # Lightweight in-process rate limiter (IP + path window)
 _rate_buckets: dict[tuple[str, str], deque] = defaultdict(deque)
 WINDOW_SECONDS = 60
@@ -323,9 +339,11 @@ app.include_router(scan.router, prefix="/api/scan", tags=["Scan"], dependencies=
 app.include_router(whole_food_scan.router, prefix="/api/whole-food-scan", tags=["Whole Food Scan"], dependencies=[Depends(require_premium_user)])
 app.include_router(gamification.router, prefix="/api/game", tags=["Gamification"], dependencies=[Depends(require_premium_user)])
 app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Chronometer"], dependencies=[Depends(require_premium_user)])
+app.include_router(fuel.router, prefix="/api/fuel", tags=["Fuel Score"], dependencies=[Depends(require_premium_user)])
 app.include_router(metabolic.router, prefix="/api/metabolic", tags=["Metabolic Budget"])
 app.include_router(telemetry.router, prefix="/api/telemetry", tags=["Telemetry"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(internal.router, prefix="/api/internal", tags=["Internal"])
 
 
 @app.get("/")

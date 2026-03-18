@@ -192,7 +192,9 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
   );
 
   useEffect(() => {
-    recipeApi.getFilters().then(setFilterOptions).catch(() => {});
+    recipeApi.getFilters().then(setFilterOptions).catch((err: any) => {
+      console.warn('Failed to load filter options:', err?.message);
+    });
   }, []);
 
   useEffect(() => {
@@ -298,7 +300,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             ? Number(item.composite_display_score)
             : null;
         const displayScore = compositeDisplayScore ?? baseDisplayScore;
-        return displayScore >= 60;
+        return displayScore >= 65;
       });
     }
 

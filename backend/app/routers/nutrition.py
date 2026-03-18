@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, date
+from datetime import UTC, datetime, date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -25,13 +25,15 @@ from app.schemas.nutrition import (
 from app.achievements_engine import award_xp, update_nutrition_streak, check_achievements
 from app.services.food_catalog import canonicalize_nutrition, resolve_food_db_nutrition
 from app.services.metabolic_engine import (
+    build_glycemic_nutrition_input,
     on_food_log_created,
     recompute_daily_score,
     update_metabolic_streak,
     load_budget_for_user,
 )
 from app.models.metabolic import MetabolicScore
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
+from app.services.fuel_score import compute_fuel_score
 
 router = APIRouter()
 
@@ -154,7 +156,7 @@ def _get_or_create_targets(db: Session, user_id: str) -> NutritionTarget:
 
 def _parse_date(value: str | None) -> date:
     if not value:
-        return datetime.utcnow().date()
+        return datetime.now(UTC).date()
     try:
         return datetime.fromisoformat(value).date()
     except Exception:
@@ -171,6 +173,15 @@ def _scaled_nutrition(nutrition: dict, factor: float) -> dict:
     return out
 
 
+def _merge_nutrition_metadata(base_nutrition: dict | None, nutrition_snapshot: dict | None) -> dict:
+    merged = dict(nutrition_snapshot or {})
+    for key in ("glycemic_profile", "ingredients", "carb_type"):
+        value = (base_nutrition or {}).get(key)
+        if value is not None:
+            merged[key] = value
+    return merged
+
+
 def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str, dict]:
     source_type = (payload.source_type or "manual").lower()
 
@@ -185,7 +196,7 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
         recipe = db.query(Recipe).filter(Recipe.id == payload.source_id).first()
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
-        return recipe.title, recipe.nutrition_info or {}
+        return recipe.title, build_glycemic_nutrition_input(recipe.nutrition_info or {}, source=recipe)
 
     if source_type == "meal_plan":
         if not payload.source_id:
@@ -198,7 +209,7 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
         if not nutrition and item.recipe_id:
             recipe = db.query(Recipe).filter(Recipe.id == item.recipe_id).first()
             nutrition = recipe.nutrition_info if recipe else {}
-        return title, nutrition or {}
+        return title, build_glycemic_nutrition_input(nutrition or {}, source={"nutrition_info": nutrition or {}, "ingredients": (item.recipe_data or {}).get("ingredients"), "carb_type": (item.recipe_data or {}).get("carb_type")})
 
     if source_type == "food_db":
         if not payload.source_id:
@@ -219,7 +230,7 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
         scan = db.query(ScannedMealLog).filter(ScannedMealLog.id == payload.source_id).first()
         if not scan:
             raise HTTPException(status_code=404, detail="Scanned meal not found")
-        return scan.meal_label, scan.nutrition_estimate or {}
+        return scan.meal_label, build_glycemic_nutrition_input(scan.nutrition_estimate or {})
 
     raise HTTPException(status_code=400, detail="Unsupported source_type")
 
@@ -238,6 +249,7 @@ def _serialize_log(log: FoodLog) -> FoodLogResponse:
         servings=float(log.servings or 1),
         quantity=float(log.quantity or 1),
         nutrition_snapshot=log.nutrition_snapshot or {},
+        fuel_score=float(log.fuel_score) if log.fuel_score is not None else None,
     )
 
 
@@ -379,7 +391,22 @@ async def create_log(
     title, base_nutrition = _resolve_source_nutrition(db, payload)
 
     factor = max(0.1, float(payload.servings or 1.0)) * max(0.1, float(payload.quantity or 1.0))
-    nutrition_snapshot = canonicalize_nutrition(_scaled_nutrition(base_nutrition, factor))
+    nutrition_snapshot = _merge_nutrition_metadata(
+        base_nutrition,
+        canonicalize_nutrition(_scaled_nutrition(base_nutrition, factor)),
+    )
+
+    # ── Fuel Score ──
+    try:
+        fuel_result = compute_fuel_score(
+            source_type=payload.source_type,
+            nutrition=nutrition_snapshot,
+            ingredients_text=(payload.nutrition or {}).get("ingredients_text") if payload.nutrition else None,
+        )
+        fuel_score_val = fuel_result.score
+    except Exception:
+        logger.warning("Fuel score computation failed", exc_info=True)
+        fuel_score_val = None
 
     log = FoodLog(
         user_id=current_user.id,
@@ -394,6 +421,7 @@ async def create_log(
         servings=payload.servings,
         quantity=payload.quantity,
         nutrition_snapshot=nutrition_snapshot,
+        fuel_score=fuel_score_val,
     )
     db.add(log)
     db.commit()
@@ -437,7 +465,6 @@ async def create_log(
         properties={"date": day.isoformat(), "daily_score": daily_score},
         source="server",
     )
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return _serialize_log(log)
@@ -485,7 +512,10 @@ async def update_log(
 
     if payload.nutrition is not None:
         factor = max(0.1, float(log.servings or 1.0)) * max(0.1, float(log.quantity or 1.0))
-        log.nutrition_snapshot = canonicalize_nutrition(_scaled_nutrition(payload.nutrition, factor))
+        log.nutrition_snapshot = _merge_nutrition_metadata(
+            payload.nutrition,
+            canonicalize_nutrition(_scaled_nutrition(payload.nutrition, factor)),
+        )
 
     db.commit()
     db.refresh(log)

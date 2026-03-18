@@ -153,7 +153,11 @@ export default function LoginScreen() {
     const errors: { email?: string; password?: string; name?: string } = {};
     if (isRegister && !name.trim()) errors.name = 'Name is required';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address';
-    if (password.length < 8) errors.password = 'Password must be at least 8 characters';
+    if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    } else if (isRegister && (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password))) {
+      errors.password = 'Password must contain uppercase, lowercase, and a number';
+    }
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 

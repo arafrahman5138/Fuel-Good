@@ -4,7 +4,7 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -14,6 +14,7 @@ from app.config import get_settings
 from app.models.nutrition import FoodLog
 from app.models.recipe import Recipe
 from app.services.metabolic_engine import (
+    build_glycemic_nutrition_input,
     classify_meal_context,
     compute_meal_mes,
     compute_meal_mes_with_pairing,
@@ -49,59 +50,278 @@ PORTION_MULTIPLIERS = {
 }
 
 COMPONENT_MACROS: dict[str, dict[str, float]] = {
+    # ── Proteins ──────────────────────────────────────────────────────────────
     "chicken": {"calories": 180, "protein": 30, "carbs": 0, "fat": 7, "fiber": 0},
     "chicken thigh": {"calories": 210, "protein": 24, "carbs": 0, "fat": 13, "fiber": 0},
     "beef": {"calories": 240, "protein": 24, "carbs": 0, "fat": 16, "fiber": 0},
     "ground beef": {"calories": 270, "protein": 24, "carbs": 0, "fat": 19, "fiber": 0},
     "lamb": {"calories": 260, "protein": 23, "carbs": 0, "fat": 18, "fiber": 0},
+    "pork": {"calories": 230, "protein": 26, "carbs": 0, "fat": 14, "fiber": 0},
     "salmon": {"calories": 210, "protein": 22, "carbs": 0, "fat": 13, "fiber": 0},
     "tuna": {"calories": 150, "protein": 30, "carbs": 0, "fat": 3, "fiber": 0},
     "turkey": {"calories": 170, "protein": 28, "carbs": 0, "fat": 6, "fiber": 0},
+    "shrimp": {"calories": 120, "protein": 23, "carbs": 1, "fat": 2, "fiber": 0},
+    "tofu": {"calories": 140, "protein": 15, "carbs": 3, "fat": 8, "fiber": 1},
+    "paneer": {"calories": 280, "protein": 18, "carbs": 3, "fat": 22, "fiber": 0},
     "eggs": {"calories": 160, "protein": 13, "carbs": 1, "fat": 11, "fiber": 0},
     "egg whites": {"calories": 80, "protein": 17, "carbs": 1, "fat": 0, "fiber": 0},
     "greek yogurt": {"calories": 150, "protein": 20, "carbs": 9, "fat": 5, "fiber": 0},
+    "yogurt": {"calories": 120, "protein": 8, "carbs": 14, "fat": 4, "fiber": 0},
+    # ── Grains & Carbs ────────────────────────────────────────────────────────
     "rice": {"calories": 205, "protein": 4, "carbs": 45, "fat": 0, "fiber": 1},
     "brown rice": {"calories": 215, "protein": 5, "carbs": 45, "fat": 2, "fiber": 3},
     "quinoa": {"calories": 220, "protein": 8, "carbs": 39, "fat": 4, "fiber": 5},
     "potatoes": {"calories": 160, "protein": 4, "carbs": 37, "fat": 0, "fiber": 4},
     "sweet potato": {"calories": 180, "protein": 4, "carbs": 41, "fat": 0, "fiber": 6},
     "pasta": {"calories": 220, "protein": 8, "carbs": 43, "fat": 2, "fiber": 3},
-    "beans": {"calories": 140, "protein": 8, "carbs": 24, "fat": 1, "fiber": 8},
-    "black beans": {"calories": 140, "protein": 8, "carbs": 24, "fat": 1, "fiber": 8},
-    "lentils": {"calories": 180, "protein": 12, "carbs": 31, "fat": 1, "fiber": 10},
+    "noodles": {"calories": 210, "protein": 7, "carbs": 42, "fat": 1, "fiber": 2},
+    "oats": {"calories": 180, "protein": 7, "carbs": 32, "fat": 4, "fiber": 5},
+    "granola": {"calories": 190, "protein": 4, "carbs": 30, "fat": 7, "fiber": 3},
     "bread": {"calories": 160, "protein": 6, "carbs": 30, "fat": 2, "fiber": 3},
     "bun": {"calories": 170, "protein": 6, "carbs": 31, "fat": 3, "fiber": 2},
     "tortilla": {"calories": 140, "protein": 4, "carbs": 24, "fat": 4, "fiber": 2},
+    "roti": {"calories": 120, "protein": 4, "carbs": 20, "fat": 3, "fiber": 3},
+    "naan": {"calories": 170, "protein": 6, "carbs": 30, "fat": 4, "fiber": 1},
+    "pita": {"calories": 160, "protein": 6, "carbs": 31, "fat": 2, "fiber": 2},
+    "crackers": {"calories": 130, "protein": 3, "carbs": 20, "fat": 5, "fiber": 1},
+    # ── Legumes ───────────────────────────────────────────────────────────────
+    "beans": {"calories": 140, "protein": 8, "carbs": 24, "fat": 1, "fiber": 8},
+    "black beans": {"calories": 140, "protein": 8, "carbs": 24, "fat": 1, "fiber": 8},
+    "chickpeas": {"calories": 160, "protein": 9, "carbs": 27, "fat": 3, "fiber": 8},
+    "lentils": {"calories": 180, "protein": 12, "carbs": 31, "fat": 1, "fiber": 10},
+    "hummus": {"calories": 70, "protein": 2, "carbs": 6, "fat": 5, "fiber": 2},
+    "dal": {"calories": 170, "protein": 11, "carbs": 28, "fat": 2, "fiber": 9},
+    # ── Dairy & Fats ──────────────────────────────────────────────────────────
     "cheese": {"calories": 110, "protein": 7, "carbs": 1, "fat": 9, "fiber": 0},
     "feta": {"calories": 80, "protein": 4, "carbs": 1, "fat": 6, "fiber": 0},
     "avocado": {"calories": 120, "protein": 2, "carbs": 6, "fat": 11, "fiber": 5},
     "olive oil": {"calories": 120, "protein": 0, "carbs": 0, "fat": 14, "fiber": 0},
+    "ghee": {"calories": 130, "protein": 0, "carbs": 0, "fat": 15, "fiber": 0},
+    "butter": {"calories": 102, "protein": 0, "carbs": 0, "fat": 12, "fiber": 0},
+    "milk": {"calories": 100, "protein": 7, "carbs": 12, "fat": 4, "fiber": 0},
+    "cream": {"calories": 200, "protein": 2, "carbs": 4, "fat": 20, "fiber": 0},
+    # ── Nuts & Seeds ──────────────────────────────────────────────────────────
+    "almonds": {"calories": 165, "protein": 6, "carbs": 6, "fat": 14, "fiber": 4},
+    "cashews": {"calories": 160, "protein": 5, "carbs": 9, "fat": 13, "fiber": 1},
+    "peanuts": {"calories": 165, "protein": 7, "carbs": 6, "fat": 14, "fiber": 2},
+    "walnuts": {"calories": 185, "protein": 4, "carbs": 4, "fat": 18, "fiber": 2},
+    "pistachios": {"calories": 160, "protein": 6, "carbs": 8, "fat": 13, "fiber": 3},
+    "mixed nuts": {"calories": 170, "protein": 5, "carbs": 6, "fat": 15, "fiber": 2},
+    "trail mix": {"calories": 190, "protein": 5, "carbs": 20, "fat": 11, "fiber": 2},
+    "almond butter": {"calories": 100, "protein": 3, "carbs": 3, "fat": 9, "fiber": 2},
+    "peanut butter": {"calories": 190, "protein": 8, "carbs": 7, "fat": 16, "fiber": 2},
+    "chia": {"calories": 60, "protein": 2, "carbs": 5, "fat": 4, "fiber": 5},
+    "flaxseed": {"calories": 55, "protein": 2, "carbs": 3, "fat": 4, "fiber": 3},
+    # ── Vegetables ───────────────────────────────────────────────────────────
     "salad": {"calories": 70, "protein": 2, "carbs": 10, "fat": 3, "fiber": 4},
     "vegetables": {"calories": 60, "protein": 2, "carbs": 11, "fat": 1, "fiber": 4},
     "broccoli": {"calories": 55, "protein": 4, "carbs": 11, "fat": 1, "fiber": 5},
     "spinach": {"calories": 35, "protein": 4, "carbs": 4, "fat": 0, "fiber": 3},
     "kale": {"calories": 45, "protein": 3, "carbs": 8, "fat": 1, "fiber": 3},
+    "tomato": {"calories": 30, "protein": 1, "carbs": 6, "fat": 0, "fiber": 2},
+    "cucumber": {"calories": 20, "protein": 1, "carbs": 4, "fat": 0, "fiber": 1},
+    "onion": {"calories": 45, "protein": 1, "carbs": 10, "fat": 0, "fiber": 2},
+    "pepper": {"calories": 30, "protein": 1, "carbs": 6, "fat": 0, "fiber": 2},
+    "mushroom": {"calories": 25, "protein": 4, "carbs": 4, "fat": 0, "fiber": 2},
+    "corn": {"calories": 130, "protein": 5, "carbs": 27, "fat": 2, "fiber": 4},
+    # ── Fruit (per medium piece / 1-cup serving) ─────────────────────────────
     "berries": {"calories": 45, "protein": 1, "carbs": 11, "fat": 0, "fiber": 3},
-    "chia": {"calories": 60, "protein": 2, "carbs": 5, "fat": 4, "fiber": 5},
-    "almond butter": {"calories": 100, "protein": 3, "carbs": 3, "fat": 9, "fiber": 2},
+    "strawberries": {"calories": 45, "protein": 1, "carbs": 11, "fat": 0, "fiber": 3},
+    "blueberries": {"calories": 85, "protein": 1, "carbs": 21, "fat": 0, "fiber": 4},
+    "apple": {"calories": 95, "protein": 0, "carbs": 25, "fat": 0, "fiber": 4},
+    "banana": {"calories": 105, "protein": 1, "carbs": 27, "fat": 0, "fiber": 3},
+    "orange": {"calories": 62, "protein": 1, "carbs": 15, "fat": 0, "fiber": 3},
+    "mango": {"calories": 100, "protein": 1, "carbs": 25, "fat": 0, "fiber": 3},
+    "grapes": {"calories": 100, "protein": 1, "carbs": 27, "fat": 0, "fiber": 1},
+    "pineapple": {"calories": 80, "protein": 1, "carbs": 20, "fat": 0, "fiber": 2},
+    "watermelon": {"calories": 85, "protein": 2, "carbs": 21, "fat": 0, "fiber": 1},
+    "peach": {"calories": 60, "protein": 1, "carbs": 14, "fat": 0, "fiber": 2},
+    "pear": {"calories": 100, "protein": 1, "carbs": 27, "fat": 0, "fiber": 6},
+    "pomegranate": {"calories": 83, "protein": 2, "carbs": 19, "fat": 1, "fiber": 4},
+    "fruit": {"calories": 80, "protein": 1, "carbs": 20, "fat": 0, "fiber": 3},
+    # ── Snack foods ───────────────────────────────────────────────────────────
+    "chips": {"calories": 150, "protein": 2, "carbs": 16, "fat": 9, "fiber": 1},
+    "popcorn": {"calories": 110, "protein": 3, "carbs": 22, "fat": 2, "fiber": 4},
+    "protein bar": {"calories": 200, "protein": 20, "carbs": 22, "fat": 7, "fiber": 4},
+    "granola bar": {"calories": 190, "protein": 4, "carbs": 30, "fat": 7, "fiber": 2},
+    "rice cakes": {"calories": 70, "protein": 1, "carbs": 15, "fat": 0, "fiber": 0},
+    "energy bar": {"calories": 220, "protein": 10, "carbs": 28, "fat": 8, "fiber": 3},
+    # ── Sauces & Condiments ───────────────────────────────────────────────────
+    "sauce": {"calories": 50, "protein": 1, "carbs": 7, "fat": 2, "fiber": 1},
+    "dressing": {"calories": 80, "protein": 0, "carbs": 4, "fat": 7, "fiber": 0},
+    "ketchup": {"calories": 20, "protein": 0, "carbs": 5, "fat": 0, "fiber": 0},
+    "mayo": {"calories": 100, "protein": 0, "carbs": 1, "fat": 11, "fiber": 0},
+    "tahini": {"calories": 90, "protein": 3, "carbs": 3, "fat": 8, "fiber": 1},
+    # ── Indian dishes (per typical serving) ──────────────────────────────────
+    "curry": {"calories": 280, "protein": 14, "carbs": 22, "fat": 16, "fiber": 4},
+    "biryani": {"calories": 350, "protein": 20, "carbs": 45, "fat": 10, "fiber": 3},
+    "samosa": {"calories": 260, "protein": 5, "carbs": 28, "fat": 15, "fiber": 3},
+    "chaat": {"calories": 220, "protein": 6, "carbs": 35, "fat": 7, "fiber": 4},
+    "idli": {"calories": 160, "protein": 5, "carbs": 32, "fat": 1, "fiber": 2},
+    "dosa": {"calories": 220, "protein": 6, "carbs": 38, "fat": 5, "fiber": 2},
+    "paratha": {"calories": 250, "protein": 6, "carbs": 36, "fat": 10, "fiber": 3},
+    "palak": {"calories": 170, "protein": 10, "carbs": 15, "fat": 8, "fiber": 5},
+    "tikka": {"calories": 240, "protein": 28, "carbs": 8, "fat": 12, "fiber": 2},
+    "korma": {"calories": 300, "protein": 22, "carbs": 12, "fat": 20, "fiber": 2},
+    "rajma": {"calories": 200, "protein": 12, "carbs": 32, "fat": 4, "fiber": 9},
+    "raita": {"calories": 80, "protein": 4, "carbs": 8, "fat": 3, "fiber": 1},
+    # ── Indian sweets (per 1-2 piece serving ~50-80 g) ───────────────────────
+    # sugar_g is explicit because most of these carbs are added sugar / jaggery
+    "ladoo": {"calories": 200, "protein": 4, "carbs": 28, "fat": 9, "fiber": 2, "sugar_g": 22},
+    "laddu": {"calories": 200, "protein": 4, "carbs": 28, "fat": 9, "fiber": 2, "sugar_g": 22},
+    "barfi": {"calories": 220, "protein": 5, "carbs": 30, "fat": 10, "fiber": 1, "sugar_g": 24},
+    "burfi": {"calories": 220, "protein": 5, "carbs": 30, "fat": 10, "fiber": 1, "sugar_g": 24},
+    "halwa": {"calories": 280, "protein": 5, "carbs": 38, "fat": 13, "fiber": 2, "sugar_g": 28},
+    "halva": {"calories": 280, "protein": 5, "carbs": 38, "fat": 13, "fiber": 2, "sugar_g": 28},
+    "gulab jamun": {"calories": 220, "protein": 4, "carbs": 38, "fat": 7, "fiber": 0, "sugar_g": 35},
+    "jalebi": {"calories": 200, "protein": 2, "carbs": 40, "fat": 5, "fiber": 1, "sugar_g": 38},
+    "kheer": {"calories": 220, "protein": 7, "carbs": 35, "fat": 7, "fiber": 0, "sugar_g": 28},
+    "payasam": {"calories": 210, "protein": 6, "carbs": 34, "fat": 7, "fiber": 1, "sugar_g": 26},
+    "rasgulla": {"calories": 130, "protein": 3, "carbs": 28, "fat": 1, "fiber": 0, "sugar_g": 26},
+    "peda": {"calories": 200, "protein": 5, "carbs": 28, "fat": 9, "fiber": 0, "sugar_g": 22},
+    "mysore pak": {"calories": 250, "protein": 5, "carbs": 27, "fat": 14, "fiber": 1, "sugar_g": 20},
+    "kaju katli": {"calories": 210, "protein": 5, "carbs": 25, "fat": 11, "fiber": 1, "sugar_g": 20},
+    "besan": {"calories": 190, "protein": 7, "carbs": 27, "fat": 7, "fiber": 3, "sugar_g": 10},
+    "mithai": {"calories": 210, "protein": 4, "carbs": 30, "fat": 9, "fiber": 1, "sugar_g": 24},
+    "sweet": {"calories": 200, "protein": 3, "carbs": 32, "fat": 8, "fiber": 1, "sugar_g": 26},
+    "indian sweet": {"calories": 210, "protein": 4, "carbs": 30, "fat": 9, "fiber": 1, "sugar_g": 24},
+    # ── Desserts ──────────────────────────────────────────────────────────────
+    "chocolate": {"calories": 170, "protein": 2, "carbs": 20, "fat": 10, "fiber": 2, "sugar_g": 17},
+    "ice cream": {"calories": 210, "protein": 4, "carbs": 28, "fat": 10, "fiber": 0, "sugar_g": 22},
+    "cake": {"calories": 340, "protein": 4, "carbs": 52, "fat": 13, "fiber": 1, "sugar_g": 40},
+    "cookie": {"calories": 180, "protein": 2, "carbs": 26, "fat": 8, "fiber": 1, "sugar_g": 15},
+    "brownie": {"calories": 240, "protein": 3, "carbs": 33, "fat": 12, "fiber": 1, "sugar_g": 22},
+    "donut": {"calories": 270, "protein": 4, "carbs": 33, "fat": 14, "fiber": 1, "sugar_g": 18},
+    "muffin": {"calories": 280, "protein": 4, "carbs": 38, "fat": 13, "fiber": 1, "sugar_g": 22},
+    # ── High-sugar fruits ─────────────────────────────────────────────────────
+    "grapes": {"calories": 100, "protein": 1, "carbs": 27, "fat": 0, "fiber": 1, "sugar_g": 23},
+    "mango": {"calories": 100, "protein": 1, "carbs": 25, "fat": 0, "fiber": 3, "sugar_g": 23},
+    "banana": {"calories": 105, "protein": 1, "carbs": 27, "fat": 0, "fiber": 3, "sugar_g": 14},
 }
 
 ALIASES = {
+    # Proteins
     "shawarma chicken": "chicken",
     "grilled chicken": "chicken",
     "roasted chicken": "chicken",
+    "baked chicken": "chicken",
+    "chicken breast": "chicken",
     "beef patty": "beef",
-    "meat patty": "patty",
-    "meat patties": "patties",
-    "chicken patty": "chicken patties",
+    "meat patty": "beef",
+    "meat patties": "beef",
+    "chicken patty": "chicken",
+    "burger patty": "beef",
+    "ground meat": "ground beef",
+    "minced beef": "ground beef",
+    "smoked salmon": "salmon",
+    "grilled fish": "salmon",
+    "fish fillet": "salmon",
+    "shrimp prawns": "shrimp",
+    "scrambled eggs": "eggs",
+    "fried eggs": "eggs",
+    "boiled eggs": "eggs",
+    "hard boiled egg": "eggs",
+    "poached eggs": "eggs",
+    "cottage cheese": "greek yogurt",
+    "plain greek yogurt": "greek yogurt",
+    "yogurt sauce": "greek yogurt",
+    "curd": "yogurt",
+    "dahi": "yogurt",
+    # Grains
     "burger bun": "bun",
     "white rice": "rice",
+    "basmati rice": "rice",
+    "jasmine rice": "rice",
+    "steamed rice": "rice",
+    "fried rice": "rice",
+    "chapati": "roti",
+    "flatbread": "roti",
+    "whole wheat roti": "roti",
+    "pita bread": "pita",
+    "oatmeal": "oats",
+    "rolled oats": "oats",
+    # Vegetables & salads
     "kachumber": "salad",
     "mixed greens": "salad",
     "leafy greens": "salad",
-    "plain greek yogurt": "greek yogurt",
-    "yogurt sauce": "greek yogurt",
+    "green salad": "salad",
+    "coleslaw": "salad",
+    "mixed vegetables": "vegetables",
+    "stir fry vegetables": "vegetables",
+    "roasted vegetables": "vegetables",
+    "bell pepper": "pepper",
+    "capsicum": "pepper",
+    # Nuts & seeds
     "chia seeds": "chia",
+    "flax seeds": "flaxseed",
+    "mixed almonds": "almonds",
+    "roasted almonds": "almonds",
+    "roasted cashews": "cashews",
+    "roasted peanuts": "peanuts",
+    "almond butter": "almond butter",
+    "peanut butter": "peanut butter",
+    # Fruit
+    "fresh fruit": "fruit",
+    "sliced fruit": "fruit",
+    "fruit salad": "fruit",
+    "apple slices": "apple",
+    "banana slices": "banana",
+    "mango slices": "mango",
+    "mixed berries": "berries",
+    "fresh berries": "berries",
+    # Indian dishes
+    "chicken tikka masala": "tikka",
+    "butter chicken": "curry",
+    "chicken curry": "curry",
+    "vegetable curry": "curry",
+    "paneer tikka": "tikka",
+    "paneer butter masala": "korma",
+    "palak paneer": "palak",
+    "saag": "palak",
+    "masoor dal": "dal",
+    "toor dal": "dal",
+    "chana masala": "chickpeas",
+    "chole": "chickpeas",
+    "aloo": "potatoes",
+    "gobi": "broccoli",
+    "vegetable biryani": "biryani",
+    "chicken biryani": "biryani",
+    # Indian sweets
+    "besan ladoo": "ladoo",
+    "motichoor ladoo": "ladoo",
+    "boondi ladoo": "ladoo",
+    "besan barfi": "barfi",
+    "kaju barfi": "kaju katli",
+    "cashew barfi": "kaju katli",
+    "cashew fudge": "kaju katli",
+    "besan halwa": "halwa",
+    "sooji halwa": "halwa",
+    "suji halwa": "halwa",
+    "carrot halwa": "halwa",
+    "gajar halwa": "halwa",
+    "semolina halwa": "halwa",
+    "milk fudge": "peda",
+    "milk sweet": "peda",
+    "milk cake": "peda",
+    "rice kheer": "kheer",
+    "vermicelli kheer": "kheer",
+    "semiya payasam": "payasam",
+    "assorted sweets": "mithai",
+    "assorted indian sweets": "mithai",
+    "indian sweets": "mithai",
+    "desi sweets": "mithai",
+    "mithai box": "mithai",
+    "sweet box": "mithai",
+    # Desserts
+    "dark chocolate": "chocolate",
+    "milk chocolate": "chocolate",
+    "chocolate bar": "chocolate",
+    "vanilla ice cream": "ice cream",
+    "chocolate cake": "cake",
+    "birthday cake": "cake",
+    "cheesecake": "cake",
+    "chocolate chip cookie": "cookie",
+    "oatmeal cookie": "cookie",
 }
 
 MEAL_SCAN_PROMPT = """You analyze one meal photo for a nutrition app.
@@ -284,7 +504,7 @@ def _find_pairing_candidate(
         nutrition,
         pairing_recipe=chosen,
         budget=budget,
-        pairing_nutrition=chosen.nutrition_info or {},
+        pairing_nutrition=build_glycemic_nutrition_input(chosen.nutrition_info or {}, source=chosen),
     )
     if not paired.get("pairing_applied"):
         return None
@@ -375,8 +595,21 @@ def _lookup_component_macros(name: str) -> dict[str, float] | None:
     return None
 
 
+_ROLE_FALLBACK_MACROS: dict[str, dict[str, float]] = {
+    "protein":  {"calories": 180, "protein": 25, "carbs": 2,  "fat": 8,  "fiber": 0},
+    "carb":     {"calories": 200, "protein": 5,  "carbs": 40, "fat": 2,  "fiber": 3},
+    "veg":      {"calories": 50,  "protein": 2,  "carbs": 9,  "fat": 1,  "fiber": 3},
+    "fat":      {"calories": 120, "protein": 1,  "carbs": 2,  "fat": 12, "fiber": 1},
+    "sauce":    {"calories": 50,  "protein": 1,  "carbs": 6,  "fat": 3,  "fiber": 0},
+    "dessert":  {"calories": 200, "protein": 3,  "carbs": 30, "fat": 8,  "fiber": 1},
+    "fruit":    {"calories": 80,  "protein": 1,  "carbs": 20, "fat": 0,  "fiber": 3},
+    "other":    {"calories": 150, "protein": 5,  "carbs": 18, "fat": 6,  "fiber": 2},
+}
+
+
 def _estimate_from_components(components: list[dict[str, Any]], portion_size: str) -> tuple[dict[str, float], float]:
-    totals = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0, "fiber": 0.0}
+    # Include sugar_g so the fuel-score sugar penalty can fire correctly
+    totals: dict[str, float] = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0, "fiber": 0.0, "sugar_g": 0.0}
     matched = 0
     for component in components:
         macros = _lookup_component_macros(str(component.get("name", "")))
@@ -386,10 +619,30 @@ def _estimate_from_components(components: list[dict[str, Any]], portion_size: st
         for key in totals:
             totals[key] += macros.get(key, 0.0) * factor
         matched += 1
+
+    # Fallback: if no components matched, use per-role generic estimates so we
+    # never return all-zeros for a logged food.
+    if matched == 0 and components:
+        for component in components:
+            role = str(component.get("role", "other")).lower()
+            fallback = _ROLE_FALLBACK_MACROS.get(role, _ROLE_FALLBACK_MACROS["other"])
+            factor = float(component.get("portion_factor", 1.0) or 1.0)
+            for key in totals:
+                totals[key] += fallback.get(key, 0.0) * factor
+        grounding_confidence = 0.25
+    else:
+        grounding_confidence = 0.35 + (0.5 * (matched / max(len(components), 1)))
+
     portion_multiplier = PORTION_MULTIPLIERS.get((portion_size or "medium").lower(), 1.0)
     for key in totals:
         totals[key] = round(totals[key] * portion_multiplier, 1)
-    grounding_confidence = 0.35 + (0.5 * (matched / max(len(components), 1)))
+
+    # If no explicit sugar_g came from COMPONENT_MACROS, fall back to the
+    # carb-ratio estimate (18 % of carbs).  For whole foods this keeps sugar low;
+    # for dessert items the explicit sugar_g values above dominate.
+    if totals["sugar_g"] == 0.0:
+        totals["sugar_g"] = _estimate_sugar_g(totals)
+
     return totals, min(0.9, grounding_confidence)
 
 
@@ -491,6 +744,11 @@ def _classify_scanned_meal_context(
     protein = float(nutrition.get("protein", 0) or 0)
     carbs = float(nutrition.get("carbs", 0) or 0)
     sugar = _estimate_sugar_g(nutrition)
+
+    # Dessert components (sweets, cakes, Indian mithai, etc.) are always snacks
+    # regardless of the user-selected meal_type
+    if components and any((c.get("role") or "").lower() == "dessert" for c in components):
+        return "snack"
 
     if (meal_type or "").lower() == "snack":
         return "snack"
@@ -600,9 +858,9 @@ def _upgrade_suggestions(
         suggestions.append("Add a bean, lentil, or vegetable side to raise fiber.")
     if net_carbs >= 30 and fiber < 10:
         suggestions.append("Start with a salad or vegetables before the starch so the meal hits more gently.")
-    if mes_score is not None and mes_score < 70:
+    if mes_score is not None and mes_score < 65:
         if net_carbs >= 35:
-            suggestions.append("Cut the starch portion slightly or swap part of it for vegetables to improve the MES.")
+            suggestions.append("Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES.")
         if fiber < 10:
             suggestions.append("Add greens, beans, or chia to raise fiber before repeating this meal.")
         if protein >= 25 and fat < 10 and meal_context != "snack":
@@ -611,7 +869,7 @@ def _upgrade_suggestions(
 
 
 def _today_totals(db: Session, user_id: str) -> dict[str, float]:
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     totals = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0, "fiber": 0.0}
     logs = db.query(FoodLog).filter(FoodLog.user_id == user_id, FoodLog.date == today).all()
     for log in logs:
@@ -666,7 +924,7 @@ def _recovery_plan(
         timing = pairing_recommendation.get("pairing_timing") or "with_meal"
         timing_copy = "before your next similar meal" if timing == "before_meal" else "with your next similar meal"
         plan.append(f"Use {title} {timing_copy} to soften the glycemic hit.")
-    if mes_score is not None and mes_score < 70:
+    if mes_score is not None and mes_score < 65:
         if net_carbs >= 30:
             plan.append("A 10-minute walk after this meal can help flatten the glycemic hit.")
         if fiber < 8:
@@ -675,7 +933,7 @@ def _recovery_plan(
         plan.append(f"Keep your next meal lower-glycemic so you protect the remaining {round(carb_room)}g carb room.")
     elif carbs > 45:
         plan.append("A 10-minute walk after this meal can help smooth out the glucose hit.")
-    if mes_score is not None and mes_score < 60 and meal_context != "snack":
+    if mes_score is not None and mes_score < 55 and meal_context != "snack":
         plan.append("Keep your next meal simple: lean protein, greens, and a slower carb if you still need one.")
 
     if not plan:
@@ -714,7 +972,7 @@ async def analyze_meal_scan(
     mime_type: str,
     context: dict[str, Any],
 ) -> dict[str, Any]:
-    started = datetime.utcnow()
+    started = datetime.now(UTC)
     extracted = await _call_gemini_meal_extractor(image_bytes, mime_type, context)
 
     # Reject non-food images immediately
@@ -754,7 +1012,10 @@ async def analyze_meal_scan(
     preparation_style = str(extracted.get("preparation_style") or "unknown").strip().lower()
 
     heuristic_nutrition, heuristic_confidence = _estimate_from_components(components, portion_size)
-    nutrition = heuristic_nutrition
+    nutrition = build_glycemic_nutrition_input(
+        heuristic_nutrition,
+        ingredients=normalized_ingredients + hidden_ingredients,
+    )
     grounding_confidence = heuristic_confidence
     meal_label = _derive_stable_meal_label(raw_meal_label, components, None, 0.0)
 
@@ -783,6 +1044,8 @@ async def analyze_meal_scan(
             "score": result["display_score"],
             "tier": result["display_tier"],
             "sub_scores": result.get("sub_scores") or {},
+            "ingredient_gis_adjustment": result.get("ingredient_gis_adjustment"),
+            "ingredient_gis_reasons": result.get("ingredient_gis_reasons") or [],
         }
         pairing_recommendation = _find_pairing_candidate(db, nutrition, None, budget)
 
@@ -835,6 +1098,7 @@ async def analyze_meal_scan(
         "portion_size": portion_size,
         "source_context": source_context,
         "preparation_style": preparation_style,
+        "components": components,  # raw dicts with name/role — used by compute_fuel_score
         "estimated_ingredients": estimated_ingredients,
         "normalized_ingredients": normalized_ingredients + hidden_ingredients,
         "nutrition_estimate": nutrition,
@@ -868,8 +1132,46 @@ async def analyze_meal_scan(
         "meal_scan.completed bytes=%s extraction_model=%s total_ms=%s",
         len(image_bytes),
         settings.scan_model or settings.gemini_model,
-        int((datetime.utcnow() - started).total_seconds() * 1000),
+        int((datetime.now(UTC) - started).total_seconds() * 1000),
     )
+    return result
+
+
+def _apply_correction_heuristic(ingredients: list[str], correction_text: str) -> list[str]:
+    """Apply simple text corrections to the ingredient list.
+
+    Supports patterns like:
+      - "the rice was actually brown rice" → swap "rice" for "brown rice"
+      - "remove the bread" → drop "bread"
+      - "add avocado" → append "avocado"
+    """
+    import re
+
+    result = list(ingredients)
+    lower = correction_text.lower().strip()
+
+    # Pattern: "X was actually Y" / "X is actually Y" / "X was Y"
+    swap_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:was|is)\s+(?:actually\s+)?(.+)", lower)
+    if swap_match:
+        old_name = swap_match.group(1).strip()
+        new_name = swap_match.group(2).strip().rstrip(".")
+        result = [new_name if old_name in ing.lower() else ing for ing in result]
+        return result
+
+    # Pattern: "remove X" / "no X"
+    remove_match = re.search(r"(?:remove|no|without|skip)\s+(?:the\s+)?(.+)", lower)
+    if remove_match:
+        remove_name = remove_match.group(1).strip().rstrip(".")
+        result = [ing for ing in result if remove_name not in ing.lower()]
+        return result
+
+    # Pattern: "add X"
+    add_match = re.search(r"(?:add|include|plus)\s+(?:the\s+)?(.+)", lower)
+    if add_match:
+        add_name = add_match.group(1).strip().rstrip(".")
+        result.append(add_name)
+        return result
+
     return result
 
 
@@ -882,11 +1184,18 @@ async def recompute_meal_scan(
     source_context: str,
     ingredients: list[str],
     existing_source_model: str | None = None,
+    correction_text: str | None = None,
 ) -> dict[str, Any]:
+    # If user provided a correction, prepend it as context for ingredient refinement
+    if correction_text:
+        ingredients = _apply_correction_heuristic(ingredients, correction_text)
     normalized_ingredients = [_normalize_name(x) for x in ingredients if x.strip()]
     synthetic_components = [{"name": ingredient, "portion_factor": 1.0} for ingredient in normalized_ingredients]
     heuristic_nutrition, heuristic_confidence = _estimate_from_components(synthetic_components, portion_size)
-    nutrition = heuristic_nutrition
+    nutrition = build_glycemic_nutrition_input(
+        heuristic_nutrition,
+        ingredients=normalized_ingredients,
+    )
     grounding_confidence = heuristic_confidence
     meal_label = _derive_stable_meal_label(meal_label, synthetic_components, None, 0.0)
 
@@ -914,6 +1223,8 @@ async def recompute_meal_scan(
             "score": result["display_score"],
             "tier": result["display_tier"],
             "sub_scores": result.get("sub_scores") or {},
+            "ingredient_gis_adjustment": result.get("ingredient_gis_adjustment"),
+            "ingredient_gis_reasons": result.get("ingredient_gis_reasons") or [],
         }
         pairing_recommendation = _find_pairing_candidate(db, nutrition, None, budget)
 

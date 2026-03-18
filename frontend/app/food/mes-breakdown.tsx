@@ -15,7 +15,7 @@ const COMPONENT_GUIDE = [
     key: 'pas',
     short: 'PAS',
     title: 'Protein Adequacy',
-    description: 'Rewards meals and days that hit your protein target, which is the largest MES driver.',
+    description: 'Rewards meals and days that hit your protein target and support fullness, recovery, and steadier energy.',
     color: '#22C55E',
   },
   {
@@ -29,7 +29,7 @@ const COMPONENT_GUIDE = [
     key: 'gis',
     short: 'GIS',
     title: 'Glycemic Impact',
-    description: 'Penalizes going over your carb ceiling. Lower glycemic load protects this part of the score.',
+    description: 'Tracks how gently the meal fits your carb budget. Mixed meals can still score well here when the overall load is balanced.',
     color: '#F59E0B',
   },
   {
@@ -50,7 +50,9 @@ export default function MESBreakdownScreen() {
 
   useEffect(() => {
     if (!dailyMES || !budget) {
-      fetchAll().catch(() => {});
+      fetchAll().catch((err: any) => {
+        console.warn('Failed to fetch MES breakdown data:', err?.message);
+      });
     }
   }, [dailyMES, budget, fetchAll]);
 
@@ -151,7 +153,7 @@ export default function MESBreakdownScreen() {
             style={[styles.formulaCard, { borderColor: theme.border }]}
           >
             <Text style={[styles.formulaTitle, { color: theme.text }]}>Formula</Text>
-            <Text style={[styles.formulaText, { color: theme.textSecondary }]}>
+              <Text style={[styles.formulaText, { color: theme.textSecondary }]}>
               MES = weighted protein score + weighted fiber score + weighted glycemic score + weighted fat score
             </Text>
           </LinearGradient>

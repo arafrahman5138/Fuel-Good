@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import time
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import httpx
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -131,6 +133,7 @@ CONVERSION_EVENT_TYPES = {
     "reactivation_7d": {"app_opened", "meal_plan_viewed", "healthify_started"},
     "reactivation_14d": {"app_opened", "meal_plan_viewed", "healthify_started"},
 }
+RECENT_DELIVERY_DEDUPE_WINDOW = timedelta(minutes=10)
 
 
 @dataclass
@@ -142,6 +145,24 @@ class CandidateNotification:
     score: int
     title: str
     body: str
+
+
+@dataclass
+class NotificationCycleResult:
+    users_evaluated: int = 0
+    deliveries_attempted: int = 0
+    deliveries_sent: int = 0
+    failures: int = 0
+    duration_seconds: float = 0.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "users_evaluated": self.users_evaluated,
+            "deliveries_attempted": self.deliveries_attempted,
+            "deliveries_sent": self.deliveries_sent,
+            "failures": self.failures,
+            "duration_seconds": round(self.duration_seconds, 3),
+        }
 
 
 def _default_meal_window() -> tuple[str, str]:
@@ -206,7 +227,7 @@ def register_push_token(
         token.app_version = app_version
         token.enabled = True
         token.invalidated_at = None
-        token.last_seen_at = datetime.utcnow()
+        token.last_seen_at = datetime.now(UTC)
         db.flush()
         return token
 
@@ -217,7 +238,7 @@ def register_push_token(
         platform=platform,
         app_version=app_version,
         enabled=True,
-        last_seen_at=datetime.utcnow(),
+        last_seen_at=datetime.now(UTC),
     )
     db.add(token)
     db.flush()
@@ -234,7 +255,7 @@ def deactivate_push_token(db: Session, user_id: str, token_id: str) -> bool:
         return False
 
     token.enabled = False
-    token.invalidated_at = datetime.utcnow()
+    token.invalidated_at = datetime.now(UTC)
     db.flush()
     return True
 
@@ -252,7 +273,7 @@ def record_notification_event(
         event_type=event_type,
         properties=properties or {},
         source=source,
-        occurred_at=occurred_at or datetime.utcnow(),
+        occurred_at=occurred_at or datetime.now(UTC),
     )
     db.add(event)
     db.flush()
@@ -261,7 +282,12 @@ def record_notification_event(
     return event
 
 
-def process_user_notifications(db: Session, user_id: str, now: Optional[datetime] = None) -> list[NotificationDelivery]:
+def process_user_notifications(
+    db: Session,
+    user_id: str,
+    now: Optional[datetime] = None,
+    batch_limit: Optional[int] = None,
+) -> list[NotificationDelivery]:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return []
@@ -275,7 +301,7 @@ def process_user_notifications(db: Session, user_id: str, now: Optional[datetime
     if not pref.push_enabled or not tokens:
         return []
 
-    now_utc = now or datetime.utcnow()
+    now_utc = now or datetime.now(UTC)
     localized_now = _user_now(pref, now_utc)
     if _is_quiet_hours(pref, localized_now):
         return []
@@ -288,8 +314,13 @@ def process_user_notifications(db: Session, user_id: str, now: Optional[datetime
     if not _passes_send_caps(db, user, pref, now_utc, candidate.category):
         return []
 
+    if _has_recent_delivery(db, user_id, candidate.category, now_utc):
+        return []
+
     deliveries: list[NotificationDelivery] = []
     for token in tokens:
+        if batch_limit is not None and len(deliveries) >= batch_limit:
+            break
         delivery = NotificationDelivery(
             user_id=user_id,
             push_token_id=token.id,
@@ -310,23 +341,69 @@ def process_user_notifications(db: Session, user_id: str, now: Optional[datetime
     return deliveries
 
 
-def process_due_notifications(now: Optional[datetime] = None) -> int:
+def run_notification_cycle(
+    now: Optional[datetime] = None,
+    batch_limit: Optional[int] = None,
+    user_limit: Optional[int] = None,
+) -> NotificationCycleResult:
+    started = time.perf_counter()
+    result = NotificationCycleResult()
+    now_utc = now or datetime.now(UTC)
+    effective_batch_limit = batch_limit or settings.notification_cron_batch_size
+    effective_user_limit = user_limit or settings.notification_cron_user_limit
+
     db = SessionLocal()
     try:
-        count = 0
-        users = db.query(User).all()
-        for user in users:
-            deliveries = process_user_notifications(db, user.id, now)
-            if deliveries:
-                count += len(deliveries)
-        db.commit()
-        return count
-    except Exception:
-        db.rollback()
-        logger.exception("notification_cycle.failed")
-        return 0
+        user_query = db.query(User.id).order_by(User.last_active_date.desc())
+        if effective_user_limit > 0:
+            user_query = user_query.limit(effective_user_limit)
+        user_ids = [row[0] for row in user_query.all()]
     finally:
         db.close()
+
+    for user_id in user_ids:
+        if effective_batch_limit > 0 and result.deliveries_attempted >= effective_batch_limit:
+            break
+
+        db = SessionLocal()
+        try:
+            claimed = _try_claim_user_cycle(db, user_id)
+            if not claimed:
+                db.rollback()
+                continue
+
+            remaining = None
+            if effective_batch_limit > 0:
+                remaining = max(effective_batch_limit - result.deliveries_attempted, 0)
+                if remaining == 0:
+                    db.rollback()
+                    break
+
+            deliveries = process_user_notifications(db, user_id, now_utc, batch_limit=remaining)
+
+            result.users_evaluated += 1
+            result.deliveries_attempted += len(deliveries)
+            result.deliveries_sent += sum(1 for delivery in deliveries if delivery.status == "sent")
+            result.failures += sum(1 for delivery in deliveries if delivery.status == "failed")
+            db.commit()
+        except Exception:
+            db.rollback()
+            result.failures += 1
+            logger.exception("notification_cycle.user_failed", extra={"user_id": user_id})
+        finally:
+            db.close()
+
+    result.duration_seconds = time.perf_counter() - started
+    return result
+
+
+def process_due_notifications(now: Optional[datetime] = None) -> int:
+    try:
+        result = run_notification_cycle(now=now)
+        return result.deliveries_sent
+    except Exception:
+        logger.exception("notification_cycle.failed")
+        return 0
 
 
 def send_test_notification_to_user(
@@ -367,13 +444,48 @@ def send_test_notification_to_user(
 async def notification_scheduler_loop(poll_seconds: int = 900) -> None:
     while True:
         try:
-            sent = await asyncio.to_thread(process_due_notifications)
-            logger.info("notification_cycle.completed sent=%s poll_seconds=%s", sent, poll_seconds)
+            result = await asyncio.to_thread(run_notification_cycle)
+            logger.info(
+                "notification_cycle.completed sent=%s attempted=%s users=%s failures=%s poll_seconds=%s duration_seconds=%.3f",
+                result.deliveries_sent,
+                result.deliveries_attempted,
+                result.users_evaluated,
+                result.failures,
+                poll_seconds,
+                result.duration_seconds,
+            )
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("notification_scheduler.tick_failed")
         await asyncio.sleep(poll_seconds)
+
+
+def _try_claim_user_cycle(db: Session, user_id: str) -> bool:
+    bind = db.get_bind()
+    if bind is None or bind.dialect.name != "postgresql":
+        return True
+    lock_key = f"notification-cycle:{user_id}"
+    claimed = db.execute(
+        text("SELECT pg_try_advisory_xact_lock(hashtext(:lock_key))"),
+        {"lock_key": lock_key},
+    ).scalar()
+    return bool(claimed)
+
+
+def _has_recent_delivery(db: Session, user_id: str, category: str, now_utc: datetime) -> bool:
+    cutoff = now_utc - RECENT_DELIVERY_DEDUPE_WINDOW
+    recent = (
+        db.query(NotificationDelivery.id)
+        .filter(
+            NotificationDelivery.user_id == user_id,
+            NotificationDelivery.category == category,
+            NotificationDelivery.created_at >= cutoff,
+            NotificationDelivery.status.in_(("pending", "sent")),
+        )
+        .first()
+    )
+    return recent is not None
 
 
 def _user_now(pref: NotificationPreference, now_utc: datetime) -> datetime:
@@ -904,7 +1016,7 @@ def _reactivation_route(db: Session, user: User) -> str:
 
 def _pick_template(category: str, user_id: str, context: dict[str, Any]) -> tuple[str, str]:
     variants = TEMPLATES.get(category) or [{"title": "Fuel Good", "body": "Open the app for your next meal."}]
-    variant = variants[hash(f"{user_id}:{category}:{datetime.utcnow().date().isoformat()}") % len(variants)]
+    variant = variants[hash(f"{user_id}:{category}:{datetime.now(UTC).date().isoformat()}") % len(variants)]
     return variant["title"].format(**context), variant["body"].format(**context)
 
 
@@ -937,7 +1049,7 @@ def _send_expo_push(db: Session, token: UserPushToken, delivery: NotificationDel
             delivery.failure_reason = error_code or details.get("message") or f"HTTP {response.status_code}"
             if error_code == "DeviceNotRegistered":
                 token.enabled = False
-                token.invalidated_at = datetime.utcnow()
+                token.invalidated_at = datetime.now(UTC)
             logger.warning(
                 "expo_push.failed delivery_id=%s token_id=%s status_code=%s error=%s",
                 delivery.id,
@@ -947,7 +1059,7 @@ def _send_expo_push(db: Session, token: UserPushToken, delivery: NotificationDel
             )
         else:
             delivery.status = "sent"
-            delivery.sent_at = datetime.utcnow()
+            delivery.sent_at = datetime.now(UTC)
             logger.info(
                 "expo_push.sent delivery_id=%s token_id=%s status_code=%s",
                 delivery.id,
