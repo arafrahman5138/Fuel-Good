@@ -454,10 +454,15 @@ export default function HomeScreen() {
   const dailyMesScore = Math.round(dailyMES?.score?.display_score ?? dailyMES?.score?.total_score ?? 0);
   const dailyMesTierKey = dailyMES?.score?.display_tier ?? dailyMES?.score?.tier ?? 'critical';
   const dailyMesTierColor = getTierConfig(dailyMesTierKey).color;
-  // Weekly MES — average of last 7 days from scoreHistory
-  const last7 = scoreHistory.slice(-7).filter((e) => (e.display_score ?? e.total_score ?? 0) > 0);
-  const weeklyMesScore = last7.length > 0
-    ? Math.round(last7.reduce((sum, e) => sum + (e.display_score ?? e.total_score ?? 0), 0) / last7.length)
+  // Weekly MES — average scores from the current week (Mon–Sun), matching fuel weekly bounds
+  const weekStart = fuelWeekly?.week_start ?? (() => {
+    const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+    return d.toISOString().slice(0, 10);
+  })();
+  const thisWeekScores = scoreHistory
+    .filter((e) => e.date >= weekStart && (e.display_score ?? e.total_score ?? 0) > 0);
+  const weeklyMesScore = thisWeekScores.length > 0
+    ? Math.round(thisWeekScores.reduce((sum, e) => sum + (e.display_score ?? e.total_score ?? 0), 0) / thisWeekScores.length)
     : 0;
   const weeklyMesTierKey = weeklyMesScore >= 85 ? 'elite' : weeklyMesScore >= 70 ? 'strong' : weeklyMesScore >= 55 ? 'moderate' : weeklyMesScore >= 40 ? 'mixed' : 'critical';
   const weeklyMesTierColor = getTierConfig(weeklyMesTierKey).color;
