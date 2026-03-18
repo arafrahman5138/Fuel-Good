@@ -1113,7 +1113,7 @@ export default function HomeScreen() {
                 trackBehaviorEvent('home_quick_action_used', { label: action.label, route: action.route });
                 router.push(action.route as any);
               }}
-              style={styles.actionCard}
+              style={[styles.actionCard, { width: (width - Spacing.xl * 2 - Spacing.sm) / 2 }]}
             >
               <Card
                 padding={Spacing.md}
@@ -1572,9 +1572,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
-  actionCard: {
-    width: (width - Spacing.xl * 2 - Spacing.sm) / 2,
-  },
+  actionCard: {},
   actionCardInner: {
     minHeight: 132,
     justifyContent: 'space-between',
