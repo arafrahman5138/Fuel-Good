@@ -102,7 +102,7 @@ function GoalRing({
                   backgroundColor: index < animFilled ? color : theme.surfaceHighlight,
                   transform: [
                     { rotate: `${(index / segmentCount) * 360}deg` },
-                    { translateY: -20 },
+                    { translateY: -16 },
                   ],
                 },
               ]}
@@ -484,8 +484,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm + 2,
   },
   goalRingWrap: {
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -130,19 +130,19 @@ export default function NotificationSettingsScreen() {
             <View style={[styles.card, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>Timing</Text>
               <TouchableOpacity style={styles.timeRow} onPress={() => cycleOption('quiet_hours_start', QUIET_HOUR_OPTIONS)}>
-                <Text style={[styles.rowTitle, { color: theme.text }]}>Quiet hours start</Text>
+                <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>Quiet hours start</Text>
                 <Text style={[styles.timeValue, { color: theme.primary }]}>{prefs.quiet_hours_start}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.timeRow} onPress={() => cycleOption('quiet_hours_end', QUIET_END_OPTIONS)}>
-                <Text style={[styles.rowTitle, { color: theme.text }]}>Quiet hours end</Text>
+                <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>Quiet hours end</Text>
                 <Text style={[styles.timeValue, { color: theme.primary }]}>{prefs.quiet_hours_end}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.timeRow} onPress={() => cycleOption('preferred_meal_window_start', MEAL_WINDOW_OPTIONS)}>
-                <Text style={[styles.rowTitle, { color: theme.text }]}>Meal reminder start</Text>
+                <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>Meal reminder start</Text>
                 <Text style={[styles.timeValue, { color: theme.primary }]}>{prefs.preferred_meal_window_start}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.timeRow} onPress={() => cycleOption('preferred_meal_window_end', MEAL_WINDOW_OPTIONS)}>
-                <Text style={[styles.rowTitle, { color: theme.text }]}>Meal reminder end</Text>
+                <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>Meal reminder end</Text>
                 <Text style={[styles.timeValue, { color: theme.primary }]}>{prefs.preferred_meal_window_end}</Text>
               </TouchableOpacity>
             </View>

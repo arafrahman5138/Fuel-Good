@@ -546,7 +546,7 @@ export default function HomeScreen() {
           colors={gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={s.recCard}
+          style={[s.recCard, { width: CARD_WIDTH, height: CARD_WIDTH * 1.25 }]}
         >
           <Ionicons name="restaurant" size={28} color="rgba(255,255,255,0.25)" style={{ position: 'absolute', top: 12, right: 12 }} />
           <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, borderBottomLeftRadius: BorderRadius.xl, borderBottomRightRadius: BorderRadius.xl }} />
@@ -758,7 +758,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => setSelectedDayKey(day.dayKey)}
-                    style={styles.weekItem}
+                    style={[styles.weekItem, { width: DAY_PILL_WIDTH }]}
                   >
                     <Text
                       style={[
@@ -1218,8 +1218,6 @@ const s = StyleSheet.create({
   },
   // Recipe card
   recCard: {
-    width: CARD_WIDTH,
-    height: CARD_WIDTH * 1.25,
     borderRadius: BorderRadius.xl,
     padding: Spacing.md,
     overflow: 'hidden',
@@ -1468,7 +1466,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   weekItem: {
-    width: DAY_PILL_WIDTH,
     alignItems: 'center',
     gap: 5,
   },

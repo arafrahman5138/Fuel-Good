@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.huge,
+    paddingVertical: Spacing.xxxl,
   },
   heroSection: {
     alignItems: 'center',

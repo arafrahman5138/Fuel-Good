@@ -1842,7 +1842,7 @@ const styles = StyleSheet.create({
   microName: {
     fontSize: FontSize.xs,
     fontWeight: '500',
-    width: 80,
+    width: 70,
   },
   microBarContainer: {
     flex: 1,
@@ -1869,7 +1869,7 @@ const styles = StyleSheet.create({
   microValue: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-    width: 55,
+    width: 48,
     textAlign: 'right',
   },
   ingredientHeaderRow: {
@@ -2046,7 +2046,7 @@ const styles = StyleSheet.create({
   },
   popoverMenu: {
     position: 'absolute',
-    width: 240,
+    width: 220,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 6,

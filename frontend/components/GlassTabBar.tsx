@@ -9,6 +9,7 @@ import {
   useColorScheme,
   Modal,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
   },
   addMenu: {
     position: 'absolute',
-    width: 260,
+    width: Math.min(260, Dimensions.get('window').width - 60),
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     overflow: 'hidden',

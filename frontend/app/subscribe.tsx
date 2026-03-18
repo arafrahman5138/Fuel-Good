@@ -200,7 +200,7 @@ export default function SubscribeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <LinearGradient colors={['#14532D', '#0F766E', '#0F172A']} style={styles.hero}>
           <Text style={styles.kicker}>Premium Access</Text>
-          <Text style={styles.title}>{config?.paywall.title || 'Start your 7-day free trial'}</Text>
+          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit>{config?.paywall.title || 'Start your 7-day free trial'}</Text>
           <Text style={styles.subtitle}>
             {config?.paywall.subtitle || 'Unlock the full app with monthly or annual iOS billing.'}
           </Text>

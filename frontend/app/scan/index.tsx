@@ -941,7 +941,7 @@ export default function ScanScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.sheetCard, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+      <View style={[styles.sheetCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.sheetTitle, { color: theme.text }]}>Scan a meal</Text>
         <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
           Review the image, add quick context, then analyze the meal.
@@ -988,7 +988,7 @@ export default function ScanScreen() {
                 activeOpacity={0.85}
                 style={[
                   styles.choiceChip,
-                  { backgroundColor: active ? theme.primaryMuted : '#FFFFFF', borderColor: active ? theme.primary : theme.border },
+                  { backgroundColor: active ? theme.primaryMuted : theme.surface, borderColor: active ? theme.primary : theme.border },
                 ]}
               >
                 <Text style={[styles.choiceText, { color: active ? theme.primary : theme.textSecondary }]}>{item}</Text>
@@ -1006,7 +1006,7 @@ export default function ScanScreen() {
                 activeOpacity={0.85}
                 style={[
                   styles.choiceChip,
-                  { backgroundColor: active ? theme.primaryMuted : '#FFFFFF', borderColor: active ? theme.primary : theme.border },
+                  { backgroundColor: active ? theme.primaryMuted : theme.surface, borderColor: active ? theme.primary : theme.border },
                 ]}
               >
                 <Text style={[styles.choiceText, { color: active ? theme.primary : theme.textSecondary }]}>{item}</Text>
@@ -1024,7 +1024,7 @@ export default function ScanScreen() {
                 activeOpacity={0.85}
                 style={[
                   styles.choiceChip,
-                  { backgroundColor: active ? theme.primaryMuted : '#FFFFFF', borderColor: active ? theme.primary : theme.border },
+                  { backgroundColor: active ? theme.primaryMuted : theme.surface, borderColor: active ? theme.primary : theme.border },
                 ]}
               >
                 <Text style={[styles.choiceText, { color: active ? theme.primary : theme.textSecondary }]}>{item}</Text>
@@ -1199,7 +1199,7 @@ export default function ScanScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.resultHero, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultHero, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.resultHeroTop}>
             <View style={{ flex: 1, paddingRight: Spacing.md }}>
               <TextInput
@@ -1289,7 +1289,7 @@ export default function ScanScreen() {
           </View>
         </View>
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Detected ingredients</Text>
           <View style={styles.ingredientsWrap}>
             {ingredientDrafts.map((item, index) => (
@@ -1319,7 +1319,7 @@ export default function ScanScreen() {
         </View>
 
         {mealResult.pairing_opportunity && mealResult.pairing_recommended_title && mealResult.pairing_projected_mes != null && (
-          <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionHeading, { color: theme.text }]}>Recommended pairing</Text>
             <View style={[styles.pairingPreviewCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
               <View style={styles.pairingPreviewHeader}>
@@ -1347,7 +1347,7 @@ export default function ScanScreen() {
           </View>
         )}
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Upgrade next time</Text>
           {(mealResult.upgrade_suggestions || []).length > 0 ? (
             (mealResult.upgrade_suggestions || []).map((item) => (
@@ -1361,7 +1361,7 @@ export default function ScanScreen() {
           )}
         </View>
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Recover today</Text>
           {(mealResult.recovery_plan || []).length > 0 ? (
             (mealResult.recovery_plan || []).map((item) => (
@@ -1376,7 +1376,7 @@ export default function ScanScreen() {
         </View>
 
         {(mealResult.whole_food_flags || []).length > 0 && (
-          <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionHeading, { color: theme.text }]}>Why this was flagged</Text>
             {(mealResult.whole_food_flags || []).slice(0, 4).map((flag, index) => (
               <View key={`${flag.ingredient}-${index}`} style={styles.guidanceRow}>
@@ -1455,7 +1455,7 @@ export default function ScanScreen() {
           )}
         </View>
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Decision in a glance</Text>
           {topReasons.length > 0 ? (
             topReasons.map((item) => (
@@ -1473,7 +1473,7 @@ export default function ScanScreen() {
           )}
         </View>
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
           <View style={styles.macroGrid}>
             {[
@@ -1493,7 +1493,7 @@ export default function ScanScreen() {
         </View>
 
         {flaggedRows.length > 0 && (
-          <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionHeading, { color: theme.text }]}>Flagged ingredients</Text>
             {flaggedRows.map((row) => (
               <View key={row.label} style={styles.guidanceRow}>
@@ -1506,7 +1506,7 @@ export default function ScanScreen() {
           </View>
         )}
 
-        <View style={[styles.resultSection, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}>
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Extracted label</Text>
           <Text style={[styles.productLabelText, { color: theme.textSecondary }]}>
             {productResult.ingredients_text || 'No ingredient text was extracted from this scan yet.'}
@@ -1531,7 +1531,7 @@ export default function ScanScreen() {
             <TouchableOpacity
               onPress={() => setShowProductEditSheet(true)}
               activeOpacity={0.85}
-              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
               <Ionicons name="create-outline" size={18} color={theme.textSecondary} />
               <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Fix details</Text>
@@ -1539,7 +1539,7 @@ export default function ScanScreen() {
             <TouchableOpacity
               onPress={scanAnotherProduct}
               activeOpacity={0.85}
-              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+              style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
               <Ionicons name="camera-outline" size={18} color={theme.textSecondary} />
               <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Scan another</Text>
@@ -1574,7 +1574,7 @@ export default function ScanScreen() {
               <TouchableOpacity
                 onPress={recomputeMeal}
                 activeOpacity={0.85}
-                style={[styles.footerButtonSecondary, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+                style={[styles.footerButtonSecondary, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
                 <Ionicons name="refresh-outline" size={18} color={theme.textSecondary} />
                 <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Recompute</Text>
@@ -1684,7 +1684,7 @@ export default function ScanScreen() {
               <TouchableOpacity
                 onPress={() => setShowProductEditSheet(false)}
                 activeOpacity={0.85}
-                style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: '#FFFFFF', borderColor: theme.border }]}
+                style={[styles.footerButtonSecondary, styles.productSecondaryAction, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
                 <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>

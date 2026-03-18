@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSavedRecipesStore } from '../../stores/savedRecipesStore';
 import { useTheme } from '../../hooks/useTheme';
 import { ScreenContainer } from '../../components/ScreenContainer';

@@ -1250,8 +1250,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: {
     padding: Spacing.xl,
-    paddingTop: Spacing.huge,
-    paddingBottom: Spacing.huge,
+    paddingTop: Spacing.xxxl,
+    paddingBottom: Spacing.xxxl,
   },
   badge: {
     alignSelf: 'flex-start',
@@ -1381,9 +1381,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   weekDot: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
