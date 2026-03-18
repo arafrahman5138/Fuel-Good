@@ -215,6 +215,7 @@ export default function PreferencesScreen() {
                 style={[styles.stepBtn, { backgroundColor: theme.surfaceHighlight }]}
                 onPress={() => setHouseholdSize((n) => Math.max(1, n - 1))}
                 activeOpacity={0.7}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons name="remove" size={18} color={theme.text} />
               </TouchableOpacity>
@@ -223,6 +224,7 @@ export default function PreferencesScreen() {
                 style={[styles.stepBtn, { backgroundColor: theme.surfaceHighlight }]}
                 onPress={() => setHouseholdSize((n) => Math.min(20, n + 1))}
                 activeOpacity={0.7}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons name="add" size={18} color={theme.text} />
               </TouchableOpacity>
@@ -289,5 +291,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
 });

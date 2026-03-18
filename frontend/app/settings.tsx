@@ -639,9 +639,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   stepperBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },

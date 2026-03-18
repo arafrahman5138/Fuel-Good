@@ -205,7 +205,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   timeValue: {
     fontSize: FontSize.sm,

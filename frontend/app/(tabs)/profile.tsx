@@ -319,7 +319,7 @@ export default function ProfileScreen() {
 
                       {/* Text */}
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={[styles.achieveName, { color: theme.text }]}>
+                        <Text style={[styles.achieveName, { color: theme.text }]} numberOfLines={1}>
                           {achievement.name}
                         </Text>
                         <Text style={[styles.achieveDesc, { color: theme.textTertiary }]} numberOfLines={2}>

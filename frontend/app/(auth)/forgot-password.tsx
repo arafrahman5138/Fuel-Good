@@ -131,9 +131,9 @@ export default function ForgotPasswordScreen() {
             />
 
             {devToken ? (
-              <View style={styles.group}>
+              <View style={[styles.group, { flexShrink: 1 }]}>
                 <Text style={[styles.label, { color: theme.textSecondary }]}>Dev Reset Token</Text>
-                <Text selectable style={[styles.tokenBox, { color: theme.text, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                <Text selectable numberOfLines={3} ellipsizeMode="middle" style={[styles.tokenBox, { color: theme.text, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
                   {devToken}
                 </Text>
               </View>

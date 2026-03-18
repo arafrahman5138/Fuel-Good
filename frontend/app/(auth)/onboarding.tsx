@@ -1280,7 +1280,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xxxl,
     fontWeight: '800',
-    lineHeight: 42,
   },
   subtitle: {
     marginTop: Spacing.sm,
@@ -1582,7 +1581,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
-    height: 48,
+    minHeight: 48,
   },
   inputField: {
     flex: 1,
@@ -1595,7 +1594,7 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.sm,
     flexWrap: 'wrap',
   },
   chip: {
@@ -1615,7 +1614,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     marginBottom: 8,
-    gap: 10,
+    gap: Spacing.sm,
   },
   optionLabel: {
     fontSize: FontSize.sm,
@@ -1629,7 +1628,7 @@ const styles = StyleSheet.create({
   goalGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.sm,
   },
   goalCard: {
     width: '47%',
@@ -1690,7 +1689,7 @@ const styles = StyleSheet.create({
   targetGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.sm,
     marginTop: Spacing.md,
   },
   targetCard: {

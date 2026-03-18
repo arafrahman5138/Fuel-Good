@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   appName: {
-    fontSize: 36,
+    fontSize: FontSize.hero,
     fontWeight: '800',
     letterSpacing: -1.2,
   },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    height: 52,
+    minHeight: 52,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     paddingHorizontal: Spacing.lg,

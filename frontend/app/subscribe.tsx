@@ -200,7 +200,7 @@ export default function SubscribeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <LinearGradient colors={['#14532D', '#0F766E', '#0F172A']} style={styles.hero}>
           <Text style={styles.kicker}>Premium Access</Text>
-          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit>{config?.paywall.title || 'Start your 7-day free trial'}</Text>
+          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{config?.paywall.title || 'Start your 7-day free trial'}</Text>
           <Text style={styles.subtitle}>
             {config?.paywall.subtitle || 'Unlock the full app with monthly or annual iOS billing.'}
           </Text>
@@ -257,7 +257,7 @@ export default function SubscribeScreen() {
                 ]}
               >
                 <View style={styles.planTopRow}>
-                  <View>
+                  <View style={{ flexShrink: 1 }}>
                     <Text style={[styles.planName, { color: theme.text }]}>
                       {product.package_type === 'yearly'
                         ? 'Yearly'
@@ -350,9 +350,9 @@ export default function SubscribeScreen() {
           ) : null}
 
           <View style={styles.linkRow}>
-            <TouchableOpacity onPress={() => openUrl(TERMS_URL)}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Terms</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => openUrl(PRIVACY_POLICY_URL)}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Privacy</Text></TouchableOpacity>
-            <TouchableOpacity onPress={openSupport}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Support</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => openUrl(TERMS_URL)} style={{ paddingVertical: Spacing.sm }}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Terms</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => openUrl(PRIVACY_POLICY_URL)} style={{ paddingVertical: Spacing.sm }}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Privacy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={openSupport} style={{ paddingVertical: Spacing.sm }}><Text style={[styles.linkText, { color: theme.textSecondary }]}>Support</Text></TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   planPrice: {
     marginTop: Spacing.xs,
-    fontSize: 28,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
   },
   planCadence: {

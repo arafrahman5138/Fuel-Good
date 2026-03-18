@@ -409,7 +409,7 @@ export default function ChatScreen() {
                 <Ionicons name="sparkles" size={18} color="#FFFFFF" />
               </LinearGradient>
               <View style={styles.headerTextWrap}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Healthify</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>Healthify</Text>
                 <Text
                   style={[
                     styles.headerSubtitle,
@@ -1160,7 +1160,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: Spacing.sm,
@@ -1343,7 +1343,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mesPillText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '700',
   },
   metaChip: {
