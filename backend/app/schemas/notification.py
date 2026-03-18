@@ -47,3 +47,11 @@ class NotificationEventIngestRequest(BaseModel):
     event_type: str
     source: str = "client"
     properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class NotificationRunResponse(BaseModel):
+    users_evaluated: int
+    deliveries_attempted: int
+    deliveries_sent: int
+    failures: int
+    duration_seconds: float

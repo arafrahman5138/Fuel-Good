@@ -15,7 +15,13 @@ import app.models.notification  # noqa: F401
 import app.models.recipe_embedding  # noqa: F401
 from app.db import SessionLocal
 from app.models.recipe import Recipe
-from app.services.metabolic_engine import DEFAULT_COMPUTED_BUDGET, compute_meal_mes, compute_meal_mes_with_pairing
+from app.services.metabolic_engine import (
+    DEFAULT_COMPUTED_BUDGET,
+    build_glycemic_nutrition_input,
+    compute_meal_mes,
+    compute_meal_mes_with_pairing,
+    resolve_glycemic_profile,
+)
 
 
 def main() -> None:
@@ -47,12 +53,13 @@ def main() -> None:
             if pairing is None:
                 continue
 
-            base_result = compute_meal_mes(nutrition, DEFAULT_COMPUTED_BUDGET)
+            base_nutrition = build_glycemic_nutrition_input(nutrition, source=meal)
+            base_result = compute_meal_mes(base_nutrition, DEFAULT_COMPUTED_BUDGET)
             paired_result = compute_meal_mes_with_pairing(
-                nutrition,
+                base_nutrition,
                 pairing_recipe=pairing,
                 budget=DEFAULT_COMPUTED_BUDGET,
-                pairing_nutrition=pairing.nutrition_info or {},
+                pairing_nutrition=build_glycemic_nutrition_input(pairing.nutrition_info or {}, source=pairing),
             )
 
             macro_only = paired_result.get("macro_only_score") or paired_result["score"]
@@ -70,9 +77,13 @@ def main() -> None:
             nutrition["mes_default_pairing_title"] = pairing.title
             nutrition["mes_default_pairing_role"] = getattr(pairing, "recipe_role", None) or "veg_side"
             nutrition["mes_default_pairing_reasons"] = paired_result.get("pairing_reasons") or []
+            nutrition["glycemic_profile"] = resolve_glycemic_profile(meal)
+            nutrition["ingredient_gis_adjustment"] = float(base_result.get("ingredient_gis_adjustment", 0) or 0)
+            nutrition["ingredient_gis_reasons"] = list(base_result.get("ingredient_gis_reasons") or [])
 
             meal.default_pairing_ids = [str(pairing.id)]
             meal.nutrition_info = nutrition
+            meal.glycemic_profile = resolve_glycemic_profile(meal)
             updated += 1
 
         session.commit()

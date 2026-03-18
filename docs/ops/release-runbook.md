@@ -23,7 +23,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 1. Create or connect the Expo project to EAS.
 2. Add Apple credentials and confirm `com.fuelgood.app`.
 3. Configure EAS secrets for all `EXPO_PUBLIC_*` release variables.
-4. Provision the production Render API and notification worker services. Add temporary staging only if you need a migration or notification rehearsal.
+4. Provision the production Render API service. Add temporary staging only if you need a migration or notification rehearsal.
 5. Create the production Supabase project, enable `pgvector`, create private `meal-scans` and `label-scans` Storage buckets, and enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`.
 6. Publish privacy policy, terms, and support pages to public HTTPS URLs.
 7. If monetization is included, create App Store subscription products. Do not use Stripe checkout for iOS digital access.
@@ -32,7 +32,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
    - offering: `default`
    - product ids: `premium_monthly_999`, `premium_annual_4999`
    - attach a `7-day` introductory free trial to both products in App Store Connect
-9. Configure backend env vars for `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, product metadata, Supabase URL, service role key, and Supabase-backed `DATABASE_URL`.
+9. Configure backend env vars for `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, product metadata, Supabase URL, service role key, Supabase-backed `DATABASE_URL`, `NOTIFICATION_RUNNER_SECRET`, and notification cron limits.
 10. Configure frontend release env vars for `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and legal/support URLs.
 11. Register RevenueCat webhook delivery to the production `/api/billing/webhook/revenuecat` endpoint and verify the authorization header.
 
@@ -42,9 +42,9 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 2. Run database migrations against Supabase Postgres.
 3. Confirm RevenueCat API key, webhook authorization secret, product ids, and entitlement id are set in the backend environment.
 4. Deploy API service with `RUN_NOTIFICATION_SCHEDULER=false`.
-5. Deploy notification worker with `RUN_NOTIFICATION_SCHEDULER=true`.
+5. Configure Supabase Cron to call `POST /api/internal/notifications/run` every `5 minutes` with header `x-notification-runner-secret`.
 6. Confirm `/health` returns `healthy` and correct environment.
-7. Verify structured logs are visible in the hosting platform and notification worker heartbeat logs are present.
+7. Verify structured logs are visible in the hosting platform and Supabase Cron execution logs are present.
 
 ## iOS Preview Release Procedure
 
@@ -54,7 +54,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 4. Install build via internal TestFlight.
 5. Execute [`docs/qa/testflight-qa-checklist.md`](../qa/testflight-qa-checklist.md).
 6. Execute [`docs/qa/paywall-device-readme.md`](../qa/paywall-device-readme.md) for subscription-specific device validation.
-7. Validate push opt-in, token registration, and one scheduled notification on a physical device.
+7. Validate push opt-in, token registration, and one cron-triggered scheduled notification on a physical device.
 8. Validate the paywall, monthly trial, annual trial, restore purchases, and App Store subscription management link.
 9. Validate Supabase Storage uploads for meal scans and label scans, chronometer realtime refresh, and billing realtime refresh.
 

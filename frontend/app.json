@@ -75,6 +75,12 @@
     },
     "updates": {
       "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fd207039-72fe-4e1c-a344-495e48d4bc4f"
+      }
     }
   }
 }

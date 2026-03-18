@@ -2,13 +2,11 @@
 
 ## Services
 
-Use two always-on Render services defined in [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml):
+Use the production API service defined in [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml):
 
 - production API web service
-- production notification worker
 
-The API service runs `uvicorn app.main:app`.  
-The worker runs `python run_notification_worker.py`.
+The API service runs `uvicorn app.main:app`.
 
 Production is the default hosted environment. Create temporary staging services only when you need to rehearse risky migrations or validate notification behavior before release.
 
@@ -34,12 +32,14 @@ Set these in production:
 - `SUPABASE_STORAGE_MEAL_SCANS_BUCKET`
 - `SUPABASE_STORAGE_LABEL_SCANS_BUCKET`
 - `SUPABASE_SIGNED_URL_TTL_SECONDS`
+- `NOTIFICATION_RUNNER_SECRET`
+- `NOTIFICATION_CRON_BATCH_SIZE`
+- `NOTIFICATION_CRON_USER_LIMIT`
 - `EXPO_PUSH_ACCESS_TOKEN` if using Expo access-token-authenticated sends
 
-Role-specific flags:
+Hosted env flags:
 
 - API: `RUN_NOTIFICATION_SCHEDULER=false`
-- Worker: `RUN_NOTIFICATION_SCHEDULER=true`
 - Hosted envs: `RUN_STARTUP_SEEDING=false`, `ALLOW_DEV_DB_BOOTSTRAP=false`
 
 ## Deploy Sequence
@@ -48,7 +48,7 @@ Role-specific flags:
    Supabase is the default production database provider.
 2. Set all production secrets.
 3. Deploy the production API.
-4. Deploy the production notification worker.
+4. Configure Supabase Cron to call `POST /api/internal/notifications/run` every `5 minutes` with header `x-notification-runner-secret`.
 5. Confirm `GET /health` returns `scheduler_enabled=false` and `llm_provider=gemini`.
 6. Run the hosted smoke test:
    `BASE_URL=https://<production-api-host> MODE=health backend/scripts/smoke_test.sh`

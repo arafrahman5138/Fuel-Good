@@ -18,6 +18,7 @@ import { Button } from '../../components/Button';
 import { ChipSelector } from '../../components/ChipSelector';
 import { Card } from '../../components/GradientCard';
 import { MetabolicRing } from '../../components/MetabolicRing';
+import { FuelScoreRing } from '../../components/FuelScoreRing';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { getTierConfig, useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
@@ -33,9 +34,9 @@ import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 
 // ─── Constants ─────────────────────────────────────────────────────
 
-type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
 
-const TOTAL_STEPS = 14;
+const TOTAL_STEPS = 16;
 
 const ACTIVITY_OPTIONS = [
   { value: 'sedentary', label: 'Mostly sedentary', desc: 'Desk job, minimal exercise' },
@@ -250,10 +251,10 @@ export default function OnboardingScreen() {
   }, [mealSuggestions]);
 
   const projectedTier = useMemo(() => {
-    if (projectedScore >= 85) return 'optimal';
-    if (projectedScore >= 70) return 'good';
-    if (projectedScore >= 55) return 'moderate';
-    if (projectedScore >= 40) return 'low';
+    if (projectedScore >= 82) return 'optimal';
+    if (projectedScore >= 65) return 'good';
+    if (projectedScore >= 50) return 'moderate';
+    if (projectedScore >= 35) return 'low';
     return 'critical';
   }, [projectedScore]);
 
@@ -268,16 +269,18 @@ export default function OnboardingScreen() {
         }
         return "Here's what we know so far";
       }
-      case 4: return "Let's tune your flavor profile";
-      case 5: return 'Any dietary goals or restrictions?';
-      case 6: return 'Safety check: allergies';
-      case 7: return 'Protein preferences';
-      case 8: return "Now let's dial in your body";
-      case 9: return 'Anything else we should know?';
-      case 10: return 'Your personalized targets';
-      case 11: return 'Building your metabolic profile...';
-      case 12: return "Here's what a great day looks like for you";
-      case 13: return 'Ready to start eating real food?';
+      case 4: return "Here's the thing\nno one tells you";
+      case 5: return "You don't have\nto be perfect";
+      case 6: return "Let's tune your flavor profile";
+      case 7: return 'Any dietary goals or restrictions?';
+      case 8: return 'Safety check: allergies';
+      case 9: return 'Protein preferences';
+      case 10: return "Now let's dial in your body";
+      case 11: return 'Anything else we should know?';
+      case 12: return 'Your personalized targets';
+      case 13: return 'Building your metabolic profile...';
+      case 14: return "Here's what a great day looks like for you";
+      case 15: return 'Ready to start eating real food?';
       default: return '';
     }
   }, [step, frequencyLabel, motivationSummaries]);
@@ -293,16 +296,18 @@ export default function OnboardingScreen() {
           : '';
         return `${motText}\n\nThe average American eats 60% ultra-processed food. Let's fix that — starting with your preferences.`;
       }
-      case 4: return 'Healthy eating doesn\'t have to be boring. Pick 2–4 flavors so every meal plan feels exciting.';
-      case 5: return 'Choose what applies now. You can always change this later.';
-      case 6: return "We'll use this to keep recommendations safe.";
-      case 7: return 'Pick proteins you love. Great food starts with great ingredients.';
-      case 8: return 'This personalizes your macros, scoring, and meal plans — no two people get the same targets.';
-      case 9: return 'Optional — this fine-tunes your metabolic sensitivity scoring. Skip if unsure.';
-      case 10: return 'Based on what you told us, here\'s your personalized metabolic budget.';
-      case 11: return 'Personalizing your meals and calculating your metabolic targets...';
-      case 12: return 'Three meals, a dessert, and real food. This is your projected Metabolic Energy Score.';
-      case 13: return '';
+      case 4: return '';
+      case 5: return '';
+      case 6: return 'Healthy eating doesn\'t have to be boring. Pick 2–4 flavors so every meal plan feels exciting.';
+      case 7: return 'Choose what applies now. You can always change this later.';
+      case 8: return "We'll use this to keep recommendations safe.";
+      case 9: return 'Pick proteins you love. Great food starts with great ingredients.';
+      case 10: return 'This personalizes your macros, scoring, and meal plans — no two people get the same targets.';
+      case 11: return 'Optional — this fine-tunes your metabolic sensitivity scoring. Skip if unsure.';
+      case 12: return 'Based on what you told us, here\'s your personalized metabolic budget.';
+      case 13: return 'Personalizing your meals and calculating your metabolic targets...';
+      case 14: return 'Three meals, a dessert, and real food. This is your projected score.';
+      case 15: return '';
       default: return '';
     }
   }, [step, motivationSummaries]);
@@ -335,20 +340,22 @@ export default function OnboardingScreen() {
     (step === 1 && motivations.length > 0) ||
     (step === 2 && processedFrequency.length > 0) ||
     step === 3 ||
-    (step === 4 && flavors.length > 0) ||
-    (step === 5 && dietary.length > 0) ||
-    step === 6 ||
-    step === 7 ||
-    (step === 8 && bodyGoalsValid) ||
+    step === 4 ||
+    step === 5 ||
+    (step === 6 && flavors.length > 0) ||
+    (step === 7 && dietary.length > 0) ||
+    step === 8 ||
     step === 9 ||
-    step === 10 ||
+    (step === 10 && bodyGoalsValid) ||
+    step === 11 ||
     step === 12 ||
-    (step === 13 && isCommitted !== null);
+    step === 14 ||
+    (step === 15 && isCommitted !== null);
 
-  // ─── Step 10: Compute targets from metabolic profile (local preview) ───
+  // ─── Step 12: Compute targets from metabolic profile (local preview) ───
 
   useEffect(() => {
-    if (step !== 10) return;
+    if (step !== 12) return;
     if (!bodyGoalsValid) return;
 
     // Simple local estimate for the mirror step (real computation happens server-side in step 11)
@@ -392,10 +399,10 @@ export default function OnboardingScreen() {
     });
   }, [step, bodyGoalsValid]);
 
-  // ─── Step 11: Save preferences + metabolic profile + fetch meal suggestions ───
+  // ─── Step 13: Save preferences + metabolic profile + fetch meal suggestions ───
 
   useEffect(() => {
-    if (step !== 11) return;
+    if (step !== 13) return;
     let cancelled = false;
 
     const run = async () => {
@@ -434,7 +441,7 @@ export default function OnboardingScreen() {
             insulin_resistant: insulinResistant,
             prediabetes,
             type_2_diabetes: type2Diabetes,
-            onboarding_step_completed: 13,
+            onboarding_step_completed: 15,
           };
           if (bodyFatPct.trim()) {
             data.body_fat_pct = parseFloat(bodyFatPct);
@@ -460,7 +467,7 @@ export default function OnboardingScreen() {
 
       if (!cancelled) {
         setProfileSaving(false);
-        setStep(12);
+        setStep(14);
       }
     };
 
@@ -485,15 +492,14 @@ export default function OnboardingScreen() {
   };
 
   const goNext = () => {
-    if (step >= 13) return;
-    animateTransition(Math.min(step + 1, 13) as Step);
+    if (step >= 15) return;
+    animateTransition(Math.min(step + 1, 15) as Step);
   };
 
   const goBack = () => {
-    if (step <= 0 || step === 11) return;
-    // From step 12 or 13, go back to step 10 (skip the loading step 11)
-    if (step === 12 || step === 13) {
-      animateTransition(step === 13 ? 12 as Step : 10 as Step);
+    if (step <= 0 || step === 13) return;
+    if (step === 14 || step === 15) {
+      animateTransition(step === 15 ? 14 as Step : 12 as Step);
       return;
     }
     animateTransition(Math.max(step - 1, 0) as Step);
@@ -514,22 +520,38 @@ export default function OnboardingScreen() {
 
   // ─── Render helpers ───
 
-  const renderMealCard = (meal: MealSuggestion, idx: number) => {
+  const renderMealCard = (meal: MealSuggestion, idx: number, totalMeals: number) => {
     const tierCfg = getTierConfig(meal.meal_tier);
     const mealLabels = ['Breakfast', 'Lunch', 'Dinner', 'Dessert'];
+    const isDessert = idx === totalMeals - 1 && totalMeals > 1;
+    const fuelScore = isDessert ? 45 : Math.min(95, Math.round(meal.meal_score * 1.05));
+    const fuelColor = fuelScore >= 85 ? '#22C55E' : fuelScore >= 70 ? '#4ADE80' : fuelScore >= 50 ? '#F59E0B' : '#FB923C';
     return (
       <View
         key={meal.recipe_id}
-        style={[styles.mealCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+        style={[styles.mealCard, { backgroundColor: theme.surfaceElevated, borderColor: isDessert ? '#F59E0B44' : theme.border }]}
       >
         <View style={styles.mealCardHeader}>
-          <Text style={[styles.mealTypeLabel, { color: theme.textTertiary }]}>
-            {mealLabels[idx] || `Meal ${idx + 1}`}
-          </Text>
-          <View style={[styles.mesBadge, { backgroundColor: tierCfg.color + '18' }]}>
-            <Text style={[styles.mesBadgeText, { color: tierCfg.color }]}>
-              {Math.round(meal.meal_score)} MES
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.mealTypeLabel, { color: theme.textTertiary }]}>
+              {mealLabels[idx] || `Meal ${idx + 1}`}
             </Text>
+            {isDessert && (
+              <View style={[styles.flexTag, { backgroundColor: '#F59E0B18' }]}>
+                <Text style={styles.flexTagText}>FLEX</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.badgeRow}>
+            <View style={[styles.fuelBadge, { backgroundColor: fuelColor + '18' }]}>
+              <Ionicons name="leaf" size={10} color={fuelColor} />
+              <Text style={[styles.fuelBadgeText, { color: fuelColor }]}>{fuelScore}</Text>
+            </View>
+            <View style={[styles.mesBadge, { backgroundColor: tierCfg.color + '18' }]}>
+              <Text style={[styles.mesBadgeText, { color: tierCfg.color }]}>
+                {Math.round(meal.meal_score)} MES
+              </Text>
+            </View>
           </View>
         </View>
         <Text style={[styles.mealTitle, { color: theme.text }]}>{meal.title}</Text>
@@ -552,8 +574,8 @@ export default function OnboardingScreen() {
 
   // ─── Main render ───
 
-  const showBackButton = step > 0 && step !== 11;
-  const showFooter = step !== 11; // Step 11 auto-advances
+  const showBackButton = step > 0 && step !== 13;
+  const showFooter = step !== 13;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -654,9 +676,84 @@ export default function OnboardingScreen() {
             </Card>
           )}
 
-          {/* ── Act 2: Preferences ── */}
+          {/* ── Step 4: Fuel Score Philosophy (aha pivot) ── */}
 
           {step === 4 && (
+            <View style={styles.fuelPhilosophyWrap}>
+              <Text style={[styles.philosophyHeadline, { color: theme.text }]}>
+                Your body cares more about the good you put{' '}
+                <Text style={{ color: theme.primary }}>IN</Text>
+                {' '}than the bad you try to cut out.
+              </Text>
+
+              <View style={styles.fuelRingDemo}>
+                <FuelScoreRing score={85} size={160} showLabel showIcon />
+                <Text style={[styles.fuelRingCaption, { color: theme.textSecondary }]}>
+                  A day of mostly whole foods
+                </Text>
+              </View>
+
+              <View style={[styles.philosophyCard, { backgroundColor: theme.primaryMuted }]}>
+                <Ionicons name="leaf" size={20} color={theme.primary} />
+                <Text style={[styles.philosophyCardText, { color: theme.primary }]}>
+                  We measure food quality with a Fuel Score.{'\n'}Eat whole foods, score high. It's that simple.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ── Step 5: Flex Budget (the hook) ── */}
+
+          {step === 5 && (
+            <View style={styles.flexBudgetWrap}>
+              <Text style={[styles.flexExplainer, { color: theme.textSecondary }]}>
+                Eat clean most of the time, and you earn{' '}
+                <Text style={{ fontWeight: '800', color: theme.text }}>flex meals</Text>
+                {' '}— guilt-free.
+              </Text>
+
+              <View style={styles.weekDotsWrap}>
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+                  const isFlex = i === 4 || i === 5;
+                  return (
+                    <View key={day} style={styles.weekDotColumn}>
+                      <View
+                        style={[
+                          styles.weekDot,
+                          { backgroundColor: isFlex ? '#F59E0B' : '#22C55E' },
+                        ]}
+                      >
+                        {isFlex && <Ionicons name="fast-food" size={14} color="#fff" />}
+                        {!isFlex && <Ionicons name="leaf" size={14} color="#fff" />}
+                      </View>
+                      <Text style={[styles.weekDotLabel, { color: theme.textTertiary }]}>{day}</Text>
+                      {isFlex && (
+                        <Text style={[styles.weekDotTag, { color: '#F59E0B' }]}>Flex</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View style={[styles.flexHighlightRow, { backgroundColor: '#22C55E14', borderColor: '#22C55E33' }]}>
+                <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                <Text style={[styles.flexHighlightText, { color: theme.text }]}>
+                  Pizza night? Covered. Fast food on a road trip? No stress.
+                </Text>
+              </View>
+
+              <View style={[styles.philosophyCard, { backgroundColor: theme.surfaceHighlight }]}>
+                <Ionicons name="trending-up" size={18} color={theme.primary} />
+                <Text style={[styles.philosophyCardText, { color: theme.textSecondary }]}>
+                  Users with an 80+ avg score still enjoy 5–7 flex meals per week.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ── Act 2: Preferences ── */}
+
+          {step === 6 && (
             <ChipSelector
               label="Flavor preferences"
               options={FLAVOR_OPTIONS}
@@ -665,7 +762,7 @@ export default function OnboardingScreen() {
             />
           )}
 
-          {step === 5 && (
+          {step === 7 && (
             <ChipSelector
               label="Dietary preferences"
               options={DIETARY_OPTIONS}
@@ -674,7 +771,7 @@ export default function OnboardingScreen() {
             />
           )}
 
-          {step === 6 && (
+          {step === 8 && (
             <ChipSelector
               label="Allergies"
               options={ALLERGY_OPTIONS}
@@ -683,7 +780,7 @@ export default function OnboardingScreen() {
             />
           )}
 
-          {step === 7 && (
+          {step === 9 && (
             <>
               <ChipSelector
                 label="Proteins you like"
@@ -710,9 +807,9 @@ export default function OnboardingScreen() {
             </>
           )}
 
-          {/* ── Step 8: Body & Goals ── */}
+          {/* ── Step 10: Body & Goals ── */}
 
-          {step === 8 && (
+          {step === 10 && (
             <View style={styles.stepContainer}>
               {/* Weight */}
               <Text style={[styles.fieldLabel, { color: theme.text }]}>Weight</Text>
@@ -835,9 +932,9 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 9: Health Context (optional) ── */}
+          {/* ── Step 11: Health Context (optional) ── */}
 
-          {step === 9 && (
+          {step === 11 && (
             <View style={styles.stepContainer}>
               {/* Body Fat (optional) */}
               <Text style={[styles.fieldLabel, { color: theme.text }]}>Body Fat % (optional)</Text>
@@ -884,9 +981,9 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 10: Metabolic Mirror ── */}
+          {/* ── Step 12: Metabolic Mirror ── */}
 
-          {step === 10 && computedTargets && (
+          {step === 12 && computedTargets && (
             <View style={styles.stepContainer}>
               <Card padding={Spacing.lg}>
                 <View style={styles.mirrorRow}>
@@ -931,9 +1028,9 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 11: Loading transition ── */}
+          {/* ── Step 13: Loading transition ── */}
 
-          {step === 11 && (
+          {step === 13 && (
             <View style={styles.loadingScreen}>
               <ActivityIndicator size="large" color={theme.primary} />
               <Text style={[styles.loadingTitle, { color: theme.text }]}>
@@ -947,19 +1044,25 @@ export default function OnboardingScreen() {
 
           {/* ── Act 3: Aha Moment ── */}
 
-          {step === 12 && (
+          {step === 14 && (
             <View style={styles.ahaContainer}>
-              <View style={styles.ringCenter}>
-                <MetabolicRing score={projectedScore} tier={projectedTier} size={140} />
-                <Text style={[styles.tierLabel, { color: getTierConfig(projectedTier).color }]}>
-                  {getTierConfig(projectedTier).label}
-                </Text>
+              <View style={styles.dualRingsRow}>
+                <View style={styles.ringCenter}>
+                  <FuelScoreRing score={85} size={120} showLabel showIcon />
+                  <Text style={[styles.ringSubLabel, { color: '#22C55E' }]}>Fuel Score</Text>
+                </View>
+                <View style={styles.ringCenter}>
+                  <MetabolicRing score={projectedScore} tier={projectedTier} size={120} />
+                  <Text style={[styles.ringSubLabel, { color: getTierConfig(projectedTier).color }]}>
+                    Energy Score
+                  </Text>
+                </View>
               </View>
               <View style={styles.mealList}>
-                {mealSuggestions.map((meal, idx) => renderMealCard(meal, idx))}
+                {mealSuggestions.map((meal, idx) => renderMealCard(meal, idx, mealSuggestions.length))}
               </View>
               <Text style={[styles.dessertNote, { color: theme.primary }]}>
-                Yes, there's dessert. When you eat well all day, a treat doesn't derail your score.
+                Yes, there's dessert. It's a flex meal — and your score still looks great.
               </Text>
               <Text style={[styles.ahaNote, { color: theme.textTertiary }]}>
                 Scan your meals, follow curated plans, or browse recipes to feel this good every day.
@@ -967,9 +1070,9 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 13: Commitment + Launch ── */}
+          {/* ── Step 15: Commitment + Launch ── */}
 
-          {step === 13 && (
+          {step === 15 && (
             <View style={styles.commitContainer}>
               {/* Profile summary */}
               <Card padding={Spacing.md}>
@@ -1100,18 +1203,18 @@ export default function OnboardingScreen() {
           ) : (
             <View />
           )}
-          {step < 11 ? (
+          {step < 13 ? (
             <Button
               title="Continue"
               onPress={goNext}
               disabled={!canContinue || loading}
             />
-          ) : step === 12 ? (
+          ) : step === 14 ? (
             <Button
               title="Continue"
               onPress={goNext}
             />
-          ) : step === 13 ? (
+          ) : step === 15 ? (
             <Button
               title="Let's go"
               onPress={handleFinish}
@@ -1224,6 +1327,90 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
+  // ── Step 4: Fuel Philosophy ──
+  fuelPhilosophyWrap: {
+    alignItems: 'center',
+    gap: Spacing.xl,
+  },
+  philosophyHeadline: {
+    fontSize: FontSize.xl,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 30,
+  },
+  fuelRingDemo: {
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  fuelRingCaption: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  philosophyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    width: '100%',
+  },
+  philosophyCardText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+
+  // ── Step 5: Flex Budget ──
+  flexBudgetWrap: {
+    gap: Spacing.xl,
+  },
+  flexExplainer: {
+    fontSize: FontSize.lg,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 26,
+  },
+  weekDotsWrap: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xs,
+  },
+  weekDotColumn: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  weekDot: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekDotLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+  },
+  weekDotTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  flexHighlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+  },
+  flexHighlightText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+
   // ── Step 3: Mirror ──
   mirrorRow: {
     flexDirection: 'row',
@@ -1270,19 +1457,51 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ── Step 9: Aha moment ──
+  // ── Step 14: Aha moment ──
   ahaContainer: {
     alignItems: 'center',
   },
-  ringCenter: {
-    alignItems: 'center',
+  dualRingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xl,
     marginBottom: Spacing.xl,
   },
-  tierLabel: {
-    fontSize: FontSize.md,
+  ringCenter: {
+    alignItems: 'center',
+  },
+  ringSubLabel: {
+    fontSize: FontSize.xs,
     fontWeight: '700',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  fuelBadge: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  fuelBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  flexTag: {
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  flexTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#F59E0B',
     letterSpacing: 0.5,
   },
   mealList: {

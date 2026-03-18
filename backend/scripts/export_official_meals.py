@@ -79,6 +79,7 @@ def export_official_meals() -> int:
           is_mes_scoreable,
           needs_default_pairing,
           pairing_synergy_profile,
+          glycemic_profile,
           created_at
         FROM recipes
         ORDER BY lower(title), id

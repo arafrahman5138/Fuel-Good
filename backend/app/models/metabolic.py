@@ -99,7 +99,7 @@ class MetabolicStreak(Base):
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     last_qualifying_date = Column(Date, nullable=True)
-    threshold = Column(Float, default=55.0)  # >= "Moderate" tier
+    threshold = Column(Float, default=50.0)  # >= "Moderate" tier
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

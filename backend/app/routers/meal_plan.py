@@ -27,7 +27,7 @@ from app.agents.meal_planner_fallback import (
     get_shortlist_candidates,
 )
 from app.services.metabolic_engine import compute_meal_mes, load_budget_for_user
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -264,7 +264,6 @@ async def generate_meal_plan(
         properties={"meal_plan_id": str(meal_plan.id), "week_start": meal_plan.week_start.isoformat()},
         source="server",
     )
-    process_user_notifications(db, current_user.id)
     db.commit()
     return _serialize_plan(meal_plan, budget, result.get("warnings", []))
 

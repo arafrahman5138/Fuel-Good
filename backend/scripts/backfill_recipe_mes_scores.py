@@ -25,14 +25,16 @@ from app.db import SessionLocal, init_db
 # Import all model modules so SQLAlchemy relationships resolve cleanly.
 from app.models import user, meal_plan, grocery, gamification  # noqa: F401
 from app.models import saved_recipe, nutrition, local_food  # noqa: F401
-from app.models import metabolic, metabolic_profile  # noqa: F401
+from app.models import metabolic, metabolic_profile, notification, scanned_meal, recipe_embedding  # noqa: F401
 
 from app.models.recipe import Recipe
 from app.services.metabolic_engine import (
     DEFAULT_COMPUTED_BUDGET,
+    build_glycemic_nutrition_input,
     classify_meal_context,
     compute_meal_mes,
     compute_meal_mes_with_pairing,
+    resolve_glycemic_profile,
 )
 
 ROLE_PRIORITY = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
@@ -52,6 +54,8 @@ MES_FIELDS_TO_CLEAR = (
     "mes_default_pairing_id",
     "mes_default_pairing_title",
     "mes_default_pairing_role",
+    "ingredient_gis_adjustment",
+    "ingredient_gis_reasons",
 )
 
 
@@ -146,22 +150,28 @@ def backfill(apply: bool = False) -> None:
             desired_is_mes_scoreable = bool(scoreable)
             if scoreable:
                 scoreable_count += 1
-                mes = compute_meal_mes(original_nutrition, DEFAULT_COMPUTED_BUDGET)
+                scored_nutrition = build_glycemic_nutrition_input(original_nutrition, source=recipe)
+                mes = compute_meal_mes(scored_nutrition, DEFAULT_COMPUTED_BUDGET)
+                resolved_glycemic_profile = resolve_glycemic_profile(recipe)
+                if resolved_glycemic_profile:
+                    new_nutrition["glycemic_profile"] = resolved_glycemic_profile
                 new_nutrition["mes_score"] = round(float(mes.get("total_score", 0) or 0), 1)
                 new_nutrition["mes_display_score"] = round(float(mes.get("display_score", 0) or 0), 1)
                 new_nutrition["mes_tier"] = mes.get("tier", "critical")
                 new_nutrition["mes_display_tier"] = mes.get("display_tier", "critical")
                 new_nutrition["mes_sub_scores"] = mes.get("sub_scores", {})
+                new_nutrition["ingredient_gis_adjustment"] = float(mes.get("ingredient_gis_adjustment", 0) or 0)
+                new_nutrition["ingredient_gis_reasons"] = list(mes.get("ingredient_gis_reasons") or [])
 
                 if recipe.needs_default_pairing is True:
                     default_pair = _preferred_default_pairing(db, recipe)
                     if default_pair is not None:
                         paired_count += 1
                         combined_mes = compute_meal_mes_with_pairing(
-                            original_nutrition,
+                            scored_nutrition,
                             pairing_recipe=default_pair,
                             budget=DEFAULT_COMPUTED_BUDGET,
-                            pairing_nutrition=default_pair.nutrition_info or {},
+                            pairing_nutrition=build_glycemic_nutrition_input(default_pair.nutrition_info or {}, source=default_pair),
                         )
                         combined_score = round(float((combined_mes.get("score") or {}).get("display_score", 0) or 0), 1)
                         base_score = round(float(mes.get("display_score", 0) or 0), 1)
@@ -188,6 +198,7 @@ def backfill(apply: bool = False) -> None:
                 updated += 1
                 if apply:
                     recipe.nutrition_info = new_nutrition
+                    recipe.glycemic_profile = resolve_glycemic_profile(recipe)
                     recipe.is_mes_scoreable = desired_is_mes_scoreable
                 print(
                     f"UPDATE: {recipe.title} | scoreable={scoreable} "

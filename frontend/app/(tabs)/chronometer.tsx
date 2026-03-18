@@ -29,15 +29,24 @@ import { EnergyHistoryChart } from '../../components/EnergyHistoryChart';
 import { MetabolicStreakBadge } from '../../components/MetabolicStreakBadge';
 import { MetabolicCoach } from '../../components/MetabolicCoach';
 import { NutriScoreHeroCard } from '../../components/NutriScoreHeroCard';
+import { FlexBudgetCard } from '../../components/FlexBudgetCard';
+import { TodayProgressCard } from '../../components/TodayProgressCard';
+import { FuelScoreBadge } from '../../components/FuelScoreBadge';
+import { FuelStreakBadge } from '../../components/FuelStreakBadge';
+import { FuelCalendarHeatMap } from '../../components/FuelCalendarHeatMap';
+import { SmartFlexCard } from '../../components/SmartFlexCard';
+import { FuelSettingsSheet } from '../../components/FuelSettingsSheet';
+import { FlexMealsEarned } from '../../components/FlexMealsEarned';
 import { useTheme } from '../../hooks/useTheme';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Shadows } from '../../constants/Shadows';
-import { nutritionApi, metabolicApi, recipeApi } from '../../services/api';
+import { nutritionApi, metabolicApi, recipeApi, fuelApi } from '../../services/api';
 import { subscribeToChronometerChanges } from '../../services/supabase';
 import type { MealSuggestion } from '../../components/MetabolicCoach';
 import { useGamificationStore, type ScoreHistoryEntry } from '../../stores/gamificationStore';
 import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
+import { useFuelStore } from '../../stores/fuelStore';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { NUTRITION_TIERS } from '../../constants/Config';
 
@@ -70,9 +79,8 @@ interface DailySummary {
 }
 
 const toDateKey = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, '0');
-  const d = `${date.getDate()}`.padStart(2, '0');
+  // Use toLocaleDateString to guarantee local-timezone date (Hermes can return UTC from getDate())
+  const [m, d, y] = date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/');
   return `${y}-${m}-${d}`;
 };
 
@@ -236,9 +244,10 @@ export default function ChronometerScreen() {
   const [selectedNutrient, setSelectedNutrient] = useState<SelectedNutrient | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [viewMode, setViewMode] = useState<'metabolic' | 'nutrient'>('metabolic');
+  const [viewMode, setViewMode] = useState<'fuel' | 'metabolic' | 'nutrient'>('fuel');
   const [mesSuggestions, setMesSuggestions] = useState<MealSuggestion[]>([]);
   const [scoreSheetMeal, setScoreSheetMeal] = useState<{ title: string; score: any } | null>(null);
+  const [fuelSettingsVisible, setFuelSettingsVisible] = useState(false);
   const [currentRecipeMesMap, setCurrentRecipeMesMap] = useState<Record<string, { score: number; tier: string }>>({});
 
   // Metabolic Energy Score state
@@ -257,6 +266,15 @@ export default function ChronometerScreen() {
   const scoreHistory = useGamificationStore((s) => s.scoreHistory);
   const fetchNutritionStreak = useGamificationStore((s) => s.fetchNutritionStreak);
   const fetchScoreHistory = useGamificationStore((s) => s.fetchScoreHistory);
+  const fuelWeekly = useFuelStore((s) => s.weekly);
+  const fuelDaily = useFuelStore((s) => s.daily);
+  const fuelSettings = useFuelStore((s) => s.settings);
+  const fuelStreak = useFuelStore((s) => s.streak);
+  const fuelCalendar = useFuelStore((s) => s.calendar);
+  const flexSuggestions = useFuelStore((s) => s.flexSuggestions);
+  const fetchFuel = useFuelStore((s) => s.fetchAll);
+  const fetchCalendar = useFuelStore((s) => s.fetchCalendar);
+  const fetchFlexSuggestions = useFuelStore((s) => s.fetchFlexSuggestions);
   const hasCoreProfileSetup = !!(
     metabolicProfile
     && metabolicProfile.sex
@@ -311,12 +329,15 @@ export default function ChronometerScreen() {
       // Also refresh nutrition streak + score history
       fetchNutritionStreak();
       fetchScoreHistory();
+      fetchFuel(selectedDayKey);
+      fetchCalendar();
+      fetchFlexSuggestions(selectedDayKey);
     } catch (e: any) {
       setError(e?.message || 'Unable to load nutrition data.');
     } finally {
       setLoading(false);
     }
-  }, [fetchMetabolic, fetchProfile, fetchNutritionStreak, fetchScoreHistory, selectedDayKey]);
+  }, [fetchMetabolic, fetchProfile, fetchNutritionStreak, fetchScoreHistory, fetchFuel, fetchCalendar, fetchFlexSuggestions, selectedDayKey]);
 
   useEffect(() => {
     refresh();
@@ -548,7 +569,7 @@ export default function ChronometerScreen() {
               ?? 0
             );
             if (!(score > 0)) return null;
-            const tier = score >= 80 ? 'optimal' : score >= 60 ? 'stable' : score >= 40 ? 'shaky' : 'crash_risk';
+            const tier = score >= 82 ? 'optimal' : score >= 65 ? 'stable' : score >= 50 ? 'shaky' : 'crash_risk';
             return { groupId, groupLogs, score, tier };
           } catch {
             return null;
@@ -749,10 +770,12 @@ export default function ChronometerScreen() {
 
         {/* ── View Toggle ── */}
         <View style={[styles.toggleContainer, { backgroundColor: theme.card.background, borderColor: theme.card.border }]}>
-          {(['metabolic', 'nutrient'] as const).map((mode) => {
+          {([
+            { mode: 'fuel' as const, label: 'Fuel', icon: 'leaf', gradient: ['#22C55E', '#16A34A'] },
+            { mode: 'metabolic' as const, label: 'Metabolic', icon: 'flash', gradient: ['#F59E0B', '#D97706'] },
+            { mode: 'nutrient' as const, label: 'Nutrients', icon: 'nutrition', gradient: [theme.primary, theme.primary + 'DD'] },
+          ]).map(({ mode, label, icon, gradient }) => {
             const active = viewMode === mode;
-            const label = mode === 'metabolic' ? 'Metabolic' : 'Nutrients';
-            const icon = mode === 'metabolic' ? 'flash' : 'nutrition';
             return (
               <TouchableOpacity
                 key={mode}
@@ -762,7 +785,7 @@ export default function ChronometerScreen() {
               >
                 {active ? (
                   <LinearGradient
-                    colors={mode === 'metabolic' ? ['#22C55E', '#16A34A'] : [theme.primary, theme.primary + 'DD'] as any}
+                    colors={gradient as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.toggleGradient}
@@ -806,7 +829,6 @@ export default function ChronometerScreen() {
                ════════════════════════════════════════════ */}
             {viewMode === 'metabolic' && (
               <>
-            {/* ── Profile Prompt (no profile yet) ── */}
             {shouldShowProfilePrompt && (
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -836,7 +858,6 @@ export default function ChronometerScreen() {
               </TouchableOpacity>
             )}
 
-            {/* ── Energy Budget Hero ── */}
             {dailyMES?.score && mesBudget && (
               <EnergyBudgetCard
                 score={dailyMES.score}
@@ -850,9 +871,50 @@ export default function ChronometerScreen() {
               </>
             )}
 
+            {/* ════════════════════════════════════════════
+                 FUEL VIEW
+               ════════════════════════════════════════════ */}
+            {viewMode === 'fuel' && (
+              // key forces remount on every tab switch → entrance animations replay
+              <React.Fragment key="fuel-view">
+            {fuelWeekly && fuelSettings && (
+              <FlexBudgetCard
+                avgScore={fuelWeekly.avg_fuel_score}
+                mealCount={fuelWeekly.meal_count}
+                fuelTarget={fuelSettings.fuel_target}
+                flexMealsRemaining={fuelWeekly.flex_budget?.flex_meals_remaining ?? 0}
+                targetMet={fuelWeekly.target_met}
+                streakWeeks={fuelStreak?.current_streak ?? 0}
+                expectedMeals={fuelSettings.expected_meals_per_week}
+                onOpenSettings={() => setFuelSettingsVisible(true)}
+                onPress={() => router.push('/food/fuel-weekly' as any)}
+              />
+            )}
+
+            {fuelStreak && fuelStreak.current_streak > 0 && (
+              <View style={{ marginBottom: Spacing.md }}>
+                <FuelStreakBadge
+                  currentStreak={fuelStreak.current_streak}
+                  longestStreak={fuelStreak.longest_streak}
+                />
+              </View>
+            )}
+
+            <FuelSectionLabel label="YOUR FLEX BUDGET" theme={theme} />
+
+            {fuelWeekly && (
+              <FlexMealsEarned
+                flexMealsRemaining={fuelWeekly.flex_budget?.flex_meals_remaining ?? 0}
+              />
+            )}
+              </React.Fragment>
+            )}
+
+            {/* ════════════════════════════════════════════
+                 NUTRIENT VIEW
+               ════════════════════════════════════════════ */}
             {viewMode === 'nutrient' && (
               <>
-            {/* ── NutriScore Hero Card ── */}
             <NutriScoreHeroCard
               score={score}
               calories={calories}
@@ -861,12 +923,33 @@ export default function ChronometerScreen() {
               </>
             )}
 
-            {/* ── Today's Meals (shared between views) ── */}
-            {(() => {
-              const totalKcal = logs.reduce(
-                (sum: number, l: DailyLog) => sum + Number(l.nutrition_snapshot?.calories || 0),
-                0
-              );
+            {/* ── Today's Progress ── */}
+            <TodayProgressCard
+              logs={logs.map((l: DailyLog) => ({
+                id: l.id ?? '',
+                title: l.title ?? '',
+                meal_type: l.meal_type,
+                source_type: l.source_type,
+                source_id: l.source_id,
+                group_id: l.group_id,
+                group_mes_score: l.group_mes_score,
+                group_mes_tier: l.group_mes_tier,
+                fuel_score: l.fuel_score,
+                nutrition_snapshot: l.nutrition_snapshot,
+              }))}
+              mealScores={mealScores}
+              fuelTarget={fuelSettings?.fuel_target}
+              todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
+              calories={calories}
+              protein={{ consumed: Math.round(macros.find((m: any) => m.key === 'protein')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'protein')?.target ?? 0) }}
+              carbs={{ consumed: Math.round(macros.find((m: any) => m.key === 'carbs')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'carbs')?.target ?? 0) }}
+              fat={{ consumed: Math.round(macros.find((m: any) => m.key === 'fat')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'fat')?.target ?? 0) }}
+              title={isSelectedToday ? "Today's Fuel" : `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}'s Fuel`}
+              subtitle={logs.length === 0 ? 'No meals logged yet' : `${logs.length} meal${logs.length > 1 ? 's' : ''} logged`}
+            />
+            {/* Old inline meals section removed — replaced by TodayProgressCard above */}
+            {false as any && (() => {
+              const totalKcal = 0;
 
               // Group logs by group_id — grouped logs become a single visual row
               const groupedLogIds = new Set<string>();
@@ -1116,6 +1199,7 @@ export default function ChronometerScreen() {
                                     : null
                               }
                               isLast={isLast}
+                              fuelTarget={fuelSettings?.fuel_target}
                             />
                           );
                         })}
@@ -1125,6 +1209,45 @@ export default function ChronometerScreen() {
                 </TouchableOpacity>
               );
             })()}
+
+            {/* ════════════════════════════════════════════
+                 FUEL VIEW (continued — coach + calendar)
+               ════════════════════════════════════════════ */}
+            {viewMode === 'fuel' && (
+              <>
+            {flexSuggestions && flexSuggestions.suggestions.length > 0 && (
+              <>
+              <FuelSectionLabel label="FUEL COACH" theme={theme} />
+              <SmartFlexCard
+                context={flexSuggestions.context}
+                flexMealsRemaining={flexSuggestions.flex_meals_remaining}
+                suggestions={flexSuggestions.suggestions}
+              />
+              </>
+            )}
+
+            {fuelCalendar && fuelCalendar.days.length > 0 && (
+              <>
+              <FuelSectionLabel label="MONTHLY VIEW" theme={theme} />
+              <FuelCalendarHeatMap
+                month={fuelCalendar.month}
+                fuelTarget={fuelCalendar.fuel_target}
+                days={fuelCalendar.days}
+                onPrevMonth={() => {
+                  const [y, m] = fuelCalendar.month.split('-').map(Number);
+                  const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+                  fetchCalendar(prev);
+                }}
+                onNextMonth={() => {
+                  const [y, m] = fuelCalendar.month.split('-').map(Number);
+                  const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                  fetchCalendar(next);
+                }}
+              />
+              </>
+            )}
+              </>
+            )}
 
             {/* ════════════════════════════════════════════
                  METABOLIC VIEW (continued)
@@ -1459,6 +1582,15 @@ export default function ChronometerScreen() {
         </View>
       </Modal>
 
+      {/* ── Fuel Settings Sheet ── */}
+      <FuelSettingsSheet
+        visible={fuelSettingsVisible}
+        onClose={() => {
+          setFuelSettingsVisible(false);
+          fetchFuel();
+        }}
+      />
+
       {/* ── Meal Score Sheet ── */}
       {scoreSheetMeal && (
         <MealScoreSheet
@@ -1607,6 +1739,37 @@ export default function ChronometerScreen() {
     </ScreenContainer>
   );
 }
+
+// Fuel tab section divider
+function FuelSectionLabel({ label, theme }: { label: string; theme: any }) {
+  return (
+    <View style={sectionStyles.wrap}>
+      <View style={[sectionStyles.line, { backgroundColor: theme.border }]} />
+      <Text style={[sectionStyles.text, { color: theme.textTertiary }]}>{label}</Text>
+      <View style={[sectionStyles.line, { backgroundColor: theme.border }]} />
+    </View>
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  line: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  text: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+});
 
 const styles = StyleSheet.create({
   stickyChronoHeader: {

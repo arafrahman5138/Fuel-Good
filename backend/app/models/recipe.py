@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Boolean, JSON, Text
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, JSON, Text
 from app.db import Base, GUID
 
 
@@ -42,3 +42,5 @@ class Recipe(Base):
     component_composition = Column(JSON, nullable=True)     # for composed meals: expected roles/ids
     is_mes_scoreable = Column(Boolean, default=True)
     pairing_synergy_profile = Column(JSON, nullable=True)
+    glycemic_profile = Column(JSON, nullable=True)
+    fuel_score = Column(Float, nullable=True, default=100.0)

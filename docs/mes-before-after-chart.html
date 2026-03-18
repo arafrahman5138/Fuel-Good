@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MES Before / After Comparison</title>
+  <style>
+    :root {
+      --bg: #f7f4ec;
+      --panel: #fffdf8;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --old: #c2410c;
+      --new: #2563eb;
+      --grid: #e5e7eb;
+      --gain: #15803d;
+      --loss: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(circle at top, #fff8eb 0%, var(--bg) 52%, #efe7d6 100%); color: var(--text); font-family: Georgia, "Times New Roman", serif; }
+    .wrap { max-width: 1360px; margin: 0 auto; padding: 32px 20px 48px; }
+    .hero { background: linear-gradient(135deg, #fffdf8 0%, #f4efe2 100%); border: 1px solid #eadfca; border-radius: 24px; padding: 28px 28px 22px; margin-bottom: 24px; box-shadow: 0 14px 40px rgba(73, 45, 13, 0.08); }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.16em; color: #9a3412; font-size: 12px; margin-bottom: 10px; font-weight: 700; }
+    h1 { margin: 0 0 10px; font-size: 42px; line-height: 1; letter-spacing: 0.02em; }
+    .hero p { margin: 0; max-width: 900px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px; font-size: 14px; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 999px; display: inline-block; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .card { background: var(--panel); border: 1px solid #eadfca; border-radius: 22px; padding: 20px 20px 12px; box-shadow: 0 10px 28px rgba(73, 45, 13, 0.06); }
+    .card h2 { margin: 0 0 6px; font-size: 24px; }
+    .card .sub { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .chart-head, .row { display: grid; grid-template-columns: minmax(230px, 270px) minmax(360px, 1fr) 72px; gap: 14px; align-items: center; }
+    .chart-head { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 0 8px; border-bottom: 1px solid var(--grid); margin-bottom: 4px; }
+    .row { padding: 10px 0; border-bottom: 1px solid #f1ebe0; }
+    .row:last-child { border-bottom: none; }
+    .meal { font-size: 15px; line-height: 1.25; font-weight: 600; }
+    .side { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 400; }
+    .track { position: relative; height: 40px; border-radius: 999px; background: linear-gradient(to right, transparent 0%, transparent 99.5%, rgba(31,41,55,0.08) 99.5%, rgba(31,41,55,0.08) 100%), repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1px), rgba(31,41,55,0.06) calc(10% - 1px), rgba(31,41,55,0.06) 10%); overflow: hidden; }
+    .bar { position: absolute; top: 8px; height: 10px; border-radius: 999px; opacity: 0.95; }
+    .bar.old { background: linear-gradient(90deg, #fdba74 0%, var(--old) 100%); top: 9px; }
+    .bar.new { background: linear-gradient(90deg, #93c5fd 0%, var(--new) 100%); top: 21px; }
+    .score-tag { position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; white-space: nowrap; color: #7c2d12; font-weight: 700; }
+    .score-tag.new { top: 26px; color: #1d4ed8; }
+    .delta { font-size: 16px; font-weight: 700; text-align: right; }
+    .delta.positive { color: var(--gain); }
+    .delta.negative { color: var(--loss); }
+    .delta.neutral { color: var(--muted); }
+    .note { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    @media (max-width: 920px) {
+      h1 { font-size: 32px; }
+      .chart-head { display: none; }
+      .row { grid-template-columns: 1fr; gap: 10px; }
+      .delta { text-align: left; }
+      .track { height: 52px; }
+      .bar.old { top: 10px; }
+      .bar.new { top: 30px; }
+      .score-tag.new { top: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Visual Comparison</div>
+      <h1>MES Before vs After</h1>
+      <p>
+        This chart compares the old MES calibration against MES v2, which keeps the broader carb retune for general users and adds a narrow backend-only stability bonus for metabolically excellent low-carb meals.
+        The first chart shows base meal scores. The second shows default-side paired / adjusted scores where a curated side exists.
+      </p>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--old)"></i>Old scoring</span>
+        <span><i class="dot" style="background: var(--new)"></i>MES v2</span>
+        <span><i class="dot" style="background: var(--gain)"></i>Positive delta</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Base Meal Scores</h2>
+        <p class="sub">Old MES vs MES v2, without default side pairings.</p>
+        <div class="chart-head">
+          <div>Meal</div>
+          <div>Score</div>
+          <div>Delta</div>
+        </div>
+        <div id="base-chart"></div>
+      </section>
+
+      <section class="card">
+        <h2>Paired / Default-Side Adjusted Scores</h2>
+        <p class="sub">Old paired adjusted score vs MES v2 paired adjusted score for meals with a default side.</p>
+        <div class="chart-head">
+          <div>Meal + Default Side</div>
+          <div>Paired Score</div>
+          <div>Delta</div>
+        </div>
+        <div id="paired-chart"></div>
+        <p class="note">
+          Meals without a default side are omitted from the paired chart. Scores are drawn on a 0-100 MES scale.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const baseRows = [{"meal": "Air Fryer Gochujang Chicken Skewers", "oldScore": 55.4, "newScore": 53.1}, {"meal": "Baked Ziti with Brown Rice Pasta", "oldScore": 46.1, "newScore": 53.2}, {"meal": "Bang Bang Chicken Skewers", "oldScore": 59.6, "newScore": 56.4}, {"meal": "Beef Chorizo and Chicken Pasta", "oldScore": 49.6, "newScore": 56.1}, {"meal": "Beef and Broccoli Stir-Fry", "oldScore": 63.9, "newScore": 62.2}, {"meal": "Beef and Cheese Borek Rolls", "oldScore": 51.3, "newScore": 50.9}, {"meal": "Beef and Lamb Sausage Rolls", "oldScore": 56.6, "newScore": 54.7}, {"meal": "Butter Chicken Bowl", "oldScore": 69.7, "newScore": 72.8}, {"meal": "Butter Chicken Bowl Plus", "oldScore": 69.7, "newScore": 72.8}, {"meal": "Chicken Sausage Kale Scramble", "oldScore": 85.0, "newScore": 85.5}, {"meal": "Chicken Shawarma Bowl", "oldScore": 69.7, "newScore": 72.8}, {"meal": "Chicken Shawarma Plate", "oldScore": 56.4, "newScore": 61.8}, {"meal": "Chickpea Mac N' Beef", "oldScore": 70.5, "newScore": 76.3}, {"meal": "Cottage Cheese Power Bowl with Turkey Bacon", "oldScore": 80.8, "newScore": 80.6}, {"meal": "Creamy Red Pepper Chicken Rice Bowl", "oldScore": 64.6, "newScore": 71.2}, {"meal": "Greek Yogurt Chia Protein Bowl", "oldScore": 84.7, "newScore": 85.4}, {"meal": "Homestyle Smash Burger", "oldScore": 53.8, "newScore": 57.2}, {"meal": "Sardine and Avocado Breakfast Salad", "oldScore": 79.7, "newScore": 79.3}, {"meal": "Skillet Chicken Fajita Rice Bowl", "oldScore": 55.2, "newScore": 61.0}, {"meal": "Smoked Salmon Omelet with Avocado", "oldScore": 85.6, "newScore": 86.2}, {"meal": "Smoky Chicken Potato Fiesta Bowl", "oldScore": 62.7, "newScore": 69.6}, {"meal": "Smoky Tomato Chicken Burrito Bowl", "oldScore": 58.3, "newScore": 65.3}, {"meal": "Steak and Eggs with Chimichurri Greens", "oldScore": 83.8, "newScore": 83.8}, {"meal": "Turkey and Spinach Egg White Skillet", "oldScore": 86.2, "newScore": 86.8}];
+    const pairedRows = [{"meal": "Air Fryer Gochujang Chicken Skewers", "side": "Black Bean and Corn Salad", "oldScore": 72.1, "newScore": 79.3}, {"meal": "Baked Ziti with Brown Rice Pasta", "side": "Black Bean and Corn Salad", "oldScore": 60.5, "newScore": 71.0}, {"meal": "Bang Bang Chicken Skewers", "side": "Black Bean and Corn Salad", "oldScore": 75.6, "newScore": 82.4}, {"meal": "Beef Chorizo and Chicken Pasta", "side": "Black Bean and Corn Salad", "oldScore": 65.1, "newScore": 76.2}, {"meal": "Beef and Cheese Borek Rolls", "side": "Black Bean and Corn Salad", "oldScore": 66.4, "newScore": 73.6}, {"meal": "Beef and Lamb Sausage Rolls", "side": "Black Bean and Corn Salad", "oldScore": 71.4, "newScore": 78.7}, {"meal": "Butter Chicken Bowl", "side": "Kachumber Salad", "oldScore": 72.2, "newScore": 77.9}, {"meal": "Butter Chicken Bowl Plus", "side": "Kachumber Salad", "oldScore": 72.2, "newScore": 77.9}, {"meal": "Chicken Shawarma Bowl", "side": "Kachumber Salad", "oldScore": 72.2, "newScore": 77.9}, {"meal": "Chickpea Mac N' Beef", "side": "Lemon Garlic Zucchini and Mushrooms", "oldScore": 75.6, "newScore": 82.4}, {"meal": "Creamy Red Pepper Chicken Rice Bowl", "side": "Cucumber Tomato Herb Salad", "oldScore": 70.5, "newScore": 79.0}, {"meal": "Homestyle Smash Burger", "side": "Black Bean and Corn Salad", "oldScore": 67.6, "newScore": 77.6}, {"meal": "Skillet Chicken Fajita Rice Bowl", "side": "Cucumber Tomato Herb Salad", "oldScore": 62.8, "newScore": 70.8}, {"meal": "Smoky Chicken Potato Fiesta Bowl", "side": "Cilantro Lime Cabbage Slaw", "oldScore": 71.5, "newScore": 80.3}, {"meal": "Smoky Tomato Chicken Burrito Bowl", "side": "Cilantro Lime Cabbage Slaw", "oldScore": 67.2, "newScore": 76.0}];
+
+    function renderRows(targetId, rows, paired = false) {
+      const target = document.getElementById(targetId);
+      rows
+        .slice()
+        .sort((a, b) => (b.newScore - b.oldScore) - (a.newScore - a.oldScore))
+        .forEach((row) => {
+          const delta = +(row.newScore - row.oldScore).toFixed(1);
+          const deltaClass = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
+          const mealCopy = paired
+            ? `${row.meal}<span class="side">${row.side}</span>`
+            : row.meal;
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'row';
+          wrapper.innerHTML = `
+            <div class="meal">${mealCopy}</div>
+            <div class="track">
+              <div class="bar old" style="left:0; width:${row.oldScore}%"></div>
+              <div class="bar new" style="left:0; width:${row.newScore}%"></div>
+              <div class="score-tag" style="left:${Math.max(8, row.oldScore)}%">${row.oldScore.toFixed(1)}</div>
+              <div class="score-tag new" style="left:${Math.max(8, row.newScore)}%">${row.newScore.toFixed(1)}</div>
+            </div>
+            <div class="delta ${deltaClass}">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</div>
+          `;
+          target.appendChild(wrapper);
+        });
+    }
+
+    renderRows('base-chart', baseRows, false);
+    renderRows('paired-chart', pairedRows, true);
+  </script>
+</body>
+</html>

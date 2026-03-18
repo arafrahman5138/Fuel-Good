@@ -154,12 +154,16 @@ function generateDetailInsights(
   const proteinLeft = remaining?.protein_remaining_g ?? 0;
   const fiberLeft = remaining?.fiber_remaining_g ?? 0;
   const carbHeadroom = remaining?.carb_headroom_g ?? remaining?.sugar_headroom_g ?? 0;
+  const weights = score.weights_used;
+  const weightSummary = weights
+    ? `Protein contributes ${Math.round(weights.protein * 100)}%, fiber ${Math.round(weights.fiber * 100)}%, glycemic impact ${Math.round(weights.gis * 100)}%, and fat ${Math.round(weights.fat * 100)}%.`
+    : 'Protein, fiber, glycemic impact, and fat all contribute to your MES.';
 
   // Score overview
   insights.push({
     icon: 'analytics',
     title: 'Score Breakdown',
-    body: `Your MES is ${Math.round(displayScore)}. Protein contributes 50%, fiber 25%, and carb control 25% to your overall score.`,
+    body: `Your MES is ${Math.round(displayScore)}. ${weightSummary}`,
     accent: '#8B5CF6',
   });
 
@@ -199,7 +203,7 @@ function generateDetailInsights(
     insights.push({
       icon: 'barbell',
       title: `Protein Gap: ${Math.round(proteinLeft)}g remaining`,
-      body: `You need ${Math.round(proteinLeft)}g more protein today. This is the biggest factor in your MES — try chicken, fish, eggs, or a protein shake.`,
+      body: `You need ${Math.round(proteinLeft)}g more protein today. It is one of the strongest MES drivers — try chicken, fish, eggs, tofu, or a protein shake.`,
       accent: '#22C55E',
     });
   } else if (proteinLeft > 0) {
@@ -213,7 +217,7 @@ function generateDetailInsights(
     insights.push({
       icon: 'checkmark-done-circle',
       title: 'Protein target met!',
-      body: 'Excellent — you\'ve hit your protein target for the day. This is the single biggest factor in a high MES.',
+      body: 'Excellent — you\'ve hit your protein target for the day. That gives you a strong MES foundation for the rest of the day.',
       accent: '#34C759',
     });
   }

@@ -16,6 +16,7 @@ The goal is to turn that source into a Real-Food meal draft that fits the app's 
 - Always rename the meal into a clean, app-friendly Real-Food title.
 - Always rewrite the instructions in natural language so they feel easy to follow in-app.
 - Always send the MES score and the full draft details back to the user before asking for approval.
+- Always recalculate nutrition from the actual ingredient assumptions used in the draft. Do not reuse source macros after ingredient swaps.
 - If meal-prep components are requested, check whether matching components already exist before creating new ones.
 - If a default pairing is needed, check whether a good existing veggie side already exists before creating a new one.
 
@@ -48,6 +49,11 @@ If the meal comes from a screenshot:
 If the source is incomplete:
 - Build the draft from the clearest visible structure.
 - Call out what was inferred.
+
+### Macro accuracy rule
+- Use explicit ingredient assumptions for macro-sensitive items such as noodle type, pasta brand/style, beef leanness, oil amount, sweetener amount, and serving count.
+- If the user changes a core ingredient, recalculate the macros from that new ingredient choice instead of carrying over the source nutrition panel.
+- If a branded product is not specified, state the generic assumption used.
 
 ---
 

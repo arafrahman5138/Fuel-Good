@@ -44,6 +44,7 @@ class FoodLog(Base):
 
     title = Column(String, nullable=True)
     nutrition_snapshot = Column(JSON, default=dict)
+    fuel_score = Column(Float, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -13,12 +13,61 @@ from app.models.saved_recipe import SavedRecipe
 from app.nutrition_tags import HEALTH_BENEFIT_LABELS
 from app.achievements_engine import check_achievements
 from app.services.ingredient_substitution import apply_user_substitutions
-from app.services.metabolic_engine import compute_meal_mes, compute_meal_mes_with_pairing, display_tier, load_budget_for_user
+from app.services.metabolic_engine import (
+    build_glycemic_nutrition_input,
+    compute_meal_mes,
+    compute_meal_mes_with_pairing,
+    display_tier,
+    load_budget_for_user,
+    resolve_glycemic_profile,
+)
 from app.services.recipe_retrieval import ensure_recipe_embedding
 from typing import Optional
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 
 router = APIRouter()
+
+
+def _serialize_component_recipe(recipe: Recipe) -> dict:
+    return {
+        "id": str(recipe.id),
+        "title": recipe.title,
+        "recipe_role": getattr(recipe, 'recipe_role', None) or "full_meal",
+        "steps": recipe.steps or [],
+        "ingredients": recipe.ingredients or [],
+    }
+
+
+def _resolve_component_titles(component_composition: dict | None) -> list[str]:
+    if not component_composition:
+        return []
+
+    ordered_titles: list[str] = []
+    for key in ("protein_component_title", "carb_component_title", "veg_component_title", "sauce_component_title"):
+        value = component_composition.get(key)
+        if isinstance(value, str) and value.strip():
+            ordered_titles.append(value.strip())
+
+    extra_titles = component_composition.get("component_titles")
+    if isinstance(extra_titles, list):
+        for value in extra_titles:
+            if isinstance(value, str) and value.strip() and value.strip() not in ordered_titles:
+                ordered_titles.append(value.strip())
+
+    return ordered_titles
+
+
+def _resolve_component_recipes(db: Session, titles: list[str]) -> list[Recipe]:
+    if not titles:
+        return []
+
+    candidates = db.query(Recipe).filter(Recipe.title.in_(titles)).all()
+    candidates_by_title = {str(recipe.title).strip().lower(): recipe for recipe in candidates}
+    return [
+        candidates_by_title[title.strip().lower()]
+        for title in titles
+        if title.strip().lower() in candidates_by_title
+    ]
 
 
 def _compute_card_pairing_score(r: Recipe, db: Session, current_user: User) -> dict:
@@ -34,7 +83,7 @@ def _compute_card_pairing_score(r: Recipe, db: Session, current_user: User) -> d
         return {}
 
     budget = load_budget_for_user(db, current_user.id)
-    source_nutrition = r.nutrition_info or {}
+    source_nutrition = build_glycemic_nutrition_input(r.nutrition_info or {}, source=r)
     stored_default_pairing_id = source_nutrition.get("mes_default_pairing_id")
 
     preferred_default = None
@@ -83,7 +132,7 @@ def _compute_card_pairing_score(r: Recipe, db: Session, current_user: User) -> d
         source_nutrition,
         pairing_recipe=preferred_default,
         budget=budget,
-        pairing_nutrition=preferred_default.nutrition_info or {},
+        pairing_nutrition=build_glycemic_nutrition_input(preferred_default.nutrition_info or {}, source=preferred_default),
     )
     combined_mes = paired_mes["score"]
     mes_delta = round(float(combined_mes["total_score"] or 0) - float(source_mes["total_score"] or 0), 1)
@@ -127,6 +176,7 @@ def _serialize_recipe_card(r: Recipe, db: Session | None = None, current_user: U
         "health_benefits": r.health_benefits or [],
         "protein_type": r.protein_type or [],
         "carb_type": r.carb_type or [],
+        "glycemic_profile": resolve_glycemic_profile(r),
         "nutrition_info": r.nutrition_info or {},
         "servings": r.servings,
         # ── Composition fields ──
@@ -153,29 +203,25 @@ def _serialize_recipe_full(r: Recipe, db: Session | None = None) -> dict:
         "component_composition": getattr(r, 'component_composition', None),
     })
 
-    # Expand component details only for true composed meals or opted-in default pairings.
-    should_expand_components = (
-        getattr(r, 'needs_default_pairing', None) is True
-        or bool(getattr(r, 'component_composition', None))
-    )
+    if not db:
+        return card
+
+    component_titles = _resolve_component_titles(getattr(r, 'component_composition', None))
+    component_recipes = _resolve_component_recipes(db, component_titles)
+    if component_recipes:
+        card["components"] = [_serialize_component_recipe(component) for component in component_recipes]
+
     pairing_ids = getattr(r, 'default_pairing_ids', None) or []
-    if db and pairing_ids and should_expand_components:
-        # Load all components in one query and preserve pairing order from JSON ids.
-        comps = db.query(Recipe).filter(Recipe.id.in_(pairing_ids)).all()
-        comp_by_id = {str(comp.id): comp for comp in comps}
-        components = []
-        for pid in pairing_ids:
-            comp = comp_by_id.get(str(pid))
-            if comp:
-                components.append({
-                    "id": str(comp.id),
-                    "title": comp.title,
-                    "recipe_role": comp.recipe_role or "full_meal",
-                    "steps": comp.steps or [],
-                    "ingredients": comp.ingredients or [],
-                })
-        if components:
-            card["components"] = components
+    if pairing_ids:
+        pairings = db.query(Recipe).filter(Recipe.id.in_(pairing_ids)).all()
+        pairings_by_id = {str(pairing.id): pairing for pairing in pairings}
+        default_pairings = []
+        for pairing_id in pairing_ids:
+            pairing = pairings_by_id.get(str(pairing_id))
+            if pairing:
+                default_pairings.append(_serialize_component_recipe(pairing))
+        if default_pairings:
+            card["default_pairings"] = default_pairings
 
     return card
 
@@ -472,7 +518,6 @@ async def save_recipe(
 
     saved_count = db.query(SavedRecipe).filter(SavedRecipe.user_id == current_user.id).count()
     new_achievements = check_achievements(db, current_user, {"saved_recipe_count": saved_count})
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return {"status": "saved", "achievements": new_achievements}
@@ -570,7 +615,6 @@ async def save_generated_recipe(
 
     saved_count = db.query(SavedRecipe).filter(SavedRecipe.user_id == current_user.id).count()
     new_achievements = check_achievements(db, current_user, {"saved_recipe_count": saved_count})
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return {

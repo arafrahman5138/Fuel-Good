@@ -175,7 +175,7 @@ export default function FoodDetailScreen() {
         message={successModal.message}
         onPrimary={() => {
           setSuccessModal({ visible: false, message: '' });
-          router.push('/(tabs)/chronometer' as any);
+          router.navigate('/(tabs)/chronometer' as any);
         }}
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />

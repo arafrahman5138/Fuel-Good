@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MealMESBadge } from './MealMESBadge';
+import { FuelScoreBadge } from './FuelScoreBadge';
 import { useTheme } from '../hooks/useTheme';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { useMetabolicBudgetStore, getTierConfig } from '../stores/metabolicBudgetStore';
@@ -40,6 +41,7 @@ interface DailyLog {
   title: string;
   meal_type?: string;
   source_type?: string;
+  fuel_score?: number | null;
   nutrition?: Record<string, number>;
   nutrition_snapshot?: Record<string, number>;
   [key: string]: unknown;
@@ -128,12 +130,14 @@ export const SingleMealRow = React.memo(function SingleMealRow({
   recipeScoreOverride,
   isLast = false,
   compact = false,
+  fuelTarget,
 }: {
   log: DailyLog;
   mealScore?: MealMES;
   recipeScoreOverride?: { score: number; tier: string } | null;
   isLast?: boolean;
   compact?: boolean;
+  fuelTarget?: number;
 }) {
   const theme = useTheme();
   const snap = log.nutrition_snapshot || {};
@@ -187,13 +191,13 @@ export const SingleMealRow = React.memo(function SingleMealRow({
         <Ionicons name={resolvedSourceIcon as any} size={compact ? 13 : 16} color={theme.primary} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text
             style={{
               color: theme.text,
               fontSize: compact ? FontSize.xs : FontSize.sm,
               fontWeight: '600',
-              flex: 1,
+              flexShrink: 1,
             }}
             numberOfLines={1}
           >
@@ -203,6 +207,9 @@ export const SingleMealRow = React.memo(function SingleMealRow({
             badgeScore != null
               ? <MealMESBadge score={badgeScore} tier={badgeTier} compact />
               : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealScore?.unscored_hint} compact />
+          )}
+          {!compact && log.fuel_score != null && (
+            <FuelScoreBadge score={log.fuel_score} compact fuelTarget={fuelTarget} />
           )}
           {showSnackBadge && (
             <View

@@ -10,6 +10,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+os.environ["NOTIFICATION_RUNNER_SECRET"] = "test-notification-runner-secret"
 
 from fastapi.testclient import TestClient
 
@@ -35,7 +36,7 @@ from app.models.meal_plan import ChatSession, MealPlan, MealPlanItem
 from app.models.notification import NotificationDelivery, NotificationPreference, UserPushToken
 from app.models.recipe import Recipe
 from app.models.user import User
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import NotificationCycleResult, process_user_notifications, record_notification_event
 
 
 class _MockExpoResponse:
@@ -74,6 +75,22 @@ class NotificationE2ETests(unittest.TestCase):
             db.commit()
             db.refresh(user)
             return user
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/notifications/events",
+            headers=self._auth_headers(user),
+            json={"event_type": "notification_opened", "properties": {"delivery_id": first.id}},
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+
+        db = self._db()
+        try:
+            first = db.query(NotificationDelivery).filter(NotificationDelivery.id == first.id).one()
+            second = db.query(NotificationDelivery).filter(NotificationDelivery.id == second.id).one()
+            self.assertIsNotNone(first.opened_at)
+            self.assertIsNone(second.opened_at)
         finally:
             db.close()
 
@@ -167,21 +184,47 @@ class NotificationE2ETests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_ingest_event_queues_without_inline_send(self) -> None:
+        user = self._create_user(email="queue@example.com", active_at=datetime(2026, 3, 13, 12, 0, 0))
+        self._register_push_token(user)
+
         response = self.client.post(
             "/api/notifications/events",
             headers=self._auth_headers(user),
-            json={"event_type": "notification_opened", "properties": {"delivery_id": first.id}},
+            json={"event_type": "app_opened", "properties": {"source": "test"}},
         )
         self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertTrue(payload["queued"])
+        self.assertEqual(payload["notifications_sent"], 0)
 
         db = self._db()
         try:
-            first = db.query(NotificationDelivery).filter(NotificationDelivery.id == first.id).one()
-            second = db.query(NotificationDelivery).filter(NotificationDelivery.id == second.id).one()
-            self.assertIsNotNone(first.opened_at)
-            self.assertIsNone(second.opened_at)
+            deliveries = db.query(NotificationDelivery).filter(NotificationDelivery.user_id == user.id).all()
+            self.assertEqual(deliveries, [])
         finally:
             db.close()
+
+    def test_internal_notification_run_requires_secret_and_returns_summary(self) -> None:
+        forbidden = self.client.post("/api/internal/notifications/run")
+        self.assertEqual(forbidden.status_code, 403)
+
+        cycle_result = NotificationCycleResult(
+            users_evaluated=3,
+            deliveries_attempted=2,
+            deliveries_sent=1,
+            failures=0,
+            duration_seconds=0.123,
+        )
+        with patch("app.routers.internal.run_notification_cycle", return_value=cycle_result):
+            response = self.client.post(
+                "/api/internal/notifications/run",
+                headers={"x-notification-runner-secret": "test-notification-runner-secret"},
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertEqual(payload["deliveries_sent"], 1)
+        self.assertEqual(payload["deliveries_attempted"], 2)
 
     def test_grocery_follow_through_sends_once_per_plan(self) -> None:
         user = self._create_user(email="grocery@example.com", active_at=datetime(2026, 3, 13, 9, 0, 0))

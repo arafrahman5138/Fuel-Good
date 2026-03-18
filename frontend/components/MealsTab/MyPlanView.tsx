@@ -299,7 +299,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
     const combinedTier =
       preferredPairing?.combined_tier ||
       (combinedScore != null
-        ? (combinedScore >= 80 ? 'optimal' : combinedScore >= 60 ? 'stable' : combinedScore >= 40 ? 'shaky' : 'crash_risk')
+        ? (combinedScore >= 82 ? 'optimal' : combinedScore >= 65 ? 'stable' : combinedScore >= 50 ? 'shaky' : 'crash_risk')
         : undefined);
 
     await nutritionApi.createLog({
@@ -389,11 +389,11 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
         const total = wp * pScore + wf * fScore + ws * sScore;
         displayScore = total;  // No +10 inflation
       }
-      const displayTier = displayScore >= 85 ? 'optimal' : displayScore >= 70 ? 'good' : displayScore >= 55 ? 'moderate' : displayScore >= 40 ? 'low' : 'critical';
+      const displayTier = displayScore >= 82 ? 'optimal' : displayScore >= 65 ? 'good' : displayScore >= 50 ? 'moderate' : displayScore >= 35 ? 'low' : 'critical';
       return { day, score: Math.round(displayScore * 10) / 10, tier: displayTier };
     });
     const avgScore = projections.reduce((sum, p) => sum + p.score, 0) / (projections.length || 1);
-    const avgTier = avgScore >= 85 ? 'optimal' : avgScore >= 70 ? 'good' : avgScore >= 55 ? 'moderate' : avgScore >= 40 ? 'low' : 'critical';
+    const avgTier = avgScore >= 82 ? 'optimal' : avgScore >= 65 ? 'good' : avgScore >= 50 ? 'moderate' : avgScore >= 35 ? 'low' : 'critical';
     return { projections, weeklyScore: Math.round(avgScore * 10) / 10, weeklyTier: avgTier };
   }, [currentPlan, mesBudget]);
 

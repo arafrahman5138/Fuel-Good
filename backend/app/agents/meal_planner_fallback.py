@@ -181,6 +181,51 @@ def _preference_alignment_score(
     return score
 
 
+def _budget_alignment_score(recipe: Recipe, budget: Any) -> float:
+    """Score 0‑1 for how well a recipe's macros align with per‑meal budget targets."""
+    if not budget:
+        return 0.5
+    nutrition = _recipe_nutrition(recipe)
+    per_meal = MEALS_PER_DAY
+    score, checks = 0.0, 0
+
+    protein_target = (getattr(budget, "protein_floor_g", 0) or 0) / per_meal
+    if protein_target > 0:
+        checks += 1
+        score += min(nutrition["protein"] / protein_target, 1.5) / 1.5
+
+    carb_ceiling = (
+        getattr(budget, "carb_ceiling_g", 0) or getattr(budget, "sugar_ceiling_g", 0) or 0
+    ) / per_meal
+    if carb_ceiling > 0:
+        checks += 1
+        score += 1.0 if nutrition["carbs"] <= carb_ceiling else max(0, 1 - (nutrition["carbs"] / carb_ceiling - 1))
+
+    fiber_target = (getattr(budget, "fiber_floor_g", 0) or 0) / per_meal
+    if fiber_target > 0:
+        checks += 1
+        score += min(nutrition["fiber"] / fiber_target, 1.5) / 1.5
+
+    cal_target = (getattr(budget, "calorie_target_kcal", 0) or 0) / per_meal
+    if cal_target > 0:
+        checks += 1
+        score += max(0, 1 - abs(nutrition["calories"] / cal_target - 1))
+
+    return score / checks if checks > 0 else 0.5
+
+
+def _time_class(recipe: Recipe) -> str:
+    """Classify recipe by total cook time."""
+    total = (recipe.total_time_min or 0) or (
+        (recipe.prep_time_min or 0) + (recipe.cook_time_min or 0)
+    )
+    if total <= 20:
+        return "quick"
+    if total <= 35:
+        return "medium"
+    return "long"
+
+
 def _candidate_pool(
     all_recipes: list[Recipe],
     recipe_index: dict[str, Recipe],
@@ -195,6 +240,7 @@ def _candidate_pool(
     preferred_recipe_ids: set[str],
     avoided_recipe_ids: set[str],
     budget: Any,
+    cooking_time_budget: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     allergy_lower = {a.lower() for a in allergies}
     disliked_ingredients_lower = {d.lower() for d in disliked_ingredients}
@@ -233,6 +279,13 @@ def _candidate_pool(
             preferred_recipe_ids=preferred_recipe_ids,
         )
         display_score = float(mes.get("display_score", 0) or 0)
+        budget_score = _budget_alignment_score(recipe, budget)
+
+        # Cooking time preference (soft signal, not a hard filter)
+        ctb = cooking_time_budget or {}
+        total_time_slots = sum(ctb.values()) or 7
+        time_bonus = (ctb.get(_time_class(recipe), 0) or 0) / total_time_slots
+
         ranked.append(
             {
                 "recipe": recipe,
@@ -242,6 +295,8 @@ def _candidate_pool(
                 "meets_target": display_score >= TARGET_DISPLAY_MES,
                 "preferred": str(recipe.id) in preferred_recipe_ids,
                 "preference_score": preference_score,
+                "budget_score": budget_score,
+                "time_bonus": time_bonus,
                 "random_tiebreak": random.random(),
             }
         )
@@ -252,6 +307,8 @@ def _candidate_pool(
             1 if item["meets_target"] else 0,
             item["display_score"],
             item["preference_score"],
+            item["budget_score"],
+            item["time_bonus"],
             item["random_tiebreak"],
         ),
         reverse=True,
@@ -428,6 +485,7 @@ def _preferences_context(preferences: dict[str, Any], db: Session, user_id: str 
         "household": int(preferences.get("household_size", 1) or 1),
         "variety_mode": preferences.get("variety_mode", "balanced") or "balanced",
         "budget": load_budget_for_user(db, user_id) if user_id else None,
+        "cooking_time_budget": preferences.get("cooking_time_budget") or {},
     }
 
 
@@ -452,6 +510,7 @@ def get_shortlist_candidates(db: Session, preferences: dict, user_id: str | None
             preferred_recipe_ids=context["preferred_recipe_ids"],
             avoided_recipe_ids=context["avoided_recipe_ids"],
             budget=context["budget"],
+            cooking_time_budget=context["cooking_time_budget"],
         )
         items = [
             _shortlist_recipe(candidate["recipe"], candidate["mes"], slot)
@@ -487,6 +546,7 @@ def get_replacement_candidates(
         preferred_recipe_ids=context["preferred_recipe_ids"],
         avoided_recipe_ids=context["avoided_recipe_ids"],
         budget=context["budget"],
+        cooking_time_budget=context["cooking_time_budget"],
     )
     return _top_unique_candidates(candidates, limit, exclude_recipe_ids=exclude_recipe_ids)
 
@@ -513,6 +573,7 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             preferred_recipe_ids=context["preferred_recipe_ids"],
             avoided_recipe_ids=context["avoided_recipe_ids"],
             budget=context["budget"],
+            cooking_time_budget=context["cooking_time_budget"],
         )
 
     days_map: dict[str, list[dict[str, Any]]] = {day: [] for day in DAYS}

@@ -11,14 +11,18 @@ from app.services.metabolic_engine import (
     Goal,
     MetabolicProfileInput,
     build_metabolic_budget,
+    calc_ingredient_gis_adjustment,
     calc_carb_ceiling_g,
     calc_gis,
     calc_ism,
+    calc_metabolic_stability_bonus,
     calc_protein_target_g,
     calc_tier_thresholds,
     compute_meal_mes,
     derive_protein_target_g,
     derive_sugar_ceiling,
+    infer_glycemic_profile,
+    resolve_glycemic_profile,
     BASE_TIER_THRESHOLDS,
 )
 
@@ -142,6 +146,123 @@ class TestISM(unittest.TestCase):
         self.assertAlmostEqual(calc_ism(T2D_USER), 1.35, places=2)
 
 
+class TestGISCurves(unittest.TestCase):
+    def test_general_curve_is_more_forgiving_than_strict(self):
+        self.assertGreater(calc_gis(45, "general"), calc_gis(45, "strict"))
+        self.assertGreater(calc_gis(30, "general"), calc_gis(30, "strict"))
+
+    def test_high_net_carbs_still_penalized(self):
+        self.assertLess(calc_gis(70, "general"), 35.0)
+        self.assertLess(calc_gis(70, "strict"), calc_gis(70, "general"))
+
+
+class TestMetabolicStabilityBonus(unittest.TestCase):
+    def test_low_carb_high_protein_meal_gets_bonus(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        bonus = calc_metabolic_stability_bonus(
+            protein_g=40,
+            fiber_g=7,
+            carbs_g=14,
+            fat_g=18,
+            calories=420,
+            budget=budget,
+        )
+        self.assertGreater(bonus, 0.0)
+
+    def test_low_carb_but_low_protein_gets_no_bonus(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        bonus = calc_metabolic_stability_bonus(
+            protein_g=18,
+            fiber_g=7,
+            carbs_g=12,
+            fat_g=18,
+            calories=360,
+            budget=budget,
+        )
+        self.assertEqual(bonus, 0.0)
+
+
+class TestIngredientAwareGIS(unittest.TestCase):
+    def test_sweet_potato_inference_gets_positive_adjustment(self):
+        profile = infer_glycemic_profile(
+            ingredients=["sweet potato", "ground beef", "greek yogurt"],
+            carb_type=["sweet_potato"],
+        )
+        adjustment, reasons = calc_ingredient_gis_adjustment(profile, "general")
+        self.assertGreater(adjustment, 0.0)
+        self.assertIn("whole-food starch source", reasons)
+
+    def test_legume_gets_stronger_relief_than_brown_rice(self):
+        legume_profile = infer_glycemic_profile(ingredients=["lentils"], carb_type=["lentils"])
+        brown_rice_profile = infer_glycemic_profile(ingredients=["brown rice"], carb_type=["brown_rice"])
+        legume_adjustment, _ = calc_ingredient_gis_adjustment(legume_profile, "general")
+        brown_rice_adjustment, _ = calc_ingredient_gis_adjustment(brown_rice_profile, "general")
+        self.assertGreater(legume_adjustment, brown_rice_adjustment)
+
+    def test_white_rice_is_neutral(self):
+        profile = infer_glycemic_profile(ingredients=["white rice", "beef"], carb_type=["white_rice"])
+        adjustment, reasons = calc_ingredient_gis_adjustment(profile, "general")
+        self.assertEqual(adjustment, 0.0)
+        self.assertEqual(reasons, [])
+
+    def test_cooled_starch_requires_explicit_flag(self):
+        base = infer_glycemic_profile(ingredients=["brown rice"], carb_type=["brown_rice"])
+        cooled = resolve_glycemic_profile(
+            explicit_profile={
+                "primary_carb_source": "brown_rice",
+                "processing_level": "intact",
+                "resistant_starch_prep": "cooled",
+                "override_inference": True,
+            }
+        )
+        base_adjustment, _ = calc_ingredient_gis_adjustment(base, "general")
+        cooled_adjustment, reasons = calc_ingredient_gis_adjustment(cooled, "general")
+        self.assertGreater(cooled_adjustment, base_adjustment)
+        self.assertIn("cooled starch resistant starch effect", reasons)
+
+    def test_strict_profile_gets_smaller_adjustment(self):
+        profile = infer_glycemic_profile(ingredients=["sweet potato"], carb_type=["sweet_potato"])
+        general_adjustment, _ = calc_ingredient_gis_adjustment(profile, "general")
+        strict_adjustment, _ = calc_ingredient_gis_adjustment(profile, "strict")
+        self.assertGreater(general_adjustment, strict_adjustment)
+
+    def test_explicit_profile_overrides_inference(self):
+        resolved = resolve_glycemic_profile(
+            source={"ingredients": ["white rice"], "carb_type": ["white_rice"]},
+            explicit_profile={
+                "primary_carb_source": "legume",
+                "processing_level": "intact",
+                "resistant_starch_prep": "none",
+                "override_inference": True,
+            },
+        )
+        self.assertEqual(resolved["primary_carb_source"], "legume")
+
+    def test_moderate_carb_mixed_meal_gets_no_bonus(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        bonus = calc_metabolic_stability_bonus(
+            protein_g=36,
+            fiber_g=8,
+            carbs_g=34,
+            fat_g=18,
+            calories=520,
+            budget=budget,
+        )
+        self.assertEqual(bonus, 0.0)
+
+    def test_strict_profile_does_not_get_general_bonus(self):
+        budget = build_metabolic_budget(T2D_USER)
+        bonus = calc_metabolic_stability_bonus(
+            protein_g=40,
+            fiber_g=7,
+            carbs_g=14,
+            fat_g=18,
+            calories=420,
+            budget=budget,
+        )
+        self.assertEqual(bonus, 0.0)
+
+
 class TestDynamicWeights(unittest.TestCase):
     """ISM should adjust GIS weight in the budget."""
 
@@ -154,6 +275,10 @@ class TestDynamicWeights(unittest.TestCase):
         budget_maintenance = build_metabolic_budget(SEDENTARY_WOMAN)
         budget_muscle = build_metabolic_budget(ATHLETIC_MAN)
         self.assertGreater(budget_muscle.weights.protein, budget_maintenance.weights.protein)
+
+    def test_default_gis_weight_is_less_than_legacy(self):
+        budget_default = build_metabolic_budget(SEDENTARY_WOMAN)
+        self.assertLess(budget_default.weights.gis, 0.35)
 
     def test_weights_sum_to_1(self):
         for profile in [SEDENTARY_WOMAN, ATHLETIC_MAN, IR_USER, T2D_USER]:
@@ -178,10 +303,10 @@ class TestTierThresholds(unittest.TestCase):
     def test_thresholds_within_safety_caps(self):
         for profile in [SEDENTARY_WOMAN, ATHLETIC_MAN, IR_USER, T2D_USER]:
             thresholds = calc_tier_thresholds(profile)
-            self.assertGreaterEqual(thresholds["optimal"], 75)
-            self.assertLessEqual(thresholds["optimal"], 95)
-            self.assertGreaterEqual(thresholds["good"], 60)
-            self.assertLessEqual(thresholds["good"], 82)
+            self.assertGreaterEqual(thresholds["optimal"], 76)
+            self.assertLessEqual(thresholds["optimal"], 92)
+            self.assertGreaterEqual(thresholds["good"], 58)
+            self.assertLessEqual(thresholds["good"], 78)
 
 
 class TestSameMealDifferentProfiles(unittest.TestCase):
@@ -193,15 +318,12 @@ class TestSameMealDifferentProfiles(unittest.TestCase):
         """IR user's GIS sub-score weight is higher, penalizing carbs more."""
         budget_ir = build_metabolic_budget(IR_USER)
         budget_sed = build_metabolic_budget(SEDENTARY_WOMAN)
-        # IR user has higher GIS weight (ISM=1.25 -> gis_weight ~0.44)
         self.assertGreater(budget_ir.weights.gis, budget_sed.weights.gis)
-        # Same meal scored: IR user's weighted GIS contribution is larger
         score_ir = compute_meal_mes(self.MEAL, budget_ir)
         score_sed = compute_meal_mes(self.MEAL, budget_sed)
         ir_gis = score_ir["sub_scores"]["gis"]
         sed_gis = score_sed["sub_scores"]["gis"]
-        # Raw GIS is the same (same net carbs), but the weight amplifies impact
-        self.assertAlmostEqual(ir_gis, sed_gis, places=1)
+        self.assertLess(ir_gis, sed_gis)
 
     def test_t2d_scores_lower_than_sedentary(self):
         budget_t2d = build_metabolic_budget(T2D_USER)
@@ -264,6 +386,51 @@ class TestScoreBounds(unittest.TestCase):
             score = compute_meal_mes(extreme, budget)
             self.assertGreaterEqual(score["display_score"], 0)
             self.assertLessEqual(score["display_score"], 100)
+
+
+class TestMealArchetypeRegression(unittest.TestCase):
+    def test_low_carb_breakfast_recovers_bonus(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        breakfast = {"protein_g": 43, "carbs_g": 11, "fiber_g": 7, "fat_g": 28, "calories": 470}
+        score = compute_meal_mes(breakfast, budget)
+        self.assertGreaterEqual(score["display_score"], 85.0)
+
+    def test_healthy_mixed_meal_keeps_good_range(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        mixed_meal = {"protein_g": 42, "carbs_g": 44, "fiber_g": 8, "fat_g": 18, "calories": 540}
+        score = compute_meal_mes(mixed_meal, budget)
+        self.assertGreaterEqual(score["display_score"], 64.0)
+
+    def test_high_carb_low_fiber_meal_stays_penalized(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        high_carb = {"protein_g": 20, "carbs_g": 70, "fiber_g": 3, "fat_g": 12, "calories": 560}
+        score = compute_meal_mes(high_carb, budget)
+        self.assertLess(score["display_score"], 55.0)
+
+    def test_sweet_potato_meal_gets_ingredient_relief(self):
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        sweet_potato_meal = {
+            "protein_g": 31,
+            "carbs_g": 33,
+            "fiber_g": 6.6,
+            "fat_g": 12.5,
+            "calories": 325,
+            "ingredients": ["sweet potato", "ground beef", "greek yogurt", "avocado"],
+            "carb_type": ["sweet_potato"],
+        }
+        neutral_meal = {
+            "protein_g": 31,
+            "carbs_g": 33,
+            "fiber_g": 6.6,
+            "fat_g": 12.5,
+            "calories": 325,
+            "ingredients": ["white rice", "ground beef", "greek yogurt", "avocado"],
+            "carb_type": ["white_rice"],
+        }
+        sweet_score = compute_meal_mes(sweet_potato_meal, budget)
+        neutral_score = compute_meal_mes(neutral_meal, budget)
+        self.assertGreater(float(sweet_score.get("ingredient_gis_adjustment", 0) or 0), 0.0)
+        self.assertGreater(sweet_score["display_score"], neutral_score["display_score"])
 
 
 if __name__ == "__main__":

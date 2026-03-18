@@ -55,7 +55,7 @@ We are adding a **Metabolic Energy Score (MES)** system to make metabolic health
 - LangGraph + LangChain (AI agent workflows)
 - SQLAlchemy + Alembic (ORM + migrations)
 - PostgreSQL (database)
-- Render deployment target with separate API and notification worker roles in hosted environments
+- Render deployment target for the API, with Supabase Cron calling a bounded internal notification run endpoint
 
 ### AI
 - Configurable: Gemini, OpenAI GPT, or Anthropic Claude
@@ -113,7 +113,8 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 | `OPENAI_API_KEY` | OpenAI API key (if using GPT) |
 | `ANTHROPIC_API_KEY` | Anthropic API key (if using Claude) |
 | `LLM_PROVIDER` | `gemini`, `openai`, `anthropic`, or `ollama` |
-| `RUN_NOTIFICATION_SCHEDULER` | Enable only on the dedicated notification worker |
+| `RUN_NOTIFICATION_SCHEDULER` | Dev fallback only; keep `false` in hosted production |
+| `NOTIFICATION_RUNNER_SECRET` | Shared secret used by Supabase Cron to call the internal notification run endpoint |
 | `RUN_STARTUP_SEEDING` | Keep `false` in hosted environments |
 | `USDA_API_KEY` | USDA FoodData Central API key |
 

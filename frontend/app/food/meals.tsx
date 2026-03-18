@@ -17,9 +17,11 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { CompositeMealCard, SingleMealRow } from '../../components/CompositeMealCard';
 import { MealMESBadge } from '../../components/MealMESBadge';
+import { FuelScoreBadge } from '../../components/FuelScoreBadge';
 import { useTheme } from '../../hooks/useTheme';
 import { nutritionApi, foodApi, recipeApi } from '../../services/api';
 import { useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
+import { useFuelStore } from '../../stores/fuelStore';
 import type { MealMES } from '../../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 
@@ -77,6 +79,7 @@ function isScanSnack(snap: Record<string, any>, sourceType?: string) {
 
 export default function TodaysMealsScreen() {
   const theme = useTheme();
+  const fuelSettings = useFuelStore((s) => s.settings);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -237,7 +240,7 @@ export default function TodaysMealsScreen() {
                 ? Math.min(100, Number((storedRawMes + (matchedPair.mes_delta ?? 0)).toFixed(1)))
                 : 0)
             );
-            const tier = score >= 80 ? 'optimal' : score >= 60 ? 'stable' : score >= 40 ? 'shaky' : 'crash_risk';
+            const tier = score >= 82 ? 'optimal' : score >= 65 ? 'stable' : score >= 50 ? 'shaky' : 'crash_risk';
             if (score > 0 && !cancelled) {
               setBackfilledScores((prev) => ({ ...prev, [groupId]: { score, tier } }));
               for (const log of groupLogs) {
@@ -410,348 +413,208 @@ export default function TodaysMealsScreen() {
             </View>
           ) : (
             (() => {
-              // Group logs by meal_type
-              const GROUPABLE_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
-              const grouped: Record<string, DailyLog[]> = {};
-              const ungrouped: DailyLog[] = [];
-
+              // Build group_id map across ALL logs (regardless of meal_type)
+              const gidMap = new Map<string, DailyLog[]>();
               for (const log of logs) {
-                const mt = (log.meal_type || 'meal').toLowerCase();
-                if (GROUPABLE_TYPES.includes(mt)) {
-                  if (!grouped[mt]) grouped[mt] = [];
-                  grouped[mt].push(log);
-                } else {
-                  ungrouped.push(log);
+                if (log.group_id) {
+                  const list = gidMap.get(log.group_id) || [];
+                  list.push(log);
+                  gidMap.set(log.group_id, list);
                 }
               }
 
-              const mealGroups = GROUPABLE_TYPES
-                .filter(mt => grouped[mt] && grouped[mt].length > 0)
-                .map(mt => ({
-                  mealType: mt,
-                  logs: grouped[mt],
-                  mealScores: mealScores.filter((ms: MealMES) =>
-                    grouped[mt].some(l => l.id === ms.food_log_id)
-                  ),
-                }));
+              type ListItem =
+                | { type: 'paired'; main: DailyLog; side: DailyLog }
+                | { type: 'solo'; log: DailyLog };
+
+              const items: ListItem[] = [];
+              const usedIds = new Set<string>();
+
+              for (const log of logs) {
+                if (usedIds.has(log.id)) continue;
+                if (log.group_id) {
+                  const groupLogs = gidMap.get(log.group_id);
+                  if (groupLogs && groupLogs.length >= 2) {
+                    items.push({ type: 'paired', main: groupLogs[0], side: groupLogs[1] });
+                    groupLogs.forEach((l) => usedIds.add(l.id));
+                    continue;
+                  }
+                }
+                items.push({ type: 'solo', log });
+                usedIds.add(log.id);
+              }
+
+              const MacroDots = ({ cal, pro, carb, fat, fiber }: { cal: number; pro: number; carb: number; fat: number; fiber: number }) => (
+                <View style={s.macroDots}>
+                  <View style={s.macroDotItem}>
+                    <View style={[s.macroDot, { backgroundColor: '#22C55E' }]} />
+                    <Text style={[s.macroDotValue, { color: theme.text }]}>{pro.toFixed(0)}g</Text>
+                    <Text style={[s.macroDotLabel, { color: theme.textTertiary }]}>PROTEIN</Text>
+                  </View>
+                  <View style={s.macroDotItem}>
+                    <View style={[s.macroDot, { backgroundColor: '#3B82F6' }]} />
+                    <Text style={[s.macroDotValue, { color: theme.text }]}>{carb.toFixed(0)}g</Text>
+                    <Text style={[s.macroDotLabel, { color: theme.textTertiary }]}>CARBS</Text>
+                  </View>
+                  <View style={s.macroDotItem}>
+                    <View style={[s.macroDot, { backgroundColor: '#F59E0B' }]} />
+                    <Text style={[s.macroDotValue, { color: theme.text }]}>{fat.toFixed(0)}g</Text>
+                    <Text style={[s.macroDotLabel, { color: theme.textTertiary }]}>FAT</Text>
+                  </View>
+                  <View style={s.macroDotItem}>
+                    <View style={[s.macroDot, { backgroundColor: '#A855F7' }]} />
+                    <Text style={[s.macroDotValue, { color: theme.text }]}>{fiber.toFixed(0)}g</Text>
+                    <Text style={[s.macroDotLabel, { color: theme.textTertiary }]}>FIBER</Text>
+                  </View>
+                </View>
+              );
 
               return (
                 <View style={{ gap: Spacing.sm }}>
-                  {/* Composite meal groups */}
-                  {mealGroups.map((group) =>
-                    group.logs.length >= 2 ? (
-                      <View key={group.mealType} style={{ gap: Spacing.sm }}>
-                        <CompositeMealCard group={group} />
-                        {/* Delete buttons for individual items in the group */}
-                        {group.logs.map((log) => (
-                          <View key={`del-${log.id}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.sm }}>
-                            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500', flex: 1 }} numberOfLines={1}>
-                              {log.title || 'Untitled'}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={() => handleDelete(log.id, log.title || 'Untitled')}
-                              disabled={deleting === log.id}
-                              style={[s.deleteBtn, { backgroundColor: theme.error + '12' }]}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              {deleting === log.id ? (
-                                <ActivityIndicator size="small" color={theme.error} />
-                              ) : (
-                                <Ionicons name="trash-outline" size={14} color={theme.error} />
-                              )}
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      /* Single-item group — render as regular meal card */
-                      group.logs.map((log) => {
-                        const snap = log.nutrition_snapshot || {};
-                        const cal = Number(snap.calories || 0);
-                        const pro = Number(snap.protein || 0);
-                        const carb = Number(snap.carbs || 0);
-                        const fat = Number(snap.fat || 0);
-                        const scanSnack = isScanSnack(snap, log.source_type);
-                        const sourceIcon =
-                          log.source_type === 'scan' ? 'scan-outline' :
-                          log.source_type === 'recipe' ? 'restaurant-outline' :
-                          log.source_type === 'meal_plan' ? 'calendar-outline' : 'create-outline';
-                        const isDeleting = deleting === log.id;
-                        const mealMes = mealScores.find((ms: MealMES) => ms.food_log_id === log.id);
-
-                        return (
-                          <View
-                            key={log.id}
-                            style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                          >
-                            <View style={s.mealCardRow}>
-                              <LinearGradient
-                                colors={[theme.primary + '22', theme.primary + '0A'] as any}
-                                style={s.mealIcon}
-                              >
-                                <Ionicons name={sourceIcon as any} size={17} color={theme.primary} />
-                              </LinearGradient>
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
-                                  {log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled')}
-                                </Text>
-                                <View style={s.mealMetaRow}>
-                                  {log.meal_type && (
-                                    <Text style={[s.mealType, { color: theme.textTertiary }]}>
-                                      {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
-                                    </Text>
-                                  )}
-                                  {!scanSnack && mealMes && (
-                                    mealMes.score
-                                      ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
-                                      : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
-                                  )}
-                                </View>
-                              </View>
-                              <TouchableOpacity
-                                onPress={() => handleDelete(log.id, log.title || 'Untitled')}
-                                disabled={isDeleting}
-                                style={s.deleteBtn}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              >
-                                {isDeleting ? (
-                                  <ActivityIndicator size="small" color={theme.error} />
-                                ) : (
-                                  <Ionicons name="trash-outline" size={15} color={theme.error} />
-                                )}
-                              </TouchableOpacity>
-                            </View>
-                            <View style={s.macroPills}>
-                              <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
-                                <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
-                                <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
-                              </View>
-                              {pro > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
-                                  <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                              {carb > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
-                                  <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                              {fat > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
-                                  <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                        );
-                      })
-                    )
-                  )}
-
-                  {/* Ungrouped logs (generic "meal" type) — with group_id pairing */}
-                  {(() => {
-                    // Build group_id map for ungrouped logs
-                    const gidMap = new Map<string, DailyLog[]>();
-                    const soloLogs: DailyLog[] = [];
-                    for (const log of ungrouped) {
-                      if (log.group_id) {
-                        const list = gidMap.get(log.group_id) || [];
-                        list.push(log);
-                        gidMap.set(log.group_id, list);
-                      } else {
-                        soloLogs.push(log);
-                      }
-                    }
-
-                    type UngroupedItem = { type: 'paired'; main: DailyLog; side: DailyLog } | { type: 'solo'; log: DailyLog };
-                    const items: UngroupedItem[] = [];
-                    const usedIds = new Set<string>();
-
-                    for (const log of ungrouped) {
-                      if (usedIds.has(log.id)) continue;
-                      if (log.group_id && gidMap.has(log.group_id)) {
-                        const groupLogs = gidMap.get(log.group_id)!;
-                        if (groupLogs.length >= 2) {
-                          items.push({ type: 'paired', main: groupLogs[0], side: groupLogs[1] });
-                          groupLogs.forEach((l) => usedIds.add(l.id));
-                          continue;
-                        }
-                      }
-                      items.push({ type: 'solo', log });
-                      usedIds.add(log.id);
-                    }
-
-                    return items.map((item) => {
-                      if (item.type === 'paired') {
-                        const mainSnap = item.main.nutrition_snapshot || {};
-                        const sideSnap = item.side.nutrition_snapshot || {};
-                        const cal = Number(mainSnap.calories || 0) + Number(sideSnap.calories || 0);
-                        const pro = Number(mainSnap.protein || 0) + Number(sideSnap.protein || 0);
-                        const carb = Number(mainSnap.carbs || 0) + Number(sideSnap.carbs || 0);
-                        const fat = Number(mainSnap.fat || 0) + Number(sideSnap.fat || 0);
-                        // Use stored group MES score (set at log time) or backfilled
-                        const storedScore = item.main.group_mes_score ?? item.side.group_mes_score ?? null;
-                        const storedTier = item.main.group_mes_tier ?? item.side.group_mes_tier ?? null;
-                        const backfill = item.main.group_id ? backfilledScores[item.main.group_id] : undefined;
-                        // Fallback to individual meal MES
-                        const mainMes = mealScores.find((ms: MealMES) => ms.food_log_id === item.main.id);
-                        const displayScore = storedScore ?? backfill?.score ?? (mainMes?.score?.display_score || mainMes?.score?.total_score || null);
-                        const displayTier = storedTier ?? backfill?.tier ?? (mainMes?.score?.display_tier || mainMes?.score?.tier || null);
-                        const isDeletingGroup = deleting === item.main.id;
-
-                        return (
-                          <View
-                            key={item.main.id}
-                            style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                          >
-                            {/* Main meal row */}
-                            <View style={s.mealCardRow}>
-                              <LinearGradient
-                                colors={[theme.primary + '22', theme.primary + '0A'] as any}
-                                style={s.mealIcon}
-                              >
-                                <Ionicons name="restaurant-outline" size={17} color={theme.primary} />
-                              </LinearGradient>
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
-                                  {item.main.title || 'Untitled'}
-                                </Text>
-                                {displayScore != null && displayTier && (
-                                  <View style={s.mealMetaRow}>
-                                    <MealMESBadge score={displayScore} tier={displayTier} compact />
-                                  </View>
-                                )}
-                              </View>
-                              <TouchableOpacity
-                                onPress={() => handleDelete(item.main.id, item.main.title || 'Untitled', item.main.group_id)}
-                                disabled={isDeletingGroup}
-                                style={s.deleteBtn}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              >
-                                {isDeletingGroup ? (
-                                  <ActivityIndicator size="small" color={theme.error} />
-                                ) : (
-                                  <Ionicons name="trash-outline" size={15} color={theme.error} />
-                                )}
-                              </TouchableOpacity>
-                            </View>
-
-                            {/* Side row */}
-                            <View style={s.sideRow}>
-                              <Ionicons name="leaf-outline" size={12} color={theme.primary} />
-                              <Text style={[s.sideRowText, { color: theme.textSecondary }]} numberOfLines={1}>
-                                {item.side.title || 'Side'}
-                              </Text>
-                            </View>
-
-                            {/* Combined macros */}
-                            <View style={s.macroPills}>
-                              <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
-                                <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
-                                <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
-                              </View>
-                              {pro > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
-                                  <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                              {carb > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
-                                  <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                              {fat > 0 && (
-                                <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
-                                  <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                        );
-                      }
-
-                      // Solo ungrouped log
-                      const log = item.log;
-                      const snap = log.nutrition_snapshot || {};
-                      const cal = Number(snap.calories || 0);
-                      const pro = Number(snap.protein || 0);
-                      const carb = Number(snap.carbs || 0);
-                      const fat = Number(snap.fat || 0);
-                      const scanSnack = isScanSnack(snap, log.source_type);
-                      const sourceIcon =
-                        log.source_type === 'scan' ? 'scan-outline' :
-                        log.source_type === 'recipe' ? 'restaurant-outline' :
-                        log.source_type === 'meal_plan' ? 'calendar-outline' : 'create-outline';
-                      const isDeleting = deleting === log.id;
-                      const mealMes = mealScores.find((ms: MealMES) => ms.food_log_id === log.id);
+                  {items.map((item) => {
+                    if (item.type === 'paired') {
+                      const mainSnap = item.main.nutrition_snapshot || {};
+                      const sideSnap = item.side.nutrition_snapshot || {};
+                      const cal   = Number(mainSnap.calories || 0) + Number(sideSnap.calories || 0);
+                      const pro   = Number(mainSnap.protein  || 0) + Number(sideSnap.protein  || 0);
+                      const carb  = Number(mainSnap.carbs    || 0) + Number(sideSnap.carbs    || 0);
+                      const fat   = Number(mainSnap.fat      || 0) + Number(sideSnap.fat      || 0);
+                      const fiber = Number(mainSnap.fiber    || 0) + Number(sideSnap.fiber    || 0);
+                      const storedScore = item.main.group_mes_score ?? item.side.group_mes_score ?? null;
+                      const storedTier  = item.main.group_mes_tier  ?? item.side.group_mes_tier  ?? null;
+                      const backfill    = item.main.group_id ? backfilledScores[item.main.group_id] : undefined;
+                      const mainMes     = mealScores.find((ms: MealMES) => ms.food_log_id === item.main.id);
+                      const displayScore = storedScore ?? backfill?.score ?? (mainMes?.score?.display_score || mainMes?.score?.total_score || null);
+                      const displayTier  = storedTier  ?? backfill?.tier  ?? (mainMes?.score?.display_tier  || mainMes?.score?.tier  || null);
+                      const isDeletingGroup = deleting === item.main.id;
 
                       return (
                         <View
-                          key={log.id}
+                          key={item.main.id}
                           style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                         >
+                          {/* Main meal row */}
                           <View style={s.mealCardRow}>
                             <LinearGradient
                               colors={[theme.primary + '22', theme.primary + '0A'] as any}
                               style={s.mealIcon}
                             >
-                              <Ionicons name={sourceIcon as any} size={17} color={theme.primary} />
+                              <Ionicons name="restaurant-outline" size={17} color={theme.primary} />
                             </LinearGradient>
                             <View style={{ flex: 1, minWidth: 0 }}>
                               <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
-                                {log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled')}
+                                {item.main.title || 'Untitled'}
                               </Text>
                               <View style={s.mealMetaRow}>
-                                {log.meal_type && (
+                                {item.main.meal_type && (
                                   <Text style={[s.mealType, { color: theme.textTertiary }]}>
-                                    {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
+                                    {item.main.meal_type.charAt(0).toUpperCase() + item.main.meal_type.slice(1)}
                                   </Text>
                                 )}
-                                {!scanSnack && mealMes && (
-                                  mealMes.score
-                                    ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
-                                    : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
+                                <Text style={[s.calBadge, { color: theme.textSecondary }]}>
+                                  {cal.toFixed(0)} cal
+                                </Text>
+                                {(item.main as any).fuel_score != null && fuelSettings && (
+                                  <FuelScoreBadge score={(item.main as any).fuel_score} compact fuelTarget={fuelSettings.fuel_target} />
+                                )}
+                                {displayScore != null && displayTier && (
+                                  <MealMESBadge score={displayScore} tier={displayTier} compact />
                                 )}
                               </View>
                             </View>
                             <TouchableOpacity
-                              onPress={() => handleDelete(log.id, log.title || 'Untitled')}
-                              disabled={isDeleting}
+                              onPress={() => handleDelete(item.main.id, item.main.title || 'Untitled', item.main.group_id)}
+                              disabled={isDeletingGroup}
                               style={s.deleteBtn}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                              {isDeleting ? (
-                                <ActivityIndicator size="small" color={theme.error} />
-                              ) : (
-                                <Ionicons name="trash-outline" size={15} color={theme.error} />
-                              )}
+                              {isDeletingGroup
+                                ? <ActivityIndicator size="small" color={theme.error} />
+                                : <Ionicons name="trash-outline" size={15} color={theme.error} />}
                             </TouchableOpacity>
                           </View>
-                          <View style={s.macroPills}>
-                            <View style={[s.macroPill, { backgroundColor: theme.text + '08' }]}>
-                              <Ionicons name="flame-outline" size={11} color={theme.textSecondary} />
-                              <Text style={[s.macroPillText, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
+
+                          {/* Nested side pairing */}
+                          <View style={[s.sideRow, { borderColor: theme.border }]}>
+                            <View style={[s.sideIconWrap, { backgroundColor: theme.primaryMuted }]}>
+                              <Ionicons name="add-outline" size={11} color={theme.primary} />
                             </View>
-                            {pro > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: '#22C55E14' }]}>
-                                <Text style={[s.macroPillText, { color: '#16A34A' }]}>P {pro.toFixed(0)}g</Text>
-                              </View>
-                            )}
-                            {carb > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: '#F59E0B14' }]}>
-                                <Text style={[s.macroPillText, { color: '#D97706' }]}>C {carb.toFixed(0)}g</Text>
-                              </View>
-                            )}
-                            {fat > 0 && (
-                              <View style={[s.macroPill, { backgroundColor: '#3B82F614' }]}>
-                                <Text style={[s.macroPillText, { color: '#2563EB' }]}>F {fat.toFixed(0)}g</Text>
-                              </View>
-                            )}
+                            <Text style={[s.sideRowText, { color: theme.textSecondary }]} numberOfLines={1}>
+                              {item.side.title || 'Side'}
+                            </Text>
                           </View>
+
+                          <MacroDots cal={cal} pro={pro} carb={carb} fat={fat} fiber={fiber} />
                         </View>
                       );
-                    });
-                  })()}
+                    }
+
+                    // Solo meal
+                    const log = item.log;
+                    const snap = log.nutrition_snapshot || {};
+                    const cal   = Number(snap.calories || 0);
+                    const pro   = Number(snap.protein  || 0);
+                    const carb  = Number(snap.carbs    || 0);
+                    const fat   = Number(snap.fat      || 0);
+                    const fiber = Number(snap.fiber    || 0);
+                    const scanSnack = isScanSnack(snap, log.source_type);
+                    const sourceIcon =
+                      log.source_type === 'scan'      ? 'scan-outline'      :
+                      log.source_type === 'recipe'    ? 'restaurant-outline' :
+                      log.source_type === 'meal_plan' ? 'calendar-outline'  : 'create-outline';
+                    const isDeleting = deleting === log.id;
+                    const mealMes = mealScores.find((ms: MealMES) => ms.food_log_id === log.id);
+
+                    return (
+                      <View
+                        key={log.id}
+                        style={[s.mealCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                      >
+                        <View style={s.mealCardRow}>
+                          <LinearGradient
+                            colors={[theme.primary + '22', theme.primary + '0A'] as any}
+                            style={s.mealIcon}
+                          >
+                            <Ionicons name={sourceIcon as any} size={17} color={theme.primary} />
+                          </LinearGradient>
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={[s.mealTitle, { color: theme.text }]} numberOfLines={1}>
+                              {log.source_type === 'scan' ? cleanScanTitle(log.title, snap) : (log.title || 'Untitled')}
+                            </Text>
+                            <View style={s.mealMetaRow}>
+                              {log.meal_type && (
+                                <Text style={[s.mealType, { color: theme.textTertiary }]}>
+                                  {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
+                                </Text>
+                              )}
+                              <Text style={[s.calBadge, { color: theme.textSecondary }]}>
+                                {cal.toFixed(0)} cal
+                              </Text>
+                              {(log as any).fuel_score != null && fuelSettings && (
+                                <FuelScoreBadge score={Number((log as any).fuel_score)} compact fuelTarget={fuelSettings.fuel_target} />
+                              )}
+                              {!scanSnack && mealMes && (
+                                mealMes.score
+                                  ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
+                                  : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
+                              )}
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleDelete(log.id, log.title || 'Untitled')}
+                            disabled={isDeleting}
+                            style={s.deleteBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            {isDeleting
+                              ? <ActivityIndicator size="small" color={theme.error} />
+                              : <Ionicons name="trash-outline" size={15} color={theme.error} />}
+                          </TouchableOpacity>
+                        </View>
+                        <MacroDots cal={cal} pro={pro} carb={carb} fat={fat} fiber={fiber} />
+                      </View>
+                    );
+                  })}
                 </View>
               );
             })()
@@ -989,6 +852,17 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
     paddingLeft: 40 + Spacing.md,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  sideIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sideRowText: {
     fontSize: FontSize.xs,
@@ -1003,6 +877,36 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  calBadge: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+  },
+  macroDots: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: Spacing.xs,
+  },
+  macroDotItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  macroDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  macroDotValue: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  macroDotLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  // Keep these for any external usage references
   macroPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',

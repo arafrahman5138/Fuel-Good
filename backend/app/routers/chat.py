@@ -17,7 +17,7 @@ from app.agents.healthify import healthify_agent, parse_healthify_response
 from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
 from typing import List
 from datetime import date
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 from app.services.chat_limits import acquire_chat_slot, enforce_chat_quota, record_chat_usage, release_chat_slot
 
 router = APIRouter()
@@ -167,7 +167,6 @@ async def healthify_food(
             properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
             source="server",
         )
-        process_user_notifications(db, current_user.id)
         db.commit()
 
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)

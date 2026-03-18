@@ -13,10 +13,10 @@ class SubScores(BaseModel):
 
 
 class WeightsUsed(BaseModel):
-    gis: float = 0.35
-    protein: float = 0.30
-    fiber: float = 0.20
-    fat: float = 0.15
+    gis: float = 0.24
+    protein: float = 0.34
+    fiber: float = 0.24
+    fat: float = 0.18
 
 
 # ──────────────────── Budget ────────────────────
@@ -31,8 +31,8 @@ class MetabolicBudgetResponse(BaseModel):
     # ── New fields ──
     carb_ceiling_g: float = 130.0
     fat_target_g: float = 0
-    weight_fat: float = 0.15
-    weight_gis: float = 0.35
+    weight_fat: float = 0.18
+    weight_gis: float = 0.24
     tdee: Optional[float] = None
     ism: Optional[float] = None
     # ── Phase 6: Threshold context ──
@@ -115,6 +115,8 @@ class MESScoreResponse(BaseModel):
     weights_used: Optional[WeightsUsed] = None
     net_carbs_g: Optional[float] = None
     fat_g: Optional[float] = None
+    ingredient_gis_adjustment: Optional[float] = None
+    ingredient_gis_reasons: Optional[List[str]] = None
     pairing_applied: Optional[bool] = None
     pairing_gis_bonus: Optional[float] = None
     pairing_synergy_bonus: Optional[float] = None
@@ -127,6 +129,8 @@ class DailyMESResponse(BaseModel):
     remaining: Optional[dict] = None
     treat_impact: Optional[dict] = None
     mea: Optional[dict] = None
+    ingredient_gis_daily_bonus: Optional[float] = None
+    ingredient_gis_sources: Optional[List[Dict[str, Any]]] = None
     pairing_synergy_daily_bonus: Optional[float] = None
     pairing_synergy_sources: Optional[List[Dict[str, Any]]] = None
 

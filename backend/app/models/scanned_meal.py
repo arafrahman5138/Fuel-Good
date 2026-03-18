@@ -53,6 +53,7 @@ class ScannedMealLog(Base):
     prompt_version = Column(String, nullable=True)
     matched_recipe_id = Column(String, nullable=True)
     matched_recipe_confidence = Column(Float, nullable=True)
+    fuel_score = Column(Float, nullable=True)
     logged_food_log_id = Column(GUID, ForeignKey("food_logs.id"), nullable=True)
     logged_to_chronometer = Column(Boolean, default=False)
 

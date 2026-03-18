@@ -188,6 +188,14 @@ export function getTierConfig(tier: string) {
   return TIER_CONFIG[tier as TierKey] ?? TIER_CONFIG.crash_risk;
 }
 
+export function getTierFromScore(score: number): string {
+  if (score >= 82) return 'optimal';
+  if (score >= 65) return 'good';
+  if (score >= 50) return 'moderate';
+  if (score >= 35) return 'low';
+  return 'critical';
+}
+
 // ─── Store ───
 
 interface MetabolicBudgetState {

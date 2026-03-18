@@ -65,6 +65,7 @@ def build_recipe(entry: dict) -> Recipe:
         component_composition=entry.get("component_composition"),
         is_mes_scoreable=entry.get("is_mes_scoreable", True),
         pairing_synergy_profile=entry.get("pairing_synergy_profile"),
+        glycemic_profile=entry.get("glycemic_profile"),
     )
 
 

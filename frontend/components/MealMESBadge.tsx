@@ -43,8 +43,7 @@ export function MealMESBadge({ score, tier, unscoredHint, compact = false, onPre
   if (compact) {
     return (
       <Animated.View style={animatedStyle}>
-        <Wrapper {...wrapperProps} style={[styles.compactBadge, { backgroundColor: tierCfg.color + '25' }]}>
-          <Ionicons name={tierCfg.icon} size={10} color={tierCfg.color} />
+        <Wrapper {...wrapperProps} style={[styles.compactBadge, { backgroundColor: tierCfg.color + '18' }]}>
           <Text style={[styles.compactText, { color: tierCfg.color }]}>{Math.round(score)}</Text>
         </Wrapper>
       </Animated.View>
@@ -79,8 +78,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.xs + 1,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: BorderRadius.sm,
     gap: 2,
   },

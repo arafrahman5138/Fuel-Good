@@ -1,0 +1,25 @@
+meal_title,old_base_score,old_base_tier,new_base_score,new_base_tier,base_delta,default_side,old_paired_adjusted_score,old_paired_adjusted_tier,new_paired_adjusted_score,new_paired_adjusted_tier,paired_delta
+Air Fryer Gochujang Chicken Skewers,55.4,moderate,53.1,moderate,-2.3,Black Bean and Corn Salad,72.1,good,79.3,good,7.2
+Baked Ziti with Brown Rice Pasta,46.1,low,53.2,moderate,7.1,Black Bean and Corn Salad,60.5,moderate,71.0,good,10.5
+Bang Bang Chicken Skewers,59.6,moderate,56.4,moderate,-3.2,Black Bean and Corn Salad,75.6,good,82.4,optimal,6.8
+Beef Chorizo and Chicken Pasta,49.6,low,56.1,moderate,6.5,Black Bean and Corn Salad,65.1,moderate,76.2,good,11.1
+Beef and Broccoli Stir-Fry,63.9,moderate,62.2,moderate,-1.7,Lentil Tabbouleh,78.8,good,,,
+Beef and Cheese Borek Rolls,51.3,low,50.9,moderate,-0.4,Black Bean and Corn Salad,66.4,moderate,73.6,good,7.2
+Beef and Lamb Sausage Rolls,56.6,moderate,54.7,moderate,-1.9,Black Bean and Corn Salad,71.4,good,78.7,good,7.3
+Butter Chicken Bowl,69.7,moderate,72.8,good,3.1,Kachumber Salad,72.2,good,77.9,good,5.7
+Butter Chicken Bowl Plus,69.7,moderate,72.8,good,3.1,Kachumber Salad,72.2,good,77.9,good,5.7
+Chicken Sausage Kale Scramble,85.0,optimal,85.5,optimal,0.5,,,,,,
+Chicken Shawarma Bowl,69.7,moderate,72.8,good,3.1,Kachumber Salad,72.2,good,77.9,good,5.7
+Chicken Shawarma Plate,56.4,moderate,61.8,moderate,5.4,,,,,,
+Chickpea Mac N' Beef,70.5,good,76.3,good,5.8,Lemon Garlic Zucchini and Mushrooms,75.6,good,82.4,optimal,6.8
+Cottage Cheese Power Bowl with Turkey Bacon,80.8,good,80.6,good,-0.2,,,,,,
+Creamy Red Pepper Chicken Rice Bowl,64.6,moderate,71.2,good,6.6,Cucumber Tomato Herb Salad,70.5,good,79.0,good,8.5
+Greek Yogurt Chia Protein Bowl,84.7,good,85.4,optimal,0.7,,,,,,
+Homestyle Smash Burger,53.8,low,57.2,moderate,3.4,Black Bean and Corn Salad,67.6,moderate,77.6,good,10.0
+Sardine and Avocado Breakfast Salad,79.7,good,79.3,good,-0.4,,,,,,
+Skillet Chicken Fajita Rice Bowl,55.2,moderate,61.0,moderate,5.8,Cucumber Tomato Herb Salad,62.8,moderate,70.8,good,8.0
+Smoked Salmon Omelet with Avocado,85.6,optimal,86.2,optimal,0.6,,,,,,
+Smoky Chicken Potato Fiesta Bowl,62.7,moderate,69.6,good,6.9,Cilantro Lime Cabbage Slaw,71.5,good,80.3,good,8.8
+Smoky Tomato Chicken Burrito Bowl,58.3,moderate,65.3,good,7.0,Cilantro Lime Cabbage Slaw,67.2,moderate,76.0,good,8.8
+Steak and Eggs with Chimichurri Greens,83.8,good,83.8,optimal,0.0,,,,,,
+Turkey and Spinach Egg White Skillet,86.2,optimal,86.8,optimal,0.6,,,,,,

@@ -41,6 +41,8 @@ class User(Base):
     access_override_reason = Column(String, nullable=True)
     access_override_expires_at = Column(DateTime, nullable=True)
     access_override_updated_at = Column(DateTime, nullable=True)
+    fuel_target = Column(Integer, nullable=True, default=80)
+    expected_meals_per_week = Column(Integer, nullable=True, default=21)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

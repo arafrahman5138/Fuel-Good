@@ -7,7 +7,7 @@ from app.models.meal_plan import MealPlan
 from app.models.grocery import GroceryList
 from app.schemas.grocery import GroceryListResponse, GroceryListGenerate, GroceryItem
 from typing import List
-from app.services.notifications import process_user_notifications, record_notification_event
+from app.services.notifications import record_notification_event
 
 router = APIRouter()
 
@@ -113,7 +113,6 @@ async def generate_grocery_list(
         properties={"grocery_list_id": str(grocery_list.id), "meal_plan_id": str(meal_plan.id)},
         source="server",
     )
-    process_user_notifications(db, current_user.id)
     db.commit()
 
     return GroceryListResponse(

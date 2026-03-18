@@ -3,7 +3,6 @@
 ## Hosted Setup
 
 - Render `Starter` web service for the production API
-- Render `Starter` worker for production notifications
 - Supabase for production Postgres, Storage, Realtime, backups, and pgvector
 - Vercel for the `fuelgood.app` marketing website and legal pages
 - EAS `preview` -> production API by default
@@ -17,8 +16,8 @@
 - Create private Storage buckets `meal-scans` and `label-scans`.
 - Enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`.
 - Create the production Render API service from [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml).
-- Create the production Render notification worker from [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml).
-- Point `api.fuelgood.com` at the production API service.
+- Point `api.fuelgood.app` at the production API service.
+- Create a Supabase Cron job that calls `POST https://api.fuelgood.app/api/internal/notifications/run` every `5 minutes` with header `x-notification-runner-secret: <NOTIFICATION_RUNNER_SECRET>`.
 - Only create temporary staging services if you need migration rehearsal or scheduled notification QA before release.
 
 - Deploy the `fuelgood.app` website via Vercel:
@@ -31,9 +30,9 @@
   - Verify `https://fuelgood.app`, `https://fuelgood.app/privacy`, `https://fuelgood.app/terms`, and `https://fuelgood.app/support` resolve correctly.
 
 - Set backend production secrets:
-  `DATABASE_URL`, `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, `LLM_PROVIDER=gemini`, `GOOGLE_API_KEY` or `GEMINI_API_KEY`, OAuth credentials, support/legal URLs, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_MEAL_SCANS_BUCKET`, `SUPABASE_STORAGE_LABEL_SCANS_BUCKET`, `SUPABASE_SIGNED_URL_TTL_SECONDS`, and any Expo push token auth secret if used.
+  `DATABASE_URL`, `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, `LLM_PROVIDER=gemini`, `GOOGLE_API_KEY` or `GEMINI_API_KEY`, OAuth credentials, support/legal URLs, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_MEAL_SCANS_BUCKET`, `SUPABASE_STORAGE_LABEL_SCANS_BUCKET`, `SUPABASE_SIGNED_URL_TTL_SECONDS`, `NOTIFICATION_RUNNER_SECRET`, `NOTIFICATION_CRON_BATCH_SIZE`, `NOTIFICATION_CRON_USER_LIMIT`, and any Expo push token auth secret if used.
 - Set hosted runtime flags:
-  `RUN_NOTIFICATION_SCHEDULER=false` on the API service, `RUN_NOTIFICATION_SCHEDULER=true` on the production worker, `RUN_STARTUP_SEEDING=false`, `ALLOW_DEV_DB_BOOTSTRAP=false`.
+  `RUN_NOTIFICATION_SCHEDULER=false`, `RUN_STARTUP_SEEDING=false`, `ALLOW_DEV_DB_BOOTSTRAP=false`.
 - Set EAS secrets:
   `EXPO_PUBLIC_API_URL`, Google OAuth client IDs, legal/support URLs, `EXPO_PUBLIC_EXPO_PROJECT_ID`, `EXPO_PUBLIC_SUPABASE_URL`, and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 - Set RevenueCat secrets and identifiers:
@@ -62,8 +61,8 @@
 
 - Run `alembic upgrade head` on production.
 - Deploy the production API.
-- Deploy the production notification worker.
 - Verify production `GET /health`.
+- Trigger the Supabase Cron endpoint once manually and confirm the run summary looks sane.
 - Run the hosted smoke test against production with [`backend/scripts/smoke_test.sh`](/Users/arafrahman/Desktop/Real-Food/backend/scripts/smoke_test.sh).
 
 - Build the iOS preview app with EAS.
@@ -78,9 +77,9 @@
 - Verify expired or inactive accounts are sent back to the paywall.
 - Verify push permission prompt, token registration, opt-out, and at least one event-triggered push.
 - Verify Supabase-backed meal scan image storage, label scan image storage, signed URL access, chronometer realtime refresh, and billing realtime refresh.
-- If you need scheduled push QA before release outside production, create temporary staging services and validate one scheduled notification there.
+- Validate one scheduled notification through the Supabase Cron endpoint before release.
 
-- Confirm API logs and worker logs are visible.
+- Confirm API logs and Supabase Cron execution logs are visible.
 - Confirm Supabase DB logs and Storage logs are visible.
 - Confirm RevenueCat webhook delivery succeeds in production.
 - Confirm new purchases update user entitlement state in production without manual intervention.
@@ -90,4 +89,4 @@
 - Build the iOS production app with EAS.
 - Submit to TestFlight or the App Store.
 
-- Monitor API health, notification worker activity, push delivery, email delivery, and support inbox for the first 24 hours.
+- Monitor API health, cron-triggered notification runs, push delivery, email delivery, and support inbox for the first 24 hours.

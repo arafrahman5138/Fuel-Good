@@ -59,6 +59,7 @@ class FoodLogResponse(BaseModel):
     servings: float
     quantity: float
     nutrition_snapshot: Dict[str, Any]
+    fuel_score: Optional[float] = None
 
 
 class DailyNutritionResponse(BaseModel):

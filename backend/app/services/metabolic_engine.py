@@ -4,10 +4,10 @@ Metabolic Engine – core MES scoring, target derivation, and budget helpers.
 All scoring logic is isolated here, away from the router layer.
 
 Sub-scores (4):
-  GIS  — Glycemic Impact Score   (35%)
-  PAS  — Protein Adequacy Score  (30%)
-  FS   — Fiber Score             (20%)
-  FAS  — Fat Adequacy Score      (15%)
+  GIS  — Glycemic Impact Score   (24% base for general users)
+  PAS  — Protein Adequacy Score  (34% base for general users)
+  FS   — Fiber Score             (24% base for general users)
+  FAS  — Fat Adequacy Score      (18% base for general users)
 
 Units:
   User-facing biometrics: U.S. (lbs, ft/in)
@@ -91,7 +91,12 @@ class ScoreWeights:
         """Ensure weights always sum to exactly 1.0."""
         total = self.gis + self.protein + self.fiber + self.fat
         if total == 0:
-            return ScoreWeights(gis=0.35, protein=0.30, fiber=0.20, fat=0.15)
+            return ScoreWeights(
+                gis=BASE_WEIGHT_GIS,
+                protein=BASE_WEIGHT_PROTEIN,
+                fiber=BASE_WEIGHT_FIBER,
+                fat=BASE_WEIGHT_FAT,
+            )
         return ScoreWeights(
             gis=self.gis / total,
             protein=self.protein / total,
@@ -112,6 +117,7 @@ class ComputedBudget:
     fat_g: float
     weights: ScoreWeights
     ism: float
+    carb_curve: str = "general"
     tier_thresholds: dict = field(default_factory=dict)
 
 
@@ -122,10 +128,10 @@ class ComputedBudget:
 MEALS_PER_DAY = 3
 
 # ── Base weights (before ISM adjustment) ──
-BASE_WEIGHT_GIS = 0.35
-BASE_WEIGHT_PROTEIN = 0.30
-BASE_WEIGHT_FIBER = 0.20
-BASE_WEIGHT_FAT = 0.15
+BASE_WEIGHT_GIS = 0.24
+BASE_WEIGHT_PROTEIN = 0.34
+BASE_WEIGHT_FIBER = 0.24
+BASE_WEIGHT_FAT = 0.18
 
 # ── Carb ceiling defaults (g/day) ──
 CARB_CEILING_DEFAULT_G = 130
@@ -165,10 +171,10 @@ FAT_SHARE_MIN = 0.25
 FAT_SHARE_MAX = 0.38
 
 # ── Tier thresholds (base) ──
-TIER_OPTIMAL = 85
-TIER_GOOD = 70
-TIER_MODERATE = 55
-TIER_LOW = 40
+TIER_OPTIMAL = 82
+TIER_GOOD = 65
+TIER_MODERATE = 50
+TIER_LOW = 35
 
 BASE_TIER_THRESHOLDS: dict[str, int] = {
     "optimal": TIER_OPTIMAL,
@@ -196,9 +202,9 @@ DEFAULT_BUDGET_DICT: dict[str, float] = {
     "protein_target_g": 130.0,
     "fiber_floor_g": 30.0,
     "sugar_ceiling_g": 130.0,  # was 200 — now 130
-    "weight_protein": 0.30,
-    "weight_fiber": 0.20,
-    "weight_sugar": 0.35,
+    "weight_protein": BASE_WEIGHT_PROTEIN,
+    "weight_fiber": BASE_WEIGHT_FIBER,
+    "weight_sugar": BASE_WEIGHT_GIS,
 }
 
 PAIRING_GIS_CAP = 8.0
@@ -209,6 +215,119 @@ PAIRING_FIBER_GIS = {"none": 0.0, "low": 1.0, "med": 2.0, "high": 3.0}
 PAIRING_FIBER_BONUS = {"none": 0.0, "low": 0.0, "med": 0.5, "high": 1.0}
 PAIRING_VEG_GIS = {"none": 0.0, "low": 0.0, "med": 1.0, "high": 2.0}
 PAIRING_VEG_BONUS = {"none": 0.0, "low": 0.0, "med": 0.5, "high": 0.75}
+
+GLYCEMIC_PRIMARY_SOURCES = {
+    "sweet_potato",
+    "potato",
+    "brown_rice",
+    "white_rice",
+    "legume",
+    "intact_whole_grain",
+    "refined_grain",
+    "rice_noodles",
+    "oats",
+    "quinoa",
+    "nonstarchy_veg",
+    "other",
+}
+GLYCEMIC_PROCESSING_LEVELS = {"intact", "minimally_processed", "refined"}
+GLYCEMIC_RESISTANT_STARCH_PREP = {"none", "cooled", "cooled_reheated"}
+GLYCEMIC_CURVE_SCALING = {"general": 1.0, "standard": 0.75, "strict": 0.5}
+GLYCEMIC_ADJUSTMENT_CAP = 6.0
+DAILY_GLYCEMIC_BONUS_CAP = 6.0
+
+GLYCEMIC_PRIMARY_SOURCE_BONUS = {
+    "sweet_potato": 3.0,
+    "potato": 1.0,
+    "brown_rice": 2.0,
+    "white_rice": 0.0,
+    "legume": 5.0,
+    "intact_whole_grain": 3.0,
+    "refined_grain": 0.0,
+    "rice_noodles": 0.0,
+    "oats": 3.0,
+    "quinoa": 2.5,
+    "nonstarchy_veg": 1.0,
+    "other": 0.0,
+}
+GLYCEMIC_PROCESSING_BONUS = {"intact": 0.5, "minimally_processed": 0.0, "refined": 0.0}
+GLYCEMIC_RESISTANT_STARCH_BONUS = {"none": 0.0, "cooled": 2.0, "cooled_reheated": 1.5}
+GLYCEMIC_SOURCE_REASONS = {
+    "sweet_potato": "whole-food starch source",
+    "potato": "whole-food starch source",
+    "brown_rice": "intact whole grain",
+    "white_rice": "neutral starch source",
+    "legume": "legume-based carb",
+    "intact_whole_grain": "intact whole grain",
+    "refined_grain": "refined starch source",
+    "rice_noodles": "refined starch source",
+    "oats": "intact whole grain",
+    "quinoa": "intact whole grain",
+    "nonstarchy_veg": "vegetable-forward carb source",
+    "other": "mixed carb source",
+}
+
+GLYCEMIC_CARB_TYPE_MAP = {
+    "sweet_potato": "sweet_potato",
+    "potato": "potato",
+    "brown_rice": "brown_rice",
+    "white_rice": "white_rice",
+    "rice": "white_rice",
+    "beans": "legume",
+    "black_beans": "legume",
+    "lentils": "legume",
+    "chickpeas": "legume",
+    "legumes": "legume",
+    "quinoa": "quinoa",
+    "oats": "oats",
+    "rice_noodles": "rice_noodles",
+    "whole_grain": "intact_whole_grain",
+    "whole_grains": "intact_whole_grain",
+    "whole_wheat": "intact_whole_grain",
+    "farro": "intact_whole_grain",
+    "barley": "intact_whole_grain",
+    "wild_rice": "intact_whole_grain",
+    "bread": "refined_grain",
+    "pasta": "refined_grain",
+    "flour": "refined_grain",
+    "bun": "refined_grain",
+    "tortilla": "refined_grain",
+}
+GLYCEMIC_INGREDIENT_KEYWORDS = (
+    ("sweet potato", "sweet_potato"),
+    ("sweet potatoes", "sweet_potato"),
+    ("brown rice", "brown_rice"),
+    ("white rice", "white_rice"),
+    ("basmati rice", "white_rice"),
+    ("jasmine rice", "white_rice"),
+    ("rice noodle", "rice_noodles"),
+    ("rice vermicelli", "rice_noodles"),
+    ("quinoa", "quinoa"),
+    ("oats", "oats"),
+    ("oatmeal", "oats"),
+    ("lentil", "legume"),
+    ("lentils", "legume"),
+    ("chickpea", "legume"),
+    ("chickpeas", "legume"),
+    ("bean", "legume"),
+    ("beans", "legume"),
+    ("dal", "legume"),
+    ("farro", "intact_whole_grain"),
+    ("barley", "intact_whole_grain"),
+    ("wild rice", "intact_whole_grain"),
+    ("whole grain", "intact_whole_grain"),
+    ("whole-grain", "intact_whole_grain"),
+    ("whole wheat", "intact_whole_grain"),
+    ("potato", "potato"),
+    ("potatoes", "potato"),
+    ("bread", "refined_grain"),
+    ("bun", "refined_grain"),
+    ("pasta", "refined_grain"),
+    ("noodles", "refined_grain"),
+    ("flour", "refined_grain"),
+    ("wrap", "refined_grain"),
+    ("tortilla", "refined_grain"),
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -301,23 +420,53 @@ def display_tier(raw_score: float) -> str:
 #  SUB-SCORE FUNCTIONS (each returns 0–100)
 # ═══════════════════════════════════════════════════════════════════════
 
-def calc_gis(net_carbs_g: float) -> float:
-    """Glycemic Impact Score — linear degradation based on net carbs.
+def calc_gis(net_carbs_g: float, curve: str = "general") -> float:
+    """Glycemic Impact Score — profile-sensitive net-carb curve.
 
-    Replaces old sugar_score cliff formula.
-    Net carbs = total carbs - fiber.
+    `general` is intentionally more forgiving for balanced mixed meals.
+    `strict` preserves the more carb-sensitive behavior for higher-risk profiles.
     """
+    if curve == "strict":
+        if net_carbs_g <= 10:
+            return 100.0
+        if net_carbs_g <= 20:
+            return 100.0 - ((net_carbs_g - 10) / 10) * 20
+        if net_carbs_g <= 35:
+            return 80.0 - ((net_carbs_g - 20) / 15) * 25
+        if net_carbs_g <= 55:
+            return 55.0 - ((net_carbs_g - 35) / 20) * 30
+        if net_carbs_g <= 80:
+            return 25.0 - ((net_carbs_g - 55) / 25) * 20
+        return max(0.0, 5.0 - ((net_carbs_g - 80) / 20) * 5)
+
+    if curve == "standard":
+        if net_carbs_g <= 10:
+            return 100.0
+        if net_carbs_g <= 20:
+            return 100.0 - ((net_carbs_g - 10) / 10) * 16
+        if net_carbs_g <= 35:
+            return 84.0 - ((net_carbs_g - 20) / 15) * 18
+        if net_carbs_g <= 50:
+            return 66.0 - ((net_carbs_g - 35) / 15) * 18
+        if net_carbs_g <= 65:
+            return 48.0 - ((net_carbs_g - 50) / 15) * 18
+        if net_carbs_g <= 85:
+            return 30.0 - ((net_carbs_g - 65) / 20) * 18
+        return max(5.0, 12.0 - ((net_carbs_g - 85) / 20) * 5)
+
     if net_carbs_g <= 10:
         return 100.0
     if net_carbs_g <= 20:
-        return 100.0 - ((net_carbs_g - 10) / 10) * 20
+        return 100.0 - ((net_carbs_g - 10) / 10) * 12
     if net_carbs_g <= 35:
-        return 80.0 - ((net_carbs_g - 20) / 15) * 25
-    if net_carbs_g <= 55:
-        return 55.0 - ((net_carbs_g - 35) / 20) * 30
-    if net_carbs_g <= 80:
-        return 25.0 - ((net_carbs_g - 55) / 25) * 20
-    return max(0.0, 5.0 - ((net_carbs_g - 80) / 20) * 5)
+        return 88.0 - ((net_carbs_g - 20) / 15) * 18
+    if net_carbs_g <= 50:
+        return 70.0 - ((net_carbs_g - 35) / 15) * 18
+    if net_carbs_g <= 65:
+        return 52.0 - ((net_carbs_g - 50) / 15) * 20
+    if net_carbs_g <= 85:
+        return 32.0 - ((net_carbs_g - 65) / 20) * 17
+    return max(0.0, 15.0 - ((net_carbs_g - 85) / 20) * 7.5)
 
 
 def calc_pas(protein_g: float, target_g: float) -> float:
@@ -367,6 +516,240 @@ def calc_fas(fat_g: float) -> float:
     if fat_g <= 60:
         return 100.0 - ((fat_g - 40) / 20) * 15
     return max(50.0, 85.0 - ((fat_g - 60) / 20) * 35)
+
+
+def calc_metabolic_stability_bonus(
+    protein_g: float,
+    fiber_g: float,
+    carbs_g: float,
+    fat_g: float,
+    calories: float,
+    budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+) -> float:
+    """Restore a small edge for clearly metabolically excellent low-carb meals.
+
+    This bonus is intentionally narrow:
+    - general-user curve only
+    - genuinely low net carbs
+    - strong protein adequacy
+    - adequate fat and real meal calories
+
+    It is backend-only and capped tightly so it does not overpower the base model.
+    """
+    b = _normalize_budget(budget)
+    if getattr(b, "carb_curve", "general") != "general":
+        return 0.0
+
+    if calories < 300:
+        return 0.0
+
+    net_carbs_g = max(0.0, carbs_g - fiber_g)
+    if net_carbs_g > 18:
+        return 0.0
+
+    if protein_g < 35 or fiber_g < 6:
+        return 0.0
+
+    if fat_g < 12 or fat_g > 35:
+        return 0.0
+
+    bonus = 2.0
+    if net_carbs_g <= 8:
+        bonus += 0.5
+    if protein_g >= 40:
+        bonus += 0.25
+    if 15 <= fat_g <= 30:
+        bonus += 0.25
+    if fiber_g >= 8:
+        bonus += 0.25
+    return min(3.0, round(bonus, 2))
+
+
+def _coerce_string_list(values: Any) -> list[str]:
+    if not values:
+        return []
+    if isinstance(values, str):
+        return [values]
+    if isinstance(values, list):
+        result: list[str] = []
+        for value in values:
+            if isinstance(value, dict):
+                name = value.get("name")
+                if isinstance(name, str) and name.strip():
+                    result.append(name.strip())
+            elif isinstance(value, str) and value.strip():
+                result.append(value.strip())
+        return result
+    return []
+
+
+def _normalize_glycemic_profile(profile: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(profile, dict):
+        return None
+    primary_carb_source = str(profile.get("primary_carb_source", "other") or "other").strip().lower()
+    processing_level = str(profile.get("processing_level", "minimally_processed") or "minimally_processed").strip().lower()
+    resistant_starch_prep = str(profile.get("resistant_starch_prep", "none") or "none").strip().lower()
+    if primary_carb_source not in GLYCEMIC_PRIMARY_SOURCES:
+        primary_carb_source = "other"
+    if processing_level not in GLYCEMIC_PROCESSING_LEVELS:
+        processing_level = "minimally_processed"
+    if resistant_starch_prep not in GLYCEMIC_RESISTANT_STARCH_PREP:
+        resistant_starch_prep = "none"
+    return {
+        "primary_carb_source": primary_carb_source,
+        "processing_level": processing_level,
+        "resistant_starch_prep": resistant_starch_prep,
+        "override_inference": bool(profile.get("override_inference", False)),
+        "notes": str(profile.get("notes", "") or "").strip() or None,
+    }
+
+
+def _extract_recipe_ingredient_names(source: Recipe | dict[str, Any] | None) -> list[str]:
+    if source is None:
+        return []
+    if isinstance(source, dict):
+        return _coerce_string_list(source.get("ingredients"))
+    return _coerce_string_list(getattr(source, "ingredients", None))
+
+
+def infer_glycemic_profile(
+    ingredients: list[Any] | None = None,
+    carb_type: list[str] | None = None,
+    resistant_starch_prep: str | None = None,
+) -> dict[str, Any] | None:
+    ingredient_names = [value.lower() for value in _coerce_string_list(ingredients)]
+    carb_tags = [value.lower() for value in _coerce_string_list(carb_type)]
+
+    matched_source: str | None = None
+    for value in carb_tags:
+        normalized = value.replace(" ", "_").replace("-", "_")
+        source = GLYCEMIC_CARB_TYPE_MAP.get(normalized)
+        if source:
+            matched_source = source
+            break
+
+    if matched_source is None:
+        for ingredient in ingredient_names:
+            for keyword, source in GLYCEMIC_INGREDIENT_KEYWORDS:
+                if keyword in ingredient:
+                    matched_source = source
+                    break
+            if matched_source:
+                break
+
+    if matched_source is None:
+        return None
+
+    processing_level = (
+        "intact"
+        if matched_source in {"sweet_potato", "potato", "intact_whole_grain", "oats", "quinoa", "brown_rice", "legume", "nonstarchy_veg"}
+        else "refined" if matched_source in {"refined_grain", "rice_noodles"} else "minimally_processed"
+    )
+    profile = {
+        "primary_carb_source": matched_source,
+        "processing_level": processing_level,
+        "resistant_starch_prep": resistant_starch_prep or "none",
+        "override_inference": False,
+        "notes": None,
+    }
+    return _normalize_glycemic_profile(profile)
+
+
+def resolve_glycemic_profile(
+    source: Recipe | dict[str, Any] | None = None,
+    *,
+    explicit_profile: dict[str, Any] | None = None,
+    ingredients: list[Any] | None = None,
+    carb_type: list[str] | None = None,
+    resistant_starch_prep: str | None = None,
+) -> dict[str, Any] | None:
+    profile = _normalize_glycemic_profile(explicit_profile)
+    if profile:
+        return profile
+
+    if isinstance(source, dict):
+        profile = _normalize_glycemic_profile(source.get("glycemic_profile"))
+        if profile:
+            return profile
+        if source.get("nutrition_info") and isinstance(source.get("nutrition_info"), dict):
+            nested = _normalize_glycemic_profile((source.get("nutrition_info") or {}).get("glycemic_profile"))
+            if nested:
+                return nested
+        ingredients = ingredients if ingredients is not None else source.get("ingredients")
+        carb_type = carb_type if carb_type is not None else source.get("carb_type")
+        resistant_starch_prep = resistant_starch_prep or str((source.get("glycemic_profile") or {}).get("resistant_starch_prep", "") or "")
+    elif source is not None:
+        profile = _normalize_glycemic_profile(getattr(source, "glycemic_profile", None))
+        if profile:
+            return profile
+        nutrition_info = getattr(source, "nutrition_info", None) or {}
+        nested = _normalize_glycemic_profile(nutrition_info.get("glycemic_profile")) if isinstance(nutrition_info, dict) else None
+        if nested:
+            return nested
+        ingredients = ingredients if ingredients is not None else getattr(source, "ingredients", None)
+        carb_type = carb_type if carb_type is not None else getattr(source, "carb_type", None)
+
+    return infer_glycemic_profile(
+        ingredients=ingredients,
+        carb_type=carb_type,
+        resistant_starch_prep=resistant_starch_prep or "none",
+    )
+
+
+def calc_ingredient_gis_adjustment(
+    glycemic_profile: dict[str, Any] | None,
+    curve: str = "general",
+) -> tuple[float, list[str]]:
+    profile = _normalize_glycemic_profile(glycemic_profile)
+    if not profile:
+        return 0.0, []
+
+    base_bonus = GLYCEMIC_PRIMARY_SOURCE_BONUS.get(profile["primary_carb_source"], 0.0)
+    processing_bonus = GLYCEMIC_PROCESSING_BONUS.get(profile["processing_level"], 0.0)
+    resistant_bonus = GLYCEMIC_RESISTANT_STARCH_BONUS.get(profile["resistant_starch_prep"], 0.0)
+    scaled = (base_bonus + processing_bonus + resistant_bonus) * GLYCEMIC_CURVE_SCALING.get(curve, 1.0)
+    adjustment = min(GLYCEMIC_ADJUSTMENT_CAP, round(max(0.0, scaled), 1))
+    if adjustment <= 0:
+        return 0.0, []
+
+    reasons = [GLYCEMIC_SOURCE_REASONS.get(profile["primary_carb_source"], "whole-food starch source")]
+    if profile["resistant_starch_prep"] in {"cooled", "cooled_reheated"}:
+        reasons.append("cooled starch resistant starch effect")
+    return adjustment, reasons
+
+
+def build_glycemic_nutrition_input(
+    nutrition: dict[str, Any] | None,
+    *,
+    source: Recipe | dict[str, Any] | None = None,
+    glycemic_profile: dict[str, Any] | None = None,
+    ingredients: list[Any] | None = None,
+    carb_type: list[str] | None = None,
+    resistant_starch_prep: str | None = None,
+) -> dict[str, Any]:
+    enriched = dict(nutrition or {})
+    resolved = resolve_glycemic_profile(
+        source,
+        explicit_profile=glycemic_profile,
+        ingredients=ingredients,
+        carb_type=carb_type,
+        resistant_starch_prep=resistant_starch_prep,
+    )
+    if resolved:
+        enriched["glycemic_profile"] = resolved
+    if ingredients is not None:
+        enriched["ingredients"] = ingredients
+    elif "ingredients" not in enriched and source is not None:
+        extracted_ingredients = _extract_recipe_ingredient_names(source)
+        if extracted_ingredients:
+            enriched["ingredients"] = extracted_ingredients
+    if carb_type is not None:
+        enriched["carb_type"] = carb_type
+    elif "carb_type" not in enriched and source is not None:
+        value = source.get("carb_type") if isinstance(source, dict) else getattr(source, "carb_type", None)
+        if value:
+            enriched["carb_type"] = value
+    return enriched
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -517,6 +900,45 @@ def calc_ism(profile: MetabolicProfileInput) -> float:
     return 1.20
 
 
+def calc_carb_curve(profile: MetabolicProfileInput) -> str:
+    """Choose which GIS curve to use for a profile."""
+    if profile.type_2_diabetes or profile.insulin_resistant:
+        return "strict"
+    if profile.prediabetes or profile.goal == Goal.METABOLIC_RESET:
+        return "standard"
+    return "general"
+
+
+def calc_score_weights(profile: MetabolicProfileInput) -> ScoreWeights:
+    """Profile-aware MES weights.
+
+    General users get a lower GIS share so healthy mixed meals score more intuitively.
+    Higher-risk profiles preserve a stricter carb-sensitive weighting.
+    """
+    curve = calc_carb_curve(profile)
+    if curve == "strict":
+        weights = ScoreWeights(gis=0.36, protein=0.28, fiber=0.22, fat=0.14)
+    elif curve == "standard":
+        weights = ScoreWeights(gis=0.30, protein=0.31, fiber=0.22, fat=0.17)
+    else:
+        weights = ScoreWeights(
+            gis=0.24 if profile.activity_level != ActivityLevel.ATHLETIC else 0.22,
+            protein=0.34 if profile.activity_level != ActivityLevel.ATHLETIC else 0.35,
+            fiber=0.24,
+            fat=0.18,
+        )
+
+    if profile.goal == Goal.MUSCLE_GAIN:
+        weights = ScoreWeights(
+            gis=max(0.18, weights.gis - 0.02),
+            protein=weights.protein + 0.03,
+            fiber=weights.fiber,
+            fat=max(0.14, weights.fat - 0.01),
+        )
+
+    return weights.normalized()
+
+
 def calc_tier_thresholds(profile: MetabolicProfileInput) -> dict[str, int]:
     """Personalized tier thresholds based on metabolic fitness.
 
@@ -525,11 +947,11 @@ def calc_tier_thresholds(profile: MetabolicProfileInput) -> dict[str, int]:
     base = dict(BASE_TIER_THRESHOLDS)
 
     if profile.type_2_diabetes:
-        shift = 10
-    elif profile.insulin_resistant:
         shift = 8
+    elif profile.insulin_resistant:
+        shift = 6
     elif profile.prediabetes:
-        shift = 5
+        shift = 4
     elif (
         profile.body_fat_pct is not None
         and (
@@ -537,7 +959,7 @@ def calc_tier_thresholds(profile: MetabolicProfileInput) -> dict[str, int]:
             or (profile.sex == "female" and profile.body_fat_pct > 33)
         )
     ):
-        shift = 4
+        shift = 3
     elif (
         profile.activity_level == ActivityLevel.ATHLETIC
         and profile.body_fat_pct is not None
@@ -546,19 +968,19 @@ def calc_tier_thresholds(profile: MetabolicProfileInput) -> dict[str, int]:
             or (profile.sex == "female" and profile.body_fat_pct < 22)
         )
     ):
-        shift = -8
-    elif profile.activity_level == ActivityLevel.ACTIVE:
         shift = -4
+    elif profile.activity_level == ActivityLevel.ACTIVE:
+        shift = -2
     elif profile.activity_level == ActivityLevel.SEDENTARY:
-        shift = 2
+        shift = 1
     else:
         shift = 0
 
     return {
-        "optimal": min(95, max(75, base["optimal"] + shift)),
-        "good": min(82, max(60, base["good"] + shift)),
-        "moderate": min(68, max(45, base["moderate"] + shift)),
-        "low": min(52, max(30, base["low"] + shift)),
+        "optimal": min(92, max(76, base["optimal"] + shift)),
+        "good": min(78, max(58, base["good"] + shift)),
+        "moderate": min(62, max(42, base["moderate"] + shift)),
+        "low": min(48, max(28, base["low"] + shift)),
     }
 
 
@@ -577,18 +999,8 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
         calorie_target_kcal = min(calorie_target_kcal, round(tdee, 1))
     ism = calc_ism(profile)
 
-    # Adjust GIS weight via ISM, cap at 0.50
-    gis_weight = min(0.50, BASE_WEIGHT_GIS * ism)
-    protein_weight = BASE_WEIGHT_PROTEIN + (0.05 if profile.goal == Goal.MUSCLE_GAIN else 0)
-    fiber_weight = BASE_WEIGHT_FIBER
-    fat_weight = BASE_WEIGHT_FAT
-
-    weights = ScoreWeights(
-        gis=gis_weight,
-        protein=protein_weight,
-        fiber=fiber_weight,
-        fat=fat_weight,
-    ).normalized()
+    weights = calc_score_weights(profile)
+    carb_curve = calc_carb_curve(profile)
 
     tier_thresholds = calc_tier_thresholds(profile)
 
@@ -601,6 +1013,7 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
         fat_g=fat_g,
         weights=weights,
         ism=ism,
+        carb_curve=carb_curve,
         tier_thresholds=tier_thresholds,
     )
 
@@ -677,6 +1090,12 @@ def _normalize_budget(
         stored_tiers = getattr(budget, "tier_thresholds_json", None)
     tier_thresholds = stored_tiers if stored_tiers else dict(BASE_TIER_THRESHOLDS)
 
+    carb_curve = "general"
+    if ism >= 1.2 or carb_ceiling_g <= 90:
+        carb_curve = "strict"
+    elif ism > 1.0:
+        carb_curve = "standard"
+
     return ComputedBudget(
         tdee=tdee,
         calorie_target_kcal=calorie_target_kcal,
@@ -686,6 +1105,7 @@ def _normalize_budget(
         fat_g=fat_g,
         weights=weights,
         ism=ism,
+        carb_curve=carb_curve,
         tier_thresholds=tier_thresholds,
     )
 
@@ -803,8 +1223,8 @@ def _extract_nutrition(nutrition: dict[str, Any]) -> tuple[float, float, float, 
     return protein_g, fiber_g, carbs_g, fat_g
 
 
-def _combine_nutrition(a: dict[str, Any] | None, b: dict[str, Any] | None) -> dict[str, float]:
-    combined: dict[str, float] = {}
+def _combine_nutrition(a: dict[str, Any] | None, b: dict[str, Any] | None) -> dict[str, Any]:
+    combined: dict[str, Any] = {}
     for key in (
         "protein",
         "protein_g",
@@ -819,6 +1239,15 @@ def _combine_nutrition(a: dict[str, Any] | None, b: dict[str, Any] | None) -> di
         "fat_g",
     ):
         combined[key] = float((a or {}).get(key, 0) or 0) + float((b or {}).get(key, 0) or 0)
+    combined["glycemic_profile"] = (
+        resolve_glycemic_profile(a)
+        or resolve_glycemic_profile(b)
+    )
+    combined["ingredients"] = _coerce_string_list((a or {}).get("ingredients")) + _coerce_string_list((b or {}).get("ingredients"))
+    carb_a = (a or {}).get("carb_type")
+    carb_b = (b or {}).get("carb_type")
+    if carb_a or carb_b:
+        combined["carb_type"] = _coerce_string_list(carb_a) + _coerce_string_list(carb_b)
     return combined
 
 
@@ -866,6 +1295,8 @@ def _score_to_result_dict(
     fat_g: float,
     weights: ScoreWeights,
     thresholds: dict[str, int] | None,
+    ingredient_gis_adjustment: float = 0.0,
+    ingredient_gis_reasons: list[str] | None = None,
 ) -> dict[str, Any]:
     tier = score_to_tier(raw_mes, thresholds)
     net_carbs_g = max(0.0, carbs_g - fiber_g)
@@ -896,12 +1327,16 @@ def _score_to_result_dict(
         },
         "net_carbs_g": round(net_carbs_g, 1),
         "fat_g": round(fat_g, 1),
+        "ingredient_gis_adjustment": round(float(ingredient_gis_adjustment or 0), 1),
+        "ingredient_gis_reasons": list(ingredient_gis_reasons or []),
     }
 
 
-def compute_meal_mes(
+def _compute_meal_mes_result(
     nutrition: dict[str, Any],
     budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+    *,
+    apply_ingredient_adjustment: bool = True,
 ) -> dict[str, Any]:
     """Score a single meal against a metabolic budget.
 
@@ -909,20 +1344,41 @@ def compute_meal_mes(
     """
     b = _normalize_budget(budget)
     protein_g, fiber_g, carbs_g, fat_g = _extract_nutrition(nutrition)
+    calories = float(nutrition.get("calories", nutrition.get("calories_kcal", 0)) or 0)
 
     # Per-meal targets
     protein_target = b.protein_g / MEALS_PER_DAY
     net_carbs_g = max(0.0, carbs_g - fiber_g)
 
     # Sub-scores
-    gis = calc_gis(net_carbs_g)
+    carb_curve = getattr(b, "carb_curve", "general")
+    base_gis = calc_gis(net_carbs_g, carb_curve)
+    glycemic_profile = resolve_glycemic_profile(nutrition)
+    ingredient_gis_adjustment, ingredient_gis_reasons = (0.0, [])
+    if apply_ingredient_adjustment:
+        ingredient_gis_adjustment, ingredient_gis_reasons = calc_ingredient_gis_adjustment(
+            glycemic_profile,
+            carb_curve,
+        )
+    gis = min(100.0, base_gis + ingredient_gis_adjustment)
     pas = calc_pas(protein_g, protein_target)
     fs = calc_fs(fiber_g)
     fas = calc_fas(fat_g)
+    stability_bonus = calc_metabolic_stability_bonus(
+        protein_g=protein_g,
+        fiber_g=fiber_g,
+        carbs_g=carbs_g,
+        fat_g=fat_g,
+        calories=calories,
+        budget=b,
+    )
 
     # Weighted composite
     w = b.weights
-    raw_mes = round(w.gis * gis + w.protein * pas + w.fiber * fs + w.fat * fas, 1)
+    raw_mes = round(
+        w.gis * gis + w.protein * pas + w.fiber * fs + w.fat * fas + stability_bonus,
+        1,
+    )
 
     return _score_to_result_dict(
         raw_mes=raw_mes,
@@ -936,7 +1392,16 @@ def compute_meal_mes(
         fat_g=fat_g,
         weights=w,
         thresholds=b.tier_thresholds,
+        ingredient_gis_adjustment=ingredient_gis_adjustment,
+        ingredient_gis_reasons=ingredient_gis_reasons,
     )
+
+
+def compute_meal_mes(
+    nutrition: dict[str, Any],
+    budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+) -> dict[str, Any]:
+    return _compute_meal_mes_result(nutrition, budget, apply_ingredient_adjustment=True)
 
 
 def compute_pairing_synergy(
@@ -998,7 +1463,14 @@ def compute_meal_mes_with_pairing(
     budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
     pairing_nutrition: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    combined = _combine_nutrition(base_meal, pairing_nutrition if pairing_nutrition is not None else getattr(pairing_recipe, "nutrition_info", None) if pairing_recipe is not None and not isinstance(pairing_recipe, dict) else (pairing_recipe or {}).get("nutrition_info"))
+    combined = _combine_nutrition(
+        base_meal,
+        pairing_nutrition
+        if pairing_nutrition is not None
+        else getattr(pairing_recipe, "nutrition_info", None)
+        if pairing_recipe is not None and not isinstance(pairing_recipe, dict)
+        else (pairing_recipe or {}).get("nutrition_info"),
+    )
     macro_result = compute_meal_mes(combined, budget)
     synergy = compute_pairing_synergy(pairing_recipe, base_meal=base_meal, pairing_nutrition=pairing_nutrition)
     if not synergy["pairing_applied"]:
@@ -1014,10 +1486,19 @@ def compute_meal_mes_with_pairing(
 
     b = _normalize_budget(budget)
     protein_g, fiber_g, carbs_g, fat_g = _extract_nutrition(combined)
+    calories = float(combined.get("calories", combined.get("calories_kcal", 0)) or 0)
     protein_target = b.protein_g / MEALS_PER_DAY
     pas = calc_pas(protein_g, protein_target)
     fs = calc_fs(fiber_g)
     fas = calc_fas(fat_g)
+    stability_bonus = calc_metabolic_stability_bonus(
+        protein_g=protein_g,
+        fiber_g=fiber_g,
+        carbs_g=carbs_g,
+        fat_g=fat_g,
+        calories=calories,
+        budget=b,
+    )
     base_gis = float((macro_result.get("sub_scores") or {}).get("gis", 0) or 0)
     adjusted_gis = min(100.0, base_gis + synergy["gis_bonus"])
     raw_mes = round(
@@ -1025,6 +1506,7 @@ def compute_meal_mes_with_pairing(
         + b.weights.protein * pas
         + b.weights.fiber * fs
         + b.weights.fat * fas
+        + stability_bonus
         + synergy["synergy_bonus"],
         1,
     )
@@ -1040,6 +1522,8 @@ def compute_meal_mes_with_pairing(
         fat_g=fat_g,
         weights=b.weights,
         thresholds=b.tier_thresholds,
+        ingredient_gis_adjustment=float(macro_result.get("ingredient_gis_adjustment", 0) or 0),
+        ingredient_gis_reasons=list(macro_result.get("ingredient_gis_reasons") or []),
     )
     return {
         "score": adjusted_score,
@@ -1050,6 +1534,54 @@ def compute_meal_mes_with_pairing(
         "pairing_reasons": synergy["reasons"],
         "pairing_recommended_timing": synergy["recommended_timing"],
         "pairing_profile": synergy["profile"],
+    }
+
+
+def compute_ingredient_adjusted_daily_bonus(
+    db: Session,
+    user_id: str,
+    day: date,
+    budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+) -> dict[str, Any]:
+    b = _normalize_budget(budget)
+    logs = (
+        db.query(FoodLog)
+        .filter(FoodLog.user_id == user_id, FoodLog.date == day)
+        .order_by(FoodLog.created_at.asc(), FoodLog.id.asc())
+        .all()
+    )
+
+    total_bonus = 0.0
+    sources: list[dict[str, Any]] = []
+    for log in logs:
+        snap = log.nutrition_snapshot or {}
+        ctx = classify_meal_context(log.title, log.meal_type, snap)
+        if not should_score_meal(ctx):
+            continue
+        base = _compute_meal_mes_result(snap, b, apply_ingredient_adjustment=False)
+        adjusted = _compute_meal_mes_result(snap, b, apply_ingredient_adjustment=True)
+        delta = round(float(adjusted.get("total_score", 0) or 0) - float(base.get("total_score", 0) or 0), 1)
+        if delta <= 0:
+            continue
+        addition = min(delta, max(0.0, DAILY_GLYCEMIC_BONUS_CAP - total_bonus))
+        if addition <= 0:
+            break
+        total_bonus = round(total_bonus + addition, 1)
+        sources.append({
+            "food_log_id": str(log.id),
+            "title": log.title,
+            "meal_context": ctx,
+            "bonus": round(addition, 1),
+            "ingredient_gis_adjustment": round(float(adjusted.get("ingredient_gis_adjustment", 0) or 0), 1),
+            "ingredient_gis_reasons": list(adjusted.get("ingredient_gis_reasons") or []),
+            "glycemic_profile": resolve_glycemic_profile(snap),
+        })
+        if total_bonus >= DAILY_GLYCEMIC_BONUS_CAP:
+            break
+
+    return {
+        "ingredient_gis_daily_bonus": round(total_bonus, 1),
+        "ingredient_gis_sources": sources,
     }
 
 
@@ -1118,7 +1650,7 @@ def compute_daily_mes(
 
     # Sub-scores: normalize GIS/FS/FAS to per-meal equivalents for curve consistency
     net_carbs_per_meal = net_carbs_g / MEALS_PER_DAY
-    gis = calc_gis(net_carbs_per_meal)
+    gis = calc_gis(net_carbs_per_meal, getattr(b, "carb_curve", "general"))
 
     # PAS scored against full daily protein target
     pas = calc_pas(protein_g, b.protein_g)
@@ -1395,7 +1927,7 @@ def get_or_create_streak(db: Session, user_id: str) -> MetabolicStreak:
     streak = db.query(MetabolicStreak).filter(MetabolicStreak.user_id == user_id).first()
     if streak:
         return streak
-    streak = MetabolicStreak(user_id=user_id)
+    streak = MetabolicStreak(user_id=user_id, threshold=float(BASE_TIER_THRESHOLDS["moderate"]))
     db.add(streak)
     db.commit()
     db.refresh(streak)
@@ -1741,6 +2273,11 @@ def upsert_meal_score(
         "sub_scores": result.get("sub_scores"),
         "weights_used": result.get("weights_used"),
         "net_carbs_g": result.get("net_carbs_g"),
+        "fat_g": result.get("fat_g"),
+        "carbs_g": result.get("carbs_g"),
+        "ingredient_gis_adjustment": result.get("ingredient_gis_adjustment"),
+        "ingredient_gis_reasons": result.get("ingredient_gis_reasons") or [],
+        "glycemic_profile": resolve_glycemic_profile(nutrition),
     }
 
     db.commit()
@@ -1779,9 +2316,11 @@ def recompute_daily_score(
 
     totals = aggregate_daily_totals(db, user_id, day)
     result = compute_daily_mes(totals, computed)
+    ingredient_daily = compute_ingredient_adjusted_daily_bonus(db, user_id, day, computed)
     pairing_daily = compute_pairing_adjusted_daily_bonus(db, user_id, day, computed)
+    ingredient_bonus = float(ingredient_daily.get("ingredient_gis_daily_bonus", 0) or 0)
     pairing_bonus = float(pairing_daily.get("pairing_synergy_daily_bonus", 0) or 0)
-    adjusted_total = min(100.0, round(float(result.get("total_score", 0) or 0) + pairing_bonus, 1))
+    adjusted_total = min(100.0, round(float(result.get("total_score", 0) or 0) + ingredient_bonus + pairing_bonus, 1))
     adjusted_tier = score_to_tier(adjusted_total, computed.tier_thresholds)
 
     score = (
@@ -1828,6 +2367,8 @@ def recompute_daily_score(
         "net_carbs_g": result.get("net_carbs_g"),
         "fat_g": result.get("fat_g"),
         "macro_only_total_score": result.get("total_score"),
+        "ingredient_gis_daily_bonus": ingredient_bonus,
+        "ingredient_gis_sources": ingredient_daily.get("ingredient_gis_sources") or [],
         "pairing_synergy_daily_bonus": pairing_bonus,
         "pairing_synergy_sources": pairing_daily.get("pairing_synergy_sources") or [],
     }

@@ -59,6 +59,7 @@ def run_migrations_online() -> None:
         context.configure(connection=connection, target_metadata=target_metadata, render_item=render_item)
         with context.begin_transaction():
             context.run_migrations()
+        _normalize_alembic_version(connection)
 
 
 def _bootstrap_existing_schema(connection) -> None:
@@ -80,6 +81,32 @@ def _bootstrap_existing_schema(connection) -> None:
             text("INSERT INTO alembic_version (version_num) VALUES (:version_num) ON CONFLICT (version_num) DO NOTHING"),
             {"version_num": head},
         )
+    connection.commit()
+
+
+def _normalize_alembic_version(connection) -> None:
+    inspector = inspect(connection)
+    if "alembic_version" not in set(inspector.get_table_names()):
+        return
+
+    script = ScriptDirectory.from_config(config)
+    heads = script.get_heads()
+    if len(heads) != 1:
+        return
+
+    version_rows = connection.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num")).fetchall()
+    current_versions = [row[0] for row in version_rows]
+    if current_versions == heads:
+        return
+
+    # Some legacy databases were stamped with multiple branch heads before those
+    # branches were merged. Normalize them to the single repository head after a
+    # successful migration run so later deploys don't keep replaying history.
+    connection.execute(text("DELETE FROM alembic_version"))
+    connection.execute(
+        text("INSERT INTO alembic_version (version_num) VALUES (:version_num)"),
+        {"version_num": heads[0]},
+    )
     connection.commit()
 
 
