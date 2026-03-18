@@ -202,23 +202,37 @@ export function EnergyHeroCard({
           </View>
 
           <View style={styles.statsCol}>
-            <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
-              <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
-                {hasData ? tier.label : 'Ready to fuel'}
-              </Text>
+            {/* ── Score rows: Fuel + MES ── */}
+            <View style={styles.scoreRows}>
+              <View style={styles.scoreRow}>
+                <View style={[styles.scoreIconWrap, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
+                  <Ionicons name="leaf" size={11} color={hasData ? tier.color : textTertiary} />
+                </View>
+                <Text style={[styles.scoreNumber, { color: hasData ? tier.color : textTertiary }]}>
+                  {hasData ? fuelScore : '—'}
+                </Text>
+                <Text style={[styles.scoreTier, { color: hasData ? (isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary) : textTertiary }]}>
+                  {hasData ? tier.label : 'Ready to fuel'}
+                </Text>
+              </View>
+              {hasData && (mesScore ?? 0) > 0 && (
+                <View style={styles.scoreRow}>
+                  <View style={[styles.scoreIconWrap, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
+                    <Ionicons name="flash" size={11} color={mesTierColor ?? '#8B5CF6'} />
+                  </View>
+                  <Text style={[styles.scoreNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
+                    {mesScore}
+                  </Text>
+                  <Text style={[styles.scoreTier, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
+                    MES
+                  </Text>
+                </View>
+              )}
             </View>
             <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={2}>
               {tagline.text}
             </Text>
             <View style={styles.streakRow}>
-              {hasData && (mesScore ?? 0) > 0 && (
-                <View style={[styles.mesPill, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
-                  <Ionicons name="flash" size={10} color={mesTierColor ?? '#8B5CF6'} />
-                  <Text style={[styles.mesPillText, { color: mesTierColor ?? '#8B5CF6' }]}>
-                    {mesScore} MES
-                  </Text>
-                </View>
-              )}
               {metabolicStreakDays > 0 && (
                 <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
               )}
@@ -320,17 +334,32 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.xs + 2,
   },
-  tierPill: {
-    alignSelf: 'flex-start',
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+  scoreRows: {
+    gap: 5,
   },
-  tierPillText: {
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scoreIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'] as any,
+    letterSpacing: -0.5,
+    lineHeight: 22,
+  },
+  scoreTier: {
     fontSize: FontSize.xs,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
+    fontWeight: '600',
+    flexShrink: 1,
   },
   tagline: {
     fontSize: FontSize.sm,
@@ -359,18 +388,6 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 11,
     fontWeight: '500',
-  },
-  mesPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  mesPillText: {
-    fontSize: 10,
-    fontWeight: '700',
   },
   pulseRow: {
     flexDirection: 'row',

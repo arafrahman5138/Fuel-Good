@@ -144,7 +144,7 @@ export default function HomeScreen() {
   const currentPlan = useMealPlanStore((s) => s.currentPlan);
   const loadCurrentPlan = useMealPlanStore((s) => s.loadCurrentPlan);
   const dailyMES = useMetabolicBudgetStore((s) => s.dailyScore);
-
+  const scoreHistory = useMetabolicBudgetStore((s) => s.scoreHistory);
 
   const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
   const mealScores = useMetabolicBudgetStore((s) => s.mealScores);
@@ -450,9 +450,17 @@ export default function HomeScreen() {
   const fatTarget = Math.round(dailySummary?.comparison?.fat?.target ?? 0);
   const fiberConsumed = Math.round(dailySummary?.comparison?.fiber?.consumed ?? 0);
   const fiberTarget = Math.round(dailySummary?.comparison?.fiber?.target ?? 0);
-  const mesDisplayScore = Math.round(dailyMES?.score?.display_score ?? dailyMES?.score?.total_score ?? 0);
-  const mesTierKey = dailyMES?.score?.display_tier ?? dailyMES?.score?.tier ?? 'critical';
-  const mesTierColor = getTierConfig(mesTierKey).color;
+  // Daily MES — for Today's Fuel card
+  const dailyMesScore = Math.round(dailyMES?.score?.display_score ?? dailyMES?.score?.total_score ?? 0);
+  const dailyMesTierKey = dailyMES?.score?.display_tier ?? dailyMES?.score?.tier ?? 'critical';
+  const dailyMesTierColor = getTierConfig(dailyMesTierKey).color;
+  // Weekly MES — average of last 7 days from scoreHistory
+  const last7 = scoreHistory.slice(-7).filter((e) => (e.display_score ?? e.total_score ?? 0) > 0);
+  const weeklyMesScore = last7.length > 0
+    ? Math.round(last7.reduce((sum, e) => sum + (e.display_score ?? e.total_score ?? 0), 0) / last7.length)
+    : 0;
+  const weeklyMesTierKey = weeklyMesScore >= 85 ? 'elite' : weeklyMesScore >= 70 ? 'strong' : weeklyMesScore >= 55 ? 'moderate' : weeklyMesScore >= 40 ? 'mixed' : 'critical';
+  const weeklyMesTierColor = getTierConfig(weeklyMesTierKey).color;
   // Homepage ring shows weekly avg — big-picture view; today's detail is in Chrono
   const fuelScoreValue = Math.round(fuelWeekly?.avg_fuel_score ?? fuelDaily?.avg_fuel_score ?? 0);
   const isDarkTheme = theme.background === '#0A0A0F';
@@ -792,8 +800,8 @@ export default function HomeScreen() {
         {/* ── Energy Hero ─────────────────────────────────────────────── */}
         <EnergyHeroCard
           fuelScore={fuelScoreValue}
-          mesScore={mesDisplayScore}
-          mesTierColor={mesTierColor}
+          mesScore={weeklyMesScore}
+          mesTierColor={weeklyMesTierColor}
           energyPrediction={dailyMES?.mea?.energy_prediction ?? null}
           fuelStreakWeeks={fuelStreak?.current_streak ?? 0}
           metabolicStreakDays={metabolicStreak?.current_streak ?? 0}
@@ -827,6 +835,8 @@ export default function HomeScreen() {
           mealScores={mealScores}
           fuelTarget={fuelSettings?.fuel_target}
           todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
+          todayMesScore={dailyMesScore}
+          todayMesTierColor={dailyMesTierColor}
           calories={{ consumed: calorieConsumed, target: calorieTarget }}
           protein={{ consumed: proteinConsumed, target: proteinTarget }}
           carbs={{ consumed: carbsConsumed, target: carbsTarget }}

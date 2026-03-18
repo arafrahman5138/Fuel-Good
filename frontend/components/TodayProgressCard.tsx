@@ -68,6 +68,8 @@ interface TodayProgressCardProps {
   mealScores: MealMES[];
   fuelTarget?: number;
   todayFuelScore?: number;
+  todayMesScore?: number;
+  todayMesTierColor?: string;
   calories: NutrientValue;
   protein: NutrientValue;
   carbs: NutrientValue;
@@ -115,6 +117,8 @@ export function TodayProgressCard({
   mealScores,
   fuelTarget,
   todayFuelScore,
+  todayMesScore,
+  todayMesTierColor,
   calories,
   protein,
   carbs,
@@ -165,11 +169,17 @@ export function TodayProgressCard({
         </View>
         <View style={styles.headerRight}>
           {hasFuel && tier && (
-            <View style={[styles.fuelPill, { backgroundColor: tier.color + '18' }]}>
-              <Ionicons name="leaf" size={11} color={tier.color} style={{ marginRight: 3 }} />
-              <Text style={[styles.fuelPillText, { color: tier.color }]}>
-                {todayFuelScore} fuel
-              </Text>
+            <View style={styles.scoreChips}>
+              <View style={[styles.scoreChip, { backgroundColor: tier.color + '15' }]}>
+                <Ionicons name="leaf" size={11} color={tier.color} />
+                <Text style={[styles.scoreChipText, { color: tier.color }]}>{todayFuelScore}</Text>
+              </View>
+              {(todayMesScore ?? 0) > 0 && (
+                <View style={[styles.scoreChip, { backgroundColor: (todayMesTierColor ?? '#8B5CF6') + '15' }]}>
+                  <Ionicons name="flash" size={11} color={todayMesTierColor ?? '#8B5CF6'} />
+                  <Text style={[styles.scoreChipText, { color: todayMesTierColor ?? '#8B5CF6' }]}>{todayMesScore}</Text>
+                </View>
+              )}
             </View>
           )}
           <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
@@ -420,16 +430,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  fuelPill: {
+  scoreChips: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  scoreChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: BorderRadius.full,
   },
-  fuelPillText: {
-    fontSize: 11,
+  scoreChipText: {
+    fontSize: 13,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'] as any,
   },
 
   // Macro rings
