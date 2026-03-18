@@ -24,8 +24,7 @@ import { MetabolicStreakBadge } from '../../components/MetabolicStreakBadge';
 import { XPToast } from '../../components/XPToast';
 
 import { EnergyHeroCard } from '../../components/EnergyHeroCard';
-import { FlexTicketsCard } from '../../components/FlexTicketsCard';
-import { SmartFlexCard } from '../../components/SmartFlexCard';
+import { FlexInsightsCard } from '../../components/FlexInsightsCard';
 import { TodayProgressCard } from '../../components/TodayProgressCard';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
@@ -145,6 +144,7 @@ export default function HomeScreen() {
 
   const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
   const mealScores = useMetabolicBudgetStore((s) => s.mealScores);
+  const remainingBudget = useMetabolicBudgetStore((s) => s.remainingBudget);
   const fetchMetabolic = useMetabolicBudgetStore((s) => s.fetchAll);
 
   const fuelDaily = useFuelStore((s) => s.daily);
@@ -160,6 +160,8 @@ export default function HomeScreen() {
   const fuelSettings = useFuelStore((s) => s.settings);
   const flexSuggestions = useFuelStore((s) => s.flexSuggestions);
   const fetchFlexSuggestions = useFuelStore((s) => s.fetchFlexSuggestions);
+  const healthPulse = useFuelStore((s) => s.healthPulse);
+  const fetchHealthPulse = useFuelStore((s) => s.fetchHealthPulse);
   const heroEntrance = useEntranceAnimation(0);
   const actionsEntrance = useEntranceAnimation(160);
   const [selectedDayKey, setSelectedDayKey] = useState<string>(() => toDateKey(new Date()));
@@ -267,9 +269,10 @@ export default function HomeScreen() {
       fetchFuelDaily(selectedDayKey),
       fetchFuelWeekly(selectedDayKey),
       fetchFlexSuggestions(selectedDayKey),
+      fetchHealthPulse(selectedDayKey),
     ]);
     setRefreshing(false);
-  }, [selectedDayKey, fetchMetabolic, fetchQuests, fetchStats, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions]);
+  }, [selectedDayKey, fetchMetabolic, fetchQuests, fetchStats, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
 
   useEffect(() => {
     fetchQuests();
@@ -281,6 +284,7 @@ export default function HomeScreen() {
     fetchFuelDaily(selectedDayKey);
     fetchFuelWeekly(selectedDayKey);
     fetchFlexSuggestions(selectedDayKey);
+    fetchHealthPulse(selectedDayKey);
   }, []);
 
   useEffect(() => {
@@ -289,7 +293,8 @@ export default function HomeScreen() {
     fetchFuelDaily(selectedDayKey);
     fetchFuelWeekly(selectedDayKey);
     fetchFlexSuggestions(selectedDayKey);
-  }, [selectedDayKey, fetchMetabolic, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions]);
+    fetchHealthPulse(selectedDayKey);
+  }, [selectedDayKey, fetchMetabolic, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
 
   useFocusEffect(
     useCallback(() => {
@@ -792,6 +797,13 @@ export default function HomeScreen() {
           weeklyTargetMet={weeklyTargetMet}
           weeklyDaysLogged={weeklyDaysLogged}
           mealCount={fuelDaily?.meal_count ?? 0}
+          proteinRemaining={remainingBudget?.protein_remaining_g}
+          fiberRemaining={remainingBudget?.fiber_remaining_g}
+          healthPulse={healthPulse ? {
+            fuel: healthPulse.fuel,
+            metabolic: healthPulse.metabolic,
+            nutrition: healthPulse.nutrition,
+          } : undefined}
         />
 
         {/* ── Today's Progress ────────────────────────────────────────── */}
@@ -956,19 +968,12 @@ export default function HomeScreen() {
           </Card>
         </View>
 
-        {/* ── Flex Tickets ──────────────────────────────────────────────── */}
-        <FlexTicketsCard
+        {/* ── Flex Insights (tickets + coach) ─────────────────────────── */}
+        <FlexInsightsCard
           flexMealsRemaining={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
+          coachContext={flexSuggestions?.context}
+          coachSuggestions={flexSuggestions?.suggestions?.length ? flexSuggestions.suggestions : undefined}
         />
-
-        {/* ── Smart Flex Coach ────────────────────────────────────────── */}
-        {flexSuggestions && flexSuggestions.suggestions.length > 0 && (
-          <SmartFlexCard
-            context={flexSuggestions.context}
-            flexMealsRemaining={flexSuggestions.flex_meals_remaining}
-            suggestions={flexSuggestions.suggestions}
-          />
-        )}
 
         {/* ── Daily Quests ──────────────────────────────────────────────── */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Today's Quests</Text>
@@ -1066,57 +1071,35 @@ export default function HomeScreen() {
           })}
         </Card>
 
-        {/* ── Recommended For You ─────────────────────────────────────── */}
-        {recommended.length > 0 && (
-          <View style={{ marginBottom: Spacing.xl }}>
-            <View style={s.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Recommended For You</Text>
-              <TouchableOpacity
-                onPress={() => router.push({ pathname: '/(tabs)/meals', params: { tab: 'browse' } } as any)}
-                hitSlop={12}
-              >
-                <Text style={[s.seeAll, { color: theme.primary }]}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={recommended}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={renderRecipeCard}
-              contentContainerStyle={{ paddingTop: Spacing.md }}
-            />
-          </View>
-        )}
+        {/* ── Quick Actions (with Healthify CTA) ─────────────────────── */}
+        <Animated.View style={[actionsEntrance.style, { marginTop: Spacing.md }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
 
-        {/* ── Healthify CTA ──────────────────────────────────────────── */}
-        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/chat')}>
+        {/* Healthify CTA — full-width hero tile */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            trackBehaviorEvent('home_quick_action_used', { label: 'Healthify', route: '/(tabs)/chat' });
+            router.push('/(tabs)/chat');
+          }}
+          style={{ marginBottom: Spacing.sm }}
+        >
           <LinearGradient
             colors={['#16A34A', '#0D9488', '#0E7490'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
+            style={styles.healthifyTile}
           >
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(255,255,255,0.06)', borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl }} />
-            <View style={styles.heroContent}>
-              <Text style={styles.heroTitle}>Transform Your{'\n'}Favorite Foods</Text>
-              <Text style={styles.heroSubtitle}>
-                Tell our AI what you crave and get a wholesome, delicious version instantly.
+            <View style={styles.healthifyContent}>
+              <Text style={styles.healthifyTitle}>Healthify a Craving</Text>
+              <Text style={styles.healthifySubtitle}>
+                Tell our AI what you crave — get a wholesome version instantly
               </Text>
-              <View style={styles.heroCta}>
-                <Text style={styles.heroCtaText}>Try Healthify</Text>
-                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-              </View>
             </View>
-            <View style={styles.heroIconContainer}>
-              <Ionicons name="sparkles" size={64} color="rgba(255,255,255,0.2)" />
-            </View>
+            <Ionicons name="sparkles" size={36} color="rgba(255,255,255,0.25)" />
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* ── Quick Actions ──────────────────────────────────────────── */}
-        <Animated.View style={[actionsEntrance.style, { marginTop: Spacing.xl }]}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {quickActions.map((action, index) => (
             <TouchableOpacity
@@ -1169,6 +1152,29 @@ export default function HomeScreen() {
           ))}
         </View>
         </Animated.View>
+
+        {/* ── Recommended For You ─────────────────────────────────────── */}
+        {recommended.length > 0 && (
+          <View style={{ marginBottom: Spacing.xl, marginTop: Spacing.md }}>
+            <View style={s.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Recommended For You</Text>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/(tabs)/meals', params: { tab: 'browse' } } as any)}
+                hitSlop={12}
+              >
+                <Text style={[s.seeAll, { color: theme.primary }]}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={recommended}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderRecipeCard}
+              contentContainerStyle={{ paddingTop: Spacing.md }}
+            />
+          </View>
+        )}
 
         {/* ── Daily Tip ──────────────────────────────────────────────── */}
         <Card style={{ marginTop: Spacing.md, borderLeftWidth: 3, borderLeftColor: theme.accent }}>
@@ -1527,6 +1533,31 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: '700',
     marginBottom: Spacing.md,
+  },
+  healthifyTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    overflow: 'hidden',
+  },
+  healthifyContent: {
+    flex: 1,
+    gap: 3,
+    marginRight: Spacing.md,
+  },
+  healthifyTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  healthifySubtitle: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 16,
   },
   actionsGrid: {
     flexDirection: 'row',

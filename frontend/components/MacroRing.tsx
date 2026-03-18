@@ -1,14 +1,12 @@
 /**
  * MacroRing — Tiny circular progress ring for macro tracking.
- * Uses react-native-svg for reliable arc rendering.
+ * Uses react-native-svg with state-driven strokeDashoffset for reliable rendering.
  * Animates from 0 → progress on mount.
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface MacroRingProps {
   /** Progress 0–1 */
@@ -36,13 +34,22 @@ export function MacroRing({
   const circumference = 2 * Math.PI * radius;
 
   const animValue = useRef(new Animated.Value(0)).current;
+  const [currentProgress, setCurrentProgress] = useState(0);
 
   useEffect(() => {
     if (isReduceMotionEnabled()) {
+      setCurrentProgress(clampedProgress);
       animValue.setValue(clampedProgress);
       return;
     }
+
     animValue.setValue(0);
+    setCurrentProgress(0);
+
+    const listener = animValue.addListener(({ value }) => {
+      setCurrentProgress(value);
+    });
+
     Animated.timing(animValue, {
       toValue: clampedProgress,
       duration: 700,
@@ -50,15 +57,13 @@ export function MacroRing({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
+
+    return () => {
+      animValue.removeListener(listener);
+    };
   }, [clampedProgress]);
 
-  // strokeDashoffset: circumference (0% filled) → 0 (100% filled)
-  const dashOffset = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [circumference, 0],
-    extrapolate: 'clamp',
-  });
-
+  const dashOffset = circumference * (1 - currentProgress);
   const center = size / 2;
 
   return (
@@ -74,7 +79,7 @@ export function MacroRing({
           fill="none"
         />
         {/* Progress arc */}
-        <AnimatedCircle
+        <Circle
           cx={center}
           cy={center}
           r={radius}
@@ -82,7 +87,7 @@ export function MacroRing({
           strokeWidth={sw}
           fill="none"
           strokeLinecap="round"
-          strokeDasharray={circumference}
+          strokeDasharray={`${circumference}`}
           strokeDashoffset={dashOffset}
           rotation={-90}
           origin={`${center}, ${center}`}

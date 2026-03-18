@@ -73,6 +73,26 @@ function getContextTagline(
   return { text: 'Flex day — get back on track with something nourishing', color: '#EF4444' };
 }
 
+// ── Health Pulse dimension ───────────────────────────────────────────────────
+interface HealthDimension {
+  score: number;
+  label: string;
+  tier: string;
+  available: boolean;
+}
+
+interface HealthPulseData {
+  fuel: HealthDimension;
+  metabolic: HealthDimension;
+  nutrition: HealthDimension;
+}
+
+const PULSE_DIMS = [
+  { key: 'fuel' as const, icon: 'leaf' as const, color: '#22C55E' },
+  { key: 'metabolic' as const, icon: 'flash' as const, color: '#8B5CF6' },
+  { key: 'nutrition' as const, icon: 'nutrition' as const, color: '#3B82F6' },
+];
+
 // ── Props ────────────────────────────────────────────────────────────────────
 interface EnergyHeroCardProps {
   fuelScore: number;
@@ -85,6 +105,9 @@ interface EnergyHeroCardProps {
   weeklyTargetMet?: boolean;
   weeklyDaysLogged?: number;
   mealCount: number;
+  proteinRemaining?: number;
+  fiberRemaining?: number;
+  healthPulse?: HealthPulseData;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -99,6 +122,9 @@ export function EnergyHeroCard({
   weeklyTargetMet = false,
   weeklyDaysLogged = 0,
   mealCount,
+  proteinRemaining,
+  fiberRemaining,
+  healthPulse,
 }: EnergyHeroCardProps) {
   const theme = useTheme();
   const systemScheme = useColorScheme();
@@ -174,6 +200,14 @@ export function EnergyHeroCard({
               {tagline.text}
             </Text>
             <View style={styles.streakRow}>
+              {hasData && (mesScore ?? 0) > 0 && (
+                <View style={[styles.mesPill, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
+                  <Ionicons name="flash" size={10} color={mesTierColor ?? '#8B5CF6'} />
+                  <Text style={[styles.mesPillText, { color: mesTierColor ?? '#8B5CF6' }]}>
+                    {mesScore} MES
+                  </Text>
+                </View>
+              )}
               {metabolicStreakDays > 0 && (
                 <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
               )}
@@ -207,7 +241,7 @@ export function EnergyHeroCard({
           </Text>
         </View>
 
-        {/* ── Dynamic CTA ── */}
+        {/* ── Smart CTA ── */}
         {hasData && progressPct < 100 && (
           <View style={[styles.ctaRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.surfaceHighlight + '80' }]}>
             <Ionicons
@@ -218,9 +252,15 @@ export function EnergyHeroCard({
             <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
               {mealCount === 0
                 ? 'Log your first meal to start your streak'
-                : fuelScore >= 75
-                  ? 'Keep it up — you\'re building something great'
-                  : 'One clean meal can change your whole day'}
+                : (proteinRemaining ?? 0) > 20
+                  ? `You need ${Math.round(proteinRemaining!)}g more protein — try a whole-food meal`
+                  : (fiberRemaining ?? 0) > 5
+                    ? `Add ${Math.round(fiberRemaining!)}g fiber — veggies or legumes with your next meal`
+                    : (weeklyDaysLogged ?? 0) < 4
+                      ? `${7 - (weeklyDaysLogged ?? 0)} more days to hit your weekly target`
+                      : fuelScore >= 75
+                        ? 'Keep it up — you\'re building something great'
+                        : 'One clean meal can change your whole day'}
             </Text>
           </View>
         )}
@@ -306,6 +346,46 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 10,
     fontWeight: '500',
+  },
+  mesPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  mesPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  pulseRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  pulseDim: {
+    flex: 1,
+    gap: 3,
+  },
+  pulseLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  pulseLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'] as any,
+  },
+  pulseTrack: {
+    height: 3,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  pulseFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   ctaRow: {
     flexDirection: 'row',
