@@ -1,8 +1,26 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 import { useTheme } from '../hooks/useTheme';
+import { usePressScale } from '../hooks/useAnimations';
+
+function ChipButton({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style: any }) {
+  const press = usePressScale(0.95);
+  return (
+    <Animated.View style={press.animatedStyle}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        onPressIn={press.onPressIn}
+        onPressOut={press.onPressOut}
+        style={style}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 interface ChipOption {
   id: string;
@@ -32,16 +50,22 @@ export function ChipSelector({
   const chips = options.map((option) => {
     const isSelected = selected.includes(option.id);
     return (
-      <TouchableOpacity
+      <ChipButton
         key={option.id}
         onPress={() => onToggle(option.id)}
-        activeOpacity={0.7}
         style={[
           styles.chip,
           {
             backgroundColor: isSelected ? theme.primaryMuted : theme.surfaceElevated,
             borderColor: isSelected ? theme.primary : theme.border,
           },
+          ...(isSelected ? [{
+            shadowColor: theme.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 2,
+          }] : []),
         ]}
       >
         {option.icon && (
@@ -60,7 +84,7 @@ export function ChipSelector({
         >
           {option.label}
         </Text>
-      </TouchableOpacity>
+      </ChipButton>
     );
   });
 

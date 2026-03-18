@@ -35,7 +35,7 @@ export function Card({
   style,
   padding,
   onPress,
-  shadow = 'none',
+  shadow = 'sm',
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;

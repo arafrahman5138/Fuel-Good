@@ -155,6 +155,7 @@ export function EnergyHeroCard({
   // Entrance animation
   const slideAnim = useRef(new Animated.Value(36)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     slideAnim.setValue(36);
@@ -164,6 +165,16 @@ export function EnergyHeroCard({
       Animated.timing(fadeAnim, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progressPct,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+      delay: 400,
+    }).start();
+  }, [progressPct]);
 
   return (
     <Animated.View style={[styles.outerWrap, { transform: [{ translateY: slideAnim }], opacity: fadeAnim }]}>
@@ -222,12 +233,14 @@ export function EnergyHeroCard({
         <View style={styles.progressSection}>
           <View style={[styles.progressTrack, { backgroundColor: dividerColor }]}>
             {hasData && (
-              <LinearGradient
-                colors={[tier.color, tier.color + '88'] as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progressFill, { width: `${progressPct}%` }]}
-              />
+              <Animated.View style={[styles.progressFill, { width: progressAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }]}>
+                <LinearGradient
+                  colors={[tier.color, tier.color + '88'] as any}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
             )}
           </View>
           <Text style={[styles.progressLabel, { color: weeklyTargetMet ? '#22C55E' : textTertiary }]}>
@@ -249,7 +262,7 @@ export function EnergyHeroCard({
               size={14}
               color={tier.color}
             />
-            <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
+            <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.65)' : theme.textSecondary }]}>
               {mealCount === 0
                 ? 'Log your first meal to start your streak'
                 : (proteinRemaining ?? 0) > 20
@@ -335,7 +348,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm + 2,
   },
   progressTrack: {
-    height: 5,
+    height: 6,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -344,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
   },
   mesPill: {

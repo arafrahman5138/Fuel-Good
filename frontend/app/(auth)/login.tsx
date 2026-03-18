@@ -222,7 +222,7 @@ export default function LoginScreen() {
         <View style={styles.heroSection}>
           <View style={Shadows.interactive(isDark)}>
             <LinearGradient
-              colors={['#16A34A', '#0D9488', '#0891B2'] as const}
+              colors={['#22C55E', '#059669', '#0891B2'] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={[styles.heroGradient, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]}
@@ -425,11 +425,13 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     padding: Spacing.md,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: '#EF4444',
   },
   errorText: {
     fontSize: FontSize.sm,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   fieldError: {
     fontSize: FontSize.xs,

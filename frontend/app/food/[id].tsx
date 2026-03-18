@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { Card } from '../../components/GradientCard';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
@@ -46,11 +47,11 @@ interface FoodDetail {
 }
 
 const MACRO_ROWS = [
-  { key: 'calories', label: 'Calories' },
-  { key: 'protein_g', label: 'Protein' },
-  { key: 'carbs_g', label: 'Carbs' },
-  { key: 'fat_g', label: 'Fat' },
-  { key: 'fiber_g', label: 'Fiber' },
+  { key: 'calories', label: 'Calories', color: '#22C55E' },
+  { key: 'protein_g', label: 'Protein', color: '#22C55E' },
+  { key: 'carbs_g', label: 'Carbs', color: '#F59E0B' },
+  { key: 'fat_g', label: 'Fat', color: '#EC4899' },
+  { key: 'fiber_g', label: 'Fiber', color: '#8B5CF6' },
 ];
 
 function formatValue(value: number, key: string) {
@@ -251,6 +252,9 @@ export default function FoodDetailScreen() {
           <View style={styles.macroGrid}>
             {MACRO_ROWS.map((row) => (
               <View key={row.key} style={styles.macroItem}>
+                <View style={[styles.macroDot, { backgroundColor: row.color + '20' }]}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: row.color }} />
+                </View>
                 <Text style={[styles.macroValue, { color: theme.text }]}>{formatValue(Number(displayedNutrition[row.key] || 0), row.key)}</Text>
                 <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>{row.label}</Text>
               </View>
@@ -291,26 +295,32 @@ export default function FoodDetailScreen() {
 
       <View style={[styles.logBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity
-          style={[styles.logBtn, { backgroundColor: logSuccess ? theme.success : theme.primary }]}
           onPress={handleLog}
           disabled={logging || logSuccess}
           activeOpacity={0.8}
         >
-          {logging ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : logSuccess ? (
-            <>
-              <Animated.View style={checkmarkStyle}>
-                <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              </Animated.View>
-              <Text style={styles.logBtnText}>Logged!</Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="add-circle" size={18} color="#fff" />
-              <Text style={styles.logBtnText}>Log to Chronometer</Text>
-            </>
-          )}
+          <LinearGradient
+            colors={logSuccess ? ['#22C55E', '#16A34A'] as const : ['#22C55E', '#059669'] as const}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.logBtn}
+          >
+            {logging ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : logSuccess ? (
+              <>
+                <Animated.View style={checkmarkStyle}>
+                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                </Animated.View>
+                <Text style={styles.logBtnText}>Logged!</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="add-circle" size={18} color="#fff" />
+                <Text style={styles.logBtnText}>Log to Chronometer</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -383,7 +393,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
   },
   macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
-  macroItem: { alignItems: 'center', minWidth: 70 },
+  macroItem: { alignItems: 'center', minWidth: 70, gap: 2 },
+  macroDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
   macroValue: { fontSize: FontSize.xl, fontWeight: '800' },
   macroLabel: { fontSize: FontSize.xs, marginTop: Spacing.xs },
   microRow: {

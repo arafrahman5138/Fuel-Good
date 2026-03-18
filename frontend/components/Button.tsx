@@ -70,7 +70,7 @@ export function Button({
             onPressOut={press.onPressOut}
           >
             <LinearGradient
-              colors={['#16A34A', '#0D9488'] as const}
+              colors={['#22C55E', '#059669'] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={[
@@ -79,7 +79,7 @@ export function Button({
                   paddingVertical: currentSize.paddingVertical,
                   paddingHorizontal: currentSize.paddingHorizontal,
                   borderRadius: size === 'lg' ? BorderRadius.xl : BorderRadius.md,
-                  opacity: isDisabled ? 0.5 : 1,
+                  opacity: isDisabled ? 0.4 : 1,
                 },
               ]}
             >
@@ -136,7 +136,7 @@ export function Button({
             borderWidth: variant === 'outline' ? 1 : 0,
             paddingVertical: currentSize.paddingVertical,
             paddingHorizontal: currentSize.paddingHorizontal,
-            opacity: isDisabled ? 0.5 : 1,
+            opacity: isDisabled ? 0.4 : 1,
           },
           fullWidth && styles.fullWidth,
           style,
@@ -175,5 +175,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });

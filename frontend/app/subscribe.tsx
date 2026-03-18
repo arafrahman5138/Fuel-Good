@@ -247,6 +247,13 @@ export default function SubscribeScreen() {
                     backgroundColor: theme.surfaceElevated,
                     borderColor: product.highlight ? theme.primary : theme.border,
                   },
+                  product.highlight && {
+                    shadowColor: theme.primary,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 16,
+                    elevation: 8,
+                  },
                 ]}
               >
                 <View style={styles.planTopRow}>
@@ -263,9 +270,14 @@ export default function SubscribeScreen() {
                     </Text>
                   </View>
                   {product.badge ? (
-                    <View style={[styles.badge, { backgroundColor: theme.primaryMuted }]}>
-                      <Text style={[styles.badgeText, { color: theme.primary }]}>{product.badge}</Text>
-                    </View>
+                    <LinearGradient
+                      colors={[theme.primary, theme.primary + 'DD'] as any}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.badge}
+                    >
+                      <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>{product.badge}</Text>
+                    </LinearGradient>
                   ) : null}
                 </View>
 

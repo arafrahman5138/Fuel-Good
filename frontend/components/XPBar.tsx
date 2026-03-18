@@ -76,7 +76,7 @@ export function XPBar({ xp, compact = false }: XPBarProps) {
             />
           </Animated.View>
         </View>
-        <Text style={[styles.xpText, { color: theme.textTertiary }]}>
+        <Text style={[styles.xpText, { color: theme.textSecondary }]}>
           {xpInLevel}/{XP_PER_LEVEL}
         </Text>
       </View>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   barBg: {
     flex: 1,
-    height: 6,
+    height: 8,
     borderRadius: BorderRadius.xs,
     overflow: 'hidden',
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   barFill: {
     height: '100%',
-    borderRadius: BorderRadius.xs,
+    borderRadius: BorderRadius.xs + 1,
   },
   barFillLarge: {
     height: '100%',

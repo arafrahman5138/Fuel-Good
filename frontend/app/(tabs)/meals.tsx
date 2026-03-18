@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Animated,
   View,
   Text,
   StyleSheet,
@@ -22,6 +23,7 @@ import { SavedView } from '../../components/MealsTab/SavedView';
 import { GroceryView } from '../../components/MealsTab/GroceryView';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
+import { usePressScale } from '../../hooks/useAnimations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = Spacing.md;
@@ -43,6 +45,22 @@ interface MenuItem {
   accent: string;
   accentSoft: string;
   glow: string;
+}
+
+function MenuCard({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
+  const press = usePressScale();
+  return (
+    <Animated.View style={[press.animatedStyle, style]}>
+      <TouchableOpacity
+        activeOpacity={0.75}
+        onPress={onPress}
+        onPressIn={press.onPressIn}
+        onPressOut={press.onPressOut}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -209,9 +227,8 @@ export default function MealsScreen() {
         {/* Card Grid */}
         <View style={styles.cardGrid}>
           {MENU_ITEMS.map((item) => (
-            <TouchableOpacity
+            <MenuCard
               key={item.id}
-              activeOpacity={0.75}
               onPress={() => setActiveView(item.id)}
               style={[styles.cardOuter, { width: CARD_WIDTH }]}
             >
@@ -265,7 +282,7 @@ export default function MealsScreen() {
                   style={styles.cardArrow}
                 />
               </View>
-            </TouchableOpacity>
+            </MenuCard>
           ))}
         </View>
       </ScrollView>

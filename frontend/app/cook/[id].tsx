@@ -71,6 +71,7 @@ export default function CookModeScreen() {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const stepFadeAnim = useRef(new Animated.Value(1)).current;
 
   // AI assistant state
   const [showAssistant, setShowAssistant] = useState(false);
@@ -125,9 +126,21 @@ export default function CookModeScreen() {
   };
 
   const onStepChange = (newStep: number) => {
-    setCurrentStep(newStep);
-    setAiAnswer('');
-    setShowAssistant(false);
+    // Fade out, swap, fade in
+    Animated.timing(stepFadeAnim, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentStep(newStep);
+      setAiAnswer('');
+      setShowAssistant(false);
+      Animated.timing(stepFadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   const toggleIngredient = (index: number, categoryKey: string, groupIndices: number[]) => {
@@ -142,6 +155,8 @@ export default function CookModeScreen() {
       }
       return next;
     });
+    // Haptic-like visual feedback: no-op if expo-haptics not available
+    try { require('expo-haptics')?.selectionAsync?.(); } catch {}
   };
 
   const toggleCategory = (key: string) => {
@@ -210,10 +225,12 @@ export default function CookModeScreen() {
             <Text style={[styles.stepCounter, { color: theme.textTertiary }]}>
               Step {currentStep + 1} of {recipe.steps.length}
             </Text>
-            <LinearGradient colors={theme.gradient.primary} style={styles.stepCard}>
-              <Text style={styles.stepNumber}>Step {currentStep + 1}</Text>
-              <Text style={styles.stepText}>{recipe.steps[currentStep].replace(/^Step\s*\d+\s*:\s*/i, '')}</Text>
-            </LinearGradient>
+            <Animated.View style={{ opacity: stepFadeAnim, transform: [{ translateY: stepFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }] }}>
+              <LinearGradient colors={theme.gradient.primary} style={styles.stepCard}>
+                <Text style={styles.stepNumber}>Step {currentStep + 1}</Text>
+                <Text style={styles.stepText}>{recipe.steps[currentStep].replace(/^Step\s*\d+\s*:\s*/i, '')}</Text>
+              </LinearGradient>
+            </Animated.View>
 
             {/* AI Help Button */}
             <TouchableOpacity
@@ -402,7 +419,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
   emptyText: { fontSize: FontSize.md },
-  progressBar: { height: 4, overflow: 'hidden' },
+  progressBar: { height: 5, overflow: 'hidden' },
   progressFill: { height: '100%' },
   content: { padding: Spacing.xl, paddingBottom: Spacing.huge },
   topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, gap: Spacing.sm },

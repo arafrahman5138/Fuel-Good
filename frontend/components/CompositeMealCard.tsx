@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MealMESBadge } from './MealMESBadge';
 import { FuelScoreBadge } from './FuelScoreBadge';
 import { useTheme } from '../hooks/useTheme';
-import { isReduceMotionEnabled } from '../hooks/useAnimations';
+import { isReduceMotionEnabled, usePressScale } from '../hooks/useAnimations';
 import { useMetabolicBudgetStore, getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES, CompositeMES, MESScore } from '../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
@@ -260,6 +260,7 @@ export const SingleMealRow = React.memo(function SingleMealRow({
 
 export function CompositeMealCard({ group }: { group: MealGroup }) {
   const theme = useTheme();
+  const press = usePressScale();
   const isDark = theme.text === '#FFFFFF';
   const fetchCompositeMES = useMetabolicBudgetStore((s) => s.fetchCompositeMES);
   const [expanded, setExpanded] = useState(false);
@@ -341,137 +342,139 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
   const tierCfg = getTierConfig(displayTier);
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={toggleExpand}>
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.card.background,
-            borderColor: theme.card.border,
-          },
-        ]}
-      >
-        {/* ── Tier accent left strip ── */}
+    <Animated.View style={press.animatedStyle}>
+      <TouchableOpacity activeOpacity={0.85} onPress={toggleExpand} onPressIn={press.onPressIn} onPressOut={press.onPressOut}>
         <View
           style={[
-            styles.accentStrip,
-            { backgroundColor: displayScore != null ? tierCfg.color + '60' : theme.surfaceHighlight },
+            styles.card,
+            {
+              backgroundColor: theme.card.background,
+              borderColor: theme.card.border,
+            },
           ]}
-        />
+        >
+          {/* ── Tier accent left strip ── */}
+          <View
+            style={[
+              styles.accentStrip,
+              { backgroundColor: displayScore != null ? tierCfg.color + '60' : theme.surfaceHighlight },
+            ]}
+          />
 
-        <View style={styles.cardContent}>
-          {/* ── Header: Meal type icon + label + MES badge ── */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={[styles.mealTypeIcon, { backgroundColor: config.gradient[0] + '20' }]}>
-                <Ionicons name={config.icon as any} size={16} color={config.gradient[0]} />
-              </View>
-              <View>
-                <Text style={[styles.mealTypeLabel, { color: theme.text }]}>
-                  {config.label}
-                </Text>
-                <Text style={[styles.componentCount, { color: theme.textTertiary }]}>
-                  {group.logs.length} item{group.logs.length > 1 ? 's' : ''} · {agg.calories.toFixed(0)} calories
-                </Text>
-              </View>
-            </View>
-            <View style={styles.headerRight}>
-              {loading ? (
-                <View style={[styles.mesBadgeLoading, { backgroundColor: theme.surfaceHighlight }]}>
-                  <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '700' }}>···</Text>
+          <View style={styles.cardContent}>
+            {/* ── Header: Meal type icon + label + MES badge ── */}
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <View style={[styles.mealTypeIcon, { backgroundColor: config.gradient[0] + '20' }]}>
+                  <Ionicons name={config.icon as any} size={16} color={config.gradient[0]} />
                 </View>
-              ) : displayScore != null ? (
-                <MealMESBadge score={displayScore} tier={displayTier} />
-              ) : null}
-              <Animated.View
-                style={{
-                  transform: [{
-                    rotate: chevronAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '180deg'],
-                    }),
-                  }],
-                }}
-              >
-                <Ionicons name="chevron-down" size={14} color={theme.textTertiary} />
-              </Animated.View>
-            </View>
-          </View>
-
-          {/* ── Component chips ── */}
-          <View style={styles.chipRow}>
-            {group.logs.map((log) => (
-              <View
-                key={log.id}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
-                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.chipText, { color: theme.textSecondary }]}
-                  numberOfLines={1}
+                <View>
+                  <Text style={[styles.mealTypeLabel, { color: theme.text }]}>
+                    {config.label}
+                  </Text>
+                  <Text style={[styles.componentCount, { color: theme.textTertiary }]}>
+                    {group.logs.length} item{group.logs.length > 1 ? 's' : ''} · {agg.calories.toFixed(0)} calories
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.headerRight}>
+                {loading ? (
+                  <View style={[styles.mesBadgeLoading, { backgroundColor: theme.surfaceHighlight }]}>
+                    <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '700' }}>···</Text>
+                  </View>
+                ) : displayScore != null ? (
+                  <MealMESBadge score={displayScore} tier={displayTier} />
+                ) : null}
+                <Animated.View
+                  style={{
+                    transform: [{
+                      rotate: chevronAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '180deg'],
+                      }),
+                    }],
+                  }}
                 >
-                  {log.title || 'Untitled'}
-                </Text>
+                  <Ionicons name="chevron-down" size={14} color={theme.textTertiary} />
+                </Animated.View>
               </View>
-            ))}
-          </View>
-
-          {/* ── Aggregated macros ── */}
-          <View style={styles.macroRow}>
-            {[
-              { label: 'Protein', value: agg.protein, color: '#22C55E' },
-              { label: 'Carbs', value: agg.carbs, color: '#3B82F6' },
-              { label: 'Fat', value: agg.fat, color: '#F59E0B' },
-              { label: 'Fiber', value: agg.fiber, color: '#8B5CF6' },
-            ].map((m) => (
-              <View key={m.label} style={styles.macroItem}>
-                <View style={[styles.macroDot, { backgroundColor: m.color + '40' }]}>
-                  <View style={[styles.macroDotInner, { backgroundColor: m.color }]} />
-                </View>
-                <Text style={[styles.macroValue, { color: theme.text }]}>{m.value.toFixed(0)}g</Text>
-                <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>{m.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* ── Expanded: individual component rows ── */}
-          {expanded && (
-            <View style={[styles.expandedSection, { borderTopColor: theme.surfaceHighlight }]}>
-              {group.logs.map((log, idx) => {
-                const score = group.mealScores.find(ms => ms.food_log_id === log.id);
-                const rowAnim = rowAnims.current[idx];
-                const rowStyle = rowAnim
-                  ? {
-                      opacity: rowAnim,
-                      transform: [{
-                        translateY: rowAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [8, 0],
-                        }),
-                      }],
-                    }
-                  : undefined;
-                return (
-                  <Animated.View key={log.id} style={rowStyle}>
-                    <SingleMealRow
-                      log={log}
-                      mealScore={score}
-                      isLast={idx === group.logs.length - 1}
-                      compact
-                    />
-                  </Animated.View>
-                );
-              })}
             </View>
-          )}
+
+            {/* ── Component chips ── */}
+            <View style={styles.chipRow}>
+              {group.logs.map((log) => (
+                <View
+                  key={log.id}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+                      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.chipText, { color: theme.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {log.title || 'Untitled'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* ── Aggregated macros ── */}
+            <View style={styles.macroRow}>
+              {[
+                { label: 'Protein', value: agg.protein, color: '#22C55E' },
+                { label: 'Carbs', value: agg.carbs, color: '#3B82F6' },
+                { label: 'Fat', value: agg.fat, color: '#F59E0B' },
+                { label: 'Fiber', value: agg.fiber, color: '#8B5CF6' },
+              ].map((m) => (
+                <View key={m.label} style={styles.macroItem}>
+                  <View style={[styles.macroDot, { backgroundColor: m.color + '40' }]}>
+                    <View style={[styles.macroDotInner, { backgroundColor: m.color }]} />
+                  </View>
+                  <Text style={[styles.macroValue, { color: theme.text }]}>{m.value.toFixed(0)}g</Text>
+                  <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* ── Expanded: individual component rows ── */}
+            {expanded && (
+              <View style={[styles.expandedSection, { borderTopColor: theme.surfaceHighlight }]}>
+                {group.logs.map((log, idx) => {
+                  const score = group.mealScores.find(ms => ms.food_log_id === log.id);
+                  const rowAnim = rowAnims.current[idx];
+                  const rowStyle = rowAnim
+                    ? {
+                        opacity: rowAnim,
+                        transform: [{
+                          translateY: rowAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [8, 0],
+                          }),
+                        }],
+                      }
+                    : undefined;
+                  return (
+                    <Animated.View key={log.id} style={rowStyle}>
+                      <SingleMealRow
+                        log={log}
+                        mealScore={score}
+                        isLast={idx === group.logs.length - 1}
+                        compact
+                      />
+                    </Animated.View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -572,7 +575,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   macroLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.3,

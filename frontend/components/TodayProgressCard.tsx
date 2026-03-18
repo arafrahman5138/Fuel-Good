@@ -220,16 +220,27 @@ export function TodayProgressCard({
       {/* ── Meals ── */}
       {mealCount === 0 ? (
         <View style={styles.emptyState}>
-          <View style={[styles.emptyIcon, { backgroundColor: theme.primaryMuted }]}>
+          <LinearGradient
+            colors={[theme.primary + '20', theme.primary + '08'] as any}
+            style={styles.emptyIcon}
+          >
             <Ionicons name="fast-food-outline" size={24} color={theme.primary} />
-          </View>
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            No meals logged yet today
+          </LinearGradient>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>
+            Your plate is empty
           </Text>
-          <View style={[styles.emptyBtn, { backgroundColor: theme.primary }]}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            Log your first meal to start tracking
+          </Text>
+          <LinearGradient
+            colors={['#22C55E', '#059669'] as const}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.emptyBtn}
+          >
             <Ionicons name="add" size={14} color="#fff" />
             <Text style={styles.emptyBtnText}>Log a Meal</Text>
-          </View>
+          </LinearGradient>
         </View>
       ) : (
         <>
@@ -475,14 +486,18 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   emptyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
   emptyText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   emptyBtn: {

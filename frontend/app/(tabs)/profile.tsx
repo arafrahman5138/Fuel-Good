@@ -116,7 +116,7 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <Animated.View style={[styles.profileHeader, headerEntrance.style]}>
           <View style={{ ...Shadows.interactive(false), borderRadius: BorderRadius.full }}>
-            <LinearGradient colors={['#16A34A', '#0D9488', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
+            <LinearGradient colors={['#22C55E', '#059669', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
               <Text style={styles.avatarText}>
                 {(user?.name || 'U').charAt(0).toUpperCase()}
               </Text>
@@ -199,9 +199,17 @@ export default function ProfileScreen() {
               />
             ) : achievements.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name={achievementsError ? 'cloud-offline-outline' : 'trophy-outline'} size={48} color={theme.textTertiary} />
+                <LinearGradient
+                  colors={[theme.primary + '20', theme.primary + '08'] as any}
+                  style={{ width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Ionicons name={achievementsError ? 'cloud-offline-outline' : 'trophy-outline'} size={32} color={achievementsError ? theme.textTertiary : theme.primary} />
+                </LinearGradient>
+                <Text style={[{ fontSize: FontSize.lg, fontWeight: '700' }, { color: theme.text }]}>
+                  {achievementsError ? 'Connection issue' : 'No achievements yet'}
+                </Text>
                 <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                  {achievementsError ? 'Unable to load achievements' : 'No achievements yet. Keep exploring!'}
+                  {achievementsError ? 'Unable to load achievements' : 'Keep fueling — your first badge is closer than you think'}
                 </Text>
                 {achievementsError && (
                   <TouchableOpacity
@@ -273,8 +281,15 @@ export default function ProfileScreen() {
                       styles.achieveCard,
                       {
                         backgroundColor: theme.surface,
-                        borderColor: achievement.unlocked ? theme.primary + '25' : theme.border,
-                        opacity: achievement.unlocked ? 1 : 0.55,
+                        borderColor: achievement.unlocked ? theme.primary + '30' : theme.border,
+                        opacity: achievement.unlocked ? 1 : 0.65,
+                      },
+                      achievement.unlocked && {
+                        shadowColor: theme.primary,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.12,
+                        shadowRadius: 12,
+                        elevation: 3,
                       },
                     ]}
                   >

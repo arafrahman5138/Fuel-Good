@@ -151,6 +151,8 @@ export default function PreferencesScreen() {
           />
         )}
 
+        {(!activeSection) && <View style={{ height: 1, backgroundColor: theme.border, marginBottom: Spacing.lg, opacity: 0.5 }} />}
+
         {(!activeSection || activeSection === 'flavor') && (
           <ChipSelector
             label="Flavor profile"
@@ -159,6 +161,8 @@ export default function PreferencesScreen() {
             onToggle={(id) => toggle(flavor, setFlavor, id)}
           />
         )}
+
+        {(!activeSection) && <View style={{ height: 1, backgroundColor: theme.border, marginBottom: Spacing.lg, opacity: 0.5 }} />}
 
         {(!activeSection || activeSection === 'allergies') && (
           <ChipSelector
@@ -169,6 +173,8 @@ export default function PreferencesScreen() {
           />
         )}
 
+        {(!activeSection) && <View style={{ height: 1, backgroundColor: theme.border, marginBottom: Spacing.lg, opacity: 0.5 }} />}
+
         {(!activeSection || activeSection === 'disliked') && (
           <ChipSelector
             label="Disliked ingredients"
@@ -177,6 +183,8 @@ export default function PreferencesScreen() {
             onToggle={(id) => toggle(disliked, setDisliked, id)}
           />
         )}
+
+        {(!activeSection) && <View style={{ height: 1, backgroundColor: theme.border, marginBottom: Spacing.lg, opacity: 0.5 }} />}
 
         {(!activeSection || activeSection === 'liked_proteins' || activeSection === 'disliked_proteins') && (
           <>
@@ -204,7 +212,7 @@ export default function PreferencesScreen() {
             <Text style={[styles.sectionLabel, { color: theme.text }]}>Household size</Text>
             <View style={[styles.stepper, { borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}>
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={[styles.stepBtn, { backgroundColor: theme.surfaceHighlight }]}
                 onPress={() => setHouseholdSize((n) => Math.max(1, n - 1))}
                 activeOpacity={0.7}
               >
@@ -212,7 +220,7 @@ export default function PreferencesScreen() {
               </TouchableOpacity>
               <Text style={[styles.stepValue, { color: theme.text }]}>{householdSize}</Text>
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={[styles.stepBtn, { backgroundColor: theme.surfaceHighlight }]}
                 onPress={() => setHouseholdSize((n) => Math.min(20, n + 1))}
                 activeOpacity={0.7}
               >
