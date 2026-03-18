@@ -1433,7 +1433,7 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.lg,
   },
   shortlistCard: {
-    width: 228,
+    width: Dimensions.get('window').width * 0.58,
     borderRadius: BorderRadius.xxl,
     borderWidth: 1,
     padding: Spacing.md,
@@ -1588,7 +1588,7 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.lg,
   },
   prepTimelineCard: {
-    width: 230,
+    width: Dimensions.get('window').width * 0.59,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,

@@ -1446,7 +1446,7 @@ export default function ScanScreen() {
             <Text style={[styles.productActionCopy, { color: theme.text }]}>{productResult.recommended_action}</Text>
           </View>
           {(productResult.recoverable || productResult.confidence < 0.8) && (
-            <View style={[styles.productConfidenceCard, { borderColor: theme.border, backgroundColor: '#FFFFFF' }]}>
+            <View style={[styles.productConfidenceCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
               <Ionicons name="scan-outline" size={16} color={theme.primary} />
               <Text style={[styles.productConfidenceText, { color: theme.textSecondary }]}>
                 {confidenceCopy}. Review the extracted text if anything looks off.
@@ -1570,7 +1570,7 @@ export default function ScanScreen() {
                 </Animated.View>
               )}
           {scanStep === 'result' && scanMode === 'meal' && mealResult && (
-            <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 12, backgroundColor: 'rgba(252, 252, 250, 0.96)', borderTopColor: theme.border }]}>
+            <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 12, backgroundColor: theme.surface + 'F5', borderTopColor: theme.border }]}>
               <TouchableOpacity
                 onPress={recomputeMeal}
                 activeOpacity={0.85}
@@ -1604,7 +1604,7 @@ export default function ScanScreen() {
       <Modal visible={showBarcodeSheet} transparent animationType="slide" onRequestClose={() => setShowBarcodeSheet(false)}>
         <View style={styles.sheetModalBackdrop}>
           <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowBarcodeSheet(false)} />
-          <View style={[styles.sheetModalCard, { backgroundColor: '#FFFFFF' }]}>
+          <View style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Use barcode</Text>
             <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
@@ -1629,7 +1629,7 @@ export default function ScanScreen() {
         <View style={styles.sheetModalBackdrop}>
           <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowProductEditSheet(false)} />
           <ScrollView
-            style={[styles.sheetModalCard, { backgroundColor: '#FFFFFF' }]}
+            style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}
             contentContainerStyle={styles.sheetModalContent}
             showsVerticalScrollIndicator={false}
           >

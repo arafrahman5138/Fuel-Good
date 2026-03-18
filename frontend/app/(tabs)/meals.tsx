@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Animated,
   View,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Platform,
   useColorScheme,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -25,9 +25,7 @@ import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors'
 import { Shadows } from '../../constants/Shadows';
 import { usePressScale } from '../../hooks/useAnimations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = Spacing.md;
-const CARD_WIDTH = (SCREEN_WIDTH - Spacing.xl * 2 - CARD_GAP) / 2;
 
 type MenuOption =
   | 'meals'
@@ -80,6 +78,12 @@ const MENU_ITEMS: MenuItem[] = [
  * a double safe-area offset.
  */
 export default function MealsScreen() {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const CARD_WIDTH = useMemo(
+    () => (SCREEN_WIDTH - Spacing.xl * 2 - CARD_GAP) / 2,
+    [SCREEN_WIDTH],
+  );
+
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tab?: string }>();

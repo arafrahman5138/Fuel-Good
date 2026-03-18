@@ -14,6 +14,7 @@ import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 export default function SavedRecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const recipe = useSavedRecipesStore((s) => (id ? s.getRecipeById(id) : null));
   const removeRecipe = useSavedRecipesStore((s) => s.removeRecipe);
 
@@ -21,7 +22,7 @@ export default function SavedRecipeDetailScreen() {
     return (
       <ScreenContainer safeArea={false} padded={false}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={[styles.pageHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <View style={[styles.pageHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border, paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
             style={[styles.navBackBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
             onPress={() => router.back()}
@@ -51,7 +52,7 @@ export default function SavedRecipeDetailScreen() {
   return (
     <ScreenContainer safeArea={false} padded={false}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.pageHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+      <View style={[styles.pageHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border, paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
           style={[styles.navBackBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
           onPress={() => router.back()}
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxxl,
   },
   pageHeader: {
-    paddingTop: 54,
+    paddingTop: 10,
     paddingHorizontal: Spacing.xl,
     paddingBottom: 12,
     borderBottomWidth: 1,

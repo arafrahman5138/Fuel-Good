@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   hero: {
-    paddingTop: 92,
+    paddingTop: 60,
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.xxl,
   },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 36,
+    fontSize: FontSize.xxxl,
     lineHeight: 40,
     fontWeight: '800',
     marginTop: Spacing.sm,
