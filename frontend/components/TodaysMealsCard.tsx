@@ -128,7 +128,7 @@ export function TodaysMealsCard({ logs, mealScores, fuelTarget, todayFuelScore }
               <Ionicons name="restaurant" size={16} color="#fff" />
             </LinearGradient>
             <View>
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Today's Meals</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>Today's Meals</Text>
               <Text style={[styles.headerSub, { color: theme.textTertiary }]}>
                 {mealCount === 0
                   ? 'No meals logged yet'
@@ -162,7 +162,7 @@ export function TodaysMealsCard({ logs, mealScores, fuelTarget, todayFuelScore }
               { value: Math.round(totalFat), unit: 'g', label: 'F', color: '#EC4899' },
             ].map((m) => (
               <View key={m.label} style={[styles.macroPill, { backgroundColor: m.color + '10' }]}>
-                <Text style={[styles.macroPillValue, { color: m.color }]}>
+                <Text style={[styles.macroPillValue, { color: m.color }]} numberOfLines={1}>
                   {m.value}{m.unit}
                 </Text>
                 <Text style={[styles.macroPillLabel, { color: m.color + 'AA' }]}>
@@ -341,6 +341,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   headerLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -470,6 +472,7 @@ const styles = StyleSheet.create({
   // Macro pills
   macroPillRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.xs,
     marginBottom: Spacing.sm + 2,
   },

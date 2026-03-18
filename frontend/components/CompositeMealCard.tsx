@@ -369,7 +369,7 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
                   <Ionicons name={config.icon as any} size={16} color={config.gradient[0]} />
                 </View>
                 <View>
-                  <Text style={[styles.mealTypeLabel, { color: theme.text }]}>
+                  <Text style={[styles.mealTypeLabel, { color: theme.text }]} numberOfLines={1}>
                     {config.label}
                   </Text>
                   <Text style={[styles.componentCount, { color: theme.textTertiary }]}>
@@ -498,12 +498,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm + 2,
     flex: 1,
+    flexShrink: 1,
   },
   mealTypeIcon: {
     width: 32,
@@ -515,6 +517,7 @@ const styles = StyleSheet.create({
   mealTypeLabel: {
     fontSize: FontSize.md,
     fontWeight: '700',
+    flexShrink: 1,
   },
   componentCount: {
     fontSize: FontSize.xs,
@@ -546,7 +549,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-    maxWidth: 180,
+    maxWidth: '65%',
   },
   macroRow: {
     flexDirection: 'row',

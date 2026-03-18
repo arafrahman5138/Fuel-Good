@@ -70,9 +70,9 @@ export function GuardrailBar({
       <View style={styles.header}>
         <View style={styles.labelRow}>
           <Ionicons name={icon} size={16} color={color} style={{ marginRight: 5 }} />
-          <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+          <Text numberOfLines={1} style={[styles.label, { color: theme.text }]}>{label}</Text>
         </View>
-        <Text style={[styles.status, { color: statusColor }]}>{statusText}</Text>
+        <Text numberOfLines={1} style={[styles.status, { color: statusColor }]}>{statusText}</Text>
       </View>
       <View style={[styles.barBg, { backgroundColor: theme.surfaceHighlight }]}>
         <LinearGradient
@@ -83,10 +83,10 @@ export function GuardrailBar({
         />
       </View>
       <View style={styles.footer}>
-        <Text style={[styles.value, { color: theme.textSecondary }]}>
+        <Text numberOfLines={1} style={[styles.value, { color: theme.textSecondary }]}>
           {Math.round(consumed)}{unit} / {Math.round(target)}{unit}
         </Text>
-        <Text style={[styles.pct, { color: theme.textTertiary }]}>
+        <Text numberOfLines={1} style={[styles.pct, { color: theme.textTertiary }]}>
           {Math.round(pct)}%
         </Text>
       </View>
@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   label: {
     fontSize: FontSize.md,
@@ -115,6 +116,7 @@ const styles = StyleSheet.create({
   status: {
     fontSize: FontSize.sm,
     fontWeight: '700',
+    flexShrink: 0,
   },
   barBg: {
     height: 10,

@@ -83,14 +83,14 @@ export function HealthPulseCard({
               <Text style={[styles.scoreValue, { color: tierColor }]}>{Math.round(score)}</Text>
             </Animated.View>
             <View style={styles.headerText}>
-              <Text style={[styles.title, { color: theme.text }]}>Health Pulse</Text>
+              <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>Health Pulse</Text>
               <View style={[styles.tierBadge, { backgroundColor: tierColor + '18' }]}>
-                <Text style={[styles.tierText, { color: tierColor }]}>{tierLabel}</Text>
+                <Text style={[styles.tierText, { color: tierColor }]} numberOfLines={1}>{tierLabel}</Text>
               </View>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <Text style={[styles.mealCountText, { color: theme.textSecondary }]}>
+            <Text style={[styles.mealCountText, { color: theme.textSecondary }]} numberOfLines={1}>
               {mealCount} meal{mealCount !== 1 ? 's' : ''} today
             </Text>
             {onPress && (
@@ -147,6 +147,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   headerLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,

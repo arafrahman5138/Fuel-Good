@@ -195,7 +195,7 @@ export function FlexTicketsCard({ flexMealsRemaining, maxFlex = 7 }: FlexTickets
           <Ionicons name="information-circle-outline" size={18} color={GOLD} />
         </View>
 
-        <Text style={[styles.flexHeadline, { color: theme.text }]}>
+        <Text style={[styles.flexHeadline, { color: theme.text }]} numberOfLines={1}>
           {flexCopy.headline}
         </Text>
         <Text style={[styles.flexSubtitle, { color: theme.textSecondary }]} numberOfLines={2}>
@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
   },
   ticketRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   ticket: {

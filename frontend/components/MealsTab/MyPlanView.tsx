@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView as RNScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,6 +81,9 @@ function getMealPlanDisplayTier(recipe: any): string {
 export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
+  const shortlistCardWidth = useMemo(() => windowWidth * 0.58, [windowWidth]);
+  const prepTimelineCardWidth = useMemo(() => windowWidth * 0.59, [windowWidth]);
   const user = useAuthStore((s) => s.user);
   const awardXP = useGamificationStore((s) => s.awardXP);
   const { currentPlan, isGenerating, selectedDay, setCurrentPlan, setGenerating, setSelectedDay } =
@@ -699,6 +702,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                             style={[
                               styles.shortlistCard,
                               {
+                                width: shortlistCardWidth,
                                 backgroundColor: theme.surface,
                                 borderColor: included ? theme.primary : avoided ? theme.warning : theme.border,
                               },
@@ -956,6 +960,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                   style={[
                     styles.prepTimelineCard,
                     {
+                      width: prepTimelineCardWidth,
                       backgroundColor: theme.surfaceElevated,
                       borderColor: theme.border,
                     },
@@ -1214,7 +1219,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   plannerHeaderIconButton: {
-    width: 38,
+    width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1224,7 +1229,7 @@ const styles = StyleSheet.create({
     height: 44,
   },
   plannerHeaderTitle: {
-    fontSize: 20,
+    fontSize: FontSize.xl,
     fontWeight: '500',
     letterSpacing: -0.2,
   },
@@ -1419,7 +1424,7 @@ const styles = StyleSheet.create({
   shortlistSubtitle: {
     fontSize: FontSize.sm,
     lineHeight: 20,
-    maxWidth: 260,
+    maxWidth: '85%',
   },
   shortlistGroup: {
     marginTop: Spacing.md,
@@ -1434,7 +1439,6 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.lg,
   },
   shortlistCard: {
-    width: Dimensions.get('window').width * 0.58,
     borderRadius: BorderRadius.xxl,
     borderWidth: 1,
     padding: Spacing.md,
@@ -1589,7 +1593,6 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.lg,
   },
   prepTimelineCard: {
-    width: Dimensions.get('window').width * 0.59,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,
@@ -1690,7 +1693,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   mealName: {
-    fontSize: 17,
+    fontSize: FontSize.lg,
     fontWeight: '800',
     lineHeight: 22,
   },

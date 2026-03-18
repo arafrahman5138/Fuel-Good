@@ -153,10 +153,10 @@ export function TodayProgressCard({
             <Ionicons name="restaurant" size={16} color="#fff" />
           </LinearGradient>
           <View>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>
+            <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
               {title ?? "Today's Fuel"}
             </Text>
-            <Text style={[styles.headerSub, { color: theme.textTertiary }]}>
+            <Text style={[styles.headerSub, { color: theme.textTertiary }]} numberOfLines={1}>
               {subtitle ?? (mealCount === 0
                 ? 'No meals logged yet'
                 : `${mealCount} meal${mealCount > 1 ? 's' : ''} logged`)}
@@ -395,6 +395,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

@@ -95,11 +95,11 @@ export function FuelStreakBadge({
       <View style={[styles.iconBg, { backgroundColor: streakColor + '20' }]}>
         <Ionicons name="leaf" size={18} color={streakColor} />
       </View>
-      <View>
-        <Text style={[styles.streakCount, { color: theme.text }]}>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={[styles.streakCount, { color: theme.text }]}>
           {currentStreak} week{currentStreak !== 1 ? 's' : ''}
         </Text>
-        <Text style={[styles.streakLabel, { color: theme.textTertiary }]}>
+        <Text numberOfLines={1} style={[styles.streakLabel, { color: theme.textTertiary }]}>
           Fuel Streak
         </Text>
       </View>

@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   streakNumber: {
-    fontSize: 36,
+    fontSize: FontSize.xxxl,
     fontWeight: '800',
     color: '#FFFFFF',
   },

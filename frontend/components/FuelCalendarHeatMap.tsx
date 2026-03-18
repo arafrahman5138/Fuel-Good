@@ -3,7 +3,7 @@
  * Green/amber/red coloring at a glance. Flex meals get a diamond icon.
  */
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
@@ -45,6 +45,8 @@ export function FuelCalendarHeatMap({
   onDayPress,
 }: FuelCalendarHeatMapProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const cellSize = useMemo(() => Math.floor((width - Spacing.xl * 2 - Spacing.md * 2) / 7), [width]);
 
   const { grid, monthLabel } = useMemo(() => {
     const [year, mon] = month.split('-').map(Number);
@@ -114,7 +116,7 @@ export function FuelCalendarHeatMap({
       {/* Weekday row */}
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label) => (
-          <Text key={label} style={[styles.weekdayLabel, { color: theme.textTertiary }]}>{label}</Text>
+          <Text key={label} style={[styles.weekdayLabel, { color: theme.textTertiary, width: cellSize }]}>{label}</Text>
         ))}
       </View>
 
@@ -123,7 +125,7 @@ export function FuelCalendarHeatMap({
         <View key={ri} style={styles.gridRow}>
           {row.map((cell, ci) => {
             if (!cell) {
-              return <View key={ci} style={styles.cell} />;
+              return <View key={ci} style={[styles.cell, { width: cellSize, height: cellSize }]} />;
             }
             const dayNum = parseInt(cell.date.slice(-2), 10);
             const isToday = cell.date === today;
@@ -136,7 +138,7 @@ export function FuelCalendarHeatMap({
                 key={ci}
                 style={[
                   styles.cell,
-                  { backgroundColor: bgColor + (hasData ? '40' : '00') },
+                  { width: cellSize, height: cellSize, backgroundColor: bgColor + (hasData ? '40' : '00') },
                   isToday && { borderWidth: 1.5, borderColor: theme.primary },
                 ]}
                 activeOpacity={0.7}
@@ -172,7 +174,7 @@ export function FuelCalendarHeatMap({
           })}
           {/* Pad last row to 7 cells */}
           {row.length < 7 && Array.from({ length: 7 - row.length }).map((_, i) => (
-            <View key={`pad-${i}`} style={styles.cell} />
+            <View key={`pad-${i}`} style={[styles.cell, { width: cellSize, height: cellSize }]} />
           ))}
         </View>
       ))}
@@ -187,19 +189,17 @@ export function FuelCalendarHeatMap({
         ].map((item) => (
           <View key={item.label} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-            <Text style={[styles.legendText, { color: theme.textTertiary }]}>{item.label}</Text>
+            <Text numberOfLines={1} style={[styles.legendText, { color: theme.textTertiary }]}>{item.label}</Text>
           </View>
         ))}
         <View style={styles.legendItem}>
           <Ionicons name="ticket" size={8} color="#F59E0B" />
-          <Text style={[styles.legendText, { color: theme.textTertiary }]}>Flex</Text>
+          <Text numberOfLines={1} style={[styles.legendText, { color: theme.textTertiary }]}>Flex</Text>
         </View>
       </View>
     </View>
   );
 }
-
-const CELL_SIZE = 36;
 
 const styles = StyleSheet.create({
   container: {
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   weekdayLabel: {
-    width: CELL_SIZE,
     textAlign: 'center',
     fontSize: 10,
     fontWeight: '600',
@@ -240,8 +239,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

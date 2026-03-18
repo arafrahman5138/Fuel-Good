@@ -36,8 +36,8 @@ export function TodayProgressBar({
       {/* Meals */}
       <View style={styles.stat}>
         <Ionicons name="restaurant" size={14} color={theme.primary} />
-        <Text style={[styles.statValue, { color: theme.text }]}>{mealCount}</Text>
-        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+        <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1}>{mealCount}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]} numberOfLines={1}>
           meal{mealCount !== 1 ? 's' : ''}
         </Text>
       </View>
@@ -47,8 +47,8 @@ export function TodayProgressBar({
       {/* Fuel Score */}
       <View style={styles.stat}>
         <Ionicons name="leaf" size={14} color={fuelColor} />
-        <Text style={[styles.statValue, { color: fuelColor }]}>{mealCount > 0 ? fuelScore : '—'}</Text>
-        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>fuel</Text>
+        <Text style={[styles.statValue, { color: fuelColor }]} numberOfLines={1}>{mealCount > 0 ? fuelScore : '—'}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]} numberOfLines={1}>fuel</Text>
       </View>
 
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -56,8 +56,8 @@ export function TodayProgressBar({
       {/* Flex */}
       <View style={styles.stat}>
         <Ionicons name="ticket" size={14} color={flexColor} />
-        <Text style={[styles.statValue, { color: flexColor }]}>{flexMealsRemaining}</Text>
-        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>flex</Text>
+        <Text style={[styles.statValue, { color: flexColor }]} numberOfLines={1}>{flexMealsRemaining}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]} numberOfLines={1}>flex</Text>
       </View>
 
       <Ionicons name="chevron-forward" size={14} color={theme.textTertiary} style={styles.chevron} />
@@ -87,10 +87,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
+    flexShrink: 1,
   },
   statLabel: {
     fontSize: FontSize.xs,
     fontWeight: '500',
+    flexShrink: 1,
   },
   divider: {
     width: 1,

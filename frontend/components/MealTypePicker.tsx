@@ -68,6 +68,8 @@ export function MealTypePicker({ value, onChange, compact = false }: MealTypePic
               color={active ? theme.primary : theme.textTertiary}
             />
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
               style={[
                 styles.pillText,
                 compact && styles.pillTextCompact,

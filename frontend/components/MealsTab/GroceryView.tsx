@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   costDivider: {
     width: 1,
-    height: 36,
+    alignSelf: 'stretch',
   },
   progressBg: {
     height: 6,

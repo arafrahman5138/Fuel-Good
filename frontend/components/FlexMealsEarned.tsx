@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -189,6 +190,8 @@ function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: (
 
 export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEarnedProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const TICKET_SIZE = Math.min(38, Math.floor((width - Spacing.xl * 2 - Spacing.md * 2 - (maxFlex - 1) * Spacing.sm) / maxFlex));
   const [explainerVisible, setExplainerVisible] = useState(false);
   const ticketCount = Math.min(flexMealsRemaining, maxFlex);
   const totalSlots = maxFlex;
@@ -265,6 +268,7 @@ export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEa
                 key={idx}
                 style={[
                   styles.ticket,
+                  { width: TICKET_SIZE, height: TICKET_SIZE, borderRadius: TICKET_SIZE / 2 },
                   isEarned
                     ? {
                         backgroundColor: GOLD + '18',
@@ -311,7 +315,9 @@ export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEa
         </View>
 
         {/* Info button — bottom right */}
-        <Ionicons name="information-circle" size={20} color={GOLD} style={styles.helpBtn} />
+        <View style={styles.helpBtnRow}>
+          <Ionicons name="information-circle" size={20} color={GOLD} />
+        </View>
         </TouchableOpacity>
       </Animated.View>
 
@@ -332,10 +338,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.md,
   },
-  helpBtn: {
-    position: 'absolute',
-    bottom: Spacing.sm,
-    right: Spacing.sm,
+  helpBtnRow: {
+    alignItems: 'flex-end',
+    marginTop: Spacing.xs,
   },
   ticketRow: {
     flexDirection: 'row',
@@ -344,9 +349,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm + 2,
   },
   ticket: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

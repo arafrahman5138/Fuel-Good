@@ -114,7 +114,7 @@ function GoalRing({
         </View>
         <View style={styles.goalTextBlock}>
           <Text style={[styles.goalLabel, { color: theme.text }]}>{label}</Text>
-          <Text style={[styles.goalValue, { color: theme.text }]}>
+          <Text style={[styles.goalValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>
             {Math.round(consumed)}
             <Text style={[styles.goalValueMuted, { color: theme.textSecondary }]}>
               /{Math.round(target)}{unit}
@@ -271,7 +271,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
                   MEA {Math.round(mea.mea_score)}
                 </Text>
               </View>
-              <Text style={{ fontSize: 9, color: theme.textTertiary, fontWeight: '500' }}>
+              <Text style={{ fontSize: 9, color: theme.textTertiary, fontWeight: '500' }} numberOfLines={1}>
                 {mea.energy_prediction === 'sustained' ? 'Sustained Energy' :
                  mea.energy_prediction === 'adequate' ? 'Adequate Energy' :
                  mea.energy_prediction === 'may_dip' ? 'May Dip' : 'Low Energy'}

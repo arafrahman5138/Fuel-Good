@@ -286,7 +286,7 @@ export function FlexInsightsCard({
                     <View style={styles.insightContent}>
                       <View style={styles.insightTitleRow}>
                         <Ionicons name={s.icon as any} size={14} color={s.accent} style={{ marginRight: 6 }} />
-                        <Text style={[styles.insightTitle, { color: theme.text }]}>{s.title}</Text>
+                        <Text style={[styles.insightTitle, { color: theme.text }]} numberOfLines={1}>{s.title}</Text>
                       </View>
                       <Text style={[styles.insightBody, { color: theme.textSecondary }]}>{s.body}</Text>
                     </View>
@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
   },
   ticketRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   ticket: {

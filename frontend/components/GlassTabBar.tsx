@@ -9,7 +9,7 @@ import {
   useColorScheme,
   Modal,
   Pressable,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +37,7 @@ const BUBBLE_SLOT_INSET = 5;
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [tabRowWidth, setTabRowWidth] = useState(0);
   const themeMode = useThemeStore((s) => s.mode);
@@ -219,6 +220,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               styles.addMenu,
               menuShadow,
               {
+                width: Math.min(260, windowWidth - 60),
                 bottom: Math.max(insets.bottom, 6) + PLUS_BUTTON_SIZE + 6,
                 right: Spacing.lg,
                 backgroundColor: menuBg,
@@ -363,7 +365,6 @@ const styles = StyleSheet.create({
   },
   addMenu: {
     position: 'absolute',
-    width: Math.min(260, Dimensions.get('window').width - 60),
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     overflow: 'hidden',

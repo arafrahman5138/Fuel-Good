@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
 const macroStyles = StyleSheet.create({
   cell: {
     alignItems: 'flex-start',
-    minWidth: 80,
+    width: '48%',
   },
   dot: {
     width: 6,

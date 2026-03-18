@@ -294,6 +294,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
                       activeOpacity={0.7}
                       onPress={() => router.push({ pathname: '/(tabs)/chat', params: { prefill: insight.action!.query } } as any)}
                       style={[styles.insightCta, { backgroundColor: insight.accent + '14' }]}
+                      hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                     >
                       <Ionicons name="chatbubble-outline" size={10} color={insight.accent} />
                       <Text style={[styles.insightCtaText, { color: insight.accent }]}>Ask Healthify</Text>
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
     marginTop: 4,
   },

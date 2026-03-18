@@ -583,6 +583,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
               <TouchableOpacity
                 onPress={() => setFilterModal(null)}
                 style={[styles.modalCloseBtn, { backgroundColor: theme.surfaceElevated }]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="close" size={18} color={theme.textSecondary} />
               </TouchableOpacity>
@@ -1053,7 +1054,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   categoryLabel: {
-    fontSize: 13,
+    fontSize: FontSize.sm,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -1203,7 +1204,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   flavorTagText: {
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   cardBenefits: {
@@ -1220,7 +1221,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   benefitPillText: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   cardCalories: {
@@ -1243,7 +1244,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   sideIndicatorText: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
@@ -1265,7 +1266,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   contextHintText: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
@@ -1273,7 +1274,7 @@ const styles = StyleSheet.create({
   // ── Plate FAB ──
   plateFab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 90,
     right: 20,
     width: 56,
     height: 56,

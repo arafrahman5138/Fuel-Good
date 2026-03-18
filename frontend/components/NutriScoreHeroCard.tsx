@@ -4,7 +4,7 @@
  * calorie progress, and top macro breakdown.
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
@@ -27,13 +27,14 @@ interface NutriScoreHeroCardProps {
 
 export function NutriScoreHeroCard({ score, calories, macros }: NutriScoreHeroCardProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
 
   const clampedScore = Math.min(100, Math.max(0, score));
   const tierLabel = clampedScore >= 90 ? 'Gold Tier' : clampedScore >= 75 ? 'Silver Tier' : clampedScore >= 60 ? 'Bronze Tier' : 'Starter';
   const tierColor = clampedScore >= 90 ? '#FFD700' : clampedScore >= 75 ? '#C0C0C0' : clampedScore >= 60 ? '#CD7F32' : theme.textTertiary;
   const tierIcon = clampedScore >= 60 ? 'medal-outline' : 'trending-up-outline';
 
-  const ringSize = 100;
+  const ringSize = Math.min(100, Math.round(width * 0.26));
   const strokeWidth = 8;
   const scoreFontSize = Math.round(ringSize * 0.26);
   const trackColor = theme.text === '#FFFFFF' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
@@ -49,8 +50,8 @@ export function NutriScoreHeroCard({ score, calories, macros }: NutriScoreHeroCa
           <Ionicons name="star" size={14} color={theme.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>NutriScore</Text>
-          <Text style={[styles.headerSub, { color: theme.textTertiary }]}>Daily nutrition quality</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>NutriScore</Text>
+          <Text style={[styles.headerSub, { color: theme.textTertiary }]} numberOfLines={1}>Daily nutrition quality</Text>
         </View>
         <View style={[styles.brandPill, { backgroundColor: theme.primary + '18' }]}>
           <Text style={[styles.brandPillText, { color: theme.primary }]}>NUTRIENT</Text>
@@ -121,7 +122,7 @@ export function NutriScoreHeroCard({ score, calories, macros }: NutriScoreHeroCa
             <Ionicons name={tierIcon as any} size={16} color={tierColor} />
             <Text style={[styles.tierLabel, { color: tierColor }]}>{tierLabel}</Text>
           </View>
-          <Text style={[styles.calText, { color: theme.textSecondary }]}>
+          <Text style={[styles.calText, { color: theme.textSecondary }]} numberOfLines={1}>
             {calories.consumed.toFixed(0)} / {calories.target.toFixed(0)} calories
           </Text>
           {/* Calorie bar */}
@@ -141,11 +142,11 @@ export function NutriScoreHeroCard({ score, calories, macros }: NutriScoreHeroCa
         {macros.map((m) => (
           <View key={m.label} style={styles.macroRow}>
             <View style={styles.macroHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flex: 1, flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name={m.icon as any} size={13} color={theme.textSecondary} />
-                <Text style={[styles.macroLabel, { color: theme.text }]}>{m.label}</Text>
+                <Text style={[styles.macroLabel, { color: theme.text }]} numberOfLines={1}>{m.label}</Text>
               </View>
-              <Text style={[styles.macroValue, { color: theme.textSecondary }]}>
+              <Text style={[styles.macroValue, { color: theme.textSecondary }]} numberOfLines={1}>
                 {m.consumed.toFixed(0)}/{m.target.toFixed(0)} {m.unit}
               </Text>
             </View>

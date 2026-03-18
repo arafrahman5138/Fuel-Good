@@ -106,7 +106,7 @@ export function ScoreBreakdown({
               {/* Label column */}
               <View style={styles.labelCol}>
                 <Text style={[styles.abbrev, { color: row.color }]}>{row.label}</Text>
-                <Text style={[styles.fullName, { color: theme.textTertiary }]}>{row.fullName}</Text>
+                <Text numberOfLines={1} style={[styles.fullName, { color: theme.textTertiary }]}>{row.fullName}</Text>
               </View>
 
               {/* Bar */}
@@ -161,7 +161,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   labelCol: {
-    width: 62,
+    minWidth: 54,
+    maxWidth: 70,
   },
   abbrev: {
     fontSize: 11,
@@ -184,7 +185,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   valueCol: {
-    width: 52,
+    minWidth: 44,
+    maxWidth: 56,
     alignItems: 'flex-end',
   },
   value: {

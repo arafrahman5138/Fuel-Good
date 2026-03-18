@@ -11,6 +11,7 @@ import {
   Text,
   StyleSheet,
   useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -128,9 +129,11 @@ export function EnergyHeroCard({
 }: EnergyHeroCardProps) {
   const theme = useTheme();
   const systemScheme = useColorScheme();
+  const { width } = useWindowDimensions();
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'system' ? (systemScheme ?? 'dark') === 'dark' : themeMode === 'dark';
 
+  const ringSize = Math.min(108, Math.round(width * 0.28));
   const hasData = mealCount > 0;
   const tier = getTierCfg(hasData ? fuelScore : 0);
 
@@ -189,7 +192,7 @@ export function EnergyHeroCard({
           <View style={styles.ringWrap}>
             <FuelScoreRing
               score={hasData ? fuelScore : 0}
-              size={108}
+              size={ringSize}
               showLabel
               showIcon
               trackColor={ringTrack}

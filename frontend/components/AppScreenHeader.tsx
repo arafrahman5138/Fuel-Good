@@ -106,6 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.xl,
     minHeight: 44,
+    flexShrink: 1,
   },
   dot: {
     width: 10,

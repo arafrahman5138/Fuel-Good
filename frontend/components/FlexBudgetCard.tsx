@@ -3,7 +3,7 @@
  * Clean, minimal layout: ring left, typography-driven stats right.
  */
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, useColorScheme, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Animated, Easing, useColorScheme, useWindowDimensions, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FuelScoreRing } from './FuelScoreRing';
@@ -78,10 +78,12 @@ export function FlexBudgetCard({
 }: FlexBudgetCardProps) {
   const theme = useTheme();
   const systemScheme = useColorScheme();
+  const { width } = useWindowDimensions();
   const themeMode = useThemeStore((s) => s.mode);
   const isDark =
     themeMode === 'system' ? (systemScheme ?? 'dark') === 'dark' : themeMode === 'dark';
 
+  const ringSize = Math.min(118, Math.round(width * 0.3));
   const hasData = mealCount > 0;
   const tier = getTierCfg(hasData ? avgScore : 0);
   const mealProgressPct =
@@ -209,7 +211,7 @@ export function FlexBudgetCard({
           <View style={styles.ringWrap}>
             <FuelScoreRing
               score={hasData ? avgScore : 0}
-              size={118}
+              size={ringSize}
               showLabel
               showIcon
               trackColor={ringTrack}
