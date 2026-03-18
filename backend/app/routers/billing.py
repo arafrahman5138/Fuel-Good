@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
@@ -44,8 +46,10 @@ async def revenuecat_webhook(
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
 ):
-    expected_auth = settings.revenuecat_webhook_authorization.strip()
-    if expected_auth and authorization != expected_auth:
+    expected_auth = (settings.revenuecat_webhook_authorization or "").strip()
+    if not expected_auth:
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+    if not authorization or not hmac.compare_digest(authorization, expected_auth):
         raise HTTPException(status_code=401, detail="Unauthorized webhook")
 
     event = payload.event or {}

@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useMetabolicBudgetStore } from '../stores/metabolicBudgetStore';
 import { billingService } from '../services/billing';
+import { authApi } from '../services/api';
 import type { MetabolicProfile } from '../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Layout, Spacing } from '../constants/Colors';
 import { APP_ENV, APP_STORE_MANAGE_SUBSCRIPTIONS_URL, APP_VERSION, PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../constants/Config';
@@ -527,6 +528,50 @@ export default function SettingsScreen() {
         >
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />
           <Text style={[styles.signOutText, { color: '#EF4444' }]}>Sign Out</Text>
+        </TouchableOpacity>
+
+        {/* ── Delete Account ────────────────────────────────────── */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            Alert.alert(
+              'Delete Account',
+              'This will permanently delete your account and all your data. This action cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Account',
+                  style: 'destructive',
+                  onPress: () => {
+                    Alert.alert(
+                      'Are you absolutely sure?',
+                      'All your meal plans, saved recipes, scan history, and preferences will be permanently deleted.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Yes, Delete Everything',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await authApi.deleteAccount();
+                              logout();
+                              router.replace('/(auth)/login');
+                            } catch (err: any) {
+                              Alert.alert('Error', err?.message || 'Failed to delete account. Please contact support.');
+                            }
+                          },
+                        },
+                      ],
+                    );
+                  },
+                },
+              ],
+            );
+          }}
+          style={[styles.signOutBtn, { backgroundColor: theme.errorMuted, borderColor: theme.error + '25', marginTop: Spacing.sm }]}
+        >
+          <Ionicons name="trash-outline" size={18} color={theme.error} />
+          <Text style={[styles.signOutText, { color: theme.error }]}>Delete Account</Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenContainer>

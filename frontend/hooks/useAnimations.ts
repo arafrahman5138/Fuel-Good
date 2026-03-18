@@ -62,58 +62,6 @@ export function useEntranceAnimation(delay = 0) {
 }
 
 /**
- * Toast animation: fade in → hold → fade out.
- * Pass `visible` to trigger. Calls `onDone` when the sequence finishes.
- */
-export function useToastAnimation(
-  visible: boolean,
-  onDone?: () => void,
-) {
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      anim.setValue(0);
-      if (isReduceMotionEnabled()) {
-        anim.setValue(1);
-        const t = setTimeout(() => {
-          anim.setValue(0);
-          onDone?.();
-        }, 1640);
-        return () => clearTimeout(t);
-      }
-      Animated.sequence([
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1400),
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start(() => onDone?.());
-    }
-  }, [visible, anim, onDone]);
-
-  const style = {
-    opacity: anim,
-    transform: [
-      {
-        translateY: anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [-8, 0],
-        }),
-      },
-    ],
-  };
-
-  return { anim, style };
-}
-
-/**
  * Subtle scale-down on press for tactile feedback.
  * Spread `animatedStyle` on an Animated.View wrapping your touchable content,
  * and pass `onPressIn`/`onPressOut` to the TouchableOpacity.

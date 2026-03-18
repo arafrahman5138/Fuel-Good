@@ -121,26 +121,51 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 ## Project Structure
 
 ```
-fuelgood/
-├── frontend/               # React Native + Expo
-│   ├── app/                # Expo Router screens
-│   │   ├── (auth)/         # Login/register
-│   │   ├── (tabs)/         # Main tab screens
-│   │   ├── cook/           # Cook mode
-│   │   └── food/           # Food database
-│   ├── components/         # Reusable UI components
-│   ├── stores/             # Zustand state
-│   ├── services/           # API client
-│   └── constants/          # Theme, config
-├── backend/
+Real-Food/
+├── frontend/                    # React Native + Expo (TypeScript)
+│   ├── app/                     # Expo Router screens
+│   │   ├── (auth)/              # Login, register, onboarding
+│   │   ├── (tabs)/              # Main tab navigation (Home, Meals, Chat, Chrono, Profile)
+│   │   ├── browse/              # Recipe browsing
+│   │   ├── cook/                # Step-by-step cook mode
+│   │   ├── food/                # Food database, fuel scores, metabolic coach
+│   │   ├── saved/               # Saved recipes
+│   │   └── scan/                # Meal photo & barcode scanning
+│   ├── components/              # Reusable UI components (~46 files)
+│   │   └── MealsTab/            # Meal plan views (Browse, MyPlan, Saved, Grocery)
+│   ├── stores/                  # Zustand state management (10 stores)
+│   ├── services/                # API client & service layer
+│   ├── hooks/                   # Custom React hooks (animations, auth)
+│   ├── constants/               # Colors, Config, Animations, Thresholds
+│   ├── utils/                   # Chat parsing, formatters
+│   └── assets/                  # Images and fonts
+├── backend/                     # FastAPI (Python 3.11+)
 │   ├── app/
-│   │   ├── routers/        # API endpoints
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── schemas/        # Pydantic schemas
-│   │   ├── agents/         # LangGraph AI agents
-│   │   └── services/       # Business logic
-│   └── alembic/            # Database migrations
-└── README.md
+│   │   ├── routers/             # 16 API endpoint modules
+│   │   ├── models/              # 18 SQLAlchemy ORM models
+│   │   ├── schemas/             # Pydantic request/response schemas
+│   │   ├── agents/              # LangGraph AI agents (healthify, cook, planner)
+│   │   ├── services/            # 15+ business logic services
+│   │   ├── main.py              # FastAPI app, middleware, router registration
+│   │   ├── config.py            # Settings via pydantic-settings
+│   │   ├── db.py                # SQLAlchemy engine & session
+│   │   ├── auth.py              # JWT auth utilities
+│   │   └── utils.py             # Shared utility functions
+│   ├── alembic/                 # Database migrations (19 versions)
+│   ├── scripts/                 # Utility & backfill scripts
+│   └── tests/                   # Test suite
+├── website/                     # Next.js 15 marketing site
+│   ├── app/                     # Pages (home, privacy, terms, support)
+│   └── components/              # Website UI components
+├── docs/                        # Documentation
+│   ├── ops/                     # Deployment & incident runbooks
+│   ├── legal/                   # Privacy policy, terms of service
+│   ├── qa/                      # QA checklists
+│   └── app-store/               # App Store metadata
+├── .github/workflows/           # CI/CD pipeline
+├── render.yaml                  # Render.com deployment config
+├── docker-compose.yml           # Local development setup
+└── tasks/                       # Audit reports & task tracking
 ```
 
 ## Production Docs
