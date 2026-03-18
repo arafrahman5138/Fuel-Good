@@ -36,16 +36,13 @@ from app.schemas.auth import (
 )
 from app.services.billing import build_entitlement_info
 from app.services.notifications import record_notification_event
+from app.utils import normalize_email as _normalize_email
 
 router = APIRouter()
 settings = get_settings()
 logger = logging.getLogger("fuelgood.auth")
 APPLE_ISSUER = "https://appleid.apple.com"
 _apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
-
-
-def _normalize_email(email: str) -> str:
-    return email.strip().lower()
 
 
 async def _fetch_apple_jwks() -> list[dict[str, Any]]:
