@@ -803,7 +803,7 @@ export default function RecipeDetailScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: theme.text, flex: 1 }]}>{activeRecipe.title}</Text>
+            <Text style={[styles.title, { color: theme.text, flex: 1 }]} numberOfLines={3}>{activeRecipe.title}</Text>
           </View>
           <Text style={[styles.description, { color: theme.textSecondary }]}>
             {cleanRecipeDescription(activeRecipe.description)}
@@ -1682,6 +1682,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     marginTop: Spacing.md,
+    flexWrap: 'wrap',
   },
   metaBox: {
     flex: 1,
@@ -1806,9 +1807,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   macroCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',

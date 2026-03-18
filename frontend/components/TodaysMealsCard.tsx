@@ -461,6 +461,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 6,
     paddingLeft: 32 + Spacing.md,
+    flexWrap: 'wrap',
   },
   macroText: {
     fontSize: FontSize.xs,

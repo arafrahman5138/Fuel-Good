@@ -58,7 +58,7 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
             <Animated.View
               style={[styles.dot, { backgroundColor: theme.primary }, dotStyle]}
             />
-            <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+            <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>{title}</Text>
           </View>
         )}
       </View>

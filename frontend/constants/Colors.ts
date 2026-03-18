@@ -87,15 +87,26 @@ export const Colors = {
 
 export type ThemeColors = typeof Colors.dark;
 
+/* ── Responsive scaling (computed once at init for the device) ────────── */
+import { Dimensions } from 'react-native';
+
+const _BASE_WIDTH = 390; // iPhone 14/15 reference
+const _screenW = Dimensions.get('window').width;
+const _ratio = _screenW / _BASE_WIDTH;
+
+/** Moderate scale — blends fixed + proportional (good for spacing & fonts) */
+const _ms = (px: number, factor = 0.45): number =>
+  Math.round(px + (px * _ratio - px) * factor);
+
 export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 48,
+  xs: _ms(4),
+  sm: _ms(8),
+  md: _ms(12),
+  lg: _ms(16),
+  xl: _ms(20),
+  xxl: _ms(24),
+  xxxl: _ms(32),
+  huge: _ms(48),
 };
 
 export const BorderRadius = {
@@ -110,14 +121,14 @@ export const BorderRadius = {
 };
 
 export const FontSize = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 17,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  hero: 40,
+  xs: _ms(11, 0.35),
+  sm: _ms(13, 0.35),
+  md: _ms(15, 0.35),
+  lg: _ms(17, 0.35),
+  xl: _ms(20, 0.35),
+  xxl: _ms(24, 0.35),
+  xxxl: _ms(32, 0.35),
+  hero: _ms(40, 0.35),
 };
 
 export const FontWeight = {

@@ -264,7 +264,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
 
           {/* MEA mini badge */}
           {mea && mea.mea_score > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2, flexWrap: 'wrap' }}>
               <View style={[styles.statPill, { backgroundColor: meaColor + '12' }]}>
                 <Ionicons name="pulse-outline" size={11} color={meaColor} />
                 <Text style={[styles.statPillText, { color: meaColor }]}>

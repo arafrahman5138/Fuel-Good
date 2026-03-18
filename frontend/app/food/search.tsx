@@ -296,6 +296,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     marginTop: Spacing.xs,
+    flexWrap: 'wrap',
   },
   meta: {
     fontSize: FontSize.xs,

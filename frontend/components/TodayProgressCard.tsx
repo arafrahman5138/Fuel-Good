@@ -440,6 +440,7 @@ const styles = StyleSheet.create({
   macroRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   macroItem: {
     flex: 1,

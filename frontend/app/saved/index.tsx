@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     marginTop: Spacing.sm,
     marginBottom: Spacing.sm,
+    flexWrap: 'wrap',
   },
   metaChip: {
     flexDirection: 'row',

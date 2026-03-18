@@ -182,7 +182,7 @@ export default function FoodDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: theme.text }]}>{food.name}</Text>
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={3}>{food.name}</Text>
         <View style={styles.badges}>
           {!!food.category && (
             <View style={[styles.categoryChip, { backgroundColor: theme.primaryMuted }]}>

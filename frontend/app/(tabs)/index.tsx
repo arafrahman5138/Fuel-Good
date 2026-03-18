@@ -7,9 +7,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   RefreshControl,
   FlatList,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,10 +38,6 @@ import { Shadows } from '../../constants/Shadows';
 import { useEntranceAnimation } from '../../hooks/useAnimations';
 import { trackBehaviorEvent } from '../../services/notifications';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.42;
-const DAY_CONTENT_WIDTH = width - Spacing.xl * 2;
-const DAY_PILL_WIDTH = DAY_CONTENT_WIDTH / 7;
 const TODAY_DAY_INDEX = 22; // offset 0 in [-22..+8]
 const INITIAL_DAY_INDEX = Math.max(0, TODAY_DAY_INDEX - 3);
 
@@ -127,6 +123,14 @@ interface DailySummary {
 }
 
 export default function HomeScreen() {
+  const { width } = useWindowDimensions();
+  const { CARD_WIDTH, DAY_CONTENT_WIDTH, DAY_PILL_WIDTH } = useMemo(() => {
+    const cardW = width * 0.42;
+    const dayContentW = width - Spacing.xl * 2;
+    const dayPillW = dayContentW / 7;
+    return { CARD_WIDTH: cardW, DAY_CONTENT_WIDTH: dayContentW, DAY_PILL_WIDTH: dayPillW };
+  }, [width]);
+
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const homeScrollRef = useRef<ScrollView>(null);
@@ -1273,6 +1277,8 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     marginRight: 4,
+    flexWrap: 'wrap',
+    maxWidth: 80,
   },
   progressDot: {
     width: 6,
@@ -1392,6 +1398,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    flexShrink: 1,
+    overflow: 'hidden',
   },
   calendarPill: {
     flexDirection: 'row',
@@ -1414,7 +1422,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   headerLeft: {},
-  headerRight: {},
+  headerRight: {
+    flexShrink: 1,
+    overflow: 'hidden',
+  },
   profileButton: {
     width: 36,
     height: 36,

@@ -262,7 +262,7 @@ export function EnergyHeroCard({
               size={14}
               color={tier.color}
             />
-            <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.65)' : theme.textSecondary }]}>
+            <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.65)' : theme.textSecondary }]} numberOfLines={2}>
               {mealCount === 0
                 ? 'Log your first meal to start your streak'
                 : (proteinRemaining ?? 0) > 20

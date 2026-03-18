@@ -171,7 +171,7 @@ export function FlexBudgetCard({
               <Ionicons name="leaf" size={12} color={tier.color} />
             </View>
             <Text style={[styles.headerTitle, { color: textPrimary }]}>Weekly Fuel</Text>
-            <Text style={[styles.headerSub, { color: textTertiary }]}>
+            <Text style={[styles.headerSub, { color: textTertiary }]} numberOfLines={1}>
               Target: {fuelTarget}+
             </Text>
           </View>

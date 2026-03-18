@@ -169,22 +169,22 @@ export default function ProfileScreen() {
             <View style={styles.statsGrid}>
               <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
                 <Ionicons name="flame" size={24} color={theme.accent} />
-                <Text style={[styles.statValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
+                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.current_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
               </Card>
               <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
                 <Ionicons name="trophy" size={24} color={theme.accent} />
-                <Text style={[styles.statValue, { color: theme.text }]}>{user?.longest_streak || 0}</Text>
+                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.longest_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
               </Card>
               <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.primary }]} padding={Spacing.lg}>
                 <Ionicons name="star" size={24} color={theme.primary} />
-                <Text style={[styles.statValue, { color: theme.text }]}>{xp}</Text>
+                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{xp}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
               </Card>
               <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.info }]} padding={Spacing.lg}>
                 <Ionicons name="ribbon" size={24} color={theme.info} />
-                <Text style={[styles.statValue, { color: theme.text }]}>{unlockedCount}</Text>
+                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{unlockedCount}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Achievements</Text>
               </Card>
             </View>
