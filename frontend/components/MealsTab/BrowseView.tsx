@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -34,8 +34,6 @@ import {
   MEAL_CONTEXT_DESSERT,
 } from '../../utils/mealContext';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - Spacing.xl * 2 - Spacing.md) / 2;
 
 interface RecipeCard {
   id: string;
@@ -113,6 +111,12 @@ interface BrowseViewProps {
 }
 
 export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) {
+  const { width } = useWindowDimensions();
+  const CARD_WIDTH = useMemo(
+    () => (width - Spacing.xl * 2 - Spacing.md) / 2,
+    [width],
+  );
+
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({});

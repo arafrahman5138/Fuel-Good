@@ -915,11 +915,11 @@ export default function ScanScreen() {
   };
 
   const renderReviewHeader = (showExit = false) => (
-    <View style={[styles.reviewHeader, { paddingTop: insets.top + 6 }]}>
+    <View style={[styles.reviewHeader, { paddingTop: insets.top + 6, backgroundColor: theme.surface }]}>
       <TouchableOpacity
         onPress={showExit ? handleExitToHome : handleBack}
         activeOpacity={0.85}
-        style={[styles.headerCircle, { borderColor: theme.border }]}
+        style={[styles.headerCircle, { borderColor: theme.border, backgroundColor: theme.surface }]}
       >
         <Ionicons name={showExit ? 'close' : 'chevron-back'} size={showExit ? 18 : 20} color={showExit ? theme.textSecondary : theme.primary} style={showExit ? undefined : { transform: [{ translateX: -1 }] }} />
       </TouchableOpacity>
@@ -1297,7 +1297,7 @@ export default function ScanScreen() {
                 key={`${item}-${index}`}
                 onPress={() => setIngredientDrafts((current) => current.filter((_, idx) => idx !== index))}
                 activeOpacity={0.85}
-                style={[styles.ingredientChip, { borderColor: theme.border }]}
+                style={[styles.ingredientChip, { borderColor: theme.border, backgroundColor: theme.surface }]}
               >
                 <Text style={[styles.ingredientChipText, { color: theme.text }]}>{item}</Text>
                 <Ionicons name="close" size={14} color={theme.textSecondary} />
