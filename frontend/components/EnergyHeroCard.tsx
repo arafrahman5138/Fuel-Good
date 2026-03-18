@@ -134,7 +134,8 @@ export function EnergyHeroCard({
   const isDark = themeMode === 'system' ? (systemScheme ?? 'dark') === 'dark' : themeMode === 'dark';
 
   const ringSize = Math.min(108, Math.round(width * 0.28));
-  const hasData = mealCount > 0;
+  // Hero card shows weekly data — it has data if there's a fuel score OR any meals this week
+  const hasData = fuelScore > 0 || mealCount > 0;
   const tier = getTierCfg(hasData ? fuelScore : 0);
 
   // Adaptive colors
@@ -205,23 +206,29 @@ export function EnergyHeroCard({
           </View>
 
           <View style={styles.statsCol}>
+            {/* ── Tier pill + MES score ── */}
             <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
               <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
                 {hasData ? tier.label : 'Ready to fuel'}
               </Text>
             </View>
+            {hasData && (mesScore ?? 0) > 0 && (
+              <View style={styles.scoreRow}>
+                <View style={[styles.scoreIconWrap, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
+                  <Ionicons name="flash" size={11} color={mesTierColor ?? '#8B5CF6'} />
+                </View>
+                <Text style={[styles.scoreNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
+                  {mesScore}
+                </Text>
+                <Text style={[styles.scoreTier, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
+                  MES
+                </Text>
+              </View>
+            )}
             <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={2}>
               {tagline.text}
             </Text>
             <View style={styles.streakRow}>
-              {hasData && (mesScore ?? 0) > 0 && (
-                <View style={[styles.mesPill, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
-                  <Ionicons name="flash" size={10} color={mesTierColor ?? '#8B5CF6'} />
-                  <Text style={[styles.mesPillText, { color: mesTierColor ?? '#8B5CF6' }]}>
-                    {mesScore} MES
-                  </Text>
-                </View>
-              )}
               {metabolicStreakDays > 0 && (
                 <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
               )}
@@ -335,6 +342,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scoreIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'] as any,
+    letterSpacing: -0.5,
+    lineHeight: 22,
+  },
+  scoreTier: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
   tagline: {
     fontSize: FontSize.sm,
     fontWeight: '600',
@@ -362,18 +393,6 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 11,
     fontWeight: '500',
-  },
-  mesPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  mesPillText: {
-    fontSize: 10,
-    fontWeight: '700',
   },
   pulseRow: {
     flexDirection: 'row',

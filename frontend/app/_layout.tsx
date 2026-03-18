@@ -13,6 +13,7 @@ import { billingApi } from '../services/api';
 import { billingService } from '../services/billing';
 import { registerNotificationListeners, syncPushTokenWithBackend } from '../services/notifications';
 import { subscribeToBillingChanges } from '../services/supabase';
+import { OfflineBanner } from '../components/OfflineBanner';
 
 export default function RootLayout() {
   const theme = useTheme();
@@ -34,6 +35,17 @@ export default function RootLayout() {
   const isOnboardingRoute = isAuthRoute && segments[1] === 'onboarding';
   const isSubscribeRoute = pathname === '/subscribe';
   const canAccessWithoutPremium = isAuthRoute || isSubscribeRoute || pathname === '/';
+
+  // 7-day free trial: allow authenticated, onboarded users to explore the app
+  const isWithinFreeTrial = (() => {
+    if (!user || hasPremiumAccess) return false;
+    const createdAt = (user as any).created_at;
+    if (!createdAt) return false;
+    const signupDate = new Date(createdAt);
+    const now = new Date();
+    const daysSinceSignup = (now.getTime() - signupDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceSignup <= 7;
+  })();
 
   useEffect(() => {
     preloadReduceMotion();
@@ -119,7 +131,7 @@ export default function RootLayout() {
       return;
     }
 
-    if (!hasPremiumAccess) {
+    if (!hasPremiumAccess && !isWithinFreeTrial) {
       if (!canAccessWithoutPremium) {
         router.replace('/subscribe');
       }
@@ -129,7 +141,7 @@ export default function RootLayout() {
     if (isSubscribeRoute || isAuthRoute) {
       router.replace('/(tabs)' as any);
     }
-  }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length]);
+  }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length]);
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
@@ -156,6 +168,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style={mode === 'light' ? 'dark' : 'light'} />
+      <OfflineBanner />
       {(isLoading || isBillingLoading) ? (
         <View style={[styles.loadingScreen, { backgroundColor: theme.background }]}>
           <ActivityIndicator size="large" color={theme.primary} />

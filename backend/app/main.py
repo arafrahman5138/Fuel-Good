@@ -46,7 +46,18 @@ async def lifespan(app: FastAPI):
     _seed_on_startup()
     scheduler_task = None
     if settings.run_notification_scheduler:
-        scheduler_task = asyncio.create_task(notification_scheduler_loop())
+        async def _supervised_scheduler() -> None:
+            """Run the notification scheduler with automatic restart on failure."""
+            while True:
+                try:
+                    await notification_scheduler_loop()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    app_logger.exception(json.dumps({"event": "scheduler.crashed", "action": "restarting_in_30s"}))
+                    await asyncio.sleep(30)
+
+        scheduler_task = asyncio.create_task(_supervised_scheduler())
         app_logger.info(json.dumps({"event": "scheduler.started"}))
     try:
         yield

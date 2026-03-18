@@ -27,7 +27,15 @@ export function SavedView() {
         <View style={styles.emptyWrap}>
           <Ionicons name="bookmark-outline" size={42} color={theme.textTertiary} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No saved recipes yet</Text>
-          <Text style={[styles.emptySub, { color: theme.textSecondary }]}>Save recipes to keep them on this device.</Text>
+          <Text style={[styles.emptySub, { color: theme.textSecondary }]}>Browse meals and tap the bookmark icon to save your favorites.</Text>
+          <TouchableOpacity
+            style={[styles.emptyCta, { backgroundColor: theme.primary }]}
+            onPress={() => router.push('/browse/')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="search-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.emptyCtaText}>Browse Recipes</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         recipes.map((recipe) => (
@@ -90,6 +98,20 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.md,
+  },
+  emptyCtaText: {
+    color: '#FFFFFF',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
   },
   recipeCard: {
     borderRadius: BorderRadius.lg,

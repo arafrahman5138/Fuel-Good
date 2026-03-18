@@ -515,6 +515,13 @@ export default function OnboardingScreen() {
     } catch {
       // Review request is non-critical
     }
+    // Request push notification permission at the end of onboarding (high-engagement moment)
+    try {
+      const { maybePromptForPush } = await import('../../services/notifications');
+      await maybePromptForPush('meal_plan');
+    } catch {
+      // Non-critical — continue even if push fails
+    }
     router.replace('/subscribe');
   };
 

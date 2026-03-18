@@ -159,6 +159,14 @@ class ApiClient {
       throw new Error('Your session has expired. Please sign in again.');
     }
 
+    if (response.status === 429) {
+      throw new Error('You\'re sending requests too quickly. Please wait a moment and try again.');
+    }
+
+    if (response.status === 503) {
+      throw new Error('This feature is temporarily unavailable. Please try again in a few minutes.');
+    }
+
     if (response.status >= 500) {
       void reportClientError({
         source: 'api',
@@ -170,9 +178,14 @@ class ApiClient {
           endpoint,
         },
       });
-      throw new Error('Something went wrong. Please try again.');
+      throw new Error('Something went wrong on our end. Please try again.');
     }
-    throw new Error(error.detail || `Request failed: ${response.status}`);
+
+    // Client errors (4xx) - use the server's detail message if available
+    const userMessage = error.detail && typeof error.detail === 'string' && !error.detail.includes('/')
+      ? error.detail
+      : 'This request could not be completed. Please check your input and try again.';
+    throw new Error(userMessage);
   }
 
   /**
@@ -356,6 +369,7 @@ export const authApi = {
     api.post<{ access_token: string; refresh_token: string }>('/auth/refresh', { refresh_token: refreshToken }),
   getProfile: () => api.get<any>('/auth/me'),
   updatePreferences: (data: any) => api.put('/auth/preferences', data),
+  deleteAccount: () => api.delete<{ message: string }>('/auth/account'),
 };
 
 export const billingApi = {

@@ -89,6 +89,7 @@ class UserProfile(BaseModel):
     current_streak: int
     longest_streak: int
     entitlement: EntitlementInfo
+    created_at: Optional[str] = None
 
     class Config:
         from_attributes = True

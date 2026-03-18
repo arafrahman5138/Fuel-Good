@@ -239,6 +239,20 @@ export function GroceryView() {
         </View>
       ) : null}
 
+      {!loading && !error && items.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingTop: Spacing.huge, gap: Spacing.sm, paddingHorizontal: Spacing.xl }}>
+          <Ionicons name="cart-outline" size={42} color={theme.textTertiary} />
+          <Text style={{ color: theme.text, fontSize: FontSize.lg, fontWeight: '700' }}>
+            {currentPlan ? 'No grocery items' : 'No meal plan yet'}
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 }}>
+            {currentPlan
+              ? 'Your grocery list will appear here once your meal plan has recipes.'
+              : 'Create a meal plan first, and your grocery list will be generated automatically.'}
+          </Text>
+        </View>
+      ) : null}
+
       <SectionList
         sections={sections}
         keyExtractor={(item) => `${item.category}-${item.name}-${item.originalIndex}`}

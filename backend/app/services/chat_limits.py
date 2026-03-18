@@ -15,6 +15,7 @@ from app.db import engine
 from app.models.chat_usage import ChatUsageEvent
 from app.models.user import User
 from app.services.billing import build_entitlement_info
+from app.utils import normalize_email as _normalize_email
 
 
 _IN_FLIGHT_LOCK = Lock()
@@ -64,10 +65,6 @@ MODE_COST_UNITS = {
     "general": 2.0,
     "unknown": 1.0,
 }
-
-
-def _normalize_email(value: str | None) -> str:
-    return (value or "").strip().lower()
 
 
 def _quota_exempt_emails() -> set[str]:
