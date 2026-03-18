@@ -9,6 +9,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from enum import Enum
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -43,11 +44,33 @@ settings = get_settings()
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
+class MealTypeEnum(str, Enum):
+    breakfast = "breakfast"
+    lunch = "lunch"
+    dinner = "dinner"
+    snack = "snack"
+    dessert = "dessert"
+    meal = "meal"
+
+
+class PortionSizeEnum(str, Enum):
+    small = "small"
+    medium = "medium"
+    large = "large"
+
+
+class SourceContextEnum(str, Enum):
+    home = "home"
+    restaurant = "restaurant"
+    takeout = "takeout"
+    meal_prep = "meal_prep"
+
+
 class MealScanUpdateRequest(BaseModel):
     meal_label: str
-    meal_type: str = "lunch"
-    portion_size: str = "medium"
-    source_context: str = "home"
+    meal_type: MealTypeEnum = MealTypeEnum.lunch
+    portion_size: PortionSizeEnum = PortionSizeEnum.medium
+    source_context: SourceContextEnum = SourceContextEnum.home
     ingredients: list[str] = Field(default_factory=list)
 
 
@@ -358,9 +381,11 @@ async def analyze_product_image(
     except httpx.HTTPError:
         raise HTTPException(status_code=502, detail="Unable to analyze that label photo right now.")
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        logger.exception("Label scan runtime error")
+        raise HTTPException(status_code=502, detail="Unable to complete label analysis right now.")
     except SupabaseStorageUnavailable as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        logger.exception("Supabase storage unavailable during label scan")
+        raise HTTPException(status_code=500, detail="Image storage is temporarily unavailable.")
 
 
 @router.post("/meal")
@@ -382,17 +407,32 @@ async def scan_meal(
     if len(image_bytes) > 8 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
 
-    result = await analyze_meal_scan(
-        db=db,
-        user_id=current_user.id,
-        image_bytes=image_bytes,
-        mime_type=image.content_type,
-        context={
-            "meal_type": meal_type,
-            "portion_size": portion_size,
-            "source_context": source_context,
-        },
-    )
+    try:
+        result = await analyze_meal_scan(
+            db=db,
+            user_id=current_user.id,
+            image_bytes=image_bytes,
+            mime_type=image.content_type,
+            context={
+                "meal_type": meal_type,
+                "portion_size": portion_size,
+                "source_context": source_context,
+            },
+        )
+    except Exception as exc:
+        logger.exception("LLM meal scan failed, returning degraded result")
+        # Fallback: return a minimal scan result so the user's photo isn't wasted
+        result = {
+            "meal_label": meal_type or "Meal",
+            "components": [],
+            "nutrition_estimate": {
+                "calories": 450, "protein": 25, "carbs": 40,
+                "fat": 18, "fiber": 5, "sugar": 8,
+            },
+            "confidence": 0.1,
+            "is_degraded": True,
+            "degraded_reason": "AI analysis temporarily unavailable. You can correct this scan manually.",
+        }
 
     # Non-food image — return immediately without persisting a scan record
     if result.get("is_not_food"):
@@ -564,6 +604,13 @@ async def log_meal_scan(
 
     if scan.logged_food_log_id:
         return {"ok": True, "food_log_id": str(scan.logged_food_log_id), "already_logged": True}
+
+    # Acquire a row-level lock to prevent duplicate logging from concurrent requests
+    locked_scan = db.query(ScannedMealLog).filter(
+        ScannedMealLog.id == scan_id,
+    ).with_for_update().first()
+    if locked_scan and locked_scan.logged_food_log_id:
+        return {"ok": True, "food_log_id": str(locked_scan.logged_food_log_id), "already_logged": True}
 
     log_date = datetime.now(UTC).date()
     if body.date:

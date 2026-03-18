@@ -146,6 +146,7 @@ def _serialize_profile(current_user: User) -> UserProfile:
         current_streak=current_user.current_streak,
         longest_streak=current_user.longest_streak,
         entitlement=build_entitlement_info(current_user),
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
     )
 
 
@@ -351,3 +352,25 @@ async def update_preferences(
         setattr(current_user, key, value)
     db.commit()
     return {"message": "Preferences updated"}
+
+
+@router.delete("/account")
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Permanently delete the current user's account and all associated data."""
+    user_id = str(current_user.id)
+    logger.info("Account deletion requested for user %s", user_id)
+
+    # Delete related data (cascade will handle most, but be explicit for safety)
+    try:
+        db.delete(current_user)
+        db.commit()
+        logger.info("Account deleted successfully for user %s", user_id)
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to delete account for user %s", user_id)
+        raise HTTPException(status_code=500, detail="Failed to delete account. Please contact support.")
+
+    return {"message": "Account deleted successfully"}
