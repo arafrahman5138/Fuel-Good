@@ -186,10 +186,10 @@ export default function FoodSearchScreen() {
                         </Text>
                       )}
                       {!!item.category && (
-                        <Text style={[styles.meta, { color: theme.textTertiary }]}>{item.category}</Text>
+                        <Text style={[styles.meta, { color: theme.textTertiary }]} numberOfLines={1}>{item.category}</Text>
                       )}
                       {!!item.default_serving_label && (
-                        <Text style={[styles.meta, { color: theme.textTertiary }]}>{item.default_serving_label}</Text>
+                        <Text style={[styles.meta, { color: theme.textTertiary }]} numberOfLines={1}>{item.default_serving_label}</Text>
                       )}
                     </View>
                   </View>
@@ -220,7 +220,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   headerCapsule: {
-    minWidth: 170,
+    minWidth: 140,
+    flexShrink: 1,
     minHeight: 42,
     paddingHorizontal: Spacing.xl,
     borderRadius: BorderRadius.full,
@@ -300,6 +301,5 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: FontSize.xs,
-    maxWidth: 180,
   },
 });

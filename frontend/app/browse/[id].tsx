@@ -912,7 +912,7 @@ export default function RecipeDetailScreen() {
                 </Text>
                 {micronutrients.map((m) => (
                   <View key={m.name} style={styles.microRow}>
-                    <Text style={[styles.microName, { color: theme.text }]}>{m.name}</Text>
+                    <Text numberOfLines={1} style={[styles.microName, { color: theme.text }]}>{m.name}</Text>
                     <View style={styles.microBarContainer}>
                       <View
                         style={[
@@ -1842,7 +1842,8 @@ const styles = StyleSheet.create({
   microName: {
     fontSize: FontSize.xs,
     fontWeight: '500',
-    width: 70,
+    minWidth: 70,
+    flexShrink: 0,
   },
   microBarContainer: {
     flex: 1,
@@ -1869,7 +1870,7 @@ const styles = StyleSheet.create({
   microValue: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-    width: 48,
+    minWidth: 48,
     textAlign: 'right',
   },
   ingredientHeaderRow: {

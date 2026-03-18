@@ -173,6 +173,7 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         onPress={() => item.set(Math.max(0.1, Math.round((item.value - 0.05) * 100) / 100))}
                         style={[styles.stepperBtn, { backgroundColor: theme.surfaceHighlight }]}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       >
                         <Ionicons name="remove" size={16} color={theme.text} />
                       </TouchableOpacity>
@@ -180,6 +181,7 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         onPress={() => item.set(Math.min(0.8, Math.round((item.value + 0.05) * 100) / 100))}
                         style={[styles.stepperBtn, { backgroundColor: theme.surfaceHighlight }]}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       >
                         <Ionicons name="add" size={16} color={theme.text} />
                       </TouchableOpacity>

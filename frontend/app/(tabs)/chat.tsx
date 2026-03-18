@@ -940,7 +940,7 @@ export default function ChatScreen() {
                           <Text style={[styles.nutritionValue, { color: theme.text, fontWeight: '700' }]}>
                             {Math.round(healthified)}{unit}
                             {diff !== 0 && (
-                              <Text style={{ color: improved ? theme.primary : theme.error, fontSize: 11 }}>
+                              <Text style={{ color: improved ? theme.primary : theme.error, fontSize: FontSize.xs }}>
                                 {' '}{diff > 0 ? '+' : ''}{Math.round(diff)}
                               </Text>
                             )}
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
   },
   headerSubtitleCompact: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
   },
   messages: {
     flex: 1,
@@ -1396,7 +1396,7 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   swapLabel: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.6,

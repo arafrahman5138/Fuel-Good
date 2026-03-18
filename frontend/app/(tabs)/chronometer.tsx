@@ -11,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -227,6 +228,7 @@ export default function ChronometerScreen() {
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
+  const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const todayKey = useMemo(() => toDateKey(new Date()), []);
@@ -1033,7 +1035,7 @@ export default function ChronometerScreen() {
                         </LinearGradient>
                         <View>
                           <Text style={{ color: theme.text, fontSize: FontSize.md, fontWeight: '700' }}>{mealsSectionTitle}</Text>
-                          <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '500', marginTop: 1 }}>
+                          <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500', marginTop: 1 }}>
                             {mealCount === 0
                               ? `No meals logged for ${mealsSectionSubLabel}`
                               : `${mealCount} meal${mealCount > 1 ? 's' : ''} logged`}
@@ -1043,7 +1045,7 @@ export default function ChronometerScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         {logs.length > 0 && (
                           <View style={{ backgroundColor: theme.primary + '18', paddingHorizontal: 10, paddingVertical: 4, borderRadius: BorderRadius.full }}>
-                            <Text style={{ color: theme.primary, fontSize: 11, fontWeight: '800' }}>
+                            <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '800' }}>
                               {totalKcal.toFixed(0)} calories
                             </Text>
                           </View>
@@ -1144,7 +1146,7 @@ export default function ChronometerScreen() {
                                             paddingVertical: 4,
                                           }}
                                         >
-                                          <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '700' }}>···</Text>
+                                          <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '700' }}>···</Text>
                                         </View>
                                       )}
                                     </View>
@@ -1386,7 +1388,7 @@ export default function ChronometerScreen() {
                   <Text style={{ color: theme.text, fontSize: FontSize.md, fontWeight: '700' }}>What To Eat Next</Text>
                 </View>
                 <View style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full }}>
-                  <Text style={{ color: theme.primary, fontSize: 10, fontWeight: '700' }}>AI Picks</Text>
+                  <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>AI Picks</Text>
                 </View>
               </View>
               {(gaps?.recommended_foods || []).length === 0 ? (
@@ -1410,7 +1412,7 @@ export default function ChronometerScreen() {
                           <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }} numberOfLines={1}>{f.name}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                             <Ionicons name="sparkles" size={10} color={theme.textTertiary} />
-                            <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '500' }}>Boosts {nutrientLabel}</Text>
+                            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500' }}>Boosts {nutrientLabel}</Text>
                           </View>
                         </View>
                         <TouchableOpacity
@@ -1457,7 +1459,7 @@ export default function ChronometerScreen() {
                               <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: gapColor }} />
                               <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600', textTransform: 'capitalize' }}>{g.key.replace(/_/g, ' ')}</Text>
                             </View>
-                            <Text style={{ color: gapColor, fontSize: 11, fontWeight: '800' }}>{pct}%</Text>
+                            <Text style={{ color: gapColor, fontSize: FontSize.xs, fontWeight: '800' }}>{pct}%</Text>
                           </View>
                           <View style={{ height: 4, backgroundColor: theme.surfaceHighlight, borderRadius: 2, overflow: 'hidden', marginLeft: 11 }}>
                             <View
@@ -1541,10 +1543,10 @@ export default function ChronometerScreen() {
                   })}
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                  <Text style={{ color: theme.textTertiary, fontSize: 9 }}>
+                  <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
                     {scoreHistory.length > 0 ? scoreHistory[Math.max(0, scoreHistory.length - 14)]?.date?.slice(5) : ''}
                   </Text>
-                  <Text style={{ color: theme.textTertiary, fontSize: 9 }}>
+                  <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
                     {scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1]?.date?.slice(5) : ''}
                   </Text>
                 </View>
@@ -1700,6 +1702,7 @@ export default function ChronometerScreen() {
             style={[
               styles.addMenu,
               {
+                width: Math.min(240, screenWidth - 80),
                 position: 'absolute',
                 top: Math.max(insets.top, 10) + 58,
                 right: 12,
@@ -1764,7 +1767,7 @@ const sectionStyles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   text: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -1870,7 +1873,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 46,
     right: 0,
-    width: 240,
     borderRadius: 16,
     borderWidth: 1,
     zIndex: 120,
@@ -1951,7 +1953,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statSub: {
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '500',
     marginTop: 1,
   },

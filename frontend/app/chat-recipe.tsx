@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   title: {
-    fontSize: 24,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
     lineHeight: 32,
   },
@@ -432,7 +432,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   nutritionColLabel: {
-    width: 80,
+    minWidth: 70,
+    flex: 0.3,
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -445,7 +446,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   nutritionVal: {
-    width: 80,
+    minWidth: 70,
+    flex: 0.3,
     fontSize: FontSize.sm,
     textAlign: 'right',
   },

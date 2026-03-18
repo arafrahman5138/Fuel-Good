@@ -358,7 +358,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: FontSize.lg, fontWeight: '700', marginBottom: Spacing.md },
   servingWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   servingChip: {
-    minWidth: '47%',
+    width: '47%',
+    flexShrink: 1,
     borderWidth: 1,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
   },
   macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
-  macroItem: { alignItems: 'center', minWidth: 70, gap: 2 },
+  macroItem: { alignItems: 'center', minWidth: 56, gap: 2 },
   macroDot: {
     width: 20,
     height: 20,

@@ -271,7 +271,7 @@ export default function TodaysMealsScreen() {
             style={s.banner}
           >
           <View style={s.bannerTop}>
-            <View>
+            <View style={{ flex: 1, flexShrink: 1 }}>
               <Text style={s.bannerTitle}>Today's Meals</Text>
               <Text style={s.bannerSub}>{mealCount} meal{mealCount !== 1 ? 's' : ''} logged</Text>
             </View>
@@ -902,7 +902,7 @@ const s = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   macroDotLabel: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     fontWeight: '600',
     letterSpacing: 0.3,
   },

@@ -750,7 +750,7 @@ export default function MetabolicCoachScreen() {
                       <Text style={[styles.mealTitle, { color: theme.text }]} numberOfLines={1}>
                         {meal.title}
                       </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
                         <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500' }}>
                           {Math.round(meal.calories)} calories
                         </Text>
@@ -909,7 +909,7 @@ export default function MetabolicCoachScreen() {
               >
                 <View style={[styles.tierDot, { backgroundColor: cfg.color }]} />
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                     <Text style={[styles.tierName, { color: theme.text }]}>{cfg.label}</Text>
                     <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '600' }}>{item.range}</Text>
@@ -997,7 +997,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   statPillText: {
-    fontSize: 10,
+    fontSize: FontSize.xs,
     fontWeight: '700',
   },
 

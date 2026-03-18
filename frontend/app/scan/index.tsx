@@ -1940,14 +1940,14 @@ const styles = StyleSheet.create({
   },
   infoModalTitle: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: FontSize.xxl,
     lineHeight: 32,
     fontWeight: '800',
     letterSpacing: -0.7,
   },
   infoModalBody: {
     color: 'rgba(233, 243, 237, 0.82)',
-    fontSize: 16,
+    fontSize: FontSize.md,
     lineHeight: 24,
     marginTop: Spacing.sm,
   },
@@ -2148,7 +2148,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   gridField: {
-    width: '48%',
+    width: '46%',
   },
   resultHero: {
     borderRadius: BorderRadius.xl,
@@ -2163,7 +2163,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   resultTitleInput: {
-    fontSize: 20,
+    fontSize: FontSize.xl,
     lineHeight: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
@@ -2171,7 +2171,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   resultTitleText: {
-    fontSize: 20,
+    fontSize: FontSize.xl,
     lineHeight: 26,
     fontWeight: '800',
     letterSpacing: -0.5,

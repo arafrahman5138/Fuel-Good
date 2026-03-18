@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xxxl,
     fontWeight: '800',
-    lineHeight: 38,
+    lineHeight: 42,
   },
   description: {
     fontSize: FontSize.md,

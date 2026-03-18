@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
-    height: 48,
+    minHeight: 48,
   },
   input: {
     flex: 1,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.sm,
     flexWrap: 'wrap',
   },
   chip: {
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     marginBottom: 8,
-    gap: 10,
+    gap: Spacing.sm,
   },
   optionLabel: {
     fontSize: FontSize.sm,
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   goalGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.sm,
   },
   goalCard: {
     width: '47%',
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -608,6 +608,7 @@ const styles = StyleSheet.create({
   skipBtn: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   skipText: {
     fontSize: FontSize.sm,

@@ -209,7 +209,7 @@ export default function CookModeScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          <Text style={[styles.recipeTitle, { color: theme.text, flex: 1 }]}>{recipe.title}</Text>
+          <Text numberOfLines={2} style={[styles.recipeTitle, { color: theme.text, flex: 1 }]}>{recipe.title}</Text>
           <TouchableOpacity
             onPress={() => router.back()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -546,5 +546,5 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     marginBottom: Spacing.sm,
   },
-  navRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  navRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md },
 });

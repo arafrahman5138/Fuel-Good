@@ -193,7 +193,7 @@ export default function MESBreakdownScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: 10,
+    paddingHorizontal: Spacing.sm,
     paddingTop: Spacing.sm,
     gap: 0,
   },

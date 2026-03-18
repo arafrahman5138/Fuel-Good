@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   summaryAvg: {
-    fontSize: 22,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   targetMetBanner: {
@@ -376,6 +376,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm + 2,
   },
   dayLeft: {
+    flex: 1,
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm + 2,
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayScore: {
-    fontSize: 18,
+    fontSize: FontSize.lg,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
