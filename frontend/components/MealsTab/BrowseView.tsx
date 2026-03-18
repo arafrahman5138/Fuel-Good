@@ -347,7 +347,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
 
     return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+      style={[styles.card, { width: CARD_WIDTH, backgroundColor: theme.surface, borderColor: theme.border }]}
       activeOpacity={0.7}
       onPress={() => router.push(`/browse/${item.id}`)}
     >
@@ -1169,7 +1169,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   card: {
-    width: CARD_WIDTH,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     padding: Spacing.md,
