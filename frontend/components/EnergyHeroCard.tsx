@@ -131,7 +131,8 @@ export function EnergyHeroCard({
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'system' ? (systemScheme ?? 'dark') === 'dark' : themeMode === 'dark';
 
-  const hasData = mealCount > 0;
+  // Hero card shows weekly data — it has data if there's a fuel score OR any meals this week
+  const hasData = fuelScore > 0 || mealCount > 0;
   const tier = getTierCfg(hasData ? fuelScore : 0);
 
   // Adaptive colors
