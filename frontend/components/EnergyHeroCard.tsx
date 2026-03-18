@@ -202,33 +202,25 @@ export function EnergyHeroCard({
           </View>
 
           <View style={styles.statsCol}>
-            {/* ── Score rows: Fuel + MES ── */}
-            <View style={styles.scoreRows}>
+            {/* ── Tier pill + MES score ── */}
+            <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
+              <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
+                {hasData ? tier.label : 'Ready to fuel'}
+              </Text>
+            </View>
+            {hasData && (mesScore ?? 0) > 0 && (
               <View style={styles.scoreRow}>
-                <View style={[styles.scoreIconWrap, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
-                  <Ionicons name="leaf" size={11} color={hasData ? tier.color : textTertiary} />
+                <View style={[styles.scoreIconWrap, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
+                  <Ionicons name="flash" size={11} color={mesTierColor ?? '#8B5CF6'} />
                 </View>
-                <Text style={[styles.scoreNumber, { color: hasData ? tier.color : textTertiary }]}>
-                  {hasData ? fuelScore : '—'}
+                <Text style={[styles.scoreNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
+                  {mesScore}
                 </Text>
-                <Text style={[styles.scoreTier, { color: hasData ? (isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary) : textTertiary }]}>
-                  {hasData ? tier.label : 'Ready to fuel'}
+                <Text style={[styles.scoreTier, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
+                  MES
                 </Text>
               </View>
-              {hasData && (mesScore ?? 0) > 0 && (
-                <View style={styles.scoreRow}>
-                  <View style={[styles.scoreIconWrap, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
-                    <Ionicons name="flash" size={11} color={mesTierColor ?? '#8B5CF6'} />
-                  </View>
-                  <Text style={[styles.scoreNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
-                    {mesScore}
-                  </Text>
-                  <Text style={[styles.scoreTier, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
-                    MES
-                  </Text>
-                </View>
-              )}
-            </View>
+            )}
             <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={2}>
               {tagline.text}
             </Text>
@@ -334,8 +326,17 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.xs + 2,
   },
-  scoreRows: {
-    gap: 5,
+  tierPill: {
+    alignSelf: 'flex-start',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+  },
+  tierPillText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   scoreRow: {
     flexDirection: 'row',
