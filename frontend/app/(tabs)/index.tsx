@@ -569,7 +569,7 @@ export default function HomeScreen() {
         </LinearGradient>
       </TouchableOpacity>
     );
-  }, []);
+  }, [CARD_WIDTH]);
 
   return (
     <ScreenContainer safeArea={false}>
