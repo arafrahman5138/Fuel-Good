@@ -25,6 +25,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
+import { useFuelStore } from '../../stores/fuelStore';
 import { mealPlanApi, nutritionApi, recipeApi } from '../../services/api';
 import { FLAVOR_OPTIONS, DIETARY_OPTIONS, ALLERGY_OPTIONS } from '../../constants/Config';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
@@ -68,6 +69,13 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string 
   bulk_cook: { bg: 'rgba(59,130,246,0.12)', text: '#3B82F6', label: 'Bulk Cook' },
   quick: { bg: 'rgba(34,197,94,0.12)', text: '#22C55E', label: 'Quick' },
   sit_down: { bg: 'rgba(245,158,11,0.12)', text: '#F59E0B', label: 'Meals' },
+};
+
+const MEAL_TYPE_COLORS: Record<string, string> = {
+  breakfast: '#F59E0B',
+  lunch: '#22C55E',
+  dinner: '#3B82F6',
+  snack: '#8B5CF6',
 };
 
 function getMealPlanDisplayMes(recipe: any): number {
@@ -893,7 +901,20 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
           <View>
             <Text style={[styles.title, { color: theme.text, marginBottom: 0 }]}>Meal Plan</Text>
             <Text style={[styles.planDate, { color: theme.textSecondary }]}>
-              Week of {currentPlan.week_start || 'This Week'}
+              {(() => {
+                const ws = currentPlan.week_start;
+                if (!ws) return 'This Week';
+                const start = new Date(ws + 'T12:00:00');
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                const now = new Date();
+                const nowMon = new Date(now);
+                nowMon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+                const isThisWeek = start.toISOString().slice(0, 10) === nowMon.toISOString().slice(0, 10);
+                if (isThisWeek) return 'This Week';
+                const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return `${fmt(start)} – ${fmt(end)}`;
+              })()}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
@@ -985,8 +1006,38 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
           </View>
         )}
 
+        {/* Projected flex earnings */}
+        {currentPlan?.items && currentPlan.items.length > 0 && (() => {
+          const fuelTarget = useFuelStore.getState().settings?.fuel_target ?? 80;
+          const avgCheatCost = Math.max(1, fuelTarget - 35);
+          const projectedFlex = Math.floor(currentPlan.items.length * (100 - fuelTarget) / avgCheatCost);
+          return projectedFlex > 0 ? (
+            <View style={[styles.projectedFlexRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Ionicons name="ticket" size={14} color="#F59E0B" />
+              <Text style={[styles.projectedFlexText, { color: theme.textSecondary }]}>
+                This plan earns ~{projectedFlex} flex meals
+              </Text>
+            </View>
+          ) : null;
+        })()}
+
         {/* Meals for selected day */}
-        <Text style={[styles.sectionLabel, { color: theme.text }]}>{selectedDay}'s Meals</Text>
+        <View style={styles.dayHeaderRow}>
+          <Text style={[styles.sectionLabel, { color: theme.text, marginBottom: 0 }]}>{selectedDay}'s Meals</Text>
+          {todayMeals.length > 0 && (() => {
+            const dayTotals = todayMeals.reduce((acc: any, m: any) => {
+              const snap = m.recipe_data?.nutrition_estimate || m.recipe_data?.nutrition_info || {};
+              acc.cal += Number(snap.calories || 0);
+              acc.pro += Number(snap.protein || 0);
+              return acc;
+            }, { cal: 0, pro: 0 });
+            return (
+              <Text style={[styles.dayTotalsText, { color: theme.textTertiary }]}>
+                {todayMeals.length} meals · {Math.round(dayTotals.cal).toLocaleString()} cal · {Math.round(dayTotals.pro)}g protein
+              </Text>
+            );
+          })()}
+        </View>
 
         {todayMeals.length === 0 ? (
           <Card padding={Spacing.xxl}>
@@ -1007,10 +1058,20 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             const prepStatus = recipe.prep_status;
             const mesTier = getMealPlanDisplayTier(recipe);
             const mesTierColor = getTierConfig(mesTier).color;
+            const snap = recipe.nutrition_estimate || recipe.nutrition_info || {};
+            const mealTypeColor = MEAL_TYPE_COLORS[meal.meal_type] || '#22C55E';
+
+            // Build compact meta string: "60 min · easy" or "60 min · easy · 4 srv"
+            const metaParts: string[] = [];
+            if (totalMinutes > 0) metaParts.push(`${totalMinutes} min`);
+            if (recipe.difficulty) metaParts.push(recipe.difficulty);
+            if (meal.is_bulk_cook && meal.servings) metaParts.push(`${meal.servings} srv`);
+            const metaStr = metaParts.join(' · ');
+
             return (
-              <Card 
+              <Card
                 key={index}
-                style={[styles.mealCard, { borderColor: theme.border, backgroundColor: theme.surface }]} 
+                style={[styles.mealCard, { borderColor: theme.border, backgroundColor: theme.surface, borderLeftColor: mealTypeColor, borderLeftWidth: 3 }]}
                 padding={Spacing.lg}
                 onPress={() => {
                   if (!recipeId) return;
@@ -1023,24 +1084,30 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                 }}
               >
                 <View style={styles.mealTopRow}>
-                  <Text style={[styles.mealType, { color: theme.textTertiary }]}>
+                  <Text style={[styles.mealType, { color: mealTypeColor }]}>
                     {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}
                   </Text>
-                  {mesScore > 0 ? (
-                    <View
-                      style={[
-                        styles.scoreRing,
-                        {
-                          borderColor: mesTierColor + '55',
-                          backgroundColor: mesTierColor + '08',
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.scoreRingText, { color: mesTierColor }]}>
-                        {Math.round(mesScore)}
-                      </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={styles.fuelBadge}>
+                      <Ionicons name="leaf" size={10} color="#22C55E" />
+                      <Text style={styles.fuelBadgeText}>100</Text>
                     </View>
-                  ) : null}
+                    {mesScore > 0 ? (
+                      <View
+                        style={[
+                          styles.scoreRing,
+                          {
+                            borderColor: mesTierColor,
+                            backgroundColor: mesTierColor + '15',
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.scoreRingText, { color: mesTierColor }]}>
+                          {Math.round(mesScore)}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
                 <View style={styles.mealHeader}>
                   <View style={styles.mealHeaderLeft}>
@@ -1054,6 +1121,14 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                       {cleanRecipeDescription(recipe.description)}
                     </Text>
                   )}
+
+                {/* Compact nutrition row */}
+                {(snap.calories || snap.protein) ? (
+                  <Text style={[styles.nutritionRow, { color: theme.textTertiary }]}>
+                    <Text style={{ color: mesTierColor, fontWeight: '700' }}>{Math.round(snap.calories || 0)} cal</Text>
+                    {' · '}{Math.round(snap.protein || 0)}g protein · {Math.round(snap.carbs || 0)}g carbs · {Math.round(snap.fat || 0)}g fat
+                  </Text>
+                ) : null}
 
                 <View style={[styles.metaStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <TouchableOpacity
@@ -1099,29 +1174,11 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     <Text style={[styles.replaceBtnText, { color: theme.textSecondary }]}>Replace</Text>
                   </TouchableOpacity>
 
-                  {totalMinutes > 0 ? (
+                  {metaStr ? (
                     <View style={styles.metaPill}>
-                      <Ionicons name="time-outline" size={14} color={theme.textTertiary} />
+                      <Ionicons name="time-outline" size={13} color={theme.textTertiary} />
                       <Text style={[styles.metaPillText, { color: theme.textTertiary }]}>
-                        {totalMinutes} min
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {recipe.difficulty ? (
-                    <View style={styles.metaPill}>
-                      <Ionicons name="sparkles-outline" size={13} color={theme.textTertiary} />
-                      <Text style={[styles.metaPillText, { color: theme.textTertiary }]}>
-                        {recipe.difficulty}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {meal.is_bulk_cook ? (
-                    <View style={styles.metaPill}>
-                      <Ionicons name="layers-outline" size={13} color={theme.info} />
-                      <Text style={[styles.metaPillText, { color: theme.info }]}>
-                        {meal.servings} servings
+                        {metaStr}
                       </Text>
                     </View>
                   ) : null}
@@ -1653,6 +1710,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: BorderRadius.xxl,
   },
+  projectedFlexRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  projectedFlexText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  fuelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#22C55E15',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  fuelBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#22C55E',
+  },
   mealTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1693,6 +1778,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     lineHeight: 22,
+  },
+  nutritionRow: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    marginTop: Spacing.sm,
+    lineHeight: 17,
+  },
+  dayHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: Spacing.sm,
+  },
+  dayTotalsText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   categoryBadge: {
     flexDirection: 'row',

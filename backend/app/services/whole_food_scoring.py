@@ -30,6 +30,25 @@ ADDED_SUGARS = {
     "evaporated cane juice",
     "tapioca syrup",
     "rice syrup",
+    "agave nectar",
+    "agave syrup",
+    "coconut sugar",
+    "date syrup",
+    "maple syrup",
+    "brown rice syrup",
+    "barley malt",
+    "barley malt syrup",
+    "fruit juice concentrate",
+    "malt syrup",
+    "molasses",
+    "treacle",
+    "muscovado",
+    "panela",
+    "jaggery",
+    "demerara",
+    "sucrose",
+    "maltose",
+    "galactose",
 }
 
 REFINED_FLOURS = {
@@ -52,6 +71,8 @@ ARTIFICIAL_ADDITIVES = {
     "yellow 6",
     "blue 1",
     "blue 2",
+    "red 3",
+    "green 3",
     "sucralose",
     "aspartame",
     "acesulfame potassium",
@@ -59,8 +80,15 @@ ARTIFICIAL_ADDITIVES = {
     "sodium benzoate",
     "bht",
     "bha",
+    "tbhq",
     "nitrites",
     "nitrates",
+    "sodium nitrite",
+    "sodium nitrate",
+    "titanium dioxide",
+    "caramel color",
+    "fd&c",
+    "partially hydrogenated",
 }
 
 EMULSIFIERS_AND_GUMS = {
@@ -73,6 +101,12 @@ EMULSIFIERS_AND_GUMS = {
     "gellan gum",
     "carrageenan",
     "polysorbate 80",
+    "cellulose gum",
+    "datem",
+    "sodium stearoyl lactylate",
+    "calcium stearate",
+    "methylcellulose",
+    "locust bean gum",
 }
 
 PROTEIN_ISOLATES = {
@@ -87,21 +121,38 @@ WHOLE_FOOD_FIRST_INGREDIENT_HINTS = {
     "beef",
     "turkey",
     "salmon",
+    "pork",
+    "lamb",
+    "shrimp",
+    "tuna",
+    "cod",
+    "trout",
+    "sardines",
     "eggs",
     "oats",
     "almonds",
     "cashews",
     "walnuts",
+    "peanuts",
+    "pecans",
+    "macadamia",
     "dates",
     "apples",
     "banana",
     "avocado",
+    "coconut",
     "milk",
     "greek yogurt",
     "lentils",
     "beans",
+    "chickpeas",
     "brown rice",
+    "quinoa",
     "sweet potato",
+    "sweet potatoes",
+    "hemp seeds",
+    "chia seeds",
+    "flaxseed",
 }
 
 
@@ -124,9 +175,10 @@ def _split_ingredients(ingredients_text: str | None) -> list[str]:
 
 
 def _find_matches(ingredients: list[str], terms: set[str]) -> list[str]:
+    compiled = {term: re.compile(r"\b" + re.escape(term) + r"\b") for term in terms}
     matches: list[str] = []
     for item in ingredients:
-        if any(term in item for term in terms):
+        if any(pattern.search(item) for pattern in compiled.values()):
             matches.append(item)
     seen: set[str] = set()
     deduped: list[str] = []
@@ -256,7 +308,7 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
         highlights.append("Carbs come with meaningful fiber.")
 
     first_ingredient = ingredients[0] if ingredients else ""
-    if first_ingredient and any(hint in first_ingredient for hint in WHOLE_FOOD_FIRST_INGREDIENT_HINTS):
+    if first_ingredient and any(re.search(r"\b" + re.escape(hint) + r"\b", first_ingredient) for hint in WHOLE_FOOD_FIRST_INGREDIENT_HINTS):
         score += 4
         highlights.append("Starts with a recognizable whole-food ingredient.")
 

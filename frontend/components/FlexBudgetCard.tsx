@@ -60,6 +60,10 @@ interface FlexBudgetCardProps {
   targetMet: boolean;
   streakWeeks: number;
   expectedMeals: number;
+  weeklyMesScore?: number;
+  weeklyMesTierColor?: string;
+  /** Previous week's avg fuel score for trending comparison */
+  prevWeekScore?: number;
   onOpenSettings?: () => void;
   onPress?: () => void;
 }
@@ -73,6 +77,9 @@ export function FlexBudgetCard({
   targetMet,
   streakWeeks,
   expectedMeals,
+  weeklyMesScore,
+  weeklyMesTierColor,
+  prevWeekScore,
   onOpenSettings,
   onPress,
 }: FlexBudgetCardProps) {
@@ -231,9 +238,22 @@ export function FlexBudgetCard({
                 </Text>
               </View>
 
+              {(weeklyMesScore ?? 0) > 0 && (
+                <>
+                  <View style={[styles.rowDivider, { backgroundColor: dividerColor }]} />
+                  <View style={styles.statRow}>
+                    <Ionicons name="flash" size={14} color={weeklyMesTierColor ?? '#8B5CF6'} />
+                    <Text style={[styles.statValue, { color: weeklyMesTierColor ?? '#8B5CF6' }]}>
+                      {weeklyMesScore}
+                      <Text style={[styles.statUnit, { color: textTertiary }]}> MES</Text>
+                    </Text>
+                  </View>
+                </>
+              )}
+
               <View style={[styles.rowDivider, { backgroundColor: dividerColor }]} />
 
-              {/* Row 3: Streak */}
+              {/* Streak */}
               <View style={styles.statRow}>
                 <Ionicons
                   name={streakWeeks > 0 ? 'flash' : 'trending-up-outline'}
@@ -282,9 +302,22 @@ export function FlexBudgetCard({
                 style={[styles.progressFill, { width: `${mealProgressPct}%` }]}
               />
             </View>
-            <Text style={[styles.progressLabel, { color: textTertiary }]}>
-              {mealCount} of {expectedMeals} meals logged this week
-            </Text>
+            <View style={styles.progressLabelRow}>
+              <Text style={[styles.progressLabel, { color: textTertiary }]}>
+                {mealCount} of {expectedMeals} meals logged this week
+              </Text>
+              {hasData && prevWeekScore != null && prevWeekScore > 0 && (() => {
+                const diff = Math.round(avgScore - prevWeekScore);
+                if (diff === 0) return null;
+                const isUp = diff > 0;
+                const trendColor = isUp ? '#22C55E' : '#F59E0B';
+                return (
+                  <Text style={[styles.trendText, { color: trendColor }]}>
+                    {isUp ? '↑' : '↓'} {Math.abs(diff)} pts
+                  </Text>
+                );
+              })()}
+            </View>
           </View>
         )}
       </LinearGradient>
@@ -442,8 +475,17 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   progressLabel: {
     fontSize: 10,
     fontWeight: '500',
+  },
+  trendText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

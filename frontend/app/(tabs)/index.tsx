@@ -356,6 +356,23 @@ export default function HomeScreen() {
     day: 'numeric',
   });
 
+  // Dynamic fuel card title based on selected day
+  const fuelCardTitle = useMemo(() => {
+    const todayKey = toDateKey(new Date());
+    if (selectedDayKey === todayKey) return "Today's Fuel";
+    // Check if selected date is within the visible week strip
+    const dayInWeek = weekDays.find((d) => d.dayKey === selectedDayKey);
+    if (dayInWeek) {
+      const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+      return `${dayOfWeek}'s Fuel`;
+    }
+    // Outside current week — show date
+    const month = selectedDate.toLocaleDateString('en-US', { month: 'long' });
+    const day = selectedDate.getDate();
+    const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+    return `${month} ${day}${suffix}'s Fuel`;
+  }, [selectedDayKey, selectedDate, weekDays]);
+
   const todayMeals = useMemo(() => {
     if (!currentPlan?.items) return [];
     return currentPlan.items.filter(
@@ -428,11 +445,19 @@ export default function HomeScreen() {
 
       // Immediate feedback
       setLoggedMealIds((prev) => new Set(prev).add(meal.id));
-      // Refresh nutrition data
+      // Refresh nutrition + fuel data
       loadDailyNutrition(selectedDayKey);
+      const prevFlex = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+      await fetchFuelWeekly(selectedDayKey);
+      const newFlex = useFuelStore.getState().weekly?.flex_budget?.flex_meals_remaining ?? 0;
 
-      const sideLabel = hasPairing ? ` + ${preferredPairing.title}` : '';
-      Alert.alert('Logged!', `"${recipe?.title || meal.meal_type}"${sideLabel} added to today's log.`);
+      if (newFlex > prevFlex) {
+        setXpToastIcon('ticket');
+        setXpToast(`Flex meal earned! You have ${newFlex} now`);
+      } else {
+        setXpToastIcon('leaf');
+        setXpToast(`${recipe?.title || meal.meal_type} logged`);
+      }
     } catch {
       Alert.alert('Error', 'Could not log this meal. Try again.');
     } finally {
@@ -820,6 +845,24 @@ export default function HomeScreen() {
             metabolic: healthPulse.metabolic,
             nutrition: healthPulse.nutrition,
           } : undefined}
+          flexMealsEarned={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
+          cleanMealsToNextFlex={(() => {
+            const flexRemaining = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+            if (flexRemaining > 0) return 0;
+            const target = fuelSettings?.fuel_target ?? 80;
+            const avgCheatCost = Math.max(1, target - 35);
+            const pointsRemaining = (fuelWeekly?.flex_budget as any)?.flex_points_remaining ?? 0;
+            if (pointsRemaining >= avgCheatCost) return 0;
+            return Math.ceil((avgCheatCost - pointsRemaining) / (100 - target));
+          })()}
+          onPress={() => router.push('/food/fuel-weekly' as any)}
+        />
+
+        {/* ── Flex Insights (tickets + coach) ─────────────────────────── */}
+        <FlexInsightsCard
+          flexMealsRemaining={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
+          coachContext={flexSuggestions?.context}
+          coachSuggestions={flexSuggestions?.suggestions?.length ? flexSuggestions.suggestions : undefined}
         />
 
         {/* ── Today's Progress ────────────────────────────────────────── */}
@@ -845,6 +888,7 @@ export default function HomeScreen() {
           protein={{ consumed: proteinConsumed, target: proteinTarget }}
           carbs={{ consumed: carbsConsumed, target: carbsTarget }}
           fat={{ consumed: fatConsumed, target: fatTarget }}
+          title={fuelCardTitle}
         />
 
         {/* ── Today's Plan ─────────────────────────────────────────────── */}
@@ -891,6 +935,7 @@ export default function HomeScreen() {
 
             {/* Meal rows */}
             {todayMeals.length > 0 ? (
+              <>
               <View style={s.todayMeals}>
                 {todayMeals.map((meal, idx) => {
                   const icon = MEAL_TYPE_ICONS[meal.meal_type?.toLowerCase()] || 'ellipse-outline';
@@ -924,6 +969,10 @@ export default function HomeScreen() {
                           <Text style={[s.mealType, { color: theme.textTertiary }]}>{meal.meal_type}</Text>
                         </View>
                       </TouchableOpacity>
+                      <View style={[s.fuelBadge, { backgroundColor: '#22C55E15' }]}>
+                        <Ionicons name="leaf" size={10} color="#22C55E" />
+                        <Text style={[s.fuelBadgeText, { color: '#22C55E' }]}>100</Text>
+                      </View>
                       {mesScore > 0 && tierCfg && (
                         <View style={[s.mesBadge, { backgroundColor: tierCfg.color + '18' }]}>
                           <Text style={[s.mesBadgeText, { color: tierCfg.color }]}>
@@ -953,6 +1002,15 @@ export default function HomeScreen() {
                   );
                 })}
               </View>
+              {planCompletion.completed < planCompletion.total && (
+                <View style={[s.planFlexFooter, { borderTopColor: theme.surfaceHighlight }]}>
+                  <Ionicons name="ticket" size={12} color="#F59E0B" />
+                  <Text style={[s.planFlexText, { color: theme.textSecondary }]}>
+                    Log {planCompletion.total - planCompletion.completed} more → earn flex points
+                  </Text>
+                </View>
+              )}
+              </>
             ) : currentPlan ? (
               <View style={s.todayEmpty}>
                 <Ionicons name="leaf-outline" size={24} color={theme.textTertiary} />
@@ -985,13 +1043,6 @@ export default function HomeScreen() {
             )}
           </Card>
         </View>
-
-        {/* ── Flex Insights (tickets + coach) ─────────────────────────── */}
-        <FlexInsightsCard
-          flexMealsRemaining={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
-          coachContext={flexSuggestions?.context}
-          coachSuggestions={flexSuggestions?.suggestions?.length ? flexSuggestions.suggestions : undefined}
-        />
 
         {/* ── Daily Quests ──────────────────────────────────────────────── */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Today's Quests</Text>
@@ -1335,6 +1386,30 @@ const s = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     fontVariant: ['tabular-nums'] as any,
+  },
+  fuelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  fuelBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  planFlexFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  planFlexText: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
   },
   mealType: {
     fontSize: FontSize.xs,

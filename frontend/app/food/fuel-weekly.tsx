@@ -2,7 +2,7 @@
  * fuel-weekly — Weekly Fuel Score breakdown screen.
  * Shows 7-day breakdown with expandable meal details per day.
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   LayoutAnimation,
   Platform,
@@ -24,6 +24,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useThemeStore } from '../../stores/themeStore';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { useFuelStore } from '../../stores/fuelStore';
+import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../stores/metabolicBudgetStore';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -32,11 +33,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 // ── Tier config ──────────────────────────────────────────────────────────────
 const TIER_CONFIGS = [
-  { min: 90, label: 'Elite Fuel', color: '#22C55E' },
-  { min: 75, label: 'Strong Fuel', color: '#4ADE80' },
-  { min: 60, label: 'Decent', color: '#F59E0B' },
-  { min: 40, label: 'Mixed', color: '#FB923C' },
-  { min: 0, label: 'Flex Day', color: '#EF4444' },
+  { min: 90, label: 'Elite Fuel', color: '#22C55E', darkGradient: ['#021a0e', '#0d3320', '#155227'] as const },
+  { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const },
+  { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const },
+  { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const },
+  { min: 0, label: 'Flex Day', color: '#EF4444', darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const },
 ];
 
 function getTierCfg(score: number) {
@@ -69,12 +70,38 @@ export default function FuelWeeklyScreen() {
   const weekly = useFuelStore((s) => s.weekly);
   const settings = useFuelStore((s) => s.settings);
   const streak = useFuelStore((s) => s.streak);
+  const mesHistory = useMetabolicBudgetStore((s) => s.scoreHistory);
 
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
+  // Build a date→MES lookup from history
+  const mesByDate = useMemo(() => {
+    const map: Record<string, { score: number; tier: string; color: string }> = {};
+    for (const entry of mesHistory) {
+      const score = entry.display_score ?? entry.total_score ?? 0;
+      if (score > 0) {
+        const tierKey = getTierFromScore(score);
+        map[entry.date] = { score: Math.round(score), tier: tierKey, color: getTierConfig(tierKey).color };
+      }
+    }
+    return map;
+  }, [mesHistory]);
+
+  // Weekly MES average
+  const weeklyMes = useMemo(() => {
+    if (!weekly) return null;
+    const breakdown = weekly.daily_breakdown ?? [];
+    const scores = breakdown
+      .map((d: any) => mesByDate[d.date]?.score ?? 0)
+      .filter((s: number) => s > 0);
+    if (scores.length === 0) return null;
+    const avg = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+    return { score: avg, color: getTierConfig(getTierFromScore(avg)).color };
+  }, [weekly, mesByDate]);
+
   if (!weekly) {
     return (
-      <ScreenContainer>
+      <ScreenContainer safeArea={false} padded={false}>
         <AppScreenHeader title="Weekly Fuel" />
         <View style={styles.emptyWrap}>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No weekly data yet</Text>
@@ -92,80 +119,107 @@ export default function FuelWeeklyScreen() {
   const textTertiary = isDark ? 'rgba(255,255,255,0.38)' : theme.textTertiary;
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : theme.surface;
   const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : theme.border;
+  const gradientColors = isDark
+    ? (tier.darkGradient as unknown as string[])
+    : [theme.surface, theme.surface];
 
   const toggleDay = (date: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedDay((prev) => (prev === date ? null : date));
   };
 
+  // Progress
+  const expectedMeals = settings?.expected_meals_per_week ?? 21;
+  const mealProgressPct = expectedMeals > 0 ? Math.min(100, (weekly.meal_count / expectedMeals) * 100) : 0;
+
   return (
-    <ScreenContainer>
+    <ScreenContainer safeArea={false} padded={false}>
       <AppScreenHeader title="Weekly Fuel" />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Weekly Summary ── */}
-        <View style={[styles.summaryCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-          <View style={styles.summaryBody}>
+        {/* ── Hero Summary Card ── */}
+        <LinearGradient
+          colors={gradientColors as any}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={[styles.heroCard, { borderColor: isDark ? tier.color + '38' : cardBorder }]}
+        >
+          <View style={styles.heroBody}>
             <FuelScoreRing
               score={weekly.avg_fuel_score}
-              size={80}
+              size={110}
               showLabel
               showIcon
+              trackColor={isDark ? 'rgba(255,255,255,0.10)' : theme.surfaceHighlight}
             />
-            <View style={styles.summaryStats}>
+            <View style={styles.heroStats}>
               <View style={[styles.tierPill, { backgroundColor: tier.color + '18' }]}>
                 <Text style={[styles.tierPillText, { color: tier.color }]}>{tier.label}</Text>
               </View>
-              <Text style={[styles.summaryAvg, { color: textPrimary }]}>
-                {Math.round(weekly.avg_fuel_score)}
-                <Text style={[styles.summaryAvgLabel, { color: textTertiary }]}> avg score</Text>
-              </Text>
-              <View style={styles.summaryMeta}>
-                <View style={styles.metaItem}>
+              {/* Weekly MES */}
+              {weeklyMes && weeklyMes.score > 0 && (
+                <View style={styles.mesRow}>
+                  <Ionicons name="flash" size={13} color={weeklyMes.color} />
+                  <Text style={[styles.mesNumber, { color: weeklyMes.color }]}>{weeklyMes.score}</Text>
+                  <Text style={[styles.mesLabel, { color: textSecondary }]}>MES avg</Text>
+                </View>
+              )}
+              <View style={styles.heroMeta}>
+                <View style={styles.metaChip}>
                   <Ionicons name="restaurant-outline" size={12} color={textSecondary} />
                   <Text style={[styles.metaText, { color: textSecondary }]}>
                     {weekly.meal_count} meals
                   </Text>
                 </View>
                 {flexRemaining > 0 && (
-                  <View style={styles.metaItem}>
+                  <View style={styles.metaChip}>
                     <Ionicons name="pizza-outline" size={12} color="#4ADE80" />
                     <Text style={[styles.metaText, { color: '#4ADE80' }]}>
                       {flexRemaining} flex left
                     </Text>
                   </View>
                 )}
-                {(streak?.current_streak ?? 0) > 0 && (
-                  <View style={styles.metaItem}>
-                    <Ionicons name="flash" size={12} color="#FBBF24" />
-                    <Text style={[styles.metaText, { color: '#FBBF24' }]}>
-                      {streak!.current_streak} wk streak
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </View>
+
+          {/* Progress bar */}
+          <View style={styles.progressSection}>
+            <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : theme.border }]}>
+              <LinearGradient
+                colors={[tier.color, tier.color + '88'] as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressFill, { width: `${mealProgressPct}%` }]}
+              />
+            </View>
+            <Text style={[styles.progressLabel, { color: textTertiary }]}>
+              {weekly.meal_count} of {expectedMeals} meals logged this week
+            </Text>
+          </View>
+
+          {/* Target met banner */}
           {weekly.target_met && (
-            <View style={[styles.targetMetBanner, { backgroundColor: tier.color + '12' }]}>
+            <View style={[styles.targetBanner, { backgroundColor: tier.color + '12' }]}>
               <Ionicons name="checkmark-circle" size={14} color={tier.color} />
-              <Text style={[styles.targetMetText, { color: tier.color }]}>
+              <Text style={[styles.targetText, { color: tier.color }]}>
                 Weekly target of {settings?.fuel_target ?? 80}+ met
               </Text>
             </View>
           )}
-        </View>
+        </LinearGradient>
 
-        {/* ── Day-by-Day Breakdown ── */}
+        {/* ── Day-by-Day ── */}
         <Text style={[styles.sectionTitle, { color: textTertiary }]}>DAY BY DAY</Text>
 
-        {breakdown.map((day) => {
+        {breakdown.map((day: any) => {
           const dayTier = getTierCfg(day.avg_fuel_score);
           const dayLabel = formatDayLabel(day.date);
           const isExpanded = expandedDay === day.date;
           const hasMeals = day.meal_count > 0;
+          const dayMes = mesByDate[day.date];
 
           return (
             <TouchableOpacity
@@ -181,22 +235,20 @@ export default function FuelWeeklyScreen() {
                 },
               ]}
             >
-              {/* Day header */}
               <View style={styles.dayHeader}>
                 <View style={styles.dayLeft}>
                   {hasMeals ? (
-                    <FuelScoreRing
-                      score={day.avg_fuel_score}
-                      size={36}
-                      showLabel={false}
-                      showIcon={false}
-                    />
+                    <View style={[styles.dayScoreDot, { backgroundColor: dayTier.color + '18' }]}>
+                      <Text style={[styles.dayScoreDotText, { color: dayTier.color }]}>
+                        {Math.round(day.avg_fuel_score)}
+                      </Text>
+                    </View>
                   ) : (
-                    <View style={[styles.emptyRing, { borderColor: textTertiary + '30' }]}>
-                      <Ionicons name="remove" size={14} color={textTertiary} />
+                    <View style={[styles.dayScoreDot, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.surfaceHighlight }]}>
+                      <Text style={[styles.dayScoreDotText, { color: textTertiary }]}>—</Text>
                     </View>
                   )}
-                  <View>
+                  <View style={styles.dayInfo}>
                     <View style={styles.dayNameRow}>
                       <Text style={[styles.dayName, { color: textPrimary }]}>{dayLabel.day}</Text>
                       {dayLabel.isToday && (
@@ -210,14 +262,17 @@ export default function FuelWeeklyScreen() {
                 </View>
                 <View style={styles.dayRight}>
                   {hasMeals ? (
-                    <>
-                      <Text style={[styles.dayScore, { color: dayTier.color }]}>
-                        {Math.round(day.avg_fuel_score)}
-                      </Text>
-                      <Text style={[styles.dayMeals, { color: textTertiary }]}>
+                    <View style={styles.dayScores}>
+                      <Text style={[styles.dayMeals, { color: textSecondary }]}>
                         {day.meal_count} meal{day.meal_count !== 1 ? 's' : ''}
                       </Text>
-                    </>
+                      {dayMes && (
+                        <View style={styles.dayMesChip}>
+                          <Ionicons name="flash" size={10} color={dayMes.color} />
+                          <Text style={[styles.dayMesText, { color: dayMes.color }]}>{dayMes.score}</Text>
+                        </View>
+                      )}
+                    </View>
                   ) : (
                     <Text style={[styles.restDay, { color: textTertiary }]}>Rest day</Text>
                   )}
@@ -226,7 +281,6 @@ export default function FuelWeeklyScreen() {
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
                       size={14}
                       color={textTertiary}
-                      style={{ marginLeft: 4 }}
                     />
                   )}
                 </View>
@@ -235,38 +289,37 @@ export default function FuelWeeklyScreen() {
               {/* Expanded meal list */}
               {isExpanded && hasMeals && (
                 <View style={[styles.mealList, { borderTopColor: cardBorder }]}>
-                  {day.meals.map((meal, idx) => {
-                    const mealTier = getTierCfg(meal.fuel_score);
-                    return (
-                      <View
-                        key={meal.id || idx}
-                        style={[
-                          styles.mealRow,
-                          idx < day.meals.length - 1 && {
-                            borderBottomWidth: StyleSheet.hairlineWidth,
-                            borderBottomColor: cardBorder,
-                          },
-                        ]}
-                      >
-                        <View style={styles.mealInfo}>
-                          <Ionicons
-                            name={meal.source_type === 'scan' ? 'camera-outline' : 'restaurant-outline'}
-                            size={13}
-                            color={textSecondary}
-                          />
-                          <Text style={[styles.mealTitle, { color: textPrimary }]} numberOfLines={1}>
-                            {meal.title}
-                          </Text>
-                        </View>
-                        <FuelScoreBadge score={meal.fuel_score} fuelTarget={settings?.fuel_target} />
+                  {day.meals.map((meal: any, idx: number) => (
+                    <View
+                      key={meal.id || idx}
+                      style={[
+                        styles.mealRow,
+                        idx < day.meals.length - 1 && {
+                          borderBottomWidth: StyleSheet.hairlineWidth,
+                          borderBottomColor: cardBorder,
+                        },
+                      ]}
+                    >
+                      <View style={styles.mealInfo}>
+                        <Ionicons
+                          name={meal.source_type === 'scan' ? 'camera-outline' : 'restaurant-outline'}
+                          size={13}
+                          color={textSecondary}
+                        />
+                        <Text style={[styles.mealTitle, { color: textPrimary }]} numberOfLines={1}>
+                          {meal.title}
+                        </Text>
                       </View>
-                    );
-                  })}
+                      <FuelScoreBadge score={meal.fuel_score} fuelTarget={settings?.fuel_target} />
+                    </View>
+                  ))}
                 </View>
               )}
             </TouchableOpacity>
           );
         })}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -275,8 +328,8 @@ export default function FuelWeeklyScreen() {
 // ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: 100,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 60,
   },
   emptyWrap: {
     flex: 1,
@@ -288,26 +341,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Summary card
-  summaryCard: {
+  // Hero card
+  heroCard: {
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    padding: Spacing.md + 2,
+    overflow: 'hidden',
+    paddingHorizontal: Spacing.md + 4,
+    paddingTop: Spacing.md + 2,
+    paddingBottom: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  summaryBody: {
+  heroBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md + 2,
+    gap: Spacing.md + 4,
   },
-  summaryStats: {
+  heroStats: {
     flex: 1,
-    gap: Spacing.xs,
+    gap: Spacing.xs + 2,
   },
   tierPill: {
     alignSelf: 'flex-start',
     borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.sm + 2,
     paddingVertical: 3,
   },
   tierPillText: {
@@ -316,39 +372,74 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  summaryAvg: {
-    fontSize: 22,
+  heroAvg: {
+    fontSize: 26,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
+    letterSpacing: -0.5,
   },
-  summaryAvgLabel: {
+  heroAvgLabel: {
     fontSize: FontSize.sm,
     fontWeight: '500',
   },
-  summaryMeta: {
+  mesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  mesNumber: {
+    fontSize: 17,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  mesLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    marginLeft: 1,
+  },
+  heroMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
+    gap: Spacing.sm + 2,
+    marginTop: 2,
   },
-  metaItem: {
+  metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   metaText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
-  targetMetBanner: {
+  progressSection: {
+    gap: 4,
+    marginTop: Spacing.sm + 4,
+  },
+  progressTrack: {
+    height: 5,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  targetBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: Spacing.sm + 2,
+    marginTop: Spacing.sm,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: BorderRadius.md,
   },
-  targetMetText: {
+  targetText: {
     fontSize: FontSize.xs,
     fontWeight: '600',
   },
@@ -358,14 +449,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.sm + 2,
   },
 
   // Day card
   dayCard: {
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.sm + 2,
     overflow: 'hidden',
   },
   dayHeader: {
@@ -373,21 +464,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
+    paddingVertical: Spacing.sm + 4,
   },
   dayLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm + 2,
+    gap: Spacing.sm + 4,
   },
-  emptyRing: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderStyle: 'dashed',
+  dayScoreDot: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dayScoreDotText: {
+    fontSize: 15,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  dayInfo: {
+    gap: 1,
   },
   dayNameRow: {
     flexDirection: 'row',
@@ -395,12 +492,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayName: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     fontWeight: '700',
   },
   todayBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: BorderRadius.full,
   },
   todayBadgeText: {
@@ -410,23 +507,31 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   dayDate: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    marginTop: 1,
   },
   dayRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  dayScore: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
+  dayScores: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   dayMeals: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dayMesChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  dayMesText: {
+    fontSize: 11,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   restDay: {
     fontSize: FontSize.xs,
@@ -443,7 +548,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.sm + 2,
   },
   mealInfo: {
     flexDirection: 'row',

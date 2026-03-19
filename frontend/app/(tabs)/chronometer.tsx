@@ -45,7 +45,7 @@ import { nutritionApi, metabolicApi, recipeApi, fuelApi } from '../../services/a
 import { subscribeToChronometerChanges } from '../../services/supabase';
 import type { MealSuggestion } from '../../components/MetabolicCoach';
 import { useGamificationStore, type ScoreHistoryEntry } from '../../stores/gamificationStore';
-import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
+import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../stores/metabolicBudgetStore';
 import { useFuelStore } from '../../stores/fuelStore';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { NUTRITION_TIERS } from '../../constants/Config';
@@ -275,6 +275,40 @@ export default function ChronometerScreen() {
   const fetchFuel = useFuelStore((s) => s.fetchAll);
   const fetchCalendar = useFuelStore((s) => s.fetchCalendar);
   const fetchFlexSuggestions = useFuelStore((s) => s.fetchFlexSuggestions);
+  // Weekly MES — average of scores within current week (Mon–Sun)
+  const chronoWeeklyMes = useMemo(() => {
+    const weekStart = fuelWeekly?.week_start ?? (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      return d.toISOString().slice(0, 10);
+    })();
+    const thisWeek = mesHistory.filter(
+      (e: any) => e.date >= weekStart && (e.display_score ?? e.total_score ?? 0) > 0,
+    );
+    if (thisWeek.length === 0) return { score: 0, color: '#8B5CF6' };
+    const avg = Math.round(
+      thisWeek.reduce((s: number, e: any) => s + (e.display_score ?? e.total_score ?? 0), 0) / thisWeek.length,
+    );
+    return { score: avg, color: getTierConfig(getTierFromScore(avg)).color };
+  }, [mesHistory, fuelWeekly?.week_start]);
+
+  // Previous week fuel score for trending
+  const prevWeekFuelScore = useMemo(() => {
+    if (!fuelCalendar?.days || !fuelWeekly?.week_start) return undefined;
+    const weekStart = new Date(fuelWeekly.week_start + 'T12:00:00');
+    const prevWeekEnd = new Date(weekStart);
+    prevWeekEnd.setDate(weekStart.getDate() - 1);
+    const prevWeekStart = new Date(prevWeekEnd);
+    prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
+    const prevStartStr = prevWeekStart.toISOString().slice(0, 10);
+    const prevEndStr = prevWeekEnd.toISOString().slice(0, 10);
+    const prevDays = fuelCalendar.days.filter(
+      (d: any) => d.date >= prevStartStr && d.date <= prevEndStr && d.avg_fuel_score > 0,
+    );
+    if (prevDays.length === 0) return undefined;
+    return Math.round(prevDays.reduce((s: number, d: any) => s + d.avg_fuel_score, 0) / prevDays.length);
+  }, [fuelCalendar?.days, fuelWeekly?.week_start]);
+
   const hasCoreProfileSetup = !!(
     metabolicProfile
     && metabolicProfile.sex
@@ -868,6 +902,19 @@ export default function ChronometerScreen() {
                 fatConsumedOverride={fatMacroConsumed}
               />
             )}
+
+            {/* Weekly MES summary */}
+            {chronoWeeklyMes.score > 0 && (
+              <View style={[styles.weeklyMesSummary, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Ionicons name="flash" size={14} color={chronoWeeklyMes.color} />
+                <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '700' }}>
+                  Weekly MES
+                </Text>
+                <Text style={{ color: chronoWeeklyMes.color, fontSize: 18, fontWeight: '800', fontVariant: ['tabular-nums'] as any, marginLeft: 'auto' }}>
+                  {chronoWeeklyMes.score}
+                </Text>
+              </View>
+            )}
               </>
             )}
 
@@ -886,6 +933,9 @@ export default function ChronometerScreen() {
                 targetMet={fuelWeekly.target_met}
                 streakWeeks={fuelStreak?.current_streak ?? 0}
                 expectedMeals={fuelSettings.expected_meals_per_week}
+                weeklyMesScore={chronoWeeklyMes.score}
+                weeklyMesTierColor={chronoWeeklyMes.color}
+                prevWeekScore={prevWeekFuelScore}
                 onOpenSettings={() => setFuelSettingsVisible(true)}
                 onPress={() => router.push('/food/fuel-weekly' as any)}
               />
@@ -907,6 +957,17 @@ export default function ChronometerScreen() {
                 flexMealsRemaining={fuelWeekly.flex_budget?.flex_meals_remaining ?? 0}
               />
             )}
+
+            {flexSuggestions && flexSuggestions.suggestions.length > 0 && (
+              <>
+              <FuelSectionLabel label="FUEL COACH" theme={theme} />
+              <SmartFlexCard
+                context={flexSuggestions.context}
+                flexMealsRemaining={flexSuggestions.flex_meals_remaining}
+                suggestions={flexSuggestions.suggestions}
+              />
+              </>
+            )}
               </React.Fragment>
             )}
 
@@ -923,8 +984,8 @@ export default function ChronometerScreen() {
               </>
             )}
 
-            {/* ── Today's Progress ── */}
-            <TodayProgressCard
+            {/* ── Today's Progress (Fuel + Nutrient tabs only) ── */}
+            {viewMode !== 'metabolic' && <TodayProgressCard
               logs={logs.map((l: DailyLog) => ({
                 id: l.id ?? '',
                 title: l.title ?? '',
@@ -944,9 +1005,129 @@ export default function ChronometerScreen() {
               protein={{ consumed: Math.round(macros.find((m: any) => m.key === 'protein')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'protein')?.target ?? 0) }}
               carbs={{ consumed: Math.round(macros.find((m: any) => m.key === 'carbs')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'carbs')?.target ?? 0) }}
               fat={{ consumed: Math.round(macros.find((m: any) => m.key === 'fat')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'fat')?.target ?? 0) }}
-              title={isSelectedToday ? "Today's Fuel" : `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}'s Fuel`}
+              title={(() => {
+                if (isSelectedToday) return "Today's Fuel";
+                // Check if within current week (within 6 days of today)
+                const today = new Date();
+                const diffMs = Math.abs(today.getTime() - selectedDate.getTime());
+                const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                if (diffDays <= 6) return `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}'s Fuel`;
+                // Outside current week — show date
+                const month = selectedDate.toLocaleDateString('en-US', { month: 'long' });
+                const day = selectedDate.getDate();
+                const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+                return `${month} ${day}${suffix}'s Fuel`;
+              })()}
               subtitle={logs.length === 0 ? 'No meals logged yet' : `${logs.length} meal${logs.length > 1 ? 's' : ''} logged`}
-            />
+            />}
+
+            {/* ── Metabolic tab: compact meal list ── */}
+            {viewMode === 'metabolic' && (
+              <View style={{ marginBottom: Spacing.md }}>
+                {/* Compact meal list */}
+                <Card style={{ overflow: 'hidden' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: logs.length > 0 ? Spacing.sm : 0 }}>
+                    <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '700' }}>
+                      {isSelectedToday ? "Today's Meals" : `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}'s Meals`}
+                    </Text>
+                    {logs.length > 0 && (
+                      <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '600' }}>
+                        {logs.length} logged
+                      </Text>
+                    )}
+                  </View>
+                  {logs.length === 0 ? (
+                    <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, fontWeight: '500', textAlign: 'center', paddingVertical: Spacing.md }}>
+                      No meals logged yet
+                    </Text>
+                  ) : (
+                    <View>
+                      {(() => {
+                        // Group logs for display
+                        const gidMap = new Map<string, DailyLog[]>();
+                        for (const log of logs) {
+                          if (log.group_id) {
+                            const list = gidMap.get(log.group_id) || [];
+                            list.push(log);
+                            gidMap.set(log.group_id, list);
+                          }
+                        }
+                        const usedIds = new Set<string>();
+                        const rows: React.ReactNode[] = [];
+
+                        for (const log of logs) {
+                          if (usedIds.has(log.id)) continue;
+
+                          // Grouped pair
+                          if (log.group_id && gidMap.has(log.group_id)) {
+                            const groupLogs = gidMap.get(log.group_id)!;
+                            if (groupLogs.length >= 2) {
+                              const main = groupLogs[0];
+                              const side = groupLogs[1];
+                              groupLogs.forEach((l) => usedIds.add(l.id));
+                              const storedScore = main.group_mes_score ?? side.group_mes_score ?? null;
+                              const storedTier = main.group_mes_tier ?? side.group_mes_tier ?? null;
+                              const mainMes = mealScores.find((m) => m.food_log_id === main.id);
+                              const mesScore = storedScore ?? mainMes?.score?.display_score ?? mainMes?.score?.total_score ?? null;
+                              const mesTier = storedTier ?? mainMes?.score?.display_tier ?? mainMes?.score?.tier ?? null;
+                              const tierCfg = mesTier ? getTierConfig(mesTier) : null;
+
+                              rows.push(
+                                <View key={main.id} style={[styles.compactMealRow, rows.length > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.surfaceHighlight }]}>
+                                  <View style={{ flex: 1, minWidth: 0 }}>
+                                    <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }} numberOfLines={1}>
+                                      {main.title || 'Untitled'}
+                                    </Text>
+                                    <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '500', marginTop: 1 }} numberOfLines={1}>
+                                      + {side.title || 'Side'}
+                                    </Text>
+                                  </View>
+                                  {mesScore != null && tierCfg && (
+                                    <View style={[styles.compactMesBadge, { backgroundColor: tierCfg.color + '15' }]}>
+                                      <Text style={{ color: tierCfg.color, fontSize: 12, fontWeight: '800' }}>{Math.round(mesScore)}</Text>
+                                    </View>
+                                  )}
+                                </View>,
+                              );
+                              continue;
+                            }
+                          }
+
+                          // Solo meal
+                          usedIds.add(log.id);
+                          const mealMes = mealScores.find((m) => m.food_log_id === log.id);
+                          const mesScore = mealMes?.score?.display_score ?? mealMes?.score?.total_score ?? null;
+                          const mesTier = mealMes?.score?.display_tier ?? mealMes?.score?.tier ?? null;
+                          const tierCfg = mesTier ? getTierConfig(mesTier) : null;
+
+                          rows.push(
+                            <View key={log.id} style={[styles.compactMealRow, rows.length > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.surfaceHighlight }]}>
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }} numberOfLines={1}>
+                                  {log.title || 'Untitled'}
+                                </Text>
+                                {log.meal_type && (
+                                  <Text style={{ color: theme.textTertiary, fontSize: 11, fontWeight: '500', marginTop: 1, textTransform: 'capitalize' }}>
+                                    {log.meal_type}
+                                  </Text>
+                                )}
+                              </View>
+                              {mesScore != null && tierCfg && (
+                                <View style={[styles.compactMesBadge, { backgroundColor: tierCfg.color + '15' }]}>
+                                  <Text style={{ color: tierCfg.color, fontSize: 12, fontWeight: '800' }}>{Math.round(mesScore)}</Text>
+                                </View>
+                              )}
+                            </View>,
+                          );
+                        }
+                        return rows;
+                      })()}
+                    </View>
+                  )}
+                </Card>
+              </View>
+            )}
+
             {/* Old inline meals section removed — replaced by TodayProgressCard above */}
             {false as any && (() => {
               const totalKcal = 0;
@@ -1211,21 +1392,10 @@ export default function ChronometerScreen() {
             })()}
 
             {/* ════════════════════════════════════════════
-                 FUEL VIEW (continued — coach + calendar)
+                 FUEL VIEW (continued — calendar)
                ════════════════════════════════════════════ */}
             {viewMode === 'fuel' && (
               <>
-            {flexSuggestions && flexSuggestions.suggestions.length > 0 && (
-              <>
-              <FuelSectionLabel label="FUEL COACH" theme={theme} />
-              <SmartFlexCard
-                context={flexSuggestions.context}
-                flexMealsRemaining={flexSuggestions.flex_meals_remaining}
-                suggestions={flexSuggestions.suggestions}
-              />
-              </>
-            )}
-
             {fuelCalendar && fuelCalendar.days.length > 0 && (
               <>
               <FuelSectionLabel label="MONTHLY VIEW" theme={theme} />
@@ -1741,10 +1911,20 @@ export default function ChronometerScreen() {
 }
 
 // Fuel tab section divider
+const SECTION_ICONS: Record<string, { name: string; color: string }> = {
+  'YOUR FLEX BUDGET': { name: 'ticket', color: '#F59E0B' },
+  'FUEL COACH': { name: 'leaf', color: '#22C55E' },
+  'MONTHLY VIEW': { name: 'calendar', color: '#3B82F6' },
+};
+
 function FuelSectionLabel({ label, theme }: { label: string; theme: any }) {
+  const iconCfg = SECTION_ICONS[label];
   return (
     <View style={sectionStyles.wrap}>
       <View style={[sectionStyles.line, { backgroundColor: theme.border }]} />
+      {iconCfg && (
+        <Ionicons name={iconCfg.name as any} size={10} color={iconCfg.color} />
+      )}
       <Text style={[sectionStyles.text, { color: theme.textTertiary }]}>{label}</Text>
       <View style={[sectionStyles.line, { backgroundColor: theme.border }]} />
     </View>
@@ -1772,6 +1952,28 @@ const sectionStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  weeklyMesSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  compactMealRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm + 2,
+    gap: Spacing.sm,
+  },
+  compactMesBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
   stickyChronoHeader: {
     position: 'absolute',
     top: 0,

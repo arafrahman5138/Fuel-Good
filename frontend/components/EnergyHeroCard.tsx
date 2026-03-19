@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
+  TouchableOpacity,
   View,
   Text,
   StyleSheet,
@@ -52,7 +53,7 @@ function getContextTagline(
   weeklyTargetMet: boolean,
 ): { text: string; color: string } {
   if (mealCount === 0) {
-    return { text: 'Your day is a blank slate — make it count', color: '#8B5CF6' };
+    return { text: 'Your day is a blank slate — make it count', color: '#4ADE80' };
   }
   if (mealCount <= 2) {
     if (fuelScore >= 90) return { text: 'Elite start — keep this going all day', color: '#22C55E' };
@@ -108,6 +109,9 @@ interface EnergyHeroCardProps {
   proteinRemaining?: number;
   fiberRemaining?: number;
   healthPulse?: HealthPulseData;
+  flexMealsEarned?: number;
+  cleanMealsToNextFlex?: number;
+  onPress?: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -125,6 +129,9 @@ export function EnergyHeroCard({
   proteinRemaining,
   fiberRemaining,
   healthPulse,
+  flexMealsEarned = 0,
+  cleanMealsToNextFlex = 0,
+  onPress,
 }: EnergyHeroCardProps) {
   const theme = useTheme();
   const systemScheme = useColorScheme();
@@ -179,6 +186,7 @@ export function EnergyHeroCard({
 
   return (
     <Animated.View style={[styles.outerWrap, { transform: [{ translateY: slideAnim }], opacity: fadeAnim }]}>
+      <TouchableOpacity activeOpacity={onPress ? 0.85 : 1} onPress={onPress} disabled={!onPress}>
       <LinearGradient
         colors={gradientColors as any}
         start={{ x: 0.1, y: 0 }}
@@ -210,14 +218,12 @@ export function EnergyHeroCard({
               </Text>
             </View>
             {hasData && (mesScore ?? 0) > 0 && (
-              <View style={styles.scoreRow}>
-                <View style={[styles.scoreIconWrap, { backgroundColor: (mesTierColor ?? '#8B5CF6') + '18' }]}>
-                  <Ionicons name="flash" size={11} color={mesTierColor ?? '#8B5CF6'} />
-                </View>
-                <Text style={[styles.scoreNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
+              <View style={styles.mesRow}>
+                <Ionicons name="flash" size={13} color={mesTierColor ?? '#8B5CF6'} />
+                <Text style={[styles.mesNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
                   {mesScore}
                 </Text>
-                <Text style={[styles.scoreTier, { color: isDark ? 'rgba(255,255,255,0.55)' : theme.textSecondary }]}>
+                <Text style={[styles.mesLabel, { color: isDark ? 'rgba(255,255,255,0.50)' : theme.textSecondary }]}>
                   MES
                 </Text>
               </View>
@@ -225,6 +231,21 @@ export function EnergyHeroCard({
             <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={2}>
               {tagline.text}
             </Text>
+            {flexMealsEarned > 0 ? (
+              <View style={styles.flexProgressRow}>
+                <Ionicons name="ticket" size={12} color="#F59E0B" />
+                <Text style={[styles.flexProgressText, { color: '#F59E0B' }]}>
+                  {flexMealsEarned} flex meal{flexMealsEarned !== 1 ? 's' : ''} earned
+                </Text>
+              </View>
+            ) : cleanMealsToNextFlex > 0 ? (
+              <View style={styles.flexProgressRow}>
+                <Ionicons name="ticket-outline" size={12} color={textTertiary} />
+                <Text style={[styles.flexProgressText, { color: isDark ? 'rgba(255,255,255,0.50)' : theme.textSecondary }]}>
+                  {cleanMealsToNextFlex} more clean meal{cleanMealsToNextFlex !== 1 ? 's' : ''} → next flex
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.streakRow}>
               {metabolicStreakDays > 0 && (
                 <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
@@ -285,6 +306,7 @@ export function EnergyHeroCard({
           </View>
         )}
       </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -339,34 +361,38 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  scoreRow: {
+  mesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    marginTop: -2,
   },
-  scoreIconWrap: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreNumber: {
+  mesNumber: {
     fontSize: 18,
     fontWeight: '800',
     fontVariant: ['tabular-nums'] as any,
     letterSpacing: -0.5,
     lineHeight: 22,
   },
-  scoreTier: {
+  mesLabel: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-    flexShrink: 1,
+    marginLeft: 1,
   },
   tagline: {
     fontSize: FontSize.sm,
     fontWeight: '600',
     lineHeight: 20,
+  },
+  flexProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  flexProgressText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   streakRow: {
     flexDirection: 'row',

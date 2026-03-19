@@ -13,6 +13,7 @@ Flex Budget math converts scores into "flex meals remaining" per week.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
@@ -262,7 +263,7 @@ def _score_manual(
     # If we have ingredient text, do a lightweight flag check
     if ingredients_text:
         lower = ingredients_text.lower()
-        flag_count = sum(1 for term in ALL_RED_FLAGS if term in lower)
+        flag_count = sum(1 for term in ALL_RED_FLAGS if re.search(r"\b" + re.escape(term) + r"\b", lower))
         if flag_count == 0:
             score = 70.0
             reasoning = ["Manual entry with clean ingredient text."]

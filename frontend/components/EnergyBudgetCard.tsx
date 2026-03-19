@@ -128,8 +128,10 @@ function GoalRing({
 
 export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverride, fatConsumedOverride }: EnergyBudgetCardProps) {
   const theme = useTheme();
-  const displayTier = (score.display_tier || score.tier) as any;
-  const displayScore = score.display_score || score.total_score;
+  const rawScore = score.display_score || score.total_score;
+  const hasAnyMeals = rawScore > 0;
+  const displayTier = hasAnyMeals ? ((score.display_tier || score.tier) as any) : 'no_data';
+  const displayScore = rawScore;
   const tierCfg = getTierConfig(displayTier);
   const entrance = useRef(new Animated.Value(0)).current;
 

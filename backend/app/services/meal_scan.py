@@ -197,6 +197,65 @@ COMPONENT_MACROS: dict[str, dict[str, float]] = {
     "grapes": {"calories": 100, "protein": 1, "carbs": 27, "fat": 0, "fiber": 1, "sugar_g": 23},
     "mango": {"calories": 100, "protein": 1, "carbs": 25, "fat": 0, "fiber": 3, "sugar_g": 23},
     "banana": {"calories": 105, "protein": 1, "carbs": 27, "fat": 0, "fiber": 3, "sugar_g": 14},
+    # ── Additional Proteins ─────────────────────────────────────────────────
+    "duck": {"calories": 250, "protein": 20, "carbs": 0, "fat": 18, "fiber": 0},
+    "bison": {"calories": 190, "protein": 28, "carbs": 0, "fat": 8, "fiber": 0},
+    "venison": {"calories": 180, "protein": 30, "carbs": 0, "fat": 6, "fiber": 0},
+    "tempeh": {"calories": 195, "protein": 20, "carbs": 8, "fat": 11, "fiber": 5},
+    "seitan": {"calories": 130, "protein": 25, "carbs": 4, "fat": 2, "fiber": 1},
+    "crab": {"calories": 100, "protein": 20, "carbs": 0, "fat": 2, "fiber": 0},
+    "lobster": {"calories": 130, "protein": 27, "carbs": 0, "fat": 1, "fiber": 0},
+    "scallops": {"calories": 110, "protein": 20, "carbs": 5, "fat": 1, "fiber": 0},
+    "mussels": {"calories": 150, "protein": 20, "carbs": 6, "fat": 4, "fiber": 0},
+    "clams": {"calories": 130, "protein": 22, "carbs": 4, "fat": 2, "fiber": 0},
+    "sardines": {"calories": 210, "protein": 24, "carbs": 0, "fat": 12, "fiber": 0},
+    "cod": {"calories": 120, "protein": 26, "carbs": 0, "fat": 1, "fiber": 0},
+    "halibut": {"calories": 140, "protein": 27, "carbs": 0, "fat": 3, "fiber": 0},
+    "trout": {"calories": 170, "protein": 24, "carbs": 0, "fat": 8, "fiber": 0},
+    "swordfish": {"calories": 165, "protein": 27, "carbs": 0, "fat": 6, "fiber": 0},
+    "mahi mahi": {"calories": 110, "protein": 24, "carbs": 0, "fat": 1, "fiber": 0},
+    "lamb chop": {"calories": 280, "protein": 22, "carbs": 0, "fat": 21, "fiber": 0},
+    "pork chop": {"calories": 230, "protein": 27, "carbs": 0, "fat": 13, "fiber": 0},
+    # ── Additional Grains ───────────────────────────────────────────────────
+    "farro": {"calories": 200, "protein": 7, "carbs": 37, "fat": 2, "fiber": 5},
+    "freekeh": {"calories": 190, "protein": 8, "carbs": 33, "fat": 2, "fiber": 8},
+    "spelt": {"calories": 210, "protein": 8, "carbs": 40, "fat": 2, "fiber": 5},
+    "amaranth": {"calories": 250, "protein": 9, "carbs": 46, "fat": 4, "fiber": 5},
+    "teff": {"calories": 255, "protein": 10, "carbs": 50, "fat": 2, "fiber": 7},
+    "sorghum": {"calories": 220, "protein": 7, "carbs": 47, "fat": 2, "fiber": 6},
+    "couscous": {"calories": 175, "protein": 6, "carbs": 36, "fat": 0, "fiber": 2},
+    "bulgur": {"calories": 150, "protein": 6, "carbs": 34, "fat": 0, "fiber": 8},
+    "polenta": {"calories": 145, "protein": 3, "carbs": 31, "fat": 1, "fiber": 2},
+    "grits": {"calories": 150, "protein": 4, "carbs": 33, "fat": 1, "fiber": 1},
+    # ── Additional Vegetables ───────────────────────────────────────────────
+    "bok choy": {"calories": 20, "protein": 3, "carbs": 3, "fat": 0, "fiber": 2},
+    "cabbage": {"calories": 25, "protein": 1, "carbs": 6, "fat": 0, "fiber": 2},
+    "cauliflower": {"calories": 30, "protein": 2, "carbs": 5, "fat": 0, "fiber": 2},
+    "zucchini": {"calories": 20, "protein": 1, "carbs": 4, "fat": 0, "fiber": 1},
+    "eggplant": {"calories": 35, "protein": 1, "carbs": 9, "fat": 0, "fiber": 3},
+    "asparagus": {"calories": 30, "protein": 3, "carbs": 5, "fat": 0, "fiber": 3},
+    "green beans": {"calories": 35, "protein": 2, "carbs": 7, "fat": 0, "fiber": 3},
+    "brussels sprouts": {"calories": 55, "protein": 4, "carbs": 11, "fat": 0, "fiber": 4},
+    "artichoke": {"calories": 65, "protein": 4, "carbs": 14, "fat": 0, "fiber": 7},
+    "beets": {"calories": 60, "protein": 2, "carbs": 13, "fat": 0, "fiber": 4},
+    "turnip": {"calories": 35, "protein": 1, "carbs": 8, "fat": 0, "fiber": 2},
+    "parsnip": {"calories": 100, "protein": 2, "carbs": 24, "fat": 0, "fiber": 6},
+    "celery": {"calories": 15, "protein": 1, "carbs": 3, "fat": 0, "fiber": 2},
+    "radish": {"calories": 20, "protein": 1, "carbs": 4, "fat": 0, "fiber": 2},
+    "okra": {"calories": 35, "protein": 2, "carbs": 7, "fat": 0, "fiber": 3},
+    "squash": {"calories": 40, "protein": 1, "carbs": 10, "fat": 0, "fiber": 2},
+    "pumpkin": {"calories": 50, "protein": 2, "carbs": 12, "fat": 0, "fiber": 3},
+    # ── International Dishes ────────────────────────────────────────────────
+    "falafel": {"calories": 330, "protein": 13, "carbs": 32, "fat": 18, "fiber": 5},
+    "kebab": {"calories": 260, "protein": 24, "carbs": 6, "fat": 16, "fiber": 1},
+    "gyro": {"calories": 300, "protein": 20, "carbs": 28, "fat": 14, "fiber": 2},
+    "sushi roll": {"calories": 250, "protein": 9, "carbs": 38, "fat": 7, "fiber": 2},
+    "pad thai": {"calories": 380, "protein": 16, "carbs": 50, "fat": 14, "fiber": 2},
+    "stir fry": {"calories": 280, "protein": 20, "carbs": 22, "fat": 14, "fiber": 4},
+    "ramen noodles": {"calories": 380, "protein": 14, "carbs": 52, "fat": 14, "fiber": 2},
+    "udon noodles": {"calories": 230, "protein": 7, "carbs": 48, "fat": 1, "fiber": 2},
+    "soba noodles": {"calories": 200, "protein": 8, "carbs": 42, "fat": 1, "fiber": 3},
+    "rice noodles": {"calories": 190, "protein": 3, "carbs": 44, "fat": 0, "fiber": 1},
 }
 
 ALIASES = {
@@ -322,6 +381,80 @@ ALIASES = {
     "cheesecake": "cake",
     "chocolate chip cookie": "cookie",
     "oatmeal cookie": "cookie",
+    # Additional protein aliases
+    "grilled salmon": "salmon",
+    "baked salmon": "salmon",
+    "roasted duck": "duck",
+    "duck breast": "duck",
+    "ground bison": "bison",
+    "bison burger": "bison",
+    "venison steak": "venison",
+    "grilled shrimp": "shrimp",
+    "prawns": "shrimp",
+    "king prawns": "shrimp",
+    "fried shrimp": "shrimp",
+    "grilled lobster": "lobster",
+    "lobster tail": "lobster",
+    "pan seared scallops": "scallops",
+    "grilled scallops": "scallops",
+    "canned sardines": "sardines",
+    "baked cod": "cod",
+    "grilled cod": "cod",
+    "fish": "cod",
+    "grilled halibut": "halibut",
+    "rainbow trout": "trout",
+    "grilled swordfish": "swordfish",
+    "grilled mahi mahi": "mahi mahi",
+    "lamb chops": "lamb chop",
+    "grilled lamb": "lamb",
+    "pork chops": "pork chop",
+    "grilled pork": "pork",
+    "pork tenderloin": "pork",
+    "pork loin": "pork",
+    "turkey breast": "turkey",
+    "ground turkey": "turkey",
+    # Additional grain aliases
+    "cooked farro": "farro",
+    "cooked quinoa": "quinoa",
+    "cooked bulgur": "bulgur",
+    "whole wheat couscous": "couscous",
+    "israeli couscous": "couscous",
+    "corn grits": "grits",
+    "corn polenta": "polenta",
+    # Additional vegetable aliases
+    "roasted cauliflower": "cauliflower",
+    "grilled zucchini": "zucchini",
+    "roasted eggplant": "eggplant",
+    "grilled asparagus": "asparagus",
+    "steamed broccoli": "broccoli",
+    "roasted brussels sprouts": "brussels sprouts",
+    "roasted beets": "beets",
+    "butternut squash": "squash",
+    "acorn squash": "squash",
+    "spaghetti squash": "squash",
+    "roasted pumpkin": "pumpkin",
+    "napa cabbage": "cabbage",
+    "red cabbage": "cabbage",
+    # International dish aliases
+    "chicken kebab": "kebab",
+    "lamb kebab": "kebab",
+    "seekh kebab": "kebab",
+    "shish kebab": "kebab",
+    "lamb gyro": "gyro",
+    "chicken gyro": "gyro",
+    "california roll": "sushi roll",
+    "maki roll": "sushi roll",
+    "sushi": "sushi roll",
+    "chicken pad thai": "pad thai",
+    "shrimp pad thai": "pad thai",
+    "vegetable stir fry": "stir fry",
+    "chicken stir fry": "stir fry",
+    "beef stir fry": "stir fry",
+    "ramen": "ramen noodles",
+    "udon": "udon noodles",
+    "soba": "soba noodles",
+    "pho noodles": "rice noodles",
+    "vermicelli": "rice noodles",
 }
 
 MEAL_SCAN_PROMPT = """You analyze one meal photo for a nutrition app.
@@ -589,10 +722,18 @@ def _derive_stable_meal_label(
 
 def _lookup_component_macros(name: str) -> dict[str, float] | None:
     normalized = _normalize_name(name)
-    for key, macros in COMPONENT_MACROS.items():
+    # Exact match first
+    if normalized in COMPONENT_MACROS:
+        return COMPONENT_MACROS[normalized]
+    # Best (longest-key) substring match
+    best_key: str | None = None
+    best_len = 0
+    for key in COMPONENT_MACROS:
         if key in normalized or normalized in key:
-            return macros
-    return None
+            if len(key) > best_len:
+                best_key = key
+                best_len = len(key)
+    return COMPONENT_MACROS[best_key] if best_key else None
 
 
 _ROLE_FALLBACK_MACROS: dict[str, dict[str, float]] = {

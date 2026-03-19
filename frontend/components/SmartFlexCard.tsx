@@ -38,23 +38,31 @@ export function SmartFlexCard({ context, flexMealsRemaining, suggestions }: Smar
   const theme = useTheme();
   const subtitle = CONTEXT_SUBTITLES[context] || 'Personalized insights';
 
-  const fadeAnims = useRef(suggestions.map(() => new Animated.Value(0))).current;
-  const slideAnims = useRef(suggestions.map(() => new Animated.Value(14))).current;
+  const fadeAnims = useRef<Animated.Value[]>([]);
+  const slideAnims = useRef<Animated.Value[]>([]);
+  const animCount = suggestions.length;
+
+  // Synchronously rebuild animated arrays when suggestion count changes
+  if (fadeAnims.current.length !== animCount) {
+    fadeAnims.current = Array.from({ length: animCount }, () => new Animated.Value(0));
+    slideAnims.current = Array.from({ length: animCount }, () => new Animated.Value(14));
+  }
 
   useEffect(() => {
-    fadeAnims.forEach((a) => a.setValue(0));
-    slideAnims.forEach((a) => a.setValue(14));
+    if (animCount === 0) return;
+    fadeAnims.current.forEach((a) => a.setValue(0));
+    slideAnims.current.forEach((a) => a.setValue(14));
 
-    const anims = suggestions.map((_, idx) =>
+    const anims = fadeAnims.current.map((_, idx) =>
       Animated.parallel([
-        Animated.timing(fadeAnims[idx], {
+        Animated.timing(fadeAnims.current[idx], {
           toValue: 1,
           duration: 300,
           delay: idx * 80,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-        Animated.timing(slideAnims[idx], {
+        Animated.timing(slideAnims.current[idx], {
           toValue: 0,
           duration: 300,
           delay: idx * 80,
@@ -63,8 +71,8 @@ export function SmartFlexCard({ context, flexMealsRemaining, suggestions }: Smar
         }),
       ]),
     );
-    Animated.stagger(0, anims).start();
-  }, [suggestions.length]);
+    if (anims.length > 0) Animated.stagger(0, anims).start();
+  }, [animCount]);
 
   return (
     <View style={[styles.shell, { backgroundColor: theme.card.background, borderColor: theme.card.border }]}>
@@ -100,8 +108,8 @@ export function SmartFlexCard({ context, flexMealsRemaining, suggestions }: Smar
                 styles.insightRow,
                 !isLast && { borderBottomWidth: 1, borderBottomColor: theme.surfaceHighlight },
                 {
-                  opacity: fadeAnims[idx] || 1,
-                  transform: [{ translateY: slideAnims[idx] || 0 }],
+                  opacity: fadeAnims.current[idx] ?? 1,
+                  transform: [{ translateY: slideAnims.current[idx] ?? 0 }],
                 },
               ]}
             >

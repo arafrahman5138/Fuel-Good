@@ -29,32 +29,32 @@ const COACH_GREEN_DARK = '#16A34A';
 function getFlexCopy(remaining: number, max: number): { headline: string; subtitle: string } {
   if (remaining <= 0) {
     return {
-      headline: 'No flex meals yet',
-      subtitle: 'Eat clean and your cheat meals will come — keep going',
+      headline: 'Flex meals loading...',
+      subtitle: 'Every clean meal gets you closer to guilt-free treats',
     };
   }
   if (remaining === 1) {
     return {
-      headline: '1 flex meal earned',
-      subtitle: 'You\'ve earned a guilt-free treat — use it wisely',
+      headline: '1 flex meal unlocked',
+      subtitle: 'You earned it — go enjoy something you love',
     };
   }
   const ratio = remaining / max;
   if (ratio <= 0.25) {
     return {
       headline: `${remaining} flex meals left`,
-      subtitle: 'Almost out — save them for something special',
+      subtitle: 'Make them count — save for something you really want',
     };
   }
   if (ratio <= 0.6) {
     return {
-      headline: `${remaining} flex meals earned`,
-      subtitle: 'Clean eating is paying off — enjoy guilt-free',
+      headline: `${remaining} flex meals unlocked`,
+      subtitle: 'Clean eating is paying off — treat yourself guilt-free',
     };
   }
   return {
-    headline: `${remaining} flex meals earned`,
-    subtitle: 'Your flex budget is stacked — treat yourself, you\'ve earned it',
+    headline: `${remaining} flex meals unlocked`,
+    subtitle: "You're crushing it — your flex budget is fully stacked",
   };
 }
 

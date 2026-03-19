@@ -81,6 +81,20 @@ interface TodayProgressCardProps {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+function pickMainAndSide(groupLogs: DailyLog[]): { main: DailyLog; side: DailyLog } {
+  // The main dish is the meal_plan source; the side is the recipe pairing
+  const mealPlanIdx = groupLogs.findIndex((l) => l.source_type === 'meal_plan');
+  if (mealPlanIdx >= 0) {
+    const main = groupLogs[mealPlanIdx];
+    const side = groupLogs[mealPlanIdx === 0 ? 1 : 0];
+    return { main, side };
+  }
+  // For scan-based or manual groups: the one with more calories is likely the main
+  const calOf = (l: DailyLog) => Number(l.nutrition_snapshot?.calories || 0);
+  const sorted = [...groupLogs].sort((a, b) => calOf(b) - calOf(a));
+  return { main: sorted[0], side: sorted[1] };
+}
+
 function buildDisplayItems(logs: DailyLog[]): DisplayItem[] {
   const groupMap = new Map<string, DailyLog[]>();
   for (const log of logs) {
@@ -99,7 +113,8 @@ function buildDisplayItems(logs: DailyLog[]): DisplayItem[] {
     if (log.group_id && groupMap.has(log.group_id)) {
       const groupLogs = groupMap.get(log.group_id)!;
       if (groupLogs.length >= 2) {
-        items.push({ type: 'group', main: groupLogs[0], side: groupLogs[1] });
+        const { main, side } = pickMainAndSide(groupLogs);
+        items.push({ type: 'group', main, side });
         groupLogs.forEach((l) => usedIds.add(l.id));
         continue;
       }
@@ -186,71 +201,67 @@ export function TodayProgressCard({
         </View>
       </TouchableOpacity>
 
-      {/* ── Macro Rings ── */}
-      {mealCount > 0 && (
-        <View style={styles.macroSection}>
-          <View style={styles.macroRow}>
-            {MACRO_CONFIG.map((macro) => {
-              const v = macroValues[macro.key];
-              const pct = v.target > 0 ? v.consumed / v.target : 0;
-              const remaining = Math.max(0, Math.round(v.target - v.consumed));
-              const isCalories = macro.key === 'calories';
-              // Calories ring uses tier color when available
-              const ringColor = isCalories && tier ? tier.color : macro.color;
+      {/* ── Macro Rings (always visible) ── */}
+      <View style={styles.macroSection}>
+        <View style={styles.macroRow}>
+          {MACRO_CONFIG.map((macro) => {
+            const v = macroValues[macro.key];
+            const pct = v.target > 0 ? v.consumed / v.target : 0;
+            const remaining = Math.max(0, Math.round(v.target - v.consumed));
+            const isCalories = macro.key === 'calories';
+            const ringColor = isCalories && tier ? tier.color : macro.color;
 
-              return (
-                <View key={macro.key} style={styles.macroItem}>
-                  <MacroRing
-                    progress={pct}
-                    size={MACRO_RING_SIZE}
-                    color={ringColor}
-                    trackColor={trackColor}
-                  />
-                  <Text style={[styles.macroValue, { color: theme.text }]}>
-                    {Math.round(v.consumed)}
-                    <Text style={[styles.macroTarget, { color: theme.textTertiary }]}>
-                      /{Math.round(v.target)}{macro.unit}
-                    </Text>
+            return (
+              <View key={macro.key} style={styles.macroItem}>
+                <MacroRing
+                  progress={pct}
+                  size={MACRO_RING_SIZE}
+                  color={ringColor}
+                  trackColor={trackColor}
+                />
+                <Text style={[styles.macroValue, { color: theme.text }]}>
+                  {Math.round(v.consumed)}
+                  <Text style={[styles.macroTarget, { color: theme.textTertiary }]}>
+                    /{Math.round(v.target)}{macro.unit}
                   </Text>
-                  <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>
-                    {macro.label}
+                </Text>
+                <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>
+                  {macro.label}
+                </Text>
+                {v.target > 0 && (
+                  <Text style={[styles.macroRemaining, { color: ringColor + 'AA' }]}>
+                    {remaining}{macro.unit} left
                   </Text>
-                  {v.target > 0 && (
-                    <Text style={[styles.macroRemaining, { color: ringColor + 'AA' }]}>
-                      {remaining}{macro.unit} left
-                    </Text>
-                  )}
-                </View>
-              );
-            })}
-          </View>
+                )}
+              </View>
+            );
+          })}
         </View>
-      )}
+      </View>
 
       {/* ── Meals ── */}
       {mealCount === 0 ? (
         <View style={styles.emptyState}>
-          <LinearGradient
-            colors={[theme.primary + '20', theme.primary + '08'] as any}
-            style={styles.emptyIcon}
-          >
-            <Ionicons name="fast-food-outline" size={24} color={theme.primary} />
-          </LinearGradient>
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>
-            Your plate is empty
+          <Text style={[styles.emptyTitle, { color: theme.primary }]}>
+            Ready to fuel up?
           </Text>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            Log your first meal to start tracking
+            Your first meal sets the tone for the day
           </Text>
-          <LinearGradient
-            colors={['#22C55E', '#059669'] as const}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.emptyBtn}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/scan' as any)}
           >
-            <Ionicons name="add" size={14} color="#fff" />
-            <Text style={styles.emptyBtnText}>Log a Meal</Text>
-          </LinearGradient>
+            <LinearGradient
+              colors={['#22C55E', '#059669'] as const}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.emptyBtn}
+            >
+              <Ionicons name="scan" size={14} color="#fff" />
+              <Text style={styles.emptyBtnText}>Scan a Meal</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       ) : (
         <>
