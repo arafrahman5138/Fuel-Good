@@ -9,10 +9,12 @@ class ChatMessage(BaseModel):
 
 class ChatContext(BaseModel):
     """Optional rich context passed from other screens (scan result, recipe detail, etc.)"""
-    source: Optional[str] = None  # "scan", "recipe", "home", "flex"
+    source: Optional[str] = None  # "scan", "recipe", "home", "flex", "photo"
     scan_result: Optional[dict] = None  # fuel_score, flags, meal_label from a scan
     recipe_id: Optional[str] = None
     flex_status: Optional[dict] = None  # earned, remaining, weekly_avg
+    image_base64: Optional[str] = None  # base64-encoded image for photo-based chat
+    image_type: Optional[str] = None  # "auto", "fridge", "meal", "grocery", "label"
 
 
 class ChatRequest(BaseModel):

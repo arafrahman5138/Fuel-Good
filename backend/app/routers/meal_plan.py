@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from datetime import UTC, date, datetime, timedelta
 from typing import List
@@ -270,6 +271,31 @@ async def generate_meal_plan(
     )
     db.commit()
     return _serialize_plan(meal_plan, budget, result.get("warnings", []))
+
+
+class MealPlanItemUpdate(BaseModel):
+    servings: int = Field(..., ge=1, le=12)
+
+
+@router.patch("/items/{item_id}")
+async def update_meal_plan_item(
+    item_id: str,
+    request: MealPlanItemUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    item = (
+        db.query(MealPlanItem)
+        .join(MealPlan, MealPlan.id == MealPlanItem.meal_plan_id)
+        .filter(MealPlanItem.id == item_id, MealPlan.user_id == current_user.id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Meal plan item not found")
+
+    item.servings = request.servings
+    db.commit()
+    return {"id": str(item.id), "servings": item.servings}
 
 
 @router.get("/items/{item_id}/alternatives", response_model=MealPlanReplacementOptionsResponse)

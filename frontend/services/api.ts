@@ -379,7 +379,7 @@ export const billingApi = {
 };
 
 export interface ChatContext {
-  source?: string; // "scan" | "recipe" | "home" | "flex"
+  source?: string; // "scan" | "recipe" | "home" | "flex" | "photo"
   scan_result?: {
     meal_label?: string;
     fuel_score?: number;
@@ -387,6 +387,8 @@ export interface ChatContext {
   };
   recipe_id?: string;
   flex_status?: { earned: number; remaining: number; weekly_avg?: number };
+  image_base64?: string; // base64-encoded image for photo-based chat
+  image_type?: string; // "auto" | "fridge" | "meal" | "grocery" | "label"
 }
 
 export const chatApi = {
@@ -413,6 +415,7 @@ export const mealPlanApi = {
   getHistory: () => api.get<any[]>('/meal-plans/history'),
   getAlternatives: (itemId: string) => api.get<any>(`/meal-plans/items/${itemId}/alternatives`),
   replaceMeal: (itemId: string, recipe_id: string) => api.post<any>(`/meal-plans/items/${itemId}/replace`, { recipe_id }),
+  updateItemServings: (itemId: string, servings: number) => api.patch<any>(`/meal-plans/items/${itemId}`, { servings }),
 };
 
 export const groceryApi = {

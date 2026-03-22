@@ -17,6 +17,9 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { ScreenContainer } from '../../components/ScreenContainer';
@@ -113,6 +116,7 @@ export default function ChatScreen() {
   const isSavedRecipe = useSavedRecipesStore((s) => s.isSaved);
   const fetchSaved = useSavedRecipesStore((s) => s.fetchSaved);
   const [suggestions, setSuggestions] = useState<string[]>(FALLBACK_SUGGESTIONS);
+  const [attachedPhoto, setAttachedPhoto] = useState<{ uri: string; base64: string } | null>(null);
   const composerBottomInset = Math.max(insets.bottom, 10);
   const floatingBarOffset = Math.max(tabBarHeight - insets.bottom, 74);
   const composerLift = Math.max(floatingBarOffset - 40, 26);
@@ -253,12 +257,46 @@ export default function ChatScreen() {
     }
   };
 
+  const pickPhoto = async (source: 'camera' | 'gallery') => {
+    try {
+      const permission = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert('Permission needed', `Please allow ${source} access to attach photos.`);
+        return;
+      }
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.6, mediaTypes: ['images'], base64: true })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.6, mediaTypes: ['images'], base64: true });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      if (asset.base64) {
+        setAttachedPhoto({ uri: asset.uri, base64: asset.base64 });
+      }
+    } catch (err: any) {
+      Alert.alert('Unable to access photos', err?.message || 'Photo permissions may be missing.');
+    }
+  };
+
+  const showPhotoOptions = () => {
+    Alert.alert('Attach Photo', 'Take a photo or choose from your library', [
+      { text: 'Camera', onPress: () => pickPhoto('camera') },
+      { text: 'Photo Library', onPress: () => pickPhoto('gallery') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMessage = input.trim();
+    if ((!input.trim() && !attachedPhoto) || isLoading) return;
+    const userMessage = input.trim() || (attachedPhoto ? 'What do you see in this photo?' : '');
     setInput('');
     Keyboard.dismiss();
-    await submitChatMessage(userMessage);
+    const photoCtx: ChatContext | undefined = attachedPhoto
+      ? { source: 'photo', image_base64: attachedPhoto.base64, image_type: 'auto' }
+      : undefined;
+    setAttachedPhoto(null);
+    await submitChatMessage(userMessage, photoCtx);
   };
 
   const handleSuggestion = (suggestion: string) => {
@@ -1117,6 +1155,16 @@ export default function ChatScreen() {
             },
           ]}
         >
+          {/* Photo Preview */}
+          {attachedPhoto && (
+            <View style={styles.photoPreviewRow}>
+              <Image source={{ uri: attachedPhoto.uri }} style={styles.photoPreviewThumb} />
+              <Text style={[styles.photoPreviewLabel, { color: theme.textSecondary }]} numberOfLines={1}>Photo attached</Text>
+              <TouchableOpacity onPress={() => setAttachedPhoto(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={20} color={theme.textTertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
           <View
             style={[
               styles.inputCard,
@@ -1125,6 +1173,18 @@ export default function ChatScreen() {
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
           >
+            <TouchableOpacity
+              onPress={showPhotoOptions}
+              disabled={isLoading}
+              activeOpacity={0.7}
+              style={styles.photoButton}
+            >
+              <Ionicons
+                name="camera-outline"
+                size={isCompact ? 20 : 22}
+                color={attachedPhoto ? theme.primary : theme.textTertiary}
+              />
+            </TouchableOpacity>
             <TextInput
               style={[
                 styles.textInput,
@@ -1135,7 +1195,7 @@ export default function ChatScreen() {
               ]}
               value={input}
               onChangeText={setInput}
-              placeholder="Ask about any food..."
+              placeholder={attachedPhoto ? "Describe what's in the photo..." : "Ask about any food..."}
               placeholderTextColor={theme.textTertiary}
               multiline
               maxLength={500}
@@ -1145,17 +1205,17 @@ export default function ChatScreen() {
             />
             <TouchableOpacity
               onPress={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && !attachedPhoto) || isLoading}
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={input.trim() ? (['#16A34A', '#0D9488'] as const) : [theme.surfaceHighlight, theme.surfaceHighlight]}
+                colors={(input.trim() || attachedPhoto) ? (['#16A34A', '#0D9488'] as const) : [theme.surfaceHighlight, theme.surfaceHighlight]}
                 style={[styles.sendButton, isCompact && styles.sendButtonCompact]}
               >
                 <Ionicons
                   name="arrow-up"
                   size={isCompact ? 18 : 20}
-                  color={input.trim() ? '#FFFFFF' : theme.textTertiary}
+                  color={(input.trim() || attachedPhoto) ? '#FFFFFF' : theme.textTertiary}
                 />
               </LinearGradient>
             </TouchableOpacity>
@@ -1735,5 +1795,30 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  photoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+  },
+  photoPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  photoPreviewThumb: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  photoPreviewLabel: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    fontWeight: '600',
   },
 });

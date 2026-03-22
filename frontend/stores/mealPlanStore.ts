@@ -48,6 +48,7 @@ interface MealPlanState {
   setGenerating: (generating: boolean) => void;
   setSelectedDay: (day: string) => void;
   loadCurrentPlan: (forceReload?: boolean) => Promise<void>;
+  updateMealServings: (itemId: string, servings: number) => Promise<void>;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -83,6 +84,23 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
       // Don't set hasLoaded so user can retry
     } finally {
       set({ isLoading: false });
+    }
+  },
+  updateMealServings: async (itemId: string, servings: number) => {
+    const plan = get().currentPlan;
+    if (!plan) return;
+
+    // Optimistic update
+    const updatedItems = plan.items.map((item) =>
+      item.id === itemId ? { ...item, servings } : item
+    );
+    set({ currentPlan: { ...plan, items: updatedItems } });
+
+    try {
+      await mealPlanApi.updateItemServings(itemId, servings);
+    } catch {
+      // Revert on failure
+      set({ currentPlan: plan });
     }
   },
 }));

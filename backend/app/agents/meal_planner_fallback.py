@@ -30,7 +30,7 @@ VARIETY_LIMITS = {
     "variety_heavy": {"breakfast": 5, "lunch": 7, "dinner": 7},
 }
 PAIRING_ROLE_PRIORITY = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
-_BULK_COOK_UNSUITABLE_TAGS = {"quick", "salad"}
+_BULK_COOK_UNSUITABLE_TAGS = {"salad"}
 
 
 def _is_bulk_cook_suitable(recipe: Recipe) -> bool:
@@ -365,8 +365,6 @@ def _prep_day_for_block(start_index: int) -> str:
 
 
 def _meal_category_for_block(day: str, meal_type: str, repeated: bool) -> tuple[str, bool]:
-    if meal_type == "breakfast":
-        return "quick", False
     if repeated:
         return "bulk_cook", True
     if meal_type == "dinner" and day in ("Saturday", "Sunday"):
@@ -611,8 +609,7 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             mes = candidate["mes"]
             block_length = len(covers_days)
             repeated = (
-                slot != "breakfast"
-                and block_length > 1
+                block_length > 1
                 and context["variety_mode"] in {"prep_heavy", "balanced"}
                 and _is_bulk_cook_suitable(recipe)
             )
@@ -628,18 +625,21 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
                     "prep_window_start_day": covers_days[0],
                     "prep_window_end_day": covers_days[-1],
                 }
-                prep_timeline.append(
-                    {
-                        "prep_group_id": prep_group_id,
-                        "recipe_id": str(recipe.id),
-                        "recipe_title": recipe.title,
-                        "meal_type": slot,
-                        "prep_day": prep_day,
-                        "covers_days": covers_days,
-                        "servings_to_make": context["household"] * len(covers_days),
-                        "summary_text": _prep_summary_text(prep_day, recipe.title, covers_days, slot),
-                    }
-                )
+                pairing_title = mes.get("paired_recipe_title") if recipe.needs_default_pairing else None
+                display_title = f"{recipe.title} + {pairing_title}" if pairing_title else recipe.title
+                prep_entry: dict[str, Any] = {
+                    "prep_group_id": prep_group_id,
+                    "recipe_id": str(recipe.id),
+                    "recipe_title": recipe.title,
+                    "meal_type": slot,
+                    "prep_day": prep_day,
+                    "covers_days": covers_days,
+                    "servings_to_make": context["household"] * len(covers_days),
+                    "summary_text": _prep_summary_text(prep_day, display_title, covers_days, slot),
+                }
+                if pairing_title:
+                    prep_entry["pairing_title"] = pairing_title
+                prep_timeline.append(prep_entry)
 
             for offset, day in enumerate(covers_days):
                 category, is_bulk = _meal_category_for_block(day, slot, repeated)
@@ -659,6 +659,15 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
                     prep_meta=prep_meta,
                 )
                 meal_data["is_bulk_cook"] = is_bulk
+
+                # Embed pairing ingredients for grocery list
+                if recipe.needs_default_pairing and recipe.default_pairing_ids:
+                    pairing_id = recipe.default_pairing_ids[0] if recipe.default_pairing_ids else None
+                    if pairing_id:
+                        pairing_recipe = db.query(Recipe).filter(Recipe.id == pairing_id).first()
+                        if pairing_recipe:
+                            meal_data["recipe"]["pairing_ingredients"] = pairing_recipe.ingredients or []
+
                 days_map[day].append(meal_data)
 
     days_list: list[dict[str, Any]] = []

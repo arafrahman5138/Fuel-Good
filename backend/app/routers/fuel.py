@@ -32,6 +32,7 @@ from app.services.fuel_score import (
     AVG_CHEAT_MEAL_SCORE,
     get_week_bounds,
     get_weekly_meal_scores,
+    get_weekly_snack_scores,
     get_daily_fuel_scores,
     compute_flex_budget,
     compute_fuel_streak,
@@ -182,14 +183,23 @@ async def get_weekly_fuel(
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
 
-    scores = get_weekly_meal_scores(db, current_user.id, week_start)
+    # Main meal scores (excluding snacks/desserts) for flex budget counting
+    main_meal_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    # Snack/dessert scores tracked separately
+    snack_scores = get_weekly_snack_scores(db, current_user.id, week_start)
+    # All scores (meals + snacks) for weekly fuel average
+    all_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=False)
+
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
-        meal_scores=scores,
+        meal_scores=main_meal_scores,  # Only main meals count toward flex budget
         week_start=week_start,
         clean_pct=clean_pct,
     )
+    # Attach snack stats to budget
+    budget.snacks_logged = len(snack_scores)
+    budget.snack_avg_score = round(sum(snack_scores) / len(snack_scores), 1) if snack_scores else 0.0
 
     # Build daily breakdown
     logs = (
@@ -222,6 +232,7 @@ async def get_weekly_fuel(
                 "fuel_score": fs,
                 "tier": tier_key,
                 "source_type": log.source_type,
+                "meal_type": log.meal_type,
             })
         daily_breakdown.append(DailyFuelResponse(
             date=day.isoformat(),
@@ -230,14 +241,15 @@ async def get_weekly_fuel(
             meals=day_meals,
         ))
 
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+    # Weekly average includes ALL scores (meals + snacks) for transparency
+    avg_score = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
 
     return WeeklyFuelResponse(
         week_start=week_start.isoformat(),
         week_end=week_end.isoformat(),
         avg_fuel_score=avg_score,
-        meal_count=len(scores),
-        target_met=avg_score >= fuel_target if scores else False,
+        meal_count=len(all_scores),
+        target_met=avg_score >= fuel_target if all_scores else False,
         flex_budget=FlexBudgetResponse(**budget.__dict__),
         daily_breakdown=daily_breakdown,
     )
@@ -457,11 +469,12 @@ async def get_flex_suggestions(
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
 
-    scores = get_weekly_meal_scores(db, current_user.id, week_start)
+    # Use main meal scores only (exclude snacks/desserts) for flex budget
+    main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
-        meal_scores=scores,
+        meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
     )
@@ -606,7 +619,7 @@ async def log_manual_flex_meal(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
         date=day,
-        meal_type=payload.meal_type or "meal",
+        meal_type=payload.meal_type or "snack",
         source_type="manual_flex",
         title=title,
         fuel_score=float(AVG_CHEAT_MEAL_SCORE),
@@ -620,11 +633,12 @@ async def log_manual_flex_meal(
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
-    scores = get_weekly_meal_scores(db, current_user.id, week_start)
+    # Use main meal scores only (exclude snacks) for flex budget
+    main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
-        meal_scores=scores,
+        meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
     )

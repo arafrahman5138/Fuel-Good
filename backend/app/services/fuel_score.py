@@ -82,6 +82,7 @@ def compute_fuel_score(
     whole_food_status: str | None = None,
     whole_food_flags: list[dict[str, Any]] | None = None,
     ingredients_text: str | None = None,
+    title: str | None = None,
 ) -> FuelScoreResult:
     """Compute a Fuel Score (0–100) for a meal.
 
@@ -108,6 +109,7 @@ def compute_fuel_score(
         return _score_manual(
             nutrition=nutrition,
             ingredients_text=ingredients_text,
+            title=title,
         )
 
 
@@ -255,10 +257,26 @@ def _score_scan(
 
 # ── Path 3: Manual / food_db → neutral or estimated ─────────────────
 
+_WHOLE_FOOD_TITLE_HINTS = {
+    "salmon", "chicken", "beef", "turkey", "shrimp", "tuna", "steak",
+    "egg", "omelet", "omelette",
+    "quinoa", "brown rice", "sweet potato", "lentil", "chickpea",
+    "broccoli", "spinach", "kale", "zucchini", "avocado", "cucumber",
+    "greek yogurt", "yogurt bowl", "chia", "oat",
+    "salad", "bowl", "grilled", "baked", "roasted", "steamed",
+}
+_PROCESSED_TITLE_HINTS = {
+    "pizza", "burger", "fries", "nugget", "donut", "candy", "soda",
+    "chip", "cookie", "cake", "ice cream", "milkshake", "brownie",
+    "hot dog", "corn dog", "mozzarella stick", "fried",
+}
+
+
 def _score_manual(
     *,
     nutrition: dict[str, Any] | None,
     ingredients_text: str | None,
+    title: str | None = None,
 ) -> FuelScoreResult:
     # If we have ingredient text, do a lightweight flag check
     if ingredients_text:
@@ -290,6 +308,21 @@ def _score_manual(
         # Start at 55 (slightly above neutral) and adjust based on quality signals
         score = 55.0
         reasoning: list[str] = []
+
+        # Title-based inference: boost/penalize if title strongly suggests whole food or processed
+        if title:
+            title_lower = title.lower()
+            wf_hits = sum(1 for h in _WHOLE_FOOD_TITLE_HINTS if h in title_lower)
+            pf_hits = sum(1 for h in _PROCESSED_TITLE_HINTS if h in title_lower)
+            if wf_hits >= 2 and pf_hits == 0:
+                score += 15
+                reasoning.append(f"Title suggests whole-food meal (+15).")
+            elif wf_hits >= 1 and pf_hits == 0:
+                score += 8
+                reasoning.append(f"Title suggests a healthy meal (+8).")
+            elif pf_hits >= 1 and wf_hits == 0:
+                score -= 8
+                reasoning.append(f"Title suggests processed food (-8).")
 
         # Protein density: ≥25g per meal is excellent for whole-food patterns
         if protein >= 25:
@@ -384,15 +417,18 @@ class FlexBudget:
     flex_budget: int              # total flex meals per week
     flex_used: int                # flex meals consumed (meals below target)
     flex_available: int           # flex meals currently available
+    # Snack/dessert tracking (excluded from main meal count)
+    snacks_logged: int = 0
+    snack_avg_score: float = 0.0
     # Legacy fields kept for backward compat
-    flex_points_total: float
-    flex_points_used: float
-    flex_points_remaining: float
-    flex_meals_remaining: int     # alias for flex_available
-    target_met: bool
-    projected_weekly_avg: float
-    week_start: str
-    week_end: str
+    flex_points_total: float = 0.0
+    flex_points_used: float = 0.0
+    flex_points_remaining: float = 0.0
+    flex_meals_remaining: int = 0     # alias for flex_available
+    target_met: bool = False
+    projected_weekly_avg: float = 0.0
+    week_start: str = ""
+    week_end: str = ""
 
 
 def compute_flex_budget(
@@ -480,17 +516,27 @@ def compute_flex_budget(
 
 # ── DB helpers ───────────────────────────────────────────────────────
 
-def _scores_from_logs(logs) -> list[float]:
+_SNACK_MEAL_TYPES = {"snack", "dessert"}
+_MAIN_MEAL_TYPES = {"breakfast", "lunch", "dinner", "meal"}
+
+
+def _scores_from_logs(logs, *, exclude_snacks: bool = False) -> list[float]:
     """
     Convert a list of FoodLog ORM objects into one fuel score per meal.
     Logs sharing the same group_id are treated as a single meal whose score
     is the average of all logs in that group.
+
+    If *exclude_snacks* is True, logs with meal_type in ('snack', 'dessert')
+    are omitted — used for flex budget meal counting (desserts shouldn't count
+    as one of the 21 expected meals per week).
     """
     groups: dict[str, list[float]] = {}
     ungrouped: list[float] = []
     for log in logs:
         score = float(log.fuel_score) if log.fuel_score is not None else None
         if score is None:
+            continue
+        if exclude_snacks and (getattr(log, "meal_type", "") or "").lower() in _SNACK_MEAL_TYPES:
             continue
         if log.group_id:
             groups.setdefault(log.group_id, []).append(score)
@@ -499,16 +545,29 @@ def _scores_from_logs(logs) -> list[float]:
     return ungrouped + [sum(v) / len(v) for v in groups.values()]
 
 
-def get_weekly_meal_scores(
-    db: Session,
-    user_id: str,
-    week_start: date,
-) -> list[float]:
-    """Fetch one fuel score per meal for a given week (grouped meals count once)."""
+def _snack_scores_from_logs(logs) -> list[float]:
+    """Extract fuel scores for snack/dessert logs only."""
+    groups: dict[str, list[float]] = {}
+    ungrouped: list[float] = []
+    for log in logs:
+        score = float(log.fuel_score) if log.fuel_score is not None else None
+        if score is None:
+            continue
+        if (getattr(log, "meal_type", "") or "").lower() not in _SNACK_MEAL_TYPES:
+            continue
+        if log.group_id:
+            groups.setdefault(log.group_id, []).append(score)
+        else:
+            ungrouped.append(score)
+    return ungrouped + [sum(v) / len(v) for v in groups.values()]
+
+
+def _fetch_weekly_logs(db: Session, user_id: str, week_start: date):
+    """Fetch all food logs for a given week."""
     from app.models.nutrition import FoodLog
 
     week_end = week_start + timedelta(days=6)
-    logs = (
+    return (
         db.query(FoodLog)
         .filter(
             FoodLog.user_id == user_id,
@@ -518,13 +577,40 @@ def get_weekly_meal_scores(
         )
         .all()
     )
-    return _scores_from_logs(logs)
+
+
+def get_weekly_meal_scores(
+    db: Session,
+    user_id: str,
+    week_start: date,
+    *,
+    exclude_snacks: bool = False,
+) -> list[float]:
+    """Fetch one fuel score per meal for a given week (grouped meals count once).
+
+    If *exclude_snacks* is True, snack/dessert logs are omitted — used for
+    flex budget meal counting where desserts shouldn't count as real meals.
+    """
+    logs = _fetch_weekly_logs(db, user_id, week_start)
+    return _scores_from_logs(logs, exclude_snacks=exclude_snacks)
+
+
+def get_weekly_snack_scores(
+    db: Session,
+    user_id: str,
+    week_start: date,
+) -> list[float]:
+    """Fetch fuel scores for snack/dessert logs only in a given week."""
+    logs = _fetch_weekly_logs(db, user_id, week_start)
+    return _snack_scores_from_logs(logs)
 
 
 def get_daily_fuel_scores(
     db: Session,
     user_id: str,
     day: date,
+    *,
+    exclude_snacks: bool = False,
 ) -> list[float]:
     """Fetch one fuel score per meal for a given day (grouped meals count once)."""
     from app.models.nutrition import FoodLog
@@ -538,7 +624,7 @@ def get_daily_fuel_scores(
         )
         .all()
     )
-    return _scores_from_logs(logs)
+    return _scores_from_logs(logs, exclude_snacks=exclude_snacks)
 
 
 def compute_fuel_streak(

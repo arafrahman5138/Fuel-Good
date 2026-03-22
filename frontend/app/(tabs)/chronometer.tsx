@@ -2187,7 +2187,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     padding: 4,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     width: '96%',
     alignSelf: 'center',
     zIndex: 10,

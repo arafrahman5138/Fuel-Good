@@ -1093,7 +1093,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             const metaParts: string[] = [];
             if (totalMinutes > 0) metaParts.push(`${totalMinutes} min`);
             if (recipe.difficulty) metaParts.push(recipe.difficulty);
-            if (meal.is_bulk_cook && meal.servings) metaParts.push(`${meal.servings} srv`);
+            if (meal.servings && meal.servings > 1) metaParts.push(`${meal.servings} srv`);
             const metaStr = metaParts.join(' · ');
 
             return (
@@ -1168,6 +1168,52 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     {' · '}{Math.round(snap.protein || 0)}g protein · {Math.round(snap.carbs || 0)}g carbs · {Math.round(snap.fat || 0)}g fat
                   </Text>
                 ) : null}
+
+                {/* Serving stepper */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
+                  <Ionicons name="people-outline" size={14} color={theme.textTertiary} />
+                  <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs }}>Servings</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto', gap: 0 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (meal.servings > 1) {
+                          useMealPlanStore.getState().updateMealServings(meal.id, meal.servings - 1);
+                        }
+                      }}
+                      style={{
+                        width: 28, height: 28, borderRadius: 14,
+                        backgroundColor: meal.servings > 1 ? theme.surfaceHighlight : theme.surface,
+                        borderWidth: 1, borderColor: theme.border,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                      disabled={meal.servings <= 1}
+                    >
+                      <Ionicons name="remove" size={14} color={meal.servings > 1 ? theme.text : theme.textTertiary} />
+                    </TouchableOpacity>
+                    <Text style={{
+                      color: theme.text, fontWeight: '700', fontSize: FontSize.sm,
+                      minWidth: 32, textAlign: 'center',
+                    }}>
+                      {meal.servings || 1}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (meal.servings < 12) {
+                          useMealPlanStore.getState().updateMealServings(meal.id, meal.servings + 1);
+                        }
+                      }}
+                      style={{
+                        width: 28, height: 28, borderRadius: 14,
+                        backgroundColor: theme.primaryMuted,
+                        borderWidth: 1, borderColor: theme.primary + '30',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                      disabled={meal.servings >= 12}
+                    >
+                      <Ionicons name="add" size={14} color={theme.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
                 <View style={[styles.metaStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <TouchableOpacity

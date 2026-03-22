@@ -43,19 +43,22 @@ class FlexBudgetResponse(BaseModel):
     flex_budget: int
     flex_used: int
     flex_available: int
+    # Snack/dessert tracking (excluded from main meal count)
+    snacks_logged: int = 0
+    snack_avg_score: float = 0.0
     # Legacy points fields
-    flex_points_total: float
-    flex_points_used: float
-    flex_points_remaining: float
-    flex_meals_remaining: int
-    target_met: bool
-    projected_weekly_avg: float
-    week_start: str
-    week_end: str
+    flex_points_total: float = 0.0
+    flex_points_used: float = 0.0
+    flex_points_remaining: float = 0.0
+    flex_meals_remaining: int = 0
+    target_met: bool = False
+    projected_weekly_avg: float = 0.0
+    week_start: str = ""
+    week_end: str = ""
 
 
 class ManualFlexLogRequest(BaseModel):
-    meal_type: Optional[str] = Field(default="meal", description="breakfast/lunch/dinner/snack")
+    meal_type: Optional[str] = Field(default="snack", description="breakfast/lunch/dinner/snack")
     tag: Optional[str] = Field(default=None, description="pizza/burger/takeout/dessert/drinks/other")
     date: Optional[str] = Field(default=None, description="ISO date, defaults to today")
 

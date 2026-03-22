@@ -823,7 +823,7 @@ export default function OnboardingScreen() {
               <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
                 <TextInput
                   style={[styles.inputField, { color: theme.text }]}
-                  placeholder="165"
+                  placeholder="e.g. 165"
                   placeholderTextColor={theme.textTertiary}
                   keyboardType="numeric"
                   value={weightLb}
@@ -838,7 +838,7 @@ export default function OnboardingScreen() {
                 <View style={[styles.inputRow, { flex: 1, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
                   <TextInput
                     style={[styles.inputField, { color: theme.text }]}
-                    placeholder="5"
+                    placeholder="e.g. 5"
                     placeholderTextColor={theme.textTertiary}
                     keyboardType="numeric"
                     value={heightFt}
@@ -849,7 +849,7 @@ export default function OnboardingScreen() {
                 <View style={[styles.inputRow, { flex: 1, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
                   <TextInput
                     style={[styles.inputField, { color: theme.text }]}
-                    placeholder="7"
+                    placeholder="e.g. 7"
                     placeholderTextColor={theme.textTertiary}
                     keyboardType="numeric"
                     value={heightIn}
@@ -864,7 +864,7 @@ export default function OnboardingScreen() {
               <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
                 <TextInput
                   style={[styles.inputField, { color: theme.text }]}
-                  placeholder="30"
+                  placeholder="e.g. 30"
                   placeholderTextColor={theme.textTertiary}
                   keyboardType="numeric"
                   value={age}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -26,7 +27,7 @@ from app.services.whole_food_scoring import analyze_whole_food_product
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
-MEAL_SCAN_PROMPT_VERSION = "meal_scan_v3_fast"
+MEAL_SCAN_PROMPT_VERSION = "meal_scan_v4_consensus"
 
 SNACK_CALORIE_CEILING = 250.0
 SNACK_CARB_CEILING = 18.0
@@ -1113,7 +1114,15 @@ async def analyze_meal_scan(
     mime_type: str,
     context: dict[str, Any],
 ) -> dict[str, Any]:
+    # Lazy imports to avoid circular dependencies
+    from app.services.model_consensus import run_ensemble_reasoning
+    from app.services.usda_client import lookup_usda_nutrition
+
     started = datetime.now(UTC)
+
+    # ------------------------------------------------------------------
+    # Stage 1: Gemini vision — food identification from image (~1.5s)
+    # ------------------------------------------------------------------
     extracted = await _call_gemini_meal_extractor(image_bytes, mime_type, context)
 
     # Reject non-food images immediately
@@ -1152,12 +1161,142 @@ async def analyze_meal_scan(
     ).strip().lower()
     preparation_style = str(extracted.get("preparation_style") or "unknown").strip().lower()
 
-    heuristic_nutrition, heuristic_confidence = _estimate_from_components(components, portion_size)
+    # ------------------------------------------------------------------
+    # Stage 2: USDA grounding + Claude ensemble reasoning (parallel)
+    #
+    # Architecture: each model does what it's BEST at, no redundant work.
+    # - USDA: lab-verified nutrition data per component
+    # - Claude: reasoning about hidden ingredients + nutrition cross-check
+    # Both run in parallel — total added latency ~1-1.5s
+    # ------------------------------------------------------------------
+    usda_grounded_count = 0
+    ensemble_result: dict[str, Any] | None = None
+
+    parallel_tasks: list[Any] = []
+
+    # USDA lookups (one per component, all parallel)
+    if settings.usda_grounding_enabled:
+        usda_coros = [
+            lookup_usda_nutrition(str(c.get("name", "")), preparation_style)
+            for c in components
+        ]
+        parallel_tasks.append(asyncio.gather(*usda_coros, return_exceptions=True))
+    else:
+        parallel_tasks.append(asyncio.sleep(0))
+
+    # Claude ensemble reasoning (hidden ingredients + nutrition cross-check)
+    if settings.hidden_ingredient_model_enabled:
+        parallel_tasks.append(
+            run_ensemble_reasoning(
+                components, raw_meal_label, preparation_style,
+                source_context, portion_size,
+            )
+        )
+    else:
+        parallel_tasks.append(asyncio.sleep(0))
+
+    stage_results = await asyncio.gather(*parallel_tasks, return_exceptions=True)
+
+    # Unpack USDA results
+    usda_raw = stage_results[0] if settings.usda_grounding_enabled and not isinstance(stage_results[0], Exception) else None
+    if isinstance(stage_results[0], Exception):
+        logger.warning("USDA grounding batch failed: %s", stage_results[0])
+
+    # Unpack Claude ensemble results
+    if settings.hidden_ingredient_model_enabled and not isinstance(stage_results[1], Exception):
+        ensemble_result = stage_results[1]
+    if isinstance(stage_results[1], Exception):
+        logger.warning("Claude ensemble reasoning failed: %s", stage_results[1])
+
+    # ------------------------------------------------------------------
+    # Nutrition estimation: USDA-grounded with COMPONENT_MACROS fallback
+    # ------------------------------------------------------------------
+    usda_results: list[dict[str, float] | None] = []
+    if usda_raw and isinstance(usda_raw, (list, tuple)):
+        for r in usda_raw:
+            usda_results.append(r if isinstance(r, dict) else None)
+    while len(usda_results) < len(components):
+        usda_results.append(None)
+
+    totals: dict[str, float] = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0, "fiber": 0.0, "sugar_g": 0.0}
+    matched = 0
+    for component, usda_result in zip(components, usda_results):
+        factor = float(component.get("portion_factor", 1.0) or 1.0)
+
+        if usda_result:
+            for key in totals:
+                totals[key] += usda_result.get(key, 0.0) * factor
+            usda_grounded_count += 1
+            matched += 1
+        else:
+            macros = _lookup_component_macros(str(component.get("name", "")))
+            if macros:
+                for key in totals:
+                    totals[key] += macros.get(key, 0.0) * factor
+                matched += 1
+            else:
+                role = str(component.get("role", "other")).lower()
+                fallback = _ROLE_FALLBACK_MACROS.get(role, _ROLE_FALLBACK_MACROS["other"])
+                for key in totals:
+                    totals[key] += fallback.get(key, 0.0) * factor
+
+    # Apply portion multiplier
+    portion_multiplier = PORTION_MULTIPLIERS.get((portion_size or "medium").lower(), 1.0)
+    for key in totals:
+        totals[key] = round(totals[key] * portion_multiplier, 1)
+
+    # ------------------------------------------------------------------
+    # Apply Claude ensemble adjustments (nutrition cross-check)
+    # ------------------------------------------------------------------
+    ensemble_used = ensemble_result is not None
+    if ensemble_result:
+        # Apply nutrition adjustments from Claude's reasoning
+        for adj in (ensemble_result.get("nutrition_adjustments") or []):
+            field = adj.get("field", "")
+            factor = float(adj.get("factor", 1.0) or 1.0)
+            if field in totals and 0.5 <= factor <= 2.0:
+                totals[field] = round(totals[field] * factor, 1)
+
+        # Apply portion assessment
+        portion_assessment = ensemble_result.get("portion_assessment", "accurate")
+        if portion_assessment == "under":
+            for key in totals:
+                totals[key] = round(totals[key] * 1.15, 1)  # bump up 15%
+        elif portion_assessment == "over":
+            for key in totals:
+                totals[key] = round(totals[key] * 0.85, 1)  # trim 15%
+
+    # Sugar fallback
+    if totals["sugar_g"] == 0.0:
+        totals["sugar_g"] = _estimate_sugar_g(totals)
+
+    # Grounding confidence
+    if matched == 0 and components:
+        grounding_confidence = 0.25
+    else:
+        base_conf = 0.35 + (0.5 * (matched / max(len(components), 1)))
+        usda_bonus = 0.1 * (usda_grounded_count / max(len(components), 1))
+        ensemble_bonus = 0.05 if ensemble_used else 0.0
+        grounding_confidence = min(0.95, base_conf + usda_bonus + ensemble_bonus)
+
+    heuristic_nutrition = totals
+
+    # ------------------------------------------------------------------
+    # Merge Claude hidden ingredients with Gemini-extracted ones
+    # ------------------------------------------------------------------
+    if ensemble_result:
+        existing_lower = {h.lower() for h in hidden_ingredients}
+        for item in (ensemble_result.get("hidden_ingredients") or []):
+            name = str(item.get("name", "")).strip()
+            conf = float(item.get("confidence", 0) or 0)
+            if name and conf >= 0.55 and name.lower() not in existing_lower:
+                hidden_ingredients.append(name)
+                existing_lower.add(name.lower())
+
     nutrition = build_glycemic_nutrition_input(
         heuristic_nutrition,
         ingredients=normalized_ingredients + hidden_ingredients,
     )
-    grounding_confidence = heuristic_confidence
     meal_label = _derive_stable_meal_label(raw_meal_label, components, None, 0.0)
 
     ingredients_text = ", ".join(normalized_ingredients + hidden_ingredients)
@@ -1192,21 +1331,25 @@ async def analyze_meal_scan(
 
     snack_profile = _snack_profile(meal_context, nutrition, whole_food_status, flags, meal_label, normalized_ingredients, components)
 
+    # ------------------------------------------------------------------
+    # Confidence: 4-component formula (ensemble bonus baked into grounding)
+    # ------------------------------------------------------------------
     estimate_mode = "high" if grounding_confidence >= 0.75 else ("medium" if grounding_confidence >= 0.5 else "low")
     confidence_breakdown = {
         "extraction": float((extracted.get("confidence_breakdown") or {}).get("extraction", extracted.get("confidence", 0.72)) or 0.72),
         "portion": float((extracted.get("confidence_breakdown") or {}).get("portion", 0.68) or 0.68),
         "grounding": round(grounding_confidence, 2),
         "nutrition": round(grounding_confidence, 2),
+        "ensemble_applied": ensemble_used,
         "estimate_mode": estimate_mode,
         "review_required": estimate_mode == "low",
     }
     confidence = round(
         (
-            confidence_breakdown["extraction"] * 0.4
-            + confidence_breakdown["portion"] * 0.2
-            + confidence_breakdown["nutrition"] * 0.3
-            + confidence_breakdown["grounding"] * 0.1
+            confidence_breakdown["extraction"] * 0.35
+            + confidence_breakdown["portion"] * 0.20
+            + confidence_breakdown["nutrition"] * 0.25
+            + confidence_breakdown["grounding"] * 0.20
         ),
         2,
     )
@@ -1232,6 +1375,13 @@ async def analyze_meal_scan(
         estimate_mode,
     )
 
+    # ------------------------------------------------------------------
+    # Build result
+    # ------------------------------------------------------------------
+    models_used = [settings.scan_model or settings.gemini_model]
+    if ensemble_used:
+        models_used.append("claude-sonnet")
+
     result = {
         "meal_label": meal_label,
         "meal_type": meal_type,
@@ -1239,7 +1389,7 @@ async def analyze_meal_scan(
         "portion_size": portion_size,
         "source_context": source_context,
         "preparation_style": preparation_style,
-        "components": components,  # raw dicts with name/role — used by compute_fuel_score
+        "components": components,
         "estimated_ingredients": estimated_ingredients,
         "normalized_ingredients": normalized_ingredients + hidden_ingredients,
         "nutrition_estimate": nutrition,
@@ -1252,11 +1402,11 @@ async def analyze_meal_scan(
         "confidence_breakdown": confidence_breakdown,
         "upgrade_suggestions": upgrade_suggestions,
         "recovery_plan": recovery_plan,
-        "source_model": settings.scan_model or settings.gemini_model,
+        "source_model": "+".join(models_used),
         "prompt_version": MEAL_SCAN_PROMPT_VERSION,
-        "grounding_source": None,
+        "grounding_source": "usda" if usda_grounded_count > 0 else None,
         "grounding_candidates": [],
-        "grounding_provider": None,
+        "grounding_provider": "USDA FoodData Central" if usda_grounded_count > 0 else None,
         "matched_recipe_id": None,
         "matched_recipe_title": None,
         "matched_recipe_confidence": None,
@@ -1268,11 +1418,17 @@ async def analyze_meal_scan(
         "pairing_projected_delta": (pairing_recommendation or {}).get("pairing_projected_delta"),
         "pairing_reasons": (pairing_recommendation or {}).get("pairing_reasons") or [],
         "pairing_timing": (pairing_recommendation or {}).get("pairing_timing"),
+        "ensemble_models": models_used,
+        "usda_grounded_count": usda_grounded_count,
+        "usda_grounded_total": len(components),
     }
     logger.info(
-        "meal_scan.completed bytes=%s extraction_model=%s total_ms=%s",
+        "meal_scan.completed bytes=%s models=%s usda=%s/%s ensemble=%s ms=%s",
         len(image_bytes),
-        settings.scan_model or settings.gemini_model,
+        "+".join(models_used),
+        usda_grounded_count,
+        len(components),
+        ensemble_used,
         int((datetime.now(UTC) - started).total_seconds() * 1000),
     )
     return result

@@ -403,6 +403,21 @@ async def create_log(
 
     title, base_nutrition = _resolve_source_nutrition(db, payload)
 
+    # ── Auto-upgrade manual logs that match a curated recipe ──
+    normalized_source_type = (payload.source_type or "manual").lower()
+    if normalized_source_type == "manual" and not payload.source_id and payload.title:
+        matched_recipe = db.query(Recipe).filter(
+            Recipe.title.ilike(payload.title.strip())
+        ).first()
+        if matched_recipe:
+            normalized_source_type = "recipe"
+            payload.source_type = "recipe"
+            payload.source_id = str(matched_recipe.id)
+            logger.info(
+                "Auto-upgraded manual log '%s' to recipe (id=%s)",
+                payload.title, matched_recipe.id,
+            )
+
     factor = max(0.1, float(payload.servings or 1.0)) * max(0.1, float(payload.quantity or 1.0))
     nutrition_snapshot = _merge_nutrition_metadata(
         base_nutrition,
@@ -410,12 +425,12 @@ async def create_log(
     )
 
     # ── Fuel Score ──
-    normalized_source_type = (payload.source_type or "manual").lower()
     try:
         fuel_result = compute_fuel_score(
             source_type=normalized_source_type,
             nutrition=nutrition_snapshot,
             ingredients_text=(payload.nutrition or {}).get("ingredients_text") if payload.nutrition else None,
+            title=payload.title or title,
         )
         fuel_score_val = fuel_result.score
     except Exception:

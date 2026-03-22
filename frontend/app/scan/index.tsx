@@ -1642,7 +1642,12 @@ export default function ScanScreen() {
                     const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
                       ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
                       : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
-                    router.push(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
+                    // Dismiss the scan modal first, then navigate to chat tab
+                    // Using dismiss + setTimeout ensures the modal is gone before navigating
+                    router.dismiss();
+                    setTimeout(() => {
+                      router.navigate(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
+                    }, 100);
                   }}
                   activeOpacity={0.85}
                   style={[styles.askCoachBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '40', marginHorizontal: 16, marginTop: 12, marginBottom: 4 }]}

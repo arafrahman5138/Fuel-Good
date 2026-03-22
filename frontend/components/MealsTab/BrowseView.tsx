@@ -971,6 +971,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
 
       {/* Recipe Grid */}
       <FlatList
+        style={{ flex: 1 }}
         data={displayedItems}
         renderItem={renderRecipeCard}
         keyExtractor={(item) => item.id}

@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     usda_api_key: str = ""
     spoonacular_api_key: str = ""
 
+    # Scan pipeline feature flags
+    usda_grounding_enabled: bool = True            # USDA FoodData Central nutrition lookups
+    hidden_ingredient_model_enabled: bool = True   # Claude ensemble reasoning (hidden ingredients + nutrition cross-check)
+
     class Config:
         env_file = ".env"
 

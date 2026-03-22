@@ -79,8 +79,10 @@ def extract_grocery_items(meal_plan: MealPlan) -> List[dict]:
     for item in meal_plan.items:
         recipe = item.recipe_data or {}
         servings_multiplier = (item.servings or 1)
-        raw_ingredients = recipe.get("ingredients", []) or []
-        for raw_ingredient in raw_ingredients:
+        # Process main recipe ingredients + any pairing ingredients
+        all_ingredients = list(recipe.get("ingredients", []) or [])
+        all_ingredients.extend(recipe.get("pairing_ingredients", []) or [])
+        for raw_ingredient in all_ingredients:
             normalized = _normalize_ingredient(raw_ingredient)
             name_key = normalized["name"].lower().strip()
             if not name_key:

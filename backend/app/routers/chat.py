@@ -108,7 +108,7 @@ async def healthify_food(
                     user_id=current_user.id,
                     chat_context=request.context.model_dump() if request.context else None,
                 ),
-                timeout=20,
+                timeout=45,
             )
         except asyncio.TimeoutError:
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
@@ -256,15 +256,16 @@ async def healthify_food_stream(
             chunk_count = 0
             final_payload = None
             try:
-                async with asyncio.timeout(20):
-                    async for chunk in healthify_agent(
+                async with asyncio.timeout(45):
+                    stream_gen = await healthify_agent(
                         db,
                         request.message,
                         messages[:-1],
                         stream=True,
                         user_id=current_user.id,
                         chat_context=request.context.model_dump() if request.context else None,
-                    ):
+                    )
+                    async for chunk in stream_gen:
                         full_response += chunk
                         chunk_count += 1
                         yield f"data: {json.dumps({'content': chunk})}\n\n"

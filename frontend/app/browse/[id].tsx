@@ -812,7 +812,7 @@ export default function RecipeDetailScreen() {
               imageUrl={activeRecipe.image_url}
               title={activeRecipe.title}
               width={Dimensions.get('window').width}
-              height={280}
+              height={Dimensions.get('window').height < 700 ? 200 : 280}
               borderRadius={0}
             />
           </View>
@@ -1659,7 +1659,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Layout.scrollBottomPadding,
+    paddingBottom: Layout.scrollBottomPadding + 60,
   },
   centered: {
     flex: 1,

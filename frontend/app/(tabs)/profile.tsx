@@ -481,6 +481,8 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: Spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: BorderRadius.sm,
     alignItems: 'center',
   },

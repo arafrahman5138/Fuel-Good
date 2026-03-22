@@ -131,6 +131,26 @@ Behavior:
 - Keep the explanation under 120 words unless providing a recipe.
 """
 
+PHOTO_ANALYSIS_PROMPT = """You are Fuel Good Healthify AI with vision capabilities.
+
+The user has sent a photo. Analyze it and determine what type of food image it is:
+1. **Fridge/pantry** — list all visible ingredients you can identify
+2. **Plated meal** — identify the dish name and key ingredients
+3. **Grocery item** — identify the product and assess its whole-food quality
+4. **Nutrition label** — extract macro information (calories, protein, carbs, fat, fiber)
+
+Based on what you see:
+- If fridge/pantry: generate a whole-food Fuel 100-quality recipe using visible ingredients + common pantry staples
+- If plated meal: suggest a healthified whole-food version that preserves the dish's spirit
+- If grocery item: rate its whole-food quality (1-10) and suggest better alternatives if score < 7
+- If nutrition label: assess alignment with the user's metabolic goals
+
+{user_context}
+
+Return strict JSON with keys: message, recipe (null if not applicable), swaps, nutrition, image_analysis.
+image_analysis should have: detected_type ("fridge"|"meal"|"grocery"|"label"), identified_items (list of strings).
+"""
+
 POST_SCAN_PROMPT = """You are Fuel Good Healthify AI — a food coach helping users understand a meal they just scanned.
 
 Return strict JSON with keys: message, recipe, swaps, nutrition.
@@ -325,6 +345,10 @@ def _compute_recipe_mes(
 
 def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     text = (user_input or "").lower()
+
+    # Photo analysis — image attached
+    if chat_context and chat_context.get("image_base64"):
+        return "photo_analysis"
 
     # Context-driven overrides — scan source always means post_scan_guidance
     if chat_context and chat_context.get("source") == "scan" and chat_context.get("scan_result"):
@@ -943,6 +967,56 @@ async def _handle_post_scan(
     return payload
 
 
+async def _handle_photo_analysis(
+    user_input: str,
+    history: List[dict],
+    chat_context: dict,
+    user_context: str = "",
+) -> dict[str, Any]:
+    """Handle photo-based chat: fridge, plated meal, grocery item, or nutrition label."""
+    import base64 as b64mod
+
+    llm = get_llm("chat")
+    system_prompt = PHOTO_ANALYSIS_PROMPT.format(user_context=user_context or "")
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+
+    image_b64 = chat_context.get("image_base64", "")
+    image_type_hint = chat_context.get("image_type", "auto")
+
+    # Build multimodal message with image + text
+    content_parts: list[dict] = []
+    if image_b64:
+        # Determine mime type (assume jpeg if not specified)
+        mime = "image/jpeg"
+        if image_b64.startswith("/9j/"):
+            mime = "image/jpeg"
+        elif image_b64.startswith("iVBOR"):
+            mime = "image/png"
+        content_parts.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:{mime};base64,{image_b64}"},
+        })
+
+    user_text = user_input or "What do you see in this photo? Help me with food suggestions."
+    if image_type_hint != "auto":
+        user_text = f"[Image type hint: {image_type_hint}]\n{user_text}"
+    content_parts.append({"type": "text", "text": f"{user_text}\n\nReturn JSON only."})
+
+    messages.append(HumanMessage(content=content_parts))
+    response = await llm.ainvoke(messages)
+    payload = parse_healthify_response(response.content)
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
 async def healthify_agent(
     db: Session,
     user_input: str,
@@ -954,6 +1028,18 @@ async def healthify_agent(
     user_context = _build_user_context(db, user_id, chat_context)
 
     intent = _classify_intent(user_input, chat_context)
+
+    if intent == "photo_analysis":
+        payload = await _handle_photo_analysis(user_input, history, chat_context or {}, user_context)
+        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        if mes:
+            payload["mes_score"] = mes
+        if stream:
+            async def _gen():
+                yield payload.get("message", "")
+                yield "\n\n<!-- PAYLOAD:" + json.dumps(payload) + " -->"
+            return _gen()
+        return payload
 
     if intent == "fridge_to_meal":
         payload = await _handle_fridge_to_meal(user_input, history, user_context)

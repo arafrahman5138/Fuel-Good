@@ -365,17 +365,7 @@ function GroupedMealRow({
               <FuelScoreBadge score={main.fuel_score} compact fuelTarget={fuelTarget} />
             )}
             {displayScore != null && displayTier ? (
-              <View
-                style={{
-                  backgroundColor: (tierConfig?.color || theme.primary) + '14',
-                  borderColor: (tierConfig?.color || theme.primary) + '35',
-                  borderWidth: 1,
-                  borderRadius: BorderRadius.full,
-                  padding: 2,
-                }}
-              >
-                <MealMESBadge score={displayScore} tier={displayTier} />
-              </View>
+              <MealMESBadge score={displayScore} tier={displayTier} compact />
             ) : (
               <View style={[styles.unscoredPill, { backgroundColor: theme.surfaceHighlight }]}>
                 <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '700' }}>···</Text>
