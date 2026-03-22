@@ -87,6 +87,24 @@ export const Colors = {
 
 export type ThemeColors = typeof Colors.dark;
 
+/* ── Data-visualization colors (theme-invariant — same in light & dark) ── */
+
+/** Canonical colors for macro nutrients across the app. */
+export const MacroColors = {
+  protein: '#22C55E',
+  carbs:   '#F59E0B',
+  fat:     '#8B5CF6',
+  fatAlt:  '#EC4899',   // pink variant used in TodayProgressCard
+  fiber:   '#3B82F6',
+} as const;
+
+/** Semantic score tier colors. */
+export const ScoreColors = {
+  good:    '#22C55E',
+  warning: '#F59E0B',
+  danger:  '#EF4444',
+} as const;
+
 /* ── Responsive scaling (computed once at init for the device) ────────── */
 import { Dimensions } from 'react-native';
 

@@ -37,7 +37,8 @@ import { FuelCalendarHeatMap } from '../../components/FuelCalendarHeatMap';
 import { SmartFlexCard } from '../../components/SmartFlexCard';
 import { FuelSettingsSheet } from '../../components/FuelSettingsSheet';
 import { FlexMealsEarned } from '../../components/FlexMealsEarned';
-import { useTheme } from '../../hooks/useTheme';
+import { WeeklyFuelBreakdown } from '../../components/WeeklyFuelBreakdown';
+import { useTheme, useIsDark } from '../../hooks/useTheme';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Shadows } from '../../constants/Shadows';
@@ -67,6 +68,7 @@ interface DailyLog {
   group_id?: string | null;
   group_mes_score?: number | null;
   group_mes_tier?: string | null;
+  fuel_score?: number | null;
   nutrition?: Record<string, number>;
   nutrition_snapshot?: Record<string, number>;
   [key: string]: unknown;
@@ -119,10 +121,10 @@ interface SelectedNutrient {
 // ── Constants ──────────────────────────────────────────────────────────
 
 const MACROS = [
-  { key: 'protein', label: 'Protein', unit: 'g', icon: 'barbell-outline' as const },
-  { key: 'carbs', label: 'Carbs', unit: 'g', icon: 'flash-outline' as const },
-  { key: 'fat', label: 'Fat', unit: 'g', icon: 'water-outline' as const },
-  { key: 'fiber', label: 'Fiber', unit: 'g', icon: 'leaf-outline' as const },
+  { key: 'protein', label: 'Protein', subtitle: '', unit: 'g', icon: 'barbell-outline' as const },
+  { key: 'carbs', label: 'Carbs', subtitle: 'Daily target', unit: 'g', icon: 'flash-outline' as const },
+  { key: 'fat', label: 'Fat', subtitle: '', unit: 'g', icon: 'water-outline' as const },
+  { key: 'fiber', label: 'Fiber', subtitle: '', unit: 'g', icon: 'leaf-outline' as const },
 ];
 
 const microIcon = (name: string) => {
@@ -157,7 +159,8 @@ function NutritionRing({ score, size = 140, strokeWidth = 8 }: {
   const displayScore = clampedScore % 1 === 0 ? clampedScore.toFixed(0) : clampedScore.toFixed(1);
   const ringSize = size;
   const scoreFontSize = Math.round(ringSize * 0.26);
-  const trackColor = theme.text === '#FFFFFF' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const isDark = useIsDark();
+  const trackColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const arcColor = clampedScore >= 60 ? '#22C55E' : clampedScore >= 30 ? '#F59E0B' : '#EF4444';
 
   return (
@@ -900,21 +903,12 @@ export default function ChronometerScreen() {
                 mea={dailyMES.mea}
                 fatTargetOverride={fatMacroTarget}
                 fatConsumedOverride={fatMacroConsumed}
+                weeklyMesScore={chronoWeeklyMes.score}
+                weeklyMesTierColor={chronoWeeklyMes.color}
               />
             )}
 
-            {/* Weekly MES summary */}
-            {chronoWeeklyMes.score > 0 && (
-              <View style={[styles.weeklyMesSummary, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Ionicons name="flash" size={14} color={chronoWeeklyMes.color} />
-                <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '700' }}>
-                  Weekly MES
-                </Text>
-                <Text style={{ color: chronoWeeklyMes.color, fontSize: 18, fontWeight: '800', fontVariant: ['tabular-nums'] as any, marginLeft: 'auto' }}>
-                  {chronoWeeklyMes.score}
-                </Text>
-              </View>
-            )}
+            {/* Weekly MES folded into EnergyBudgetCard via prop */}
               </>
             )}
 
@@ -950,24 +944,29 @@ export default function ChronometerScreen() {
               </View>
             )}
 
-            <FuelSectionLabel label="YOUR FLEX BUDGET" theme={theme} />
-
-            {fuelWeekly && (
-              <FlexMealsEarned
-                flexMealsRemaining={fuelWeekly.flex_budget?.flex_meals_remaining ?? 0}
-              />
-            )}
-
-            {flexSuggestions && flexSuggestions.suggestions.length > 0 && (
+            {/* Calendar heatmap — promoted to top of fuel view */}
+            {fuelCalendar && fuelCalendar.days.length > 0 && (
               <>
-              <FuelSectionLabel label="FUEL COACH" theme={theme} />
-              <SmartFlexCard
-                context={flexSuggestions.context}
-                flexMealsRemaining={flexSuggestions.flex_meals_remaining}
-                suggestions={flexSuggestions.suggestions}
+              <FuelSectionLabel label="MONTHLY VIEW" theme={theme} />
+              <FuelCalendarHeatMap
+                month={fuelCalendar.month}
+                fuelTarget={fuelCalendar.fuel_target}
+                days={fuelCalendar.days}
+                onPrevMonth={() => {
+                  const [y, m] = fuelCalendar.month.split('-').map(Number);
+                  const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+                  fetchCalendar(prev);
+                }}
+                onNextMonth={() => {
+                  const [y, m] = fuelCalendar.month.split('-').map(Number);
+                  const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                  fetchCalendar(next);
+                }}
               />
               </>
             )}
+
+            {/* Weekly breakdown removed — calendar heatmap covers this */}
               </React.Fragment>
             )}
 
@@ -1023,7 +1022,7 @@ export default function ChronometerScreen() {
 
             {/* ── Metabolic tab: compact meal list ── */}
             {viewMode === 'metabolic' && (
-              <View style={{ marginBottom: Spacing.md }}>
+              <View style={{ marginBottom: Spacing.md, marginTop: Spacing.lg }}>
                 {/* Compact meal list */}
                 <Card style={{ overflow: 'hidden' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: logs.length > 0 ? Spacing.sm : 0 }}>
@@ -1300,6 +1299,11 @@ export default function ChronometerScreen() {
                                       >
                                         {item.main.title || 'Untitled'}
                                       </Text>
+                                      {(() => {
+                                        const fScores = [item.main, item.side].map((l: any) => l.fuel_score).filter((s: any): s is number => s != null);
+                                        const avgFS = fScores.length > 0 ? Math.round(fScores.reduce((a: number, b: number) => a + b, 0) / fScores.length) : null;
+                                        return avgFS != null ? <FuelScoreBadge score={avgFS} compact fuelTarget={fuelSettings?.fuel_target} /> : null;
+                                      })()}
                                       {displayMesScore != null && displayMesTier ? (
                                         <View
                                           style={{
@@ -1391,33 +1395,7 @@ export default function ChronometerScreen() {
               );
             })()}
 
-            {/* ════════════════════════════════════════════
-                 FUEL VIEW (continued — calendar)
-               ════════════════════════════════════════════ */}
-            {viewMode === 'fuel' && (
-              <>
-            {fuelCalendar && fuelCalendar.days.length > 0 && (
-              <>
-              <FuelSectionLabel label="MONTHLY VIEW" theme={theme} />
-              <FuelCalendarHeatMap
-                month={fuelCalendar.month}
-                fuelTarget={fuelCalendar.fuel_target}
-                days={fuelCalendar.days}
-                onPrevMonth={() => {
-                  const [y, m] = fuelCalendar.month.split('-').map(Number);
-                  const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
-                  fetchCalendar(prev);
-                }}
-                onNextMonth={() => {
-                  const [y, m] = fuelCalendar.month.split('-').map(Number);
-                  const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
-                  fetchCalendar(next);
-                }}
-              />
-              </>
-            )}
-              </>
-            )}
+            {/* Calendar + weekly breakdown moved into main fuel view block above */}
 
             {/* ════════════════════════════════════════════
                  METABOLIC VIEW (continued)
@@ -1432,11 +1410,6 @@ export default function ChronometerScreen() {
               mealsLogged={logs.length}
               mealSuggestions={mesSuggestions}
             />
-
-            {/* ── MES History (last 14 days) ── */}
-            {mesHistory.length > 0 && (
-              <EnergyHistoryChart data={mesHistory.slice(-14)} />
-            )}
               </>
             )}
 
@@ -1469,7 +1442,12 @@ export default function ChronometerScreen() {
                   <View style={styles.rowBetween}>
                     <View style={styles.inlineRow}>
                       <Ionicons name={m.icon} size={14} color={theme.textSecondary} />
-                      <Text style={[styles.rowLabel, { color: theme.text }]}>{m.label}</Text>
+                      <View>
+                        <Text style={[styles.rowLabel, { color: theme.text }]}>{m.label}</Text>
+                        {!!m.subtitle && (
+                          <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '500', marginTop: 1 }}>{m.subtitle}</Text>
+                        )}
+                      </View>
                     </View>
                     <Text style={[styles.rowMeta, { color: theme.textSecondary }]}>{m.consumed.toFixed(0)}/{m.target.toFixed(0)} {m.unit}</Text>
                   </View>
@@ -2212,11 +2190,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     width: '96%',
     alignSelf: 'center',
+    zIndex: 10,
   },
   toggleBtn: {
     flex: 1,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
+    minHeight: 44,
   },
   toggleBtnActive: {
   },

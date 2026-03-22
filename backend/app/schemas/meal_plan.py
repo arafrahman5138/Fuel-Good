@@ -63,6 +63,10 @@ class MealPlanItemResponse(BaseModel):
     is_bulk_cook: bool
     servings: int
     recipe_data: dict
+    # Convenience top-level fields
+    recipe_title: Optional[str] = None
+    fuel_score: Optional[float] = None
+    mes_score: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -91,6 +95,7 @@ class MealPlanShortlistRecipe(BaseModel):
     mes_display_score: float = 0.0
     mes_display_tier: str = "critical"
     meets_mes_target: bool = False
+    image_url: Optional[str] = None
 
 
 class MealPlanShortlistSection(BaseModel):

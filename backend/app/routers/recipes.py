@@ -179,6 +179,7 @@ def _serialize_recipe_card(r: Recipe, db: Session | None = None, current_user: U
         "glycemic_profile": resolve_glycemic_profile(r),
         "nutrition_info": r.nutrition_info or {},
         "servings": r.servings,
+        "image_url": r.image_url,
         # ── Composition fields ──
         "recipe_role": getattr(r, 'recipe_role', None) or "full_meal",
         "is_component": getattr(r, 'is_component', False) or False,

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import {
   Alert,
   Animated,
+  Image,
   View,
   Text,
   StyleSheet,
@@ -22,11 +23,13 @@ import { Card } from '../../components/GradientCard';
 import { StreakBadge } from '../../components/StreakBadge';
 import { MetabolicStreakBadge } from '../../components/MetabolicStreakBadge';
 import { XPToast } from '../../components/XPToast';
+import { FlexUnlockedToast } from '../../components/FlexUnlockedToast';
 
 import { EnergyHeroCard } from '../../components/EnergyHeroCard';
 import { FlexInsightsCard } from '../../components/FlexInsightsCard';
+import { FlexSummaryCard } from '../../components/FlexSummaryCard';
 import { TodayProgressCard } from '../../components/TodayProgressCard';
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme, useIsDark } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
@@ -37,6 +40,7 @@ import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors'
 import { Shadows } from '../../constants/Shadows';
 import { useEntranceAnimation } from '../../hooks/useAnimations';
 import { trackBehaviorEvent } from '../../services/notifications';
+import { resolveImageUrl } from '../../utils/imageUrl';
 
 const TODAY_DAY_INDEX = 22; // offset 0 in [-22..+8]
 const INITIAL_DAY_INDEX = Math.max(0, TODAY_DAY_INDEX - 3);
@@ -95,6 +99,7 @@ interface RecommendedRecipe {
   difficulty?: string;
   total_time_min?: number;
   tags?: string[];
+  image_url?: string | null;
 }
 
 interface NutrientComparison {
@@ -160,6 +165,7 @@ export default function HomeScreen() {
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
   const [xpToast, setXpToast] = useState<string | null>(null);
   const [xpToastIcon, setXpToastIcon] = useState<string>('flash');
+  const [flexToast, setFlexToast] = useState<string | null>(null);
   const fuelStreak = useFuelStore((s) => s.streak);
   const fuelSettings = useFuelStore((s) => s.settings);
   const flexSuggestions = useFuelStore((s) => s.flexSuggestions);
@@ -356,6 +362,16 @@ export default function HomeScreen() {
     day: 'numeric',
   });
 
+  // Dynamic plan card title based on selected day
+  const planCardTitle = useMemo(() => {
+    const todayKey = toDateKey(new Date());
+    if (selectedDayKey === todayKey) return "Today's Plan";
+    const yesterdayKey = toDateKey(new Date(Date.now() - 86400000));
+    if (selectedDayKey === yesterdayKey) return "Yesterday's Plan";
+    const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+    return `${dayOfWeek}'s Plan`;
+  }, [selectedDayKey, selectedDate]);
+
   // Dynamic fuel card title based on selected day
   const fuelCardTitle = useMemo(() => {
     const todayKey = toDateKey(new Date());
@@ -390,11 +406,19 @@ export default function HomeScreen() {
         logged.add(meal.id);
         continue;
       }
-      // Check if this plan item was logged (source_type=meal_plan, source_id matches)
-      const found = logs.some(
+      // Check if this plan item was logged directly (source_type=meal_plan)
+      const foundByPlan = logs.some(
         (l) => l.source_type === 'meal_plan' && l.source_id === meal.id
       );
-      if (found) logged.add(meal.id);
+      if (foundByPlan) { logged.add(meal.id); continue; }
+      // Also check if the same recipe was logged from any source (browse, cook mode, etc.)
+      const recipeId = meal.recipe_data?.id;
+      if (recipeId) {
+        const foundByRecipe = logs.some(
+          (l) => l.source_id === String(recipeId)
+        );
+        if (foundByRecipe) logged.add(meal.id);
+      }
     }
     return { completed: logged.size, total: todayMeals.length, loggedIds: logged };
   }, [todayMeals, dailySummary?.logs, loggedMealIds]);
@@ -425,6 +449,7 @@ export default function HomeScreen() {
         meal_type: meal.meal_type,
         servings: 1,
         quantity: 1,
+        date: selectedDayKey,
         group_id: groupId,
         group_mes_score: combinedScore,
         group_mes_tier: combinedTier,
@@ -437,6 +462,7 @@ export default function HomeScreen() {
           meal_type: meal.meal_type,
           servings: 1,
           quantity: 1,
+          date: selectedDayKey,
           group_id: groupId,
           group_mes_score: combinedScore,
           group_mes_tier: combinedTier,
@@ -492,7 +518,7 @@ export default function HomeScreen() {
   const weeklyMesTierColor = getTierConfig(getTierFromScore(weeklyMesScore)).color;
   // Homepage ring shows weekly avg — big-picture view; today's detail is in Chrono
   const fuelScoreValue = Math.round(fuelWeekly?.avg_fuel_score ?? fuelDaily?.avg_fuel_score ?? 0);
-  const isDarkTheme = theme.background === '#0A0A0F';
+  const isDarkTheme = useIsDark();
 
   // Days with at least one meal logged this week
   const weeklyDaysLogged = fuelWeekly?.daily_breakdown?.filter((d) => d.meal_count > 0).length ?? 0;
@@ -507,14 +533,6 @@ export default function HomeScreen() {
     : Math.min(99, (weeklyDaysLogged / 7) * 100);
 
   const quickActions: QuickAction[] = [
-    {
-      icon: 'sparkles-outline',
-      label: 'Scan Food',
-      description: 'Analyze a meal or product',
-      route: '/(tabs)/chat',
-      accent: '#22C55E',
-      accentBg: '#EAF8EF',
-    },
     {
       icon: 'calendar-outline',
       label: 'Meal Plans',
@@ -538,6 +556,14 @@ export default function HomeScreen() {
       route: '/(tabs)/meals?tab=browse',
       accent: '#2F8F86',
       accentBg: '#E8F4F3',
+    },
+    {
+      icon: 'bookmark-outline',
+      label: 'Saved',
+      description: 'Your saved recipes',
+      route: '/(tabs)/meals?tab=saved',
+      accent: '#6366F1',
+      accentBg: '#EEF2FF',
     },
   ];
 
@@ -573,20 +599,37 @@ export default function HomeScreen() {
   const renderRecipeCard = useCallback(({ item, index }: { item: RecommendedRecipe; index: number }) => {
     const gradient = RECIPE_GRADIENTS[index % RECIPE_GRADIENTS.length];
     const timeLabel = item.total_time_min ? `${item.total_time_min} min` : null;
+    const resolvedImage = resolveImageUrl(item.image_url);
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => router.push(`/browse/${item.id}` as any)}
         style={{ marginRight: Spacing.md }}
       >
-        <LinearGradient
-          colors={gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[s.recCard, { width: CARD_WIDTH, height: CARD_WIDTH * 1.25 }]}
-        >
-          <Ionicons name="restaurant" size={28} color="rgba(255,255,255,0.25)" style={{ position: 'absolute', top: 12, right: 12 }} />
-          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, borderBottomLeftRadius: BorderRadius.xl, borderBottomRightRadius: BorderRadius.xl }} />
+        <View style={[s.recCard, { width: CARD_WIDTH, height: CARD_WIDTH * 1.25 }]}>
+          {resolvedImage ? (
+            <>
+              <Image
+                source={{ uri: resolvedImage }}
+                style={StyleSheet.absoluteFill}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.6)'] as const}
+                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%' }}
+              />
+            </>
+          ) : (
+            <LinearGradient
+              colors={gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            >
+              <Ionicons name="restaurant" size={28} color="rgba(255,255,255,0.25)" style={{ position: 'absolute', top: 12, right: 12 }} />
+              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.4)']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, borderBottomLeftRadius: BorderRadius.xl, borderBottomRightRadius: BorderRadius.xl }} />
+            </LinearGradient>
+          )}
           <View style={{ flex: 1, justifyContent: 'flex-end' }}>
             <Text style={s.recTitle} numberOfLines={2}>{item.title}</Text>
             <View style={s.recMeta}>
@@ -603,7 +646,7 @@ export default function HomeScreen() {
               )}
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   }, [CARD_WIDTH]);
@@ -611,6 +654,7 @@ export default function HomeScreen() {
   return (
     <ScreenContainer safeArea={false}>
       <XPToast message={xpToast} icon={xpToastIcon} onDismissed={() => setXpToast(null)} />
+      <FlexUnlockedToast message={flexToast} onDismissed={() => setFlexToast(null)} />
       {showStickyHeader ? (
         <Animated.View
           style={[
@@ -663,6 +707,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -721,6 +766,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -837,14 +883,7 @@ export default function HomeScreen() {
           weeklyProgress={weeklyProgressPct}
           weeklyTargetMet={weeklyTargetMet}
           weeklyDaysLogged={weeklyDaysLogged}
-          mealCount={fuelDaily?.meal_count ?? 0}
-          proteinRemaining={remainingBudget?.protein_remaining_g}
-          fiberRemaining={remainingBudget?.fiber_remaining_g}
-          healthPulse={healthPulse ? {
-            fuel: healthPulse.fuel,
-            metabolic: healthPulse.metabolic,
-            nutrition: healthPulse.nutrition,
-          } : undefined}
+          mealCount={Math.max(fuelDaily?.meal_count ?? 0, dailySummary?.logs?.length ?? 0)}
           flexMealsEarned={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
           cleanMealsToNextFlex={(() => {
             const flexRemaining = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
@@ -858,37 +897,11 @@ export default function HomeScreen() {
           onPress={() => router.push('/food/fuel-weekly' as any)}
         />
 
-        {/* ── Flex Insights (tickets + coach) ─────────────────────────── */}
-        <FlexInsightsCard
-          flexMealsRemaining={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
-          coachContext={flexSuggestions?.context}
-          coachSuggestions={flexSuggestions?.suggestions?.length ? flexSuggestions.suggestions : undefined}
-        />
-
-        {/* ── Today's Progress ────────────────────────────────────────── */}
-        <TodayProgressCard
-          logs={(dailySummary?.logs ?? []).map((l) => ({
-            id: l.id ?? '',
-            title: l.title ?? '',
-            meal_type: l.meal_type,
-            source_type: l.source_type,
-            source_id: l.source_id,
-            group_id: l.group_id,
-            group_mes_score: l.group_mes_score,
-            group_mes_tier: l.group_mes_tier,
-            fuel_score: l.fuel_score,
-            nutrition_snapshot: l.nutrition_snapshot,
-          }))}
-          mealScores={mealScores}
-          fuelTarget={fuelSettings?.fuel_target}
-          todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
-          todayMesScore={dailyMesScore}
-          todayMesTierColor={dailyMesTierColor}
-          calories={{ consumed: calorieConsumed, target: calorieTarget }}
-          protein={{ consumed: proteinConsumed, target: proteinTarget }}
-          carbs={{ consumed: carbsConsumed, target: carbsTarget }}
-          fat={{ consumed: fatConsumed, target: fatTarget }}
-          title={fuelCardTitle}
+        {/* ── Flex Budget Summary ──────────────────────────────────────── */}
+        <FlexSummaryCard
+          flexAvailable={fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
+          flexBudget={fuelWeekly?.flex_budget?.flex_budget ?? 4}
+          flexUsed={fuelWeekly?.flex_budget?.flex_used ?? 0}
         />
 
         {/* ── Today's Plan ─────────────────────────────────────────────── */}
@@ -904,7 +917,7 @@ export default function HomeScreen() {
                 <Ionicons name="calendar" size={16} color={theme.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.todayTitle, { color: theme.text }]}>Today's Plan</Text>
+                <Text style={[s.todayTitle, { color: theme.text }]}>{planCardTitle}</Text>
                 <Text style={[s.todayDay, { color: theme.textTertiary }]}>
                   {todayMeals.length > 0
                     ? planCompletion.completed === planCompletion.total
@@ -962,7 +975,7 @@ export default function HomeScreen() {
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text
                             style={[s.mealName, { color: isLogged ? theme.textSecondary : theme.text }]}
-                            numberOfLines={1}
+                            numberOfLines={2}
                           >
                             {recipeName}
                           </Text>
@@ -1044,6 +1057,32 @@ export default function HomeScreen() {
           </Card>
         </View>
 
+        {/* ── Today's Fuel ────────────────────────────────────────────── */}
+        <TodayProgressCard
+          logs={(dailySummary?.logs ?? []).map((l) => ({
+            id: l.id ?? '',
+            title: l.title ?? '',
+            meal_type: l.meal_type,
+            source_type: l.source_type,
+            source_id: l.source_id,
+            group_id: l.group_id,
+            group_mes_score: l.group_mes_score,
+            group_mes_tier: l.group_mes_tier,
+            fuel_score: l.fuel_score,
+            nutrition_snapshot: l.nutrition_snapshot,
+          }))}
+          mealScores={mealScores}
+          fuelTarget={fuelSettings?.fuel_target}
+          todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
+          todayMesScore={dailyMesScore}
+          todayMesTierColor={dailyMesTierColor}
+          calories={{ consumed: calorieConsumed, target: calorieTarget }}
+          protein={{ consumed: proteinConsumed, target: proteinTarget }}
+          carbs={{ consumed: carbsConsumed, target: carbsTarget }}
+          fat={{ consumed: fatConsumed, target: fatTarget }}
+          title={fuelCardTitle}
+        />
+
         {/* ── Daily Quests ──────────────────────────────────────────────── */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Today's Quests</Text>
         <Card style={{ overflow: 'hidden', padding: 0, marginBottom: Spacing.xl }}>
@@ -1067,7 +1106,13 @@ export default function HomeScreen() {
             </View>
           </View>
           {quests.map((quest, idx) => {
-            const progress = quest.target_value > 0 ? quest.current_value / quest.target_value : 0;
+            const isCeiling = quest.direction === 'ceiling';
+            const progress = quest.target_value > 0
+              ? (isCeiling
+                  ? (quest.completed ? 1 : Math.min(quest.current_value / quest.target_value, 1))
+                  : quest.current_value / quest.target_value)
+              : 0;
+            const ceilingOver = isCeiling && quest.current_value > quest.target_value;
             return (
               <View
                 key={quest.id}
@@ -1126,13 +1171,17 @@ export default function HomeScreen() {
                         styles.questMiniFill,
                         {
                           width: `${Math.min(progress * 100, 100)}%` as any,
-                          backgroundColor: quest.completed ? theme.primary : theme.accent,
+                          backgroundColor: isCeiling
+                            ? (ceilingOver ? '#EF4444' : theme.primary)
+                            : (quest.completed ? theme.primary : theme.accent),
                         },
                       ]}
                     />
                   </View>
                   <Text style={[styles.questMeta, { color: theme.textTertiary }]}>
-                    {quest.current_value}/{quest.target_value}
+                    {isCeiling
+                      ? `${Math.round(quest.current_value)}g consumed (${Math.round(quest.target_value)}g limit)`
+                      : `${quest.current_value}/${quest.target_value}`}
                   </Text>
                 </View>
               </View>
@@ -1166,6 +1215,31 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="sparkles" size={36} color="rgba(255,255,255,0.25)" />
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Scan Food CTA — second hero tile */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            trackBehaviorEvent('home_quick_action_used', { label: 'Scan Food', route: '/scan/camera' });
+            router.push('/scan/camera' as any);
+          }}
+          style={{ marginBottom: Spacing.sm }}
+        >
+          <LinearGradient
+            colors={['#0E7490', '#1E40AF', '#4338CA'] as const}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.healthifyTile}
+          >
+            <View style={styles.healthifyContent}>
+              <Text style={styles.healthifyTitle}>Scan Food</Text>
+              <Text style={styles.healthifySubtitle}>
+                Point your camera at any meal, label, or barcode — instant Fuel Score
+              </Text>
+            </View>
+            <Ionicons name="scan" size={36} color="rgba(255,255,255,0.25)" />
           </LinearGradient>
         </TouchableOpacity>
 
@@ -1246,7 +1320,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── Daily Tip ──────────────────────────────────────────────── */}
-        <Card style={{ marginTop: Spacing.md, borderLeftWidth: 3, borderLeftColor: theme.accent }}>
+        <Card style={{ marginTop: Spacing.md }}>
           <View style={styles.tipHeader}>
             <Ionicons name="bulb" size={20} color={theme.accent} />
             <Text style={[styles.tipTitle, { color: theme.accent }]}>Daily Tip</Text>
@@ -1375,7 +1449,7 @@ const s = StyleSheet.create({
   mealName: {
     fontSize: FontSize.sm,
     fontWeight: '600',
-    flex: 1,
+    lineHeight: 18,
   },
   mesBadge: {
     borderRadius: BorderRadius.full,
@@ -1511,7 +1585,6 @@ const styles = StyleSheet.create({
   headerLeft: {},
   headerRight: {
     flexShrink: 1,
-    overflow: 'hidden',
   },
   profileButton: {
     width: 36,

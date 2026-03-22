@@ -248,10 +248,7 @@ export default function SubscribeScreen() {
                     borderColor: product.highlight ? theme.primary : theme.border,
                   },
                   product.highlight && {
-                    shadowColor: theme.primary,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 16,
+                    boxShadow: `0px 0px 16px ${theme.primary}40`,
                     elevation: 8,
                   },
                 ]}

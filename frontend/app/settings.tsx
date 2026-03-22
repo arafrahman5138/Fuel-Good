@@ -102,7 +102,7 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScreenContainer safeArea={false}>
+    <ScreenContainer safeArea={false} padded={false}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* ── Appearance ──────────────────────────────────────────── */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
@@ -612,6 +612,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
     borderBottomWidth: 1,
     gap: Spacing.md,
   },

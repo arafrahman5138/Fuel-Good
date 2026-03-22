@@ -1036,8 +1036,8 @@ def _normalize_budget(
 
     def _g(key: str, default: float = 0) -> float:
         if isinstance(budget, dict):
-            return float(budget.get(key, default))
-        return float(getattr(budget, key, default))
+            return float(budget.get(key, default) or default)
+        return float(getattr(budget, key, default) or default)
 
     protein_g = _g("protein_target_g", 130.0)
     carb_ceiling_g = _g("sugar_ceiling_g", CARB_CEILING_DEFAULT_G)

@@ -17,6 +17,7 @@ The goal is to turn that source into a Real-Food meal draft that fits the app's 
 - Always rewrite the instructions in natural language so they feel easy to follow in-app.
 - Always send the MES score and the full draft details back to the user before asking for approval.
 - Always recalculate nutrition from the actual ingredient assumptions used in the draft. Do not reuse source macros after ingredient swaps.
+- Always prepare a meal-photo generation prompt and use the Gemini Flash API workflow to generate a realistic meal image after the draft is approved for finalization.
 - If meal-prep components are requested, check whether matching components already exist before creating new ones.
 - If a default pairing is needed, check whether a good existing veggie side already exists before creating a new one.
 
@@ -245,6 +246,7 @@ Before asking for approval, prepare the complete meal package.
 - component composition if applicable
 - full nutrition estimate
 - MES score details
+- meal photo prompt for Gemini Flash image generation
 
 ### If components are included
 Also provide:
@@ -258,12 +260,42 @@ Also provide:
 Also provide:
 - pairing title
 - why it was chosen
-- whether it already existed or is newly proposed
-- expected MES improvement
 
 ---
 
-## Step 8: MES Reporting
+## Step 8: Generate the Meal Photo with Gemini Flash
+After the user approves the final meal draft, generate a realistic meal photo using the Gemini Flash API.
+
+### Photo generation goal
+- create a realistic, appetizing hero image of the exact modeled Real-Food meal
+- match the final ingredient choices, serving style, and side pairing if one is part of the approved meal
+- avoid generic stock-photo mismatches
+
+### Prompt rules
+- describe the final plated meal exactly as modeled
+- include the key protein, carb, vegetables, sauce, garnish, plating vessel, and lighting style
+- ask for realistic food photography, not illustration
+- avoid text overlays, watermarks, extra side dishes, or ingredients not in the final meal
+
+### Recommended Gemini Flash workflow
+1. Build a concise final image prompt from the approved meal draft.
+2. Send the prompt to the Gemini Flash image generation API.
+3. Save the generated asset or returned image URL/path with the recipe package.
+4. If the image is clearly inaccurate, regenerate with a tighter prompt instead of accepting a mismatched meal photo.
+
+### Prompt template
+```text
+Create a realistic food photo of [final meal title]. Show [main protein], [main carb], [main vegetables], and [sauce or garnish] plated as a healthy modern meal. Use natural lighting, realistic textures, and an appetizing premium cookbook style. Keep the plate clean and minimal. No text, no watermark, no extra dishes, no ingredients that are not in the recipe.
+```
+
+### API implementation note
+- use the configured Gemini Flash image-capable model/API path available in the app environment
+- keep the image-generation step separate from the nutrition and MES calculation step
+- do not let the generated image change the approved meal draft itself
+
+---
+
+## Step 9: MES Reporting
 Always send MES information back with the draft.
 
 ### Use the current MES method
@@ -329,7 +361,7 @@ If exact MES cannot be computed yet:
 
 ---
 
-## Step 9: Approval Gate
+## Step 10: Approval Gate
 After drafting, send the user:
 
 1. the proposed meal
@@ -346,7 +378,7 @@ Then ask for approval before:
 
 ---
 
-## Recommended Response Format
+## Step 11: Recommended Response Format
 When presenting the draft, use this structure:
 
 ### Meal

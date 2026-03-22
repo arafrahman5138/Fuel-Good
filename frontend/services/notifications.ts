@@ -1,7 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import * as Notifications from 'expo-notifications';
-import type { NotificationResponse } from 'expo-notifications';
 import { router } from 'expo-router';
 import { Platform } from 'react-native';
 
@@ -12,15 +10,31 @@ import { useAuthStore } from '../stores/authStore';
 
 const PUSH_PROMPT_KEY = 'push_prompt_requested_v1';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Lazy-load expo-notifications to avoid SSR crash (localStorage.getItem
+// is called inside DevicePushTokenAutoRegistration.fx.js at import time,
+// which blows up during Expo web SSR where localStorage is unavailable).
+let _Notifications: typeof import('expo-notifications') | null = null;
+async function getNotifications() {
+  if (!_Notifications) {
+    _Notifications = await import('expo-notifications');
+  }
+  return _Notifications;
+}
+
+// Set notification handler eagerly on native (safe — no SSR there).
+if (Platform.OS !== 'web') {
+  getNotifications().then((N) => {
+    N.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  });
+}
 
 function isNativePushSupported(): boolean {
   return Platform.OS === 'ios' || Platform.OS === 'android';
@@ -33,6 +47,7 @@ function getProjectId(): string | undefined {
 export async function syncPushTokenWithBackend(): Promise<void> {
   if (!isNativePushSupported() || !useAuthStore.getState().token) return;
 
+  const Notifications = await getNotifications();
   const permissions = await Notifications.getPermissionsAsync();
   if (permissions.status !== 'granted') return;
 
@@ -50,6 +65,7 @@ export async function syncPushTokenWithBackend(): Promise<void> {
 export async function maybePromptForPush(trigger: 'meal_plan' | 'save_recipe' | 'streak'): Promise<boolean> {
   if (!isNativePushSupported() || !useAuthStore.getState().token) return false;
 
+  const Notifications = await getNotifications();
   const existing = await Notifications.getPermissionsAsync();
   if (existing.status === 'granted') {
     await syncPushTokenWithBackend();
@@ -97,32 +113,38 @@ export function registerNotificationListeners(): () => void {
     return () => {};
   }
 
-  const responseSub = Notifications.addNotificationResponseReceivedListener((response: NotificationResponse) => {
-    const data = (response.notification.request.content.data || {}) as Record<string, any>;
-    const route = routeFromNotification(data);
-    const deliveryId = typeof data.delivery_id === 'string' ? data.delivery_id : undefined;
+  let responseSub: { remove(): void } | null = null;
 
-    notificationsApi.ingestEvent('notification_opened', {
-      delivery_id: deliveryId,
-      category: data.category,
-      route,
-    }).catch((err: any) => {
-      void reportClientError({ source: 'telemetry', message: 'notification_opened event failed', context: { error: err?.message } });
-    });
+  getNotifications().then((Notifications) => {
+    responseSub = Notifications.addNotificationResponseReceivedListener(
+      (response: import('expo-notifications').NotificationResponse) => {
+        const data = (response.notification.request.content.data || {}) as Record<string, any>;
+        const route = routeFromNotification(data);
+        const deliveryId = typeof data.delivery_id === 'string' ? data.delivery_id : undefined;
 
-    router.push(route as any);
+        notificationsApi.ingestEvent('notification_opened', {
+          delivery_id: deliveryId,
+          category: data.category,
+          route,
+        }).catch((err: any) => {
+          void reportClientError({ source: 'telemetry', message: 'notification_opened event failed', context: { error: err?.message } });
+        });
 
-    notificationsApi.ingestEvent('notification_deep_linked', {
-      delivery_id: deliveryId,
-      category: data.category,
-      route,
-    }).catch((err: any) => {
-      void reportClientError({ source: 'telemetry', message: 'notification_deep_linked event failed', context: { error: err?.message } });
-    });
+        router.push(route as any);
+
+        notificationsApi.ingestEvent('notification_deep_linked', {
+          delivery_id: deliveryId,
+          category: data.category,
+          route,
+        }).catch((err: any) => {
+          void reportClientError({ source: 'telemetry', message: 'notification_deep_linked event failed', context: { error: err?.message } });
+        });
+      },
+    );
   });
 
   return () => {
-    responseSub.remove();
+    responseSub?.remove();
   };
 }
 

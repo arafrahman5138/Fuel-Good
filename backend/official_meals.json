@@ -1,8 +1,8 @@
 {
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
-  "exported_at": "2026-03-19T18:42:13.284758Z",
-  "meal_count": 72,
+  "exported_at": "2026-03-19T22:32:42.248936Z",
+  "meal_count": 74,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -131,7 +131,8 @@
       "difficulty": "easy",
       "tags": [
         "dinner",
-        "quick"
+        "quick",
+        "lunch"
       ],
       "flavor_profile": [
         "sweet",
@@ -478,6 +479,121 @@
       "pairing_synergy_profile": null,
       "glycemic_profile": null,
       "created_at": "2026-03-13T22:16:25.731566"
+    },
+    {
+      "id": "2d7126b4-cf16-4516-8d5c-55752d7ba3d7",
+      "title": "Arugula Cucumber Feta Salad",
+      "description": "A crisp arugula, cucumber, and feta salad with lemon and olive oil that brightens richer salmon pasta dishes.",
+      "ingredients": [
+        {
+          "name": "arugula",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "produce"
+        },
+        {
+          "name": "cucumber, sliced",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "feta cheese",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "dairy"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "lemon juice",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "produce"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Add the arugula and cucumber to a bowl.",
+        "Top with feta, olive oil, lemon juice, salt, and black pepper.",
+        "Toss gently and serve cold or slightly chilled."
+      ],
+      "prep_time_min": 8,
+      "cook_time_min": 0,
+      "total_time_min": 8,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 86.0,
+        "protein": 3.1,
+        "carbs": 6.4,
+        "fat": 5.5,
+        "fiber": 2.3,
+        "sugar": 2.4
+      },
+      "difficulty": "easy",
+      "tags": [
+        "side",
+        "salad",
+        "quick"
+      ],
+      "flavor_profile": [
+        "fresh",
+        "bright",
+        "salty"
+      ],
+      "dietary_tags": [
+        "vegetarian",
+        "gluten-free"
+      ],
+      "cuisine": "mediterranean-inspired",
+      "health_benefits": [
+        "gut_health",
+        "heart_health",
+        "blood_sugar_support"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "nonstarchy_veg"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "veg_side",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "fiber_class": "med",
+        "acid": true,
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "before_meal"
+      },
+      "glycemic_profile": {
+        "primary_carb_source": "nonstarchy_veg",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-03-19T22:32:20.575234"
     },
     {
       "id": "5b3906f5-dcf4-4e0e-9346-592649762845",
@@ -1215,7 +1331,8 @@
       "difficulty": "easy",
       "tags": [
         "dinner",
-        "quick"
+        "quick",
+        "lunch"
       ],
       "flavor_profile": [
         "sweet",
@@ -1418,7 +1535,8 @@
       "difficulty": "easy",
       "tags": [
         "dinner",
-        "quick"
+        "quick",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -1638,7 +1756,8 @@
       "difficulty": "medium",
       "tags": [
         "dinner",
-        "sit-down"
+        "sit-down",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -3014,7 +3133,8 @@
         "dinner",
         "sit-down",
         "whole-food",
-        "butter_chicken_group_v1"
+        "butter_chicken_group_v1",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -3150,7 +3270,8 @@
         "dinner",
         "sit-down",
         "whole-food",
-        "butter_chicken_group_v2"
+        "butter_chicken_group_v2",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -3850,7 +3971,8 @@
         "shawarma_group_v2",
         "dinner",
         "sit-down",
-        "whole-food"
+        "whole-food",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -4235,7 +4357,8 @@
       "tags": [
         "dinner",
         "quick",
-        "one_pan"
+        "one_pan",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -5163,6 +5286,175 @@
       "created_at": "2026-03-13T22:16:25.731575"
     },
     {
+      "id": "62404f53-204e-434a-bcb8-757ba0cbac1b",
+      "title": "Creamy Corn Salmon Chickpea Pasta",
+      "description": "Chickpea pasta with salmon and a blended corn, onion, garlic, and feta sauce for a creamy, protein-forward dinner.",
+      "ingredients": [
+        {
+          "name": "dry chickpea pasta",
+          "quantity": "85",
+          "unit": "g",
+          "category": "grains"
+        },
+        {
+          "name": "salmon fillets",
+          "quantity": "2",
+          "unit": "small",
+          "category": "protein"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "fats"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "corn",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "onion, chopped",
+          "quantity": "1",
+          "unit": "small",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves",
+          "quantity": "3",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "feta cheese",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "pasta water",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "other"
+        }
+      ],
+      "steps": [
+        "Bring a pot of water to a boil and cook the chickpea pasta until tender. Reserve 1/3 cup of pasta water, then drain.",
+        "Heat olive oil in a pan and season the salmon with salt, black pepper, and paprika. Cook for 3 to 4 minutes per side until fully cooked, then flake into pieces.",
+        "Add the corn, onion, and garlic to the pan and cook until the onion softens.",
+        "Transfer the corn mixture to a blender with feta, salt, pepper, and the reserved pasta water. Blend until mostly smooth.",
+        "Combine the chickpea pasta, flaked salmon, and corn sauce in the pan. Mix well and serve hot.",
+        "If using the default pairing, eat the arugula cucumber feta salad before or alongside the pasta."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 15,
+      "total_time_min": 25,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 430.0,
+        "protein": 40.8,
+        "carbs": 38.8,
+        "fat": 12.9,
+        "fiber": 8.2,
+        "sugar": 5.2,
+        "mes_score": 74.3,
+        "mes_display_score": 74.3,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 80.8,
+          "pas": 69.0,
+          "fs": 78.8,
+          "fas": 69.5
+        },
+        "ingredient_gis_adjustment": 5.5,
+        "ingredient_gis_reasons": [
+          "legume-based carb"
+        ],
+        "mes_score_with_default_pairing": 80.7,
+        "mes_default_pairing_adjusted_score": 83.9,
+        "mes_default_pairing_delta": 9.6,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_id": "2d7126b4-cf16-4516-8d5c-55752d7ba3d7",
+        "mes_default_pairing_title": "Arugula Cucumber Feta Salad",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "stovetop",
+        "high_protein",
+        "lunch"
+      ],
+      "flavor_profile": [
+        "creamy",
+        "savory",
+        "bright"
+      ],
+      "dietary_tags": [
+        "pescatarian"
+      ],
+      "cuisine": "mediterranean-inspired",
+      "health_benefits": [
+        "muscle_recovery",
+        "heart_health",
+        "blood_sugar_support"
+      ],
+      "protein_type": [
+        "salmon"
+      ],
+      "carb_type": [
+        "chickpeas"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "2d7126b4-cf16-4516-8d5c-55752d7ba3d7"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "legume",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-03-19T22:32:20.576599"
+    },
+    {
       "id": "89b4e9ab-643b-49bc-9a12-eb41f00847c7",
       "title": "Creamy Red Pepper Chicken Rice Bowl",
       "description": "A chicken and brown rice bowl finished with creamy red pepper sauce, with a fresh herb salad as the default pairing.",
@@ -5250,7 +5542,8 @@
         "dinner",
         "red_pepper_bowl_group_v1",
         "sit-down",
-        "whole-food"
+        "whole-food",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -8084,7 +8377,8 @@
       "tags": [
         "dinner",
         "sit-down",
-        "whole-food"
+        "whole-food",
+        "lunch"
       ],
       "flavor_profile": [
         "savory",
@@ -10031,17 +10325,11 @@
           "quantity": "2",
           "unit": "cups",
           "category": "other"
-        },
-        {
-          "name": "sea salt",
-          "quantity": "1",
-          "unit": "pinch",
-          "category": "spices"
         }
       ],
       "steps": [
         "Rinse rice until water runs clear.",
-        "Cook rice with water and salt until tender.",
+        "Cook rice with water until tender.",
         "Fluff and portion for meal prep."
       ],
       "prep_time_min": 3,

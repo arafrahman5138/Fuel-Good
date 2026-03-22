@@ -13,6 +13,7 @@ export interface DailyQuest {
   current_value: number;
   xp_reward: number;
   completed: boolean;
+  direction?: 'target' | 'ceiling';
 }
 
 export interface ScoreHistoryEntry {

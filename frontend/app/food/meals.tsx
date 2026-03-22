@@ -139,10 +139,10 @@ export default function TodaysMealsScreen() {
 
   // Nutrition targets (from store, static)
   const targets = useMetabolicBudgetStore((s) => s.budget);
-  const calTarget = targets?.daily_calories ?? 2000;
-  const proTarget = targets?.protein_g ?? 150;
-  const carbTarget = targets?.carbs_g ?? 250;
-  const fatTarget = targets?.fat_g ?? 65;
+  const calTarget = targets?.tdee ?? 2000;
+  const proTarget = targets?.protein_target_g ?? 150;
+  const carbTarget = targets?.carb_ceiling_g ?? 250;
+  const fatTarget = targets?.fat_target_g ?? 65;
 
   const fetchAll = useCallback(async (date: string) => {
     try {

@@ -7,9 +7,18 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class ChatContext(BaseModel):
+    """Optional rich context passed from other screens (scan result, recipe detail, etc.)"""
+    source: Optional[str] = None  # "scan", "recipe", "home", "flex"
+    scan_result: Optional[dict] = None  # fuel_score, flags, meal_label from a scan
+    recipe_id: Optional[str] = None
+    flex_status: Optional[dict] = None  # earned, remaining, weekly_avg
+
+
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    context: Optional[ChatContext] = None
 
 
 class ChatResponse(BaseModel):

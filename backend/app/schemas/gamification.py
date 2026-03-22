@@ -56,6 +56,7 @@ class DailyQuestResponse(BaseModel):
     current_value: float
     xp_reward: int
     completed: bool
+    direction: str = "target"  # "target" (reach it) or "ceiling" (stay under)
 
 
 class NutritionStreakResponse(BaseModel):

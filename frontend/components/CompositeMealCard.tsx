@@ -20,11 +20,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { MealMESBadge } from './MealMESBadge';
 import { FuelScoreBadge } from './FuelScoreBadge';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, useIsDark } from '../hooks/useTheme';
 import { isReduceMotionEnabled, usePressScale } from '../hooks/useAnimations';
 import { useMetabolicBudgetStore, getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES, CompositeMES, MESScore } from '../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { BorderRadius, FontSize, MacroColors, Spacing } from '../constants/Colors';
 
 // Enable LayoutAnimation on Android
 if (
@@ -258,10 +258,10 @@ export const SingleMealRow = React.memo(function SingleMealRow({
 
 // ── CompositeMealCard — The main composite card ──
 
-export function CompositeMealCard({ group }: { group: MealGroup }) {
+export function CompositeMealCard({ group, fuelTarget }: { group: MealGroup; fuelTarget?: number }) {
   const theme = useTheme();
   const press = usePressScale();
-  const isDark = theme.text === '#FFFFFF';
+  const isDark = useIsDark();
   const fetchCompositeMES = useMetabolicBudgetStore((s) => s.fetchCompositeMES);
   const [expanded, setExpanded] = useState(false);
   const [compositeMES, setCompositeMES] = useState<CompositeMES | null>(null);
@@ -271,6 +271,10 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
   const chevronAnim = useRef(new Animated.Value(0)).current;
   const rowAnims = useRef<Animated.Value[]>([]);
   const agg = useMemo(() => aggregateNutrition(group.logs), [group.logs]);
+  const avgFuelScore = useMemo(() => {
+    const scores = group.logs.map((l) => l.fuel_score).filter((s): s is number => s != null);
+    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  }, [group.logs]);
   const compositeLogIds = useMemo(
     () => group.logs.map((log) => log.id).filter(Boolean),
     [group.logs]
@@ -378,6 +382,9 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
                 </View>
               </View>
               <View style={styles.headerRight}>
+                {avgFuelScore != null && (
+                  <FuelScoreBadge score={avgFuelScore} compact fuelTarget={fuelTarget} />
+                )}
                 {loading ? (
                   <View style={[styles.mesBadgeLoading, { backgroundColor: theme.surfaceHighlight }]}>
                     <Text style={{ color: theme.textTertiary, fontSize: 10, fontWeight: '700' }}>···</Text>
@@ -426,10 +433,10 @@ export function CompositeMealCard({ group }: { group: MealGroup }) {
             {/* ── Aggregated macros ── */}
             <View style={styles.macroRow}>
               {[
-                { label: 'Protein', value: agg.protein, color: '#22C55E' },
-                { label: 'Carbs', value: agg.carbs, color: '#3B82F6' },
-                { label: 'Fat', value: agg.fat, color: '#F59E0B' },
-                { label: 'Fiber', value: agg.fiber, color: '#8B5CF6' },
+                { label: 'Protein', value: agg.protein, color: MacroColors.protein },
+                { label: 'Carbs', value: agg.carbs, color: MacroColors.carbs },
+                { label: 'Fat', value: agg.fat, color: MacroColors.fat },
+                { label: 'Fiber', value: agg.fiber, color: MacroColors.fiber },
               ].map((m) => (
                 <View key={m.label} style={styles.macroItem}>
                   <View style={[styles.macroDot, { backgroundColor: m.color + '40' }]}>

@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -138,13 +138,13 @@ def _score_scan(
     # Starting point depends on where the meal came from
     if ctx in ("home", "homemade"):
         score = 85.0
-        reasoning = ["Homemade meal — starting at 85."]
+        reasoning = ["Homemade meals start with a high base score."]
     elif ctx in ("restaurant", "takeout", "fast_food"):
         score = 65.0
-        reasoning = ["Restaurant/takeout meal — starting at 65."]
+        reasoning = ["Restaurant and takeout meals tend to use more processed ingredients."]
     else:
         score = 75.0
-        reasoning = ["Source context unknown — starting at 75."]
+        reasoning = ["Scored as a general meal."]
 
     flags: list[str] = []
     components = components or []
@@ -165,14 +165,14 @@ def _score_scan(
             if method in name:
                 score -= 8
                 flags.append(f"Fried/breaded: {name}")
-                reasoning.append(f"Negative cooking method detected in '{name}' (−8).")
+                reasoning.append(f"Fried or breaded preparation lowers ingredient quality.")
                 has_negative = True
                 break
         if not has_negative:
             for method in POSITIVE_METHODS:
                 if method in name:
                     score += 3
-                    reasoning.append(f"Positive cooking method in '{name}' (+3).")
+                    reasoning.append(f"Healthy cooking method like grilling or baking.")
                     break
 
         # Refined vs whole carb source
@@ -180,17 +180,17 @@ def _score_scan(
             if any(hint in name for hint in REFINED_CARB_HINTS):
                 score -= 6
                 flags.append(f"Refined carb: {name}")
-                reasoning.append(f"Refined carb source '{name}' (−6).")
+                reasoning.append(f"Contains refined carbs like white bread or pasta.")
             elif any(hint in name for hint in WHOLE_CARB_HINTS):
                 score += 4
-                reasoning.append(f"Whole carb source '{name}' (+4).")
+                reasoning.append(f"Includes whole-grain or complex carb sources.")
 
     # Dessert/sweet penalty — these are flex meals by design
     if has_dessert_component:
         score -= 15
         score = min(score, 65)
         flags.append("Dessert / sweet treat")
-        reasoning.append("Dessert component detected — penalty (−15) and capped at 65.")
+        reasoning.append("This is a sweet treat — desserts and sweets are heavily processed by nature.")
 
     # ── Whole-food flag penalties (from scan pipeline) ──
     if whole_food_flags:
@@ -200,19 +200,19 @@ def _score_scan(
             penalty = min(20, len(high_flags) * 8)
             score -= penalty
             flags.extend(str(f.get("label", "Unknown flag")) for f in high_flags[:3])
-            reasoning.append(f"{len(high_flags)} high-severity flag(s) (−{penalty}).")
+            reasoning.append(f"Contains {len(high_flags)} heavily processed ingredient{'s' if len(high_flags) > 1 else ''} like seed oils or artificial additives.")
         if med_flags:
             penalty = min(10, len(med_flags) * 3)
             score -= penalty
-            reasoning.append(f"{len(med_flags)} medium-severity flag(s) (−{penalty}).")
+            reasoning.append(f"Some moderately processed ingredients detected (gums, emulsifiers, etc.).")
 
     # ── Whole-food status shortcut ──
     if whole_food_status == "fail":
         score = min(score, 45)
-        reasoning.append("Whole-food status is 'fail' — capped at 45.")
+        reasoning.append("Too many processed ingredients — this isn't a whole-food meal.")
     elif whole_food_status == "warn":
         score = min(score, 70)
-        reasoning.append("Whole-food status is 'warn' — capped at 70.")
+        reasoning.append("Some processed ingredients bring this below whole-food standards.")
 
     # ── Nutrition-based adjustments ──
     if nutrition:
@@ -223,21 +223,21 @@ def _score_scan(
         if sugar > 20:
             score -= 8
             flags.append("High sugar")
-            reasoning.append(f"High sugar ({sugar:.0f}g) — (−8).")
+            reasoning.append(f"High sugar content ({sugar:.0f}g) — this spikes blood sugar and adds empty calories.")
         elif sugar > 12:
             score -= 4
-            reasoning.append(f"Moderate sugar ({sugar:.0f}g) — (−4).")
+            reasoning.append(f"Moderate sugar ({sugar:.0f}g) — more than ideal for a single meal.")
 
         if fiber >= 8:
             score += 4
-            reasoning.append(f"Good fiber ({fiber:.0f}g) — (+4).")
+            reasoning.append(f"Good fiber content ({fiber:.0f}g) helps slow digestion.")
         elif fiber >= 4:
             score += 2
-            reasoning.append(f"Decent fiber ({fiber:.0f}g) — (+2).")
+            reasoning.append(f"Decent fiber ({fiber:.0f}g) adds some digestive benefit.")
 
         if protein >= 25:
             score += 3
-            reasoning.append(f"Strong protein ({protein:.0f}g) — (+3).")
+            reasoning.append(f"Strong protein ({protein:.0f}g) supports satiety and recovery.")
 
     # Scanned meals never hit 100 (no full ingredient list)
     score = max(0.0, min(95.0, round(score, 1)))
@@ -280,13 +280,65 @@ def _score_manual(
             flags=[], reasoning=reasoning, source_path="manual",
         )
 
-    # No ingredient data → neutral default
+    # No ingredient data — estimate from nutrition quality if available
+    if nutrition:
+        cal = float(nutrition.get("calories", 0) or 0)
+        protein = float(nutrition.get("protein", 0) or nutrition.get("protein_g", 0) or 0)
+        fiber = float(nutrition.get("fiber", 0) or nutrition.get("fiber_g", 0) or 0)
+        sugar = float(nutrition.get("sugar", 0) or nutrition.get("sugar_g", 0) or 0)
+
+        # Start at 55 (slightly above neutral) and adjust based on quality signals
+        score = 55.0
+        reasoning: list[str] = []
+
+        # Protein density: ≥25g per meal is excellent for whole-food patterns
+        if protein >= 25:
+            score += 12
+            reasoning.append(f"Good protein ({protein:.0f}g) — typical of whole-food meals.")
+        elif protein >= 15:
+            score += 5
+            reasoning.append(f"Moderate protein ({protein:.0f}g).")
+
+        # Fiber: ≥7g per meal suggests vegetables, whole grains
+        if fiber >= 7:
+            score += 10
+            reasoning.append(f"High fiber ({fiber:.1f}g) — suggests whole foods.")
+        elif fiber >= 4:
+            score += 4
+            reasoning.append(f"Moderate fiber ({fiber:.1f}g).")
+
+        # Sugar penalty: >20g per meal suggests processed ingredients
+        if sugar > 30:
+            score -= 15
+            reasoning.append(f"High sugar ({sugar:.0f}g) — likely processed components.")
+        elif sugar > 20:
+            score -= 8
+            reasoning.append(f"Elevated sugar ({sugar:.0f}g).")
+
+        # Calorie reasonableness: 200-700 is typical for a real meal
+        if 200 <= cal <= 700:
+            score += 3
+        elif cal > 1000:
+            score -= 5
+            reasoning.append(f"Very high calories ({cal:.0f}) for a single meal.")
+
+        if not reasoning:
+            reasoning.append("Estimated from nutrition profile (no ingredient data).")
+
+        score = max(25.0, min(90.0, round(score, 1)))
+        tier, tier_label = _tier_for_score(score)
+        return FuelScoreResult(
+            score=score, tier=tier, tier_label=tier_label,
+            flags=[], reasoning=reasoning, source_path="manual_estimated",
+        )
+
+    # Truly no data at all → neutral default
     return FuelScoreResult(
         score=50.0,
         tier="mixed",
         tier_label="Mixed",
         flags=[],
-        reasoning=["No ingredient data available — defaulting to 50."],
+        reasoning=["No ingredient or nutrition data available — defaulting to 50."],
         source_path="manual",
     )
 
@@ -297,14 +349,22 @@ def _score_manual(
 
 DEFAULT_FUEL_TARGET = 80
 DEFAULT_MEALS_PER_WEEK = 21
+DEFAULT_CLEAN_PCT = 80           # 80% clean eating goal
 AVG_CHEAT_MEAL_SCORE = 35
 WEEK_RESET_DAY = 0  # Monday
+
+# Preset clean-eating tiers
+CLEAN_PCT_PRESETS = {
+    70: {"label": "Relaxed", "description": "Flexible lifestyle"},
+    80: {"label": "Balanced", "description": "Sweet spot (recommended)"},
+    90: {"label": "Strict", "description": "Maximum results"},
+}
 
 
 def get_week_bounds(ref_date: date | None = None) -> tuple[date, date]:
     """Return (monday, sunday) for the week containing *ref_date*."""
     if ref_date is None:
-        ref_date = date.today()
+        ref_date = datetime.now(UTC).date()
     monday = ref_date - timedelta(days=ref_date.weekday())
     sunday = monday + timedelta(days=6)
     return monday, sunday
@@ -317,10 +377,18 @@ class FlexBudget:
     meals_logged: int
     total_score_points: float
     avg_fuel_score: float
+    # Credit-based flex fields
+    clean_pct: int                # user's clean eating goal (70/80/90)
+    clean_meals_target: int       # how many clean meals needed per week
+    clean_meals_logged: int       # how many clean meals logged so far
+    flex_budget: int              # total flex meals per week
+    flex_used: int                # flex meals consumed (meals below target)
+    flex_available: int           # flex meals currently available
+    # Legacy fields kept for backward compat
     flex_points_total: float
     flex_points_used: float
     flex_points_remaining: float
-    flex_meals_remaining: int
+    flex_meals_remaining: int     # alias for flex_available
     target_met: bool
     projected_weekly_avg: float
     week_start: str
@@ -333,31 +401,53 @@ def compute_flex_budget(
     expected_meals: int,
     meal_scores: list[float],
     week_start: date,
+    clean_pct: int = DEFAULT_CLEAN_PCT,
 ) -> FlexBudget:
-    """Compute the live flex budget from this week's meal scores.
+    """Compute the live flex budget using credit-based percentage model.
 
-    Core math:
-      - Each 100-score meal earns ``100 − target`` flex points.
-      - Each cheat meal (score < target) costs ``target − score`` points.
-      - Remaining points are converted to "flex meals remaining".
+    Credit model:
+      - User starts the week with full flex budget (projected from clean_pct).
+      - Each clean meal (score >= fuel_target) confirms the budget.
+      - Each cheat meal (score < fuel_target) spends 1 flex meal.
+      - If remaining unlogged meals can't sustain the budget, it shrinks.
+
+    Example (80% / 21 meals):
+      - clean_meals_target = ceil(21 * 0.80) = 17
+      - flex_budget = 21 - 17 = 4
+      - User starts with 4 available, cheat meals spend them.
     """
     meals_logged = len(meal_scores)
     total_points = sum(meal_scores)
     avg_score = total_points / meals_logged if meals_logged else 0.0
 
-    # Points above/below target for each logged meal
+    # Percentage-based budget
+    clean_meals_target = math.ceil(expected_meals * clean_pct / 100)
+    flex_budget_total = expected_meals - clean_meals_target
+
+    # Count clean vs cheat meals logged
+    clean_meals_logged = sum(1 for s in meal_scores if s >= fuel_target)
+    flex_used = sum(1 for s in meal_scores if s < fuel_target)
+
+    # How many meals left to log this week
+    meals_remaining = max(0, expected_meals - meals_logged)
+
+    # Budget shrinkage: if remaining meals can't cover clean target deficit
+    clean_still_needed = max(0, clean_meals_target - clean_meals_logged)
+    # If user needs more clean meals than they have remaining, budget shrinks
+    if meals_remaining < clean_still_needed:
+        shortfall = clean_still_needed - meals_remaining
+        effective_budget = max(0, flex_budget_total - shortfall)
+    else:
+        effective_budget = flex_budget_total
+
+    flex_available = max(0, effective_budget - flex_used)
+
+    # Legacy points-based fields (backward compat)
     earned = sum(max(0, s - fuel_target) for s in meal_scores)
     spent = sum(max(0, fuel_target - s) for s in meal_scores)
-
-    # Project remaining meals as whole-food (score = 95 assumed)
-    meals_remaining = max(0, expected_meals - meals_logged)
     projected_remaining_earned = meals_remaining * max(0, 95 - fuel_target)
-
     flex_total = earned + projected_remaining_earned
     flex_remaining = max(0.0, flex_total - spent)
-
-    avg_cheat_cost = max(1, fuel_target - AVG_CHEAT_MEAL_SCORE)
-    flex_meals_remaining = math.floor(flex_remaining / avg_cheat_cost)
 
     # Projected weekly average
     projected_total = total_points + (meals_remaining * 95)
@@ -371,10 +461,16 @@ def compute_flex_budget(
         meals_logged=meals_logged,
         total_score_points=round(total_points, 1),
         avg_fuel_score=round(avg_score, 1),
+        clean_pct=clean_pct,
+        clean_meals_target=clean_meals_target,
+        clean_meals_logged=clean_meals_logged,
+        flex_budget=flex_budget_total,
+        flex_used=flex_used,
+        flex_available=flex_available,
         flex_points_total=round(flex_total, 1),
         flex_points_used=round(spent, 1),
         flex_points_remaining=round(flex_remaining, 1),
-        flex_meals_remaining=flex_meals_remaining,
+        flex_meals_remaining=flex_available,
         target_met=avg_score >= fuel_target if meals_logged else False,
         projected_weekly_avg=round(projected_avg, 1),
         week_start=week_start.isoformat(),
@@ -453,7 +549,7 @@ def compute_fuel_streak(
 ) -> dict:
     """Count consecutive + longest past weeks where average fuel score met the target."""
     if ref_date is None:
-        ref_date = date.today()
+        ref_date = datetime.now(UTC).date()
 
     # Collect weekly pass/fail for up to 52 weeks back
     check_date = ref_date - timedelta(days=ref_date.weekday() + 7)

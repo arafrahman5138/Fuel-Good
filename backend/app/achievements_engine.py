@@ -449,7 +449,15 @@ ACHIEVEMENT_DEFS = [
         "category": "fuel",
         "criteria": {"type": "perfect_fuel_day", "target": 5},
     },
-    # ── Flex Mastery ──
+    # ── Flex System ──
+    {
+        "name": "First Flex",
+        "description": "Use your first flex meal.",
+        "icon": "ticket",
+        "xp_reward": 50,
+        "category": "fuel",
+        "criteria": {"type": "flex_used_count", "target": 1},
+    },
     {
         "name": "Flex Master",
         "description": "Use all flex meals in a week while still meeting your target.",
@@ -457,6 +465,30 @@ ACHIEVEMENT_DEFS = [
         "xp_reward": 100,
         "category": "fuel",
         "criteria": {"type": "flex_master"},
+    },
+    {
+        "name": "Balance Master",
+        "description": "Use all flex meals and still end the week in Strong tier (75+).",
+        "icon": "trophy",
+        "xp_reward": 150,
+        "category": "fuel",
+        "criteria": {"type": "balance_master"},
+    },
+    {
+        "name": "Clean Sweep",
+        "description": "Finish a week without using any flex meals.",
+        "icon": "shield-checkmark",
+        "xp_reward": 100,
+        "category": "fuel",
+        "criteria": {"type": "clean_sweep"},
+    },
+    {
+        "name": "Flex Veteran",
+        "description": "Use flex meals for 4 consecutive weeks while staying Strong tier or above.",
+        "icon": "medal",
+        "xp_reward": 200,
+        "category": "fuel",
+        "criteria": {"type": "flex_veteran", "target": 4},
     },
     # ── Scanning ──
     {
@@ -773,56 +805,210 @@ def _check_triple_90_meal(db: Session, user_id: str) -> bool:
 
 
 def _check_fuel_streak_weeks(db: Session, user_id: str, target: int) -> bool:
-    """Check if the user met their Fuel Score target for `target` consecutive weeks."""
-    from app.models.fuel import WeeklyFuelSummary
+    """Check if the user met their Fuel Score target for `target` consecutive weeks.
 
-    weeks = (
-        db.query(WeeklyFuelSummary)
-        .filter(WeeklyFuelSummary.user_id == user_id)
-        .order_by(WeeklyFuelSummary.week_start.desc())
-        .all()
-    )
+    Computes from FoodLog data directly (WeeklyFuelSummary is not populated
+    by the fuel router, which builds weekly stats on-the-fly).
+    """
+    from app.services.fuel_score import get_week_bounds, get_weekly_meal_scores, DEFAULT_FUEL_TARGET
+
+    user = db.query(User).filter(User.id == user_id).first()
+    fuel_target = (user.fuel_target if user else None) or DEFAULT_FUEL_TARGET
+
+    ref = datetime.now(UTC).date()
+    # Start from last completed week
+    check = ref - timedelta(days=ref.weekday() + 7)
     consecutive = 0
-    for w in weeks:
-        if w.target_met:
+    for _ in range(52):
+        week_start, _ = get_week_bounds(check)
+        scores = get_weekly_meal_scores(db, user_id, week_start)
+        if not scores:
+            break
+        avg = sum(scores) / len(scores)
+        if avg >= fuel_target:
             consecutive += 1
             if consecutive >= target:
                 return True
         else:
             consecutive = 0
+        check -= timedelta(days=7)
     return False
 
 
 def _check_perfect_fuel_day(db: Session, user_id: str, target: int) -> bool:
-    """Check if the user has had `target` days where all meals scored ≥ 90."""
-    from app.models.fuel import DailyFuelSummary
+    """Check if the user has had `target` days where all meals scored ≥ 90.
 
-    days = (
-        db.query(DailyFuelSummary)
-        .filter(
-            DailyFuelSummary.user_id == user_id,
-            DailyFuelSummary.meal_count > 0,
-        )
+    Computes from FoodLog data directly — checks that every meal in a day
+    individually scored ≥ 90 (not just the average).
+    """
+    from app.services.fuel_score import get_daily_fuel_scores
+
+    # Get all dates where user has fuel scores
+    dates_with_scores = (
+        db.query(func.distinct(FoodLog.date))
+        .filter(FoodLog.user_id == user_id, FoodLog.fuel_score.isnot(None))
         .all()
     )
     perfect_count = 0
-    for d in days:
-        # A perfect fuel day: avg ≥ 90 and every meal was ≥ 90
-        # Since we only store avg, use avg ≥ 90 as the proxy
-        if (d.avg_fuel_score or 0) >= 90:
+    for (day,) in dates_with_scores:
+        scores = get_daily_fuel_scores(db, user_id, day)
+        if scores and all(s >= 90 for s in scores):
             perfect_count += 1
-    return perfect_count >= target
+            if perfect_count >= target:
+                return True
+    return False
 
 
 def _check_flex_master(db: Session, user_id: str) -> bool:
-    """Check if user used all flex meals in a week while still meeting their target."""
-    from app.models.fuel import WeeklyFuelSummary
+    """Check if user used all flex meals in a week while still meeting their target.
 
-    return db.query(WeeklyFuelSummary).filter(
-        WeeklyFuelSummary.user_id == user_id,
-        WeeklyFuelSummary.target_met == True,
-        WeeklyFuelSummary.flex_budget_remaining == 0,
-    ).first() is not None
+    Computes from FoodLog data directly.
+    """
+    from app.services.fuel_score import (
+        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
+    )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    fuel_target = user.fuel_target or DEFAULT_FUEL_TARGET
+    expected = user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = user.clean_eating_pct or DEFAULT_CLEAN_PCT
+
+    ref = datetime.now(UTC).date()
+    check = ref - timedelta(days=ref.weekday() + 7)
+    for _ in range(12):
+        week_start, _ = get_week_bounds(check)
+        scores = get_weekly_meal_scores(db, user_id, week_start)
+        if not scores:
+            break
+        budget = compute_flex_budget(
+            fuel_target=fuel_target, expected_meals=expected,
+            meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+        )
+        if budget.target_met and budget.flex_available == 0 and budget.flex_used > 0:
+            return True
+        check -= timedelta(days=7)
+    return False
+
+
+def _count_flex_used(db: Session, user_id: str) -> int:
+    """Count total flex meals used (meals with source_type manual_flex or below target)."""
+    return db.query(FoodLog).filter(
+        FoodLog.user_id == user_id,
+        FoodLog.source_type == "manual_flex",
+    ).count()
+
+
+def _check_balance_master(db: Session, user_id: str) -> bool:
+    """Check if user used all flex meals and still ended week at 75+ avg.
+
+    Computes from FoodLog data directly.
+    """
+    from app.services.fuel_score import (
+        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
+    )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    fuel_target = user.fuel_target or DEFAULT_FUEL_TARGET
+    expected = user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = user.clean_eating_pct or DEFAULT_CLEAN_PCT
+
+    ref = datetime.now(UTC).date()
+    check = ref - timedelta(days=ref.weekday() + 7)
+    for _ in range(12):
+        week_start, _ = get_week_bounds(check)
+        scores = get_weekly_meal_scores(db, user_id, week_start)
+        if not scores:
+            break
+        budget = compute_flex_budget(
+            fuel_target=fuel_target, expected_meals=expected,
+            meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+        )
+        avg = sum(scores) / len(scores)
+        if budget.flex_available == 0 and budget.flex_used > 0 and avg >= 75:
+            return True
+        check -= timedelta(days=7)
+    return False
+
+
+def _check_clean_sweep(db: Session, user_id: str) -> bool:
+    """Check if user finished a week without using any flex meals.
+
+    Computes from FoodLog data directly.
+    """
+    from app.services.fuel_score import (
+        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
+    )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    fuel_target = user.fuel_target or DEFAULT_FUEL_TARGET
+    expected = user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = user.clean_eating_pct or DEFAULT_CLEAN_PCT
+
+    ref = datetime.now(UTC).date()
+    check = ref - timedelta(days=ref.weekday() + 7)
+    for _ in range(12):
+        week_start, _ = get_week_bounds(check)
+        scores = get_weekly_meal_scores(db, user_id, week_start)
+        if len(scores) < 14:
+            check -= timedelta(days=7)
+            continue
+        budget = compute_flex_budget(
+            fuel_target=fuel_target, expected_meals=expected,
+            meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+        )
+        if budget.flex_used == 0:
+            return True
+        check -= timedelta(days=7)
+    return False
+
+
+def _check_flex_veteran(db: Session, user_id: str, target_weeks: int) -> bool:
+    """Check N consecutive weeks of flex usage while staying Strong tier.
+
+    Computes from FoodLog data directly.
+    """
+    from app.services.fuel_score import (
+        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
+    )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    fuel_target = user.fuel_target or DEFAULT_FUEL_TARGET
+    expected = user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = user.clean_eating_pct or DEFAULT_CLEAN_PCT
+
+    ref = datetime.now(UTC).date()
+    check = ref - timedelta(days=ref.weekday() + 7)
+    consecutive = 0
+    for _ in range(52):
+        week_start, _ = get_week_bounds(check)
+        scores = get_weekly_meal_scores(db, user_id, week_start)
+        if not scores:
+            break
+        budget = compute_flex_budget(
+            fuel_target=fuel_target, expected_meals=expected,
+            meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+        )
+        avg = sum(scores) / len(scores)
+        if avg >= 75 and budget.flex_used > 0:
+            consecutive += 1
+            if consecutive >= target_weeks:
+                return True
+        else:
+            consecutive = 0
+        check -= timedelta(days=7)
+    return False
 
 
 def _count_scans(db: Session, user_id: str) -> int:
@@ -957,8 +1143,16 @@ def check_achievements(db: Session, user: User, context: dict | None = None) -> 
             met = _check_fuel_streak_weeks(db, user.id, target)
         elif ctype == "perfect_fuel_day":
             met = _check_perfect_fuel_day(db, user.id, target)
+        elif ctype == "flex_used_count":
+            met = _count_flex_used(db, user.id) >= target
         elif ctype == "flex_master":
             met = _check_flex_master(db, user.id)
+        elif ctype == "balance_master":
+            met = _check_balance_master(db, user.id)
+        elif ctype == "clean_sweep":
+            met = _check_clean_sweep(db, user.id)
+        elif ctype == "flex_veteran":
+            met = _check_flex_veteran(db, user.id, target)
         elif ctype == "scan_count":
             count = ctx.get("scan_count")
             if count is None:

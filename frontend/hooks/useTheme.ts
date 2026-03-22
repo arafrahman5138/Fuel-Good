@@ -11,3 +11,10 @@ export function useTheme() {
 
   return Colors[effectiveScheme === 'light' ? 'light' : 'dark'];
 }
+
+/** Stable boolean for dark-mode checks — avoids fragile `theme.text === '#FFFFFF'` patterns. */
+export function useIsDark(): boolean {
+  const systemScheme = useColorScheme();
+  const mode = useThemeStore((s) => s.mode);
+  return mode === 'dark' || (mode === 'system' && systemScheme !== 'light');
+}

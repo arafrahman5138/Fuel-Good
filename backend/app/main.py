@@ -6,14 +6,17 @@ import logging
 import time
 import uuid
 
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.config import get_settings
 from app.auth import require_premium_user
-from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan, telemetry, notifications, internal, fuel
+from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_db, gamification, nutrition, metabolic, whole_food_scan, scan, telemetry, notifications, internal, fuel, images
 from app.db import engine, ensure_legacy_schema_columns, ensure_pgvector_schema
 from app.services.notifications import notification_scheduler_loop
 from app.services.embeddings import active_embedding_provider
@@ -355,6 +358,12 @@ app.include_router(metabolic.router, prefix="/api/metabolic", tags=["Metabolic B
 app.include_router(telemetry.router, prefix="/api/telemetry", tags=["Telemetry"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(internal.router, prefix="/api/internal", tags=["Internal"])
+app.include_router(images.router, prefix="/api/images", tags=["Image Generation"])
+
+# Serve generated meal images as static files
+_static_dir = Path(__file__).resolve().parent.parent / "static" / "meal-images"
+_static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/meal-images", StaticFiles(directory=str(_static_dir)), name="meal-images")
 
 
 @app.get("/")

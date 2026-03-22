@@ -8,9 +8,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Image,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
@@ -43,10 +47,37 @@ export default function ProfileScreen() {
   const [achievementsError, setAchievementsError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const xp = user?.xp_points || 0;
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
   const headerEntrance = useEntranceAnimation(0);
   const contentEntrance = useEntranceAnimation(100);
+
+  // Load saved avatar on mount
+  useEffect(() => {
+    AsyncStorage.getItem('user_avatar_uri').then((uri) => {
+      if (uri) setAvatarUri(uri);
+    });
+  }, []);
+
+  const pickAvatar = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo library access to change your avatar.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      const uri = result.assets[0].uri;
+      setAvatarUri(uri);
+      AsyncStorage.setItem('user_avatar_uri', uri);
+    }
+  }, []);
 
   const loadAchievements = async () => {
     setLoadingAchievements(true);
@@ -115,13 +146,28 @@ export default function ProfileScreen() {
 
         {/* Profile Header */}
         <Animated.View style={[styles.profileHeader, headerEntrance.style]}>
-          <View style={{ ...Shadows.interactive(false), borderRadius: BorderRadius.full }}>
-            <LinearGradient colors={['#22C55E', '#059669', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
-              <Text style={styles.avatarText}>
-                {(user?.name || 'U').charAt(0).toUpperCase()}
-              </Text>
-            </LinearGradient>
-          </View>
+          <TouchableOpacity
+            onPress={pickAvatar}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.avatarTouchable}
+          >
+            <View style={{ ...Shadows.interactive(false), borderRadius: BorderRadius.full }}>
+              <LinearGradient colors={['#22C55E', '#059669', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>
+                    {(user?.name || 'U').charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </LinearGradient>
+            </View>
+            {/* Camera badge overlay */}
+            <View style={[styles.avatarBadge, { backgroundColor: theme.primary, borderColor: theme.background }]}>
+              <Ionicons name="camera" size={12} color="#fff" />
+            </View>
+          </TouchableOpacity>
           <Text style={[styles.name, { color: theme.text }]}>{user?.name || 'User'}</Text>
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || ''}</Text>
           <View style={styles.badgeRow}>
@@ -167,22 +213,22 @@ export default function ProfileScreen() {
           <>
             {/* Stats Grid */}
             <View style={styles.statsGrid}>
-              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
                 <Ionicons name="flame" size={24} color={theme.accent} />
                 <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.current_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
               </Card>
-              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.accent }]} padding={Spacing.lg}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
                 <Ionicons name="trophy" size={24} color={theme.accent} />
                 <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.longest_streak || 0}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
               </Card>
-              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.primary }]} padding={Spacing.lg}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
                 <Ionicons name="star" size={24} color={theme.primary} />
                 <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{xp}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
               </Card>
-              <Card style={[styles.statCard, { borderTopWidth: 3, borderTopColor: theme.info }]} padding={Spacing.lg}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
                 <Ionicons name="ribbon" size={24} color={theme.info} />
                 <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{unlockedCount}</Text>
                 <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Achievements</Text>
@@ -285,10 +331,7 @@ export default function ProfileScreen() {
                         opacity: achievement.unlocked ? 1 : 0.65,
                       },
                       achievement.unlocked && {
-                        shadowColor: theme.primary,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.12,
-                        shadowRadius: 12,
+                        boxShadow: `0px 0px 12px ${theme.primary}1F`,
                         elevation: 3,
                       },
                     ]}
@@ -368,18 +411,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.xxl,
   },
+  avatarTouchable: {
+    position: 'relative',
+    marginBottom: Spacing.md,
+    minWidth: 88,
+    minHeight: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.full,
   },
   avatarText: {
     fontSize: FontSize.xxxl,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
   },
   name: {
     fontSize: FontSize.xxl,
@@ -424,11 +491,12 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
+    rowGap: Spacing.md,
     marginBottom: Spacing.xxl,
   },
   statCard: {
-    width: '47%' as any,
+    width: '48.5%' as any,
     alignItems: 'center',
     gap: Spacing.xs,
   },
@@ -495,9 +563,10 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
   },
   emptyState: {

@@ -378,11 +378,28 @@ export const billingApi = {
   sync: (force = true) => api.post<{ entitlement: any }>('/billing/sync', { force }),
 };
 
+export interface ChatContext {
+  source?: string; // "scan" | "recipe" | "home" | "flex"
+  scan_result?: {
+    meal_label?: string;
+    fuel_score?: number;
+    whole_food_flags?: Array<{ ingredient: string; reason: string; severity: string }>;
+  };
+  recipe_id?: string;
+  flex_status?: { earned: number; remaining: number; weekly_avg?: number };
+}
+
 export const chatApi = {
-  healthify: (message: string, sessionId?: string) =>
-    api.post<any>('/chat/healthify', { message, session_id: sessionId }),
-  streamHealthify: (message: string, sessionId: string | undefined, onChunk: (t: string) => void, onDone?: (d: any) => void) =>
-    api.stream('/chat/healthify/stream', { message, session_id: sessionId }, onChunk, onDone),
+  healthify: (message: string, sessionId?: string, context?: ChatContext) =>
+    api.post<any>('/chat/healthify', { message, session_id: sessionId, context: context ?? null }),
+  streamHealthify: (
+    message: string,
+    sessionId: string | undefined,
+    onChunk: (t: string) => void,
+    onDone?: (d: any) => void,
+    context?: ChatContext,
+  ) =>
+    api.stream('/chat/healthify/stream', { message, session_id: sessionId, context: context ?? null }, onChunk, onDone),
   getSessions: () => api.get<any[]>('/chat/sessions'),
   getSession: (id: string) => api.get<any>(`/chat/sessions/${id}`),
   deleteSession: (id: string) => api.delete(`/chat/sessions/${id}`),
@@ -481,7 +498,7 @@ export const wholeFoodScanApi = {
 // ── Fuel Score API ──
 export const fuelApi = {
   getSettings: () => api.get<any>('/fuel/settings'),
-  updateSettings: (data: { fuel_target?: number; expected_meals_per_week?: number }) =>
+  updateSettings: (data: { fuel_target?: number; expected_meals_per_week?: number; clean_eating_pct?: number }) =>
     api.put<any>('/fuel/settings', data),
   getDaily: (date?: string) =>
     api.get<any>(`/fuel/daily${date ? `?date=${encodeURIComponent(date)}` : ''}`),
@@ -494,6 +511,8 @@ export const fuelApi = {
     api.get<any>(`/fuel/calendar${month ? `?month=${encodeURIComponent(month)}` : ''}`),
   getFlexSuggestions: (date?: string) =>
     api.get<any>(`/fuel/flex-suggestions${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  logManualFlex: (data: { meal_type?: string; tag?: string; date?: string }) =>
+    api.post<any>('/fuel/flex-log', data),
 };
 
 export const recipeApi = {

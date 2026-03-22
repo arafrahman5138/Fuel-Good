@@ -27,7 +27,7 @@ class MetabolicBudgetResponse(BaseModel):
     sugar_ceiling_g: float
     weight_protein: float
     weight_fiber: float
-    weight_sugar: float
+    weight_sugar: float  # Legacy alias for weight_gis — kept for backward compat
     # ── New fields ──
     carb_ceiling_g: float = 130.0
     fat_target_g: float = 0
@@ -35,9 +35,13 @@ class MetabolicBudgetResponse(BaseModel):
     weight_gis: float = 0.24
     tdee: Optional[float] = None
     ism: Optional[float] = None
+    is_personalized: bool = True
     # ── Phase 6: Threshold context ──
     tier_thresholds: Optional[Dict[str, int]] = None
     threshold_context: Optional[Dict[str, str]] = None
+    # ── Bonus transparency ──
+    ingredient_gis_daily_bonus: Optional[float] = None
+    pairing_synergy_daily_bonus: Optional[float] = None
 
 
 class MetabolicBudgetUpdate(BaseModel):
@@ -59,6 +63,7 @@ class MetabolicProfileCreate(BaseModel):
     height_ft: Optional[int] = None
     height_in: Optional[float] = None
     weight_lb: Optional[float] = None
+    weight_kg: Optional[float] = None
     body_fat_pct: Optional[float] = None
     body_fat_method: Optional[str] = None
     goal: Optional[str] = None

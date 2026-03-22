@@ -7,8 +7,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../hooks/useTheme';
-import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
+import { useTheme, useIsDark } from '../hooks/useTheme';
+import { FontSize, ScoreColors, Spacing, BorderRadius } from '../constants/Colors';
 
 interface MacroStat {
   label: string;
@@ -36,8 +36,9 @@ export function NutriScoreHeroCard({ score, calories, macros }: NutriScoreHeroCa
   const ringSize = 100;
   const strokeWidth = 8;
   const scoreFontSize = Math.round(ringSize * 0.26);
-  const trackColor = theme.text === '#FFFFFF' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const arcColor = clampedScore >= 60 ? '#22C55E' : clampedScore >= 30 ? '#F59E0B' : '#EF4444';
+  const isDark = useIsDark();
+  const trackColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const arcColor = clampedScore >= 60 ? ScoreColors.good : clampedScore >= 30 ? ScoreColors.warning : ScoreColors.danger;
 
   const calPct = calories.target > 0 ? Math.min(100, (calories.consumed / calories.target) * 100) : 0;
 

@@ -60,10 +60,7 @@ export function ChipSelector({
             borderColor: isSelected ? theme.primary : theme.border,
           },
           ...(isSelected ? [{
-            shadowColor: theme.primary,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
+            boxShadow: `0px 0px 8px ${theme.primary}33`,
             elevation: 2,
           }] : []),
         ]}

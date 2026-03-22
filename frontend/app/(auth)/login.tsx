@@ -426,8 +426,6 @@ const styles = StyleSheet.create({
   errorBox: {
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
-    borderLeftWidth: 3,
-    borderLeftColor: '#EF4444',
   },
   errorText: {
     fontSize: FontSize.sm,

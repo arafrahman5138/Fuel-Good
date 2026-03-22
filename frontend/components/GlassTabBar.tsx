@@ -10,6 +10,7 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  AccessibilityInfo,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import { useThemeStore } from '../stores/themeStore';
 import { usePressScale } from '../hooks/useAnimations';
 import { Shadows } from '../constants/Shadows';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import * as Haptics from 'expo-haptics';
 
 /** Route names to exclude from the visible pill. */
 const HIDDEN_ROUTES = new Set(['profile']);
@@ -43,6 +45,22 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const plusPress = usePressScale(0.92);
+
+  // + → X rotation animation
+  const plusRotation = useRef(new Animated.Value(0)).current;
+  const plusScale = useRef(new Animated.Value(1)).current;
+
+  // Per-tab icon scale animations (max 10 tabs)
+  const tabScales = useRef(
+    Array.from({ length: 10 }, () => new Animated.Value(1))
+  ).current;
+  const prevActiveIndex = useRef(-1);
+
+  // Reduce motion check
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
 
   // Filter out hidden routes (profile, etc.)
   const visibleRoutes = state.routes.filter((r) => {
@@ -74,16 +92,95 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const bubbleWidth = Math.max(0, slotWidth - BUBBLE_SLOT_INSET * 2);
   const compactTabs = slotWidth > 0 && slotWidth < 86;
 
+  // Bubble slide + icon pop animation
   useEffect(() => {
     if (slotWidth <= 0) return;
     const toValue = activeVisibleIndex * slotWidth + BUBBLE_SLOT_INSET;
+
+    if (reduceMotion) {
+      bubbleLeft.setValue(toValue);
+      return;
+    }
+
+    // Slide the bubble
     Animated.spring(bubbleLeft, {
       toValue,
       useNativeDriver: false,
       speed: 20,
       bounciness: 6,
     }).start();
-  }, [activeVisibleIndex, slotWidth, bubbleLeft]);
+
+    // Pop the active tab icon
+    if (prevActiveIndex.current !== activeVisibleIndex) {
+      // Reset previous tab
+      if (prevActiveIndex.current >= 0 && prevActiveIndex.current < tabScales.length) {
+        Animated.spring(tabScales[prevActiveIndex.current], {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 28,
+          bounciness: 4,
+        }).start();
+      }
+
+      // Pop new active tab
+      if (activeVisibleIndex < tabScales.length) {
+        tabScales[activeVisibleIndex].setValue(0.85);
+        Animated.spring(tabScales[activeVisibleIndex], {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 14,
+          bounciness: 12,
+        }).start();
+      }
+
+      prevActiveIndex.current = activeVisibleIndex;
+    }
+  }, [activeVisibleIndex, slotWidth, bubbleLeft, reduceMotion]);
+
+  // + button toggle animation (rotate + scale bounce)
+  const handlePlusPress = () => {
+    const opening = !showAddMenu;
+    setShowAddMenu(opening);
+
+    if (!reduceMotion) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      // Rotate + to X (45deg)
+      Animated.spring(plusRotation, {
+        toValue: opening ? 1 : 0,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 8,
+      }).start();
+
+      // Bounce scale
+      plusScale.setValue(0.8);
+      Animated.spring(plusScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 16,
+        bounciness: 14,
+      }).start();
+    }
+  };
+
+  // Close menu helper (also animates back)
+  const closeMenu = () => {
+    setShowAddMenu(false);
+    if (!reduceMotion) {
+      Animated.spring(plusRotation, {
+        toValue: 0,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 8,
+      }).start();
+    }
+  };
+
+  const plusRotateDeg = plusRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
 
   return (
     <View
@@ -123,7 +220,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 ]}
               />
             )}
-            {visibleRoutes.map((route) => {
+            {visibleRoutes.map((route, visIdx) => {
               const realIndex = state.routes.indexOf(route);
               const { options } = descriptors[route.key];
               const isFocused = state.index === realIndex;
@@ -142,6 +239,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   canPreventDefault: true,
                 });
                 if (!isFocused && !event.defaultPrevented) {
+                  if (!reduceMotion) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
                   navigation.navigate(route.name, route.params);
                 }
               };
@@ -164,26 +264,33 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     isFocused && styles.focusedTabItem,
                   ]}
                 >
-                  {options.tabBarIcon?.({
-                    focused: isFocused,
-                    color: iconColor,
-                    size: compactTabs ? 22 : 24,
-                  })}
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      {
-                        color: iconColor,
-                        fontWeight: '400',
-                        fontSize: compactTabs ? 10 : FontSize.xs,
-                      },
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.82}
+                  <Animated.View
+                    style={{
+                      alignItems: 'center',
+                      transform: [{ scale: tabScales[visIdx] }],
+                    }}
                   >
-                    {displayLabel}
-                  </Text>
+                    {options.tabBarIcon?.({
+                      focused: isFocused,
+                      color: iconColor,
+                      size: compactTabs ? 22 : 24,
+                    })}
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        {
+                          color: iconColor,
+                          fontWeight: '400',
+                          fontSize: compactTabs ? 10 : FontSize.xs,
+                        },
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.82}
+                    >
+                      {displayLabel}
+                    </Text>
+                  </Animated.View>
                 </TouchableOpacity>
               );
             })}
@@ -191,7 +298,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         </View>
 
         {/* ── "+" Log Meal button ── */}
-        <Animated.View style={plusPress.animatedStyle}>
+        <Animated.View style={[plusPress.animatedStyle, { transform: [{ scale: plusScale }] }]}>
           <TouchableOpacity
             style={[
               styles.plusButton,
@@ -202,18 +309,20 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               },
             ]}
             activeOpacity={0.7}
-            onPress={() => setShowAddMenu((v) => !v)}
+            onPress={handlePlusPress}
             onPressIn={plusPress.onPressIn}
             onPressOut={plusPress.onPressOut}
             accessibilityLabel="Open quick actions"
           >
-            <Ionicons name="add" size={28} color={plusIconColor} />
+            <Animated.View style={{ transform: [{ rotate: plusRotateDeg }] }}>
+              <Ionicons name="add" size={28} color={plusIconColor} />
+            </Animated.View>
           </TouchableOpacity>
         </Animated.View>
       </View>
 
-      <Modal transparent visible={showAddMenu} animationType="fade" onRequestClose={() => setShowAddMenu(false)}>
-        <Pressable style={styles.menuBackdrop} onPress={() => setShowAddMenu(false)}>
+      <Modal transparent visible={showAddMenu} animationType="fade" onRequestClose={closeMenu}>
+        <Pressable style={styles.menuBackdrop} onPress={closeMenu}>
           <View
             style={[
               styles.addMenu,
@@ -232,7 +341,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 label: 'Log Meal',
                 sub: 'Add from meals',
                 onPress: () => {
-                  setShowAddMenu(false);
+                  closeMenu();
                   router.push('/(tabs)/meals?tab=browse' as any);
                 },
               },
@@ -241,7 +350,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 label: 'Scan',
                 sub: 'Meal or product',
                 onPress: () => {
-                  setShowAddMenu(false);
+                  closeMenu();
                   router.push('/scan' as any);
                 },
               },
@@ -250,7 +359,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 label: 'Create New Plan',
                 sub: 'Open planner',
                 onPress: () => {
-                  setShowAddMenu(false);
+                  closeMenu();
                   router.push('/(tabs)/meals?tab=plan' as any);
                 },
               },
@@ -259,7 +368,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 label: 'New Chat with AI',
                 sub: 'Open Healthify',
                 onPress: () => {
-                  setShowAddMenu(false);
+                  closeMenu();
                   router.push('/(tabs)/chat' as any);
                 },
               },

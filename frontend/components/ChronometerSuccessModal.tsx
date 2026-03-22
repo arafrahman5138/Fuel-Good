@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     flex: 1,
-    minHeight: 46,
+    minHeight: 52,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     alignItems: 'center',
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flex: 1.35,
-    minHeight: 46,
+    minHeight: 52,
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',

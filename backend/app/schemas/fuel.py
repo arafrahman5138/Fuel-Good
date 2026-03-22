@@ -14,11 +14,13 @@ class FuelScoreResponse(BaseModel):
 class FuelSettingsResponse(BaseModel):
     fuel_target: int
     expected_meals_per_week: int
+    clean_eating_pct: int
 
 
 class FuelSettingsUpdate(BaseModel):
     fuel_target: Optional[int] = Field(default=None, ge=50, le=100)
     expected_meals_per_week: Optional[int] = Field(default=None, ge=7, le=35)
+    clean_eating_pct: Optional[int] = Field(default=None, ge=50, le=100)
 
 
 class DailyFuelResponse(BaseModel):
@@ -34,6 +36,14 @@ class FlexBudgetResponse(BaseModel):
     meals_logged: int
     total_score_points: float
     avg_fuel_score: float
+    # Credit-based flex fields
+    clean_pct: int
+    clean_meals_target: int
+    clean_meals_logged: int
+    flex_budget: int
+    flex_used: int
+    flex_available: int
+    # Legacy points fields
     flex_points_total: float
     flex_points_used: float
     flex_points_remaining: float
@@ -42,6 +52,21 @@ class FlexBudgetResponse(BaseModel):
     projected_weekly_avg: float
     week_start: str
     week_end: str
+
+
+class ManualFlexLogRequest(BaseModel):
+    meal_type: Optional[str] = Field(default="meal", description="breakfast/lunch/dinner/snack")
+    tag: Optional[str] = Field(default=None, description="pizza/burger/takeout/dessert/drinks/other")
+    date: Optional[str] = Field(default=None, description="ISO date, defaults to today")
+
+
+class ManualFlexLogResponse(BaseModel):
+    id: str
+    date: str
+    title: str
+    fuel_score: float
+    flex_available: int
+    weekly_avg: float
 
 
 class WeeklyFuelResponse(BaseModel):

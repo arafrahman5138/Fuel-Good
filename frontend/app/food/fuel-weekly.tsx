@@ -209,6 +209,25 @@ export default function FuelWeeklyScreen() {
               </Text>
             </View>
           )}
+
+          {/* Flex proof messaging */}
+          {(() => {
+            const flexUsed = weekly.flex_budget?.flex_used ?? 0;
+            const cleanLogged = weekly.flex_budget?.clean_meals_logged ?? 0;
+            const avg = weekly.avg_fuel_score;
+            const tierName = avg >= 90 ? 'Elite' : avg >= 75 ? 'Strong' : avg >= 60 ? 'Decent' : 'Mixed';
+            if (flexUsed > 0 && avg >= 75) {
+              return (
+                <View style={[styles.targetBanner, { backgroundColor: '#F59E0B10', marginTop: 6 }]}>
+                  <Ionicons name="ticket" size={14} color="#F59E0B" />
+                  <Text style={[styles.targetText, { color: '#D97706' }]}>
+                    {cleanLogged} clean + {flexUsed} flex = avg {Math.round(avg)} — {tierName} tier. The math works.
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          })()}
         </LinearGradient>
 
         {/* ── Day-by-Day ── */}

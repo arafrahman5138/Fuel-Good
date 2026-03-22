@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import mimetypes
 import uuid
@@ -148,6 +149,7 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
         "pairing_reasons": scan.pairing_reasons or [],
         "pairing_timing": scan.pairing_timing,
         "fuel_score": float(scan.fuel_score) if scan.fuel_score is not None else None,
+        "fuel_reasoning": [],
         "image": _serialize_storage_reference(
             bucket=scan.image_bucket,
             path=scan.image_path,
@@ -380,12 +382,18 @@ async def analyze_product_image(
         }
     except httpx.HTTPError:
         raise HTTPException(status_code=502, detail="Unable to analyze that label photo right now.")
+    except (json.JSONDecodeError, ValueError, KeyError) as exc:
+        logger.exception("Label scan parsing error")
+        raise HTTPException(status_code=502, detail="Could not read the label clearly. Try a closer, well-lit photo of the ingredients list.")
     except RuntimeError as exc:
         logger.exception("Label scan runtime error")
         raise HTTPException(status_code=502, detail="Unable to complete label analysis right now.")
     except SupabaseStorageUnavailable as exc:
         logger.exception("Supabase storage unavailable during label scan")
         raise HTTPException(status_code=500, detail="Image storage is temporarily unavailable.")
+    except Exception as exc:
+        logger.exception("Unexpected label scan error: %s", type(exc).__name__)
+        raise HTTPException(status_code=502, detail="Something went wrong analyzing that label. Try a clearer photo of the ingredients list.")
 
 
 @router.post("/meal")
@@ -452,21 +460,24 @@ async def scan_meal(
         )
 
     # ── Fuel Score for scanned meal ──
-    # Use the raw component dicts (name + role) so _score_scan can apply
-    # per-role adjustments (dessert penalty, refined-carb check, etc.)
-    try:
-        fuel_result = compute_fuel_score(
-            source_type="scan",
-            nutrition=result.get("nutrition_estimate"),
-            components=result.get("components") or [],
-            source_context=result.get("source_context"),
-            whole_food_status=result.get("whole_food_status"),
-            whole_food_flags=result.get("whole_food_flags"),
-        )
-        scan_fuel_score = fuel_result.score
-    except Exception:
-        logger.warning("Fuel score computation failed for scan", exc_info=True)
-        scan_fuel_score = None
+    # Skip fuel scoring for degraded results (LLM failure fallback) —
+    # generic placeholder nutrition would produce a misleading score.
+    scan_fuel_score = None
+    scan_fuel_reasoning = []
+    if not result.get("is_degraded"):
+        try:
+            fuel_result = compute_fuel_score(
+                source_type="scan",
+                nutrition=result.get("nutrition_estimate"),
+                components=result.get("components") or [],
+                source_context=result.get("source_context"),
+                whole_food_status=result.get("whole_food_status"),
+                whole_food_flags=result.get("whole_food_flags"),
+            )
+            scan_fuel_score = fuel_result.score
+            scan_fuel_reasoning = fuel_result.reasoning
+        except Exception:
+            logger.warning("Fuel score computation failed for scan", exc_info=True)
 
     scan = ScannedMealLog(
         user_id=current_user.id,
@@ -515,6 +526,7 @@ async def scan_meal(
     db.commit()
     db.refresh(scan)
     serialized = _serialize_scan(scan)
+    serialized["fuel_reasoning"] = scan_fuel_reasoning
     serialized["image"] = await _storage_reference_async(
         bucket=scan.image_bucket,
         path=scan.image_path,
@@ -737,6 +749,7 @@ async def correct_meal_scan(
 
     # Simple heuristic: user says "X was actually Y" or "remove X" or "add Y"
     correction_lower = body.correction_text.lower()
+    recomputed_fuel_reasoning: list[str] = []
     if corrected_ingredients or correction_lower:
         # Re-run the scan pipeline with updated ingredient names
         result = await recompute_meal_scan(
@@ -777,6 +790,7 @@ async def correct_meal_scan(
                 whole_food_flags=result.get("whole_food_flags"),
             )
             scan.fuel_score = fuel_result.score
+            recomputed_fuel_reasoning = fuel_result.reasoning
         except Exception:
             logger.warning("Fuel score recomputation failed after correction", exc_info=True)
 
@@ -793,6 +807,8 @@ async def correct_meal_scan(
             _compute_daily(db, current_user.id, food_log.date)
 
     serialized = _serialize_scan(scan)
+    if recomputed_fuel_reasoning:
+        serialized["fuel_reasoning"] = recomputed_fuel_reasoning
     serialized["image"] = await _storage_reference_async(
         bucket=scan.image_bucket,
         path=scan.image_path,

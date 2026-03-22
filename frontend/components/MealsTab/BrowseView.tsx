@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   FlatList,
   TextInput,
@@ -17,6 +18,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { recipeApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTIONS } from '../../constants/Config';
+import { MealImage } from '../MealImage';
 import { MealMESBadge } from '../MealMESBadge';
 import { PlateComposer } from '../PlateComposer';
 import { useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
@@ -48,6 +50,7 @@ interface RecipeCard {
   health_benefits: string[];
   nutrition_info: Record<string, number>;
   servings: number;
+  image_url?: string | null;
   // Composition fields
   recipe_role?: string;
   is_component?: boolean;
@@ -351,6 +354,13 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
       activeOpacity={0.7}
       onPress={() => router.push(`/browse/${item.id}`)}
     >
+      <MealImage
+        imageUrl={item.image_url}
+        title={item.title}
+        width={CARD_WIDTH - Spacing.md * 2}
+        height={(CARD_WIDTH - Spacing.md * 2) * 0.65}
+        borderRadius={BorderRadius.md}
+      />
       <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
         {item.title}
       </Text>
@@ -705,10 +715,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
                     : theme.border + '55',
                 },
                 isActive && {
-                  shadowColor: theme.primary,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.18,
-                  shadowRadius: 8,
+                  boxShadow: `0px 2px 8px ${theme.primary}2E`,
                   elevation: 4,
                 },
               ]}
@@ -871,6 +878,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             showsHorizontalScrollIndicator={false}
             style={styles.filterRow}
             contentContainerStyle={styles.filterRowContent}
+            contentInset={{ right: Spacing.lg }}
           >
             {renderFilterChip('Protein', 'protein_type')}
             {renderFilterChip('Carb', 'carb_type')}
@@ -1101,7 +1109,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   filterRowContent: {
-    paddingHorizontal: Spacing.xl,
+    paddingLeft: Spacing.xl,
+    paddingRight: Spacing.xl + Spacing.lg,
     paddingVertical: Spacing.xs,
     gap: Spacing.sm,
     alignItems: 'center',
@@ -1109,19 +1118,18 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    flexShrink: 0,
+    paddingHorizontal: Spacing.xl,
     paddingVertical: 10,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
   filterChipText: {
     fontSize: FontSize.sm,
     fontWeight: '600',
+    flexShrink: 0,
   },
   clearBtn: {
     flexDirection: 'row',
@@ -1280,10 +1288,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.25)',
     elevation: 8,
   },
   plateFabBadge: {
@@ -1323,10 +1328,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     maxHeight: '65%',
     paddingBottom: 44,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
+    boxShadow: '0px -4px 20px rgba(0, 0, 0, 0.15)',
     elevation: 20,
   },
   modalHandleRow: {
@@ -1411,10 +1413,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   modalApplyBtn: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
     elevation: 4,
   },
   modalFooterBtnText: {

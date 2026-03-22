@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import List
 from app.db import get_db
 from app.auth import get_current_user
@@ -70,6 +70,9 @@ def _meal_item_response(item: MealPlanItem, budget) -> MealPlanItemResponse:
         is_bulk_cook=item.is_bulk_cook,
         servings=item.servings,
         recipe_data=recipe_data,
+        recipe_title=recipe_data.get("title"),
+        fuel_score=recipe_data.get("fuel_score", 100.0),
+        mes_score=effective_score,
     )
 
 
@@ -218,7 +221,8 @@ async def generate_meal_plan(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    week_start = request.week_start or (date.today() - timedelta(days=date.today().weekday()))
+    today = datetime.now(UTC).date()
+    week_start = request.week_start or (today - timedelta(days=today.weekday()))
 
     preferences = request.preferences or _default_preferences_from_user(current_user)
 
@@ -362,6 +366,7 @@ async def replace_meal_plan_item(
         "flavor_profile": recipe.flavor_profile or [],
         "dietary_tags": recipe.dietary_tags or [],
         "nutrition_estimate": recipe.nutrition_info or {},
+        "image_url": recipe.image_url,
         "mes_display_score": float(mes.get("display_score", 0) or 0),
         "mes_display_tier": mes.get("display_tier", "critical"),
         "meets_mes_target": float(mes.get("display_score", 0) or 0) >= TARGET_DISPLAY_MES,

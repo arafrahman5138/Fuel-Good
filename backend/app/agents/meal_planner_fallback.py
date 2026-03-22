@@ -22,14 +22,23 @@ DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sun
 MEAL_SLOTS = ["breakfast", "lunch", "dinner"]
 TARGET_DISPLAY_MES = 70.0
 BREAKFAST_MAX_CARBS_DEFAULT = 15.0
-BREAKFAST_MAX_CALORIES_DEFAULT = 450.0
+BREAKFAST_MAX_CALORIES_DEFAULT = 500.0
 MEALS_PER_DAY = 3
 VARIETY_LIMITS = {
-    "prep_heavy": {"breakfast": 2, "lunch": 2, "dinner": 2},
-    "balanced": {"breakfast": 3, "lunch": 3, "dinner": 3},
-    "variety_heavy": {"breakfast": 4, "lunch": 4, "dinner": 4},
+    "prep_heavy": {"breakfast": 3, "lunch": 3, "dinner": 3},
+    "balanced": {"breakfast": 4, "lunch": 5, "dinner": 5},
+    "variety_heavy": {"breakfast": 5, "lunch": 7, "dinner": 7},
 }
 PAIRING_ROLE_PRIORITY = ["veg_side", "carb_base", "sauce", "dessert", "protein_base", "full_meal"]
+_BULK_COOK_UNSUITABLE_TAGS = {"quick", "salad"}
+
+
+def _is_bulk_cook_suitable(recipe: Recipe) -> bool:
+    """Check if a recipe is suitable for batch cooking based on its tags."""
+    tags_lower = {t.lower() for t in (recipe.tags or [])}
+    if tags_lower.intersection(_BULK_COOK_UNSUITABLE_TAGS):
+        return False
+    return True
 
 
 def _recipe_nutrition(recipe: Recipe) -> dict[str, float]:
@@ -113,8 +122,12 @@ def _meal_display_mes(recipe: Recipe, budget: Any, recipe_index: dict[str, Recip
     }
 
 
+# Lifestyle preferences that are NOT dietary restrictions — skip them in filtering
+_NON_RESTRICTIVE_DIETS = {"balanced", "none", "everything", "flexible", "standard", "moderate"}
+
+
 def _matches_dietary(recipe: Recipe, dietary: list[str]) -> bool:
-    required = {item.lower() for item in dietary if item and item.lower() != "none"}
+    required = {item.lower() for item in dietary if item and item.lower() not in _NON_RESTRICTIVE_DIETS}
     if not required:
         return True
     recipe_tags = {item.lower() for item in (recipe.dietary_tags or [])}
@@ -336,13 +349,11 @@ def _top_unique_candidates(
 
 
 def _block_lengths(unique_count: int) -> list[int]:
-    if unique_count <= 1:
+    """Distribute 7 days across unique recipes via round-robin."""
+    if unique_count <= 0:
         return [7]
-    if unique_count == 2:
-        return [3, 4]
-    if unique_count == 3:
-        return [2, 2, 3]
-    return [2, 2, 2, 1]
+    base, remainder = divmod(7, unique_count)
+    return [base + (1 if i < remainder else 0) for i in range(unique_count)]
 
 
 def _prep_day_for_block(start_index: int) -> str:
@@ -390,6 +401,7 @@ def _shortlist_recipe(recipe: Recipe, mes: dict[str, Any], meal_type: str) -> di
         "paired_recipe_id": mes.get("paired_recipe_id"),
         "paired_recipe_title": mes.get("paired_recipe_title"),
         "meets_mes_target": effective_display_score >= TARGET_DISPLAY_MES,
+        "image_url": recipe.image_url,
     }
 
 
@@ -425,6 +437,7 @@ def _recipe_to_meal_data(
             "flavor_profile": recipe.flavor_profile or [],
             "dietary_tags": recipe.dietary_tags or [],
             "nutrition_estimate": _recipe_nutrition(recipe),
+            "image_url": recipe.image_url,
             "mes_display_score": effective_display_score,
             "mes_display_tier": effective_display_tier,
             "composite_display_score": mes.get("composite_display_score"),
@@ -587,18 +600,27 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             warnings.append(f"No {slot} recipes could be selected for this plan.")
             continue
 
-        block_lengths = _block_lengths(len(selected_candidates))
-        day_index = 0
-        for candidate, block_length in zip(selected_candidates, block_lengths):
+        # Round-robin assignment: spread each recipe across non-consecutive days
+        day_assignments: list[tuple[dict, list[str]]] = []
+        for idx, candidate in enumerate(selected_candidates):
+            assigned_days = [DAYS[d] for d in range(idx, 7, len(selected_candidates))]
+            day_assignments.append((candidate, assigned_days))
+
+        for candidate, covers_days in day_assignments:
             recipe = candidate["recipe"]
             mes = candidate["mes"]
-            covers_days = DAYS[day_index:day_index + block_length]
-            repeated = slot != "breakfast" and block_length > 1 and context["variety_mode"] in {"prep_heavy", "balanced"}
+            block_length = len(covers_days)
+            repeated = (
+                slot != "breakfast"
+                and block_length > 1
+                and context["variety_mode"] in {"prep_heavy", "balanced"}
+                and _is_bulk_cook_suitable(recipe)
+            )
 
             prep_meta_base: dict[str, Any] = {}
             if repeated and covers_days:
                 prep_group_id = str(uuid.uuid4())
-                prep_day = _prep_day_for_block(day_index)
+                prep_day = _prep_day_for_block(DAYS.index(covers_days[0]))
                 prep_meta_base = {
                     "prep_group_id": prep_group_id,
                     "prep_day": prep_day,
@@ -638,8 +660,6 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
                 )
                 meal_data["is_bulk_cook"] = is_bulk
                 days_map[day].append(meal_data)
-
-            day_index += block_length
 
     days_list: list[dict[str, Any]] = []
     for day in DAYS:

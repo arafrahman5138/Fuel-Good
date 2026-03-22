@@ -7,6 +7,8 @@ from app.models.gamification import Achievement, UserAchievement, XPTransaction,
 from app.models.saved_recipe import SavedRecipe
 from app.models.nutrition import DailyNutritionSummary, NutritionTarget, FoodLog
 from app.models.metabolic import MetabolicBudget
+from app.models.scanned_meal import ScannedMealLog
+from sqlalchemy import func, cast, Float
 from app.schemas.gamification import (
     AchievementResponse, UserStatsResponse, LeaderboardEntry, XPGainResponse,
     DailyQuestResponse, NutritionStreakResponse, ScoreHistoryEntry,
@@ -80,8 +82,7 @@ async def get_achievements(
             xp_reward=a.xp_reward,
             category=a.category,
             unlocked=str(a.id) in user_achievements,
-            unlocked_at=user_achievements.get(str(a.id), {
-            }).isoformat() if str(a.id) in user_achievements else None,
+            unlocked_at=ua_val.isoformat() if (ua_val := user_achievements.get(str(a.id))) else None,
         )
         for a in achievements
     ]
@@ -306,7 +307,7 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
     budget = db.query(MetabolicBudget).filter(MetabolicBudget.user_id == user.id).first()
     mb_protein = int(budget.protein_target_g) if budget else 130
     mb_fiber = int(budget.fiber_floor_g) if budget else 30
-    mb_sugar = int(budget.sugar_ceiling_g) if budget else 200
+    mb_sugar = int(budget.sugar_ceiling_g) if budget else 130
 
     metabolic_pool = [
         ("Reach Stable Energy", "Hit a daily MES of 60+ (Stable tier).", "metabolic_score", 60, 75),
@@ -330,6 +331,8 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
         ("Scan a Meal", "Scan a restaurant or takeout meal with your camera.", "scan_meal", 1, 40),
         ("Fuel Score 90+ Meal", "Log one meal with a Fuel Score of 90 or higher.", "fuel_90_meal", 1, 50),
         ("No Flex Meals Today", "Keep all meals above 70 Fuel Score today.", "no_flex_today", 70, 65),
+        ("Log 3 Clean Meals", "Log 3 meals scoring above your fuel target today.", "clean_meals_today", 3, 65),
+        ("Use a Flex Meal", "Use a flex meal guilt-free — you earned it!", "use_flex_meal", 1, 30),
     ]
     fuel = random.choice(fuel_pool)
 
@@ -355,6 +358,124 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
     return quests
 
 
+def _compute_quest_progress(db: Session, user_id: str, quest: DailyQuest, today: date) -> float:
+    """Compute live quest progress from actual user data."""
+    meta_key = (quest.metadata_json or {}).get("key", "")
+
+    # ── Logging quests ──
+    if meta_key == "log_breakfast":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.meal_type == "breakfast",
+        ).count()
+        return min(float(count), quest.target_value)
+    if meta_key == "log_3_meals":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today,
+        ).count()
+        return min(float(count), quest.target_value)
+    if meta_key == "log_snack":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.meal_type == "snack",
+        ).count()
+        return min(float(count), quest.target_value)
+
+    # ── Quality quests (from daily nutrition summary) ──
+    if meta_key in ("hit_protein", "hit_fiber", "score_bronze", "score_silver"):
+        summary = db.query(DailyNutritionSummary).filter(
+            DailyNutritionSummary.user_id == user_id, DailyNutritionSummary.date == today,
+        ).first()
+        if not summary:
+            return 0.0
+        if meta_key == "hit_protein":
+            totals = summary.totals_json or {}
+            return float(totals.get("protein", 0))
+        if meta_key == "hit_fiber":
+            totals = summary.totals_json or {}
+            return float(totals.get("fiber", 0))
+        if meta_key in ("score_bronze", "score_silver"):
+            return float(summary.daily_score or 0)
+
+    # ── Fuel quests ──
+    if meta_key == "daily_fuel_score":
+        avg = db.query(func.avg(FoodLog.fuel_score)).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.fuel_score.isnot(None),
+        ).scalar()
+        return float(avg or 0)
+    if meta_key == "whole_food_meals":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.fuel_score >= 85,
+        ).count()
+        return min(float(count), quest.target_value)
+    if meta_key == "fuel_90_meal":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.fuel_score >= 90,
+        ).count()
+        return min(float(count), quest.target_value)
+    if meta_key == "no_flex_today":
+        # All meals must be >= 70; return the minimum fuel score (if any meal < 70, quest fails)
+        min_score = db.query(func.min(FoodLog.fuel_score)).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.fuel_score.isnot(None),
+        ).scalar()
+        return float(min_score or 0)
+
+    # ── Scan quest ──
+    if meta_key == "scan_meal":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today, FoodLog.source_type == "scan",
+        ).count()
+        return min(float(count), quest.target_value)
+
+    # ── Flex-related quests ──
+    if meta_key == "clean_meals_today":
+        # target_value is the meal count goal (3), not the score threshold.
+        # Use the user's fuel target as the score threshold for "clean" meals.
+        from app.services.fuel_score import DEFAULT_FUEL_TARGET
+        user = db.query(User).filter(User.id == user_id).first()
+        fuel_target = (user.fuel_target if user else None) or DEFAULT_FUEL_TARGET
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today,
+            FoodLog.fuel_score >= fuel_target,
+        ).count()
+        return min(float(count), quest.target_value)
+    if meta_key == "use_flex_meal":
+        count = db.query(FoodLog).filter(
+            FoodLog.user_id == user_id, FoodLog.date == today,
+            FoodLog.source_type == "manual_flex",
+        ).count()
+        return min(float(count), quest.target_value)
+
+    # ── Metabolic quests (from nutrition summary totals) ──
+    if meta_key in ("protein_target", "sugar_ceiling", "fiber_floor", "metabolic_score", "budget_lockdown"):
+        summary = db.query(DailyNutritionSummary).filter(
+            DailyNutritionSummary.user_id == user_id, DailyNutritionSummary.date == today,
+        ).first()
+        if not summary:
+            return 0.0
+        totals = summary.totals_json or {}
+        if meta_key == "protein_target":
+            return float(totals.get("protein", 0))
+        if meta_key == "fiber_floor":
+            return float(totals.get("fiber", 0))
+        if meta_key == "sugar_ceiling":
+            # For ceiling quests, return actual consumption so progress bar
+            # shows real sugar eaten (e.g. "15/200"), not "200/200" which
+            # misleadingly suggests the user consumed the full ceiling.
+            # Completion is checked separately: completed = sugar <= target.
+            return float(totals.get("sugar", 0))
+        if meta_key == "metabolic_score":
+            return float(summary.daily_score or 0)
+        if meta_key == "budget_lockdown":
+            protein = float(totals.get("protein", 0))
+            fiber = float(totals.get("fiber", 0))
+            sugar = float(totals.get("sugar", 0))
+            budget = db.query(MetabolicBudget).filter(MetabolicBudget.user_id == user_id).first()
+            if budget and protein >= budget.protein_target_g and fiber >= budget.fiber_floor_g and sugar <= budget.sugar_ceiling_g:
+                return 1.0
+            return 0.0
+
+    return quest.current_value  # fallback
+
+
 @router.get("/daily-quests", response_model=List[DailyQuestResponse])
 async def get_daily_quests(
     current_user: User = Depends(get_current_user),
@@ -370,6 +491,34 @@ async def get_daily_quests(
     if not quests:
         quests = _generate_quests(db, current_user, today)
 
+    # Compute live progress from actual data
+    changed = False
+    for q in quests:
+        if q.completed:
+            continue
+        live_value = _compute_quest_progress(db, current_user.id, q, today)
+        if live_value != q.current_value:
+            q.current_value = live_value
+            changed = True
+        meta_key = (q.metadata_json or {}).get("key", "")
+        # Sugar ceiling quest: completed when consumed is UNDER the target.
+        # current_value is actual sugar consumed; quest passes if under ceiling.
+        # Only complete if user has logged at least one meal today.
+        if meta_key == "sugar_ceiling":
+            has_meals = db.query(FoodLog.id).filter(
+                FoodLog.user_id == current_user.id, FoodLog.date == today,
+            ).first() is not None
+            is_done = has_meals and q.current_value <= q.target_value
+        else:
+            is_done = q.current_value >= q.target_value
+        if is_done and not q.completed:
+            q.completed = True
+            q.completed_at = datetime.now(UTC)
+            award_xp(db, current_user, q.xp_reward, f"quest_{meta_key or 'unknown'}")
+            changed = True
+    if changed:
+        db.commit()
+
     return [
         DailyQuestResponse(
             id=str(q.id),
@@ -380,6 +529,7 @@ async def get_daily_quests(
             current_value=q.current_value,
             xp_reward=q.xp_reward,
             completed=q.completed,
+            direction="ceiling" if (q.metadata_json or {}).get("key") == "sugar_ceiling" else "target",
         )
         for q in quests
     ]

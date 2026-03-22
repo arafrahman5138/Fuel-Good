@@ -1,9 +1,8 @@
 /**
- * EnergyHeroCard — Homepage hero showing weekly fuel score.
- * Ring on the left, tier + energy tagline + streaks on the right.
- * Progress bar at the bottom.
+ * EnergyHeroCard — Homepage hero showing weekly fuel + MES scores.
+ * Dual-ring layout: large Fuel ring + mini MES ring on left, tier + tagline on right.
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -24,11 +23,11 @@ import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
 
 // ── Tier config ─────────────────────────────────────────────────────────────
 const TIER_CONFIGS = [
-  { min: 90, label: 'Elite Fuel', color: '#22C55E', darkGradient: ['#021a0e', '#0d3320', '#155227'] as const },
-  { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const },
-  { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const },
-  { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const },
-  { min: 0, label: 'Flex Day', color: '#EF4444', darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const },
+  { min: 90, label: 'Elite Fuel', color: '#22C55E', darkGradient: ['#021a0e', '#0d3320', '#155227'] as const, lightGradient: ['#f0fdf4', '#dcfce7', '#f0fdf4'] as const },
+  { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const, lightGradient: ['#f0fdf4', '#dcfce7', '#f0fdf4'] as const },
+  { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
+  { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const, lightGradient: ['#fff7ed', '#fed7aa', '#fff7ed'] as const },
+  { min: 0, label: 'Flex Day', color: '#EF4444', darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const, lightGradient: ['#fef2f2', '#fecaca', '#fef2f2'] as const },
 ];
 
 const DARK_EMPTY_GRADIENT = ['#111118', '#1a1a24', '#111118'] as const;
@@ -74,25 +73,14 @@ function getContextTagline(
   return { text: 'Flex day — get back on track with something nourishing', color: '#EF4444' };
 }
 
-// ── Health Pulse dimension ───────────────────────────────────────────────────
-interface HealthDimension {
-  score: number;
-  label: string;
-  tier: string;
-  available: boolean;
+// ── MES tier label ──────────────────────────────────────────────────────────
+function getMesTierLabel(score: number): string {
+  if (score >= 85) return 'Optimal';
+  if (score >= 70) return 'Good';
+  if (score >= 55) return 'Fair';
+  if (score >= 40) return 'Low';
+  return 'Poor';
 }
-
-interface HealthPulseData {
-  fuel: HealthDimension;
-  metabolic: HealthDimension;
-  nutrition: HealthDimension;
-}
-
-const PULSE_DIMS = [
-  { key: 'fuel' as const, icon: 'leaf' as const, color: '#22C55E' },
-  { key: 'metabolic' as const, icon: 'flash' as const, color: '#8B5CF6' },
-  { key: 'nutrition' as const, icon: 'nutrition' as const, color: '#3B82F6' },
-];
 
 // ── Props ────────────────────────────────────────────────────────────────────
 interface EnergyHeroCardProps {
@@ -108,11 +96,82 @@ interface EnergyHeroCardProps {
   mealCount: number;
   proteinRemaining?: number;
   fiberRemaining?: number;
-  healthPulse?: HealthPulseData;
+  healthPulse?: { fuel: any; metabolic: any; nutrition: any };
   flexMealsEarned?: number;
   cleanMealsToNextFlex?: number;
   onPress?: () => void;
 }
+
+// ── Mini MES Ring ────────────────────────────────────────────────────────────
+function MiniMesRing({
+  score,
+  tierColor,
+  trackColor,
+  icon,
+}: {
+  score: number;
+  tierColor: string;
+  trackColor: string;
+  icon: 'pulse-outline' | 'leaf';
+}) {
+  const size = 38;
+  const borderWidth = 2.5;
+
+  return (
+    <View style={[miniStyles.container, { width: size, height: size }]}>
+      {/* Track */}
+      <View
+        style={[
+          miniStyles.ring,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth,
+            borderColor: trackColor,
+          },
+        ]}
+      />
+      {/* Colored ring */}
+      <View
+        style={[
+          miniStyles.ring,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth,
+            borderColor: tierColor,
+          },
+        ]}
+      />
+      {/* Center content */}
+      <View style={[miniStyles.center, { width: size - borderWidth * 2, height: size - borderWidth * 2, borderRadius: (size - borderWidth * 2) / 2 }]}>
+        <Ionicons name={icon} size={9} color={tierColor} />
+        <Text style={[miniStyles.score, { color: tierColor }]}>{score}</Text>
+      </View>
+    </View>
+  );
+}
+
+const miniStyles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    position: 'absolute',
+  },
+  center: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  score: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'] as any,
+  },
+});
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function EnergyHeroCard({
@@ -126,9 +185,6 @@ export function EnergyHeroCard({
   weeklyTargetMet = false,
   weeklyDaysLogged = 0,
   mealCount,
-  proteinRemaining,
-  fiberRemaining,
-  healthPulse,
   flexMealsEarned = 0,
   cleanMealsToNextFlex = 0,
   onPress,
@@ -138,32 +194,24 @@ export function EnergyHeroCard({
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'system' ? (systemScheme ?? 'dark') === 'dark' : themeMode === 'dark';
 
-  // Hero card shows weekly data — it has data if there's a fuel score OR any meals this week
   const hasData = fuelScore > 0 || mealCount > 0;
   const tier = getTierCfg(hasData ? fuelScore : 0);
 
-  // Adaptive colors
   const textTertiary = isDark ? 'rgba(255,255,255,0.38)' : theme.textTertiary;
-  const dividerColor = isDark ? 'rgba(255,255,255,0.10)' : theme.border;
   const ringTrack = isDark ? 'rgba(255,255,255,0.10)' : theme.surfaceHighlight;
 
-  // Tagline
   const tagline = getContextTagline(fuelScore, mealCount, weeklyProgress, energyPrediction, weeklyTargetMet);
 
-  // Card background
   const gradientColors = isDark
     ? hasData ? (tier.darkGradient as unknown as string[]) : (DARK_EMPTY_GRADIENT as unknown as string[])
-    : [theme.surface, theme.surface];
+    : hasData ? (tier.lightGradient as unknown as string[]) : [theme.surface, theme.surface, theme.surface];
   const cardBorderColor = isDark
     ? hasData ? tier.color + '38' : 'rgba(255,255,255,0.08)'
-    : theme.border;
-
-  const progressPct = Math.min(100, Math.max(0, weeklyProgress));
+    : hasData ? tier.color + '30' : theme.border;
 
   // Entrance animation
   const slideAnim = useRef(new Animated.Value(36)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     slideAnim.setValue(36);
@@ -174,15 +222,22 @@ export function EnergyHeroCard({
     ]).start();
   }, []);
 
-  useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: progressPct,
-      duration: 800,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-      delay: 400,
-    }).start();
-  }, [progressPct]);
+  const hasMes = hasData && (mesScore ?? 0) > 0;
+  const resolvedMesColor = mesTierColor ?? '#8B5CF6';
+  const hasStreaks = metabolicStreakDays > 0 || fuelStreakWeeks > 0;
+
+  // Controlled toggle: lift showMes state so badge reacts to ring swap
+  const [showMes, setShowMes] = useState(false);
+  const badgeBounce = useRef(new Animated.Value(1)).current;
+
+  const handleRingToggle = () => {
+    // Bounce the badge out and back in sync with the ring swap
+    Animated.sequence([
+      Animated.timing(badgeBounce, { toValue: 0.5, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      Animated.spring(badgeBounce, { toValue: 1, tension: 180, friction: 8, useNativeDriver: true }),
+    ]).start();
+    setShowMes((prev) => !prev);
+  };
 
   return (
     <Animated.View style={[styles.outerWrap, { transform: [{ translateY: slideAnim }], opacity: fadeAnim }]}>
@@ -195,7 +250,8 @@ export function EnergyHeroCard({
       >
         {/* ── Body: ring left | stats right ── */}
         <View style={styles.body}>
-          <View style={styles.ringWrap}>
+          {/* Fuel ring with MES badge overlay */}
+          <View style={styles.ringContainer}>
             <FuelScoreRing
               score={hasData ? fuelScore : 0}
               size={108}
@@ -204,107 +260,52 @@ export function EnergyHeroCard({
               trackColor={ringTrack}
               mesScore={mesScore}
               mesTierColor={mesTierColor}
+              showMes={hasMes ? showMes : undefined}
+              onToggle={hasMes ? handleRingToggle : undefined}
             />
-            <View style={[styles.weekPill, { backgroundColor: hasData ? tier.color + '15' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
-              <Text style={[styles.weekPillText, { color: hasData ? tier.color : textTertiary }]}>This week</Text>
-            </View>
+            {hasMes && (
+              <Animated.View
+                style={[styles.mesBadge, { backgroundColor: isDark ? '#1a1a24' : theme.surface, transform: [{ scale: badgeBounce }] }]}
+              >
+                <MiniMesRing
+                  score={showMes ? fuelScore : mesScore!}
+                  tierColor={showMes ? tier.color : resolvedMesColor}
+                  trackColor={ringTrack}
+                  icon={showMes ? 'leaf' : 'pulse-outline'}
+                />
+              </Animated.View>
+            )}
+            <Text style={[styles.thisWeekLabel, { color: hasData ? tier.color : textTertiary }]}>
+              this week
+            </Text>
           </View>
 
           <View style={styles.statsCol}>
-            {/* ── Tier pill + MES score ── */}
+            {/* Tier pill */}
             <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
               <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
                 {hasData ? tier.label : 'Ready to fuel'}
               </Text>
             </View>
-            {hasData && (mesScore ?? 0) > 0 && (
-              <View style={styles.mesRow}>
-                <Ionicons name="flash" size={13} color={mesTierColor ?? '#8B5CF6'} />
-                <Text style={[styles.mesNumber, { color: mesTierColor ?? '#8B5CF6' }]}>
-                  {mesScore}
-                </Text>
-                <Text style={[styles.mesLabel, { color: isDark ? 'rgba(255,255,255,0.50)' : theme.textSecondary }]}>
-                  MES
-                </Text>
-              </View>
-            )}
-            <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={2}>
+
+            {/* Tagline */}
+            <Text style={[styles.tagline, { color: tagline.color }]} numberOfLines={3}>
               {tagline.text}
             </Text>
-            {flexMealsEarned > 0 ? (
-              <View style={styles.flexProgressRow}>
-                <Ionicons name="ticket" size={12} color="#F59E0B" />
-                <Text style={[styles.flexProgressText, { color: '#F59E0B' }]}>
-                  {flexMealsEarned} flex meal{flexMealsEarned !== 1 ? 's' : ''} earned
-                </Text>
-              </View>
-            ) : cleanMealsToNextFlex > 0 ? (
-              <View style={styles.flexProgressRow}>
-                <Ionicons name="ticket-outline" size={12} color={textTertiary} />
-                <Text style={[styles.flexProgressText, { color: isDark ? 'rgba(255,255,255,0.50)' : theme.textSecondary }]}>
-                  {cleanMealsToNextFlex} more clean meal{cleanMealsToNextFlex !== 1 ? 's' : ''} → next flex
-                </Text>
-              </View>
-            ) : null}
-            <View style={styles.streakRow}>
-              {metabolicStreakDays > 0 && (
-                <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
-              )}
-              {fuelStreakWeeks > 0 && (
-                <FuelStreakBadge currentStreak={fuelStreakWeeks} compact />
-              )}
-            </View>
-          </View>
-        </View>
 
-        {/* ── Progress bar ── */}
-        <View style={styles.progressSection}>
-          <View style={[styles.progressTrack, { backgroundColor: dividerColor }]}>
-            {hasData && (
-              <Animated.View style={[styles.progressFill, { width: progressAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }]}>
-                <LinearGradient
-                  colors={[tier.color, tier.color + '88'] as any}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
+            {/* Streaks */}
+            {hasStreaks && (
+              <View style={styles.streakRow}>
+                {metabolicStreakDays > 0 && (
+                  <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
+                )}
+                {fuelStreakWeeks > 0 && (
+                  <FuelStreakBadge currentStreak={fuelStreakWeeks} compact />
+                )}
+              </View>
             )}
           </View>
-          <Text style={[styles.progressLabel, { color: weeklyTargetMet ? '#22C55E' : textTertiary }]}>
-            {!hasData
-              ? 'Log a meal to start tracking your week'
-              : weeklyTargetMet
-                ? 'Weekly target crushed — enjoy your flex meals'
-                : weeklyDaysLogged === 0
-                  ? 'Start fueling your week'
-                  : `${weeklyDaysLogged} of 7 days fueled this week`}
-          </Text>
         </View>
-
-        {/* ── Smart CTA ── */}
-        {hasData && progressPct < 100 && (
-          <View style={[styles.ctaRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.surfaceHighlight + '80' }]}>
-            <Ionicons
-              name={fuelScore >= 75 ? 'arrow-up-circle' : 'add-circle'}
-              size={14}
-              color={tier.color}
-            />
-            <Text style={[styles.ctaText, { color: isDark ? 'rgba(255,255,255,0.65)' : theme.textSecondary }]} numberOfLines={2}>
-              {mealCount === 0
-                ? 'Log your first meal to start your streak'
-                : (proteinRemaining ?? 0) > 20
-                  ? `You need ${Math.round(proteinRemaining!)}g more protein — try a whole-food meal`
-                  : (fiberRemaining ?? 0) > 5
-                    ? `Add ${Math.round(fiberRemaining!)}g fiber — veggies or legumes with your next meal`
-                    : (weeklyDaysLogged ?? 0) < 4
-                      ? `${7 - (weeklyDaysLogged ?? 0)} more days to hit your weekly target`
-                      : fuelScore >= 75
-                        ? 'Keep it up — you\'re building something great'
-                        : 'One clean meal can change your whole day'}
-            </Text>
-          </View>
-        )}
       </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -329,18 +330,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
   },
-  ringWrap: {
+  ringContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
-  weekPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
+  mesBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: -8,
+    borderRadius: 20,
+    padding: 2,
   },
-  weekPillText: {
-    fontSize: 11,
+  thisWeekLabel: {
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -361,102 +363,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  mesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: -2,
-  },
-  mesNumber: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'] as any,
-    letterSpacing: -0.5,
-    lineHeight: 22,
-  },
-  mesLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-    marginLeft: 1,
-  },
-  tagline: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  flexProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  flexProgressText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   streakRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
     flexWrap: 'wrap',
   },
-  progressSection: {
-    gap: 4,
-    marginTop: Spacing.sm + 2,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  pulseRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  pulseDim: {
-    flex: 1,
-    gap: 3,
-  },
-  pulseLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  pulseLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'] as any,
-  },
-  pulseTrack: {
-    height: 3,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  pulseFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  ctaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
-  },
-  ctaText: {
-    fontSize: FontSize.xs,
-    fontWeight: '500',
-    flex: 1,
+  tagline: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    lineHeight: 20,
   },
 });

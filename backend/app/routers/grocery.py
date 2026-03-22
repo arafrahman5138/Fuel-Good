@@ -52,11 +52,33 @@ def _normalize_ingredient(ingredient) -> dict:
     }
 
 
+def _parse_quantity(qty_str: str) -> float:
+    """Parse a quantity string into a float. Handles fractions like '1/3', '0.75', and plain ints."""
+    s = qty_str.strip()
+    if not s:
+        return 1.0
+    try:
+        if "/" in s:
+            parts = s.split("/")
+            return float(parts[0]) / float(parts[1])
+        return float(s)
+    except (ValueError, ZeroDivisionError):
+        return 1.0
+
+
+def _format_quantity(val: float) -> str:
+    """Format a numeric quantity for display. Rounds to 1 decimal, drops '.0' for whole numbers."""
+    if val == int(val):
+        return str(int(val))
+    return str(round(val, 1))
+
+
 def extract_grocery_items(meal_plan: MealPlan) -> List[dict]:
     ingredient_map: dict[str, dict] = {}
 
     for item in meal_plan.items:
         recipe = item.recipe_data or {}
+        servings_multiplier = (item.servings or 1)
         raw_ingredients = recipe.get("ingredients", []) or []
         for raw_ingredient in raw_ingredients:
             normalized = _normalize_ingredient(raw_ingredient)
@@ -64,20 +86,28 @@ def extract_grocery_items(meal_plan: MealPlan) -> List[dict]:
             if not name_key:
                 continue
 
+            incoming_qty = _parse_quantity(normalized["quantity"]) * servings_multiplier
+
             if name_key in ingredient_map:
                 existing = ingredient_map[name_key]
-                if existing.get("quantity") in {"", "1"}:
-                    existing["quantity"] = str(int(existing.get("quantity", "1")) + 1)
-                else:
-                    existing["quantity"] = f"{existing['quantity']} + 1"
+                existing["_total"] = existing.get("_total", 0) + incoming_qty
+                existing["quantity"] = _format_quantity(existing["_total"])
+                # Prefer non-empty unit
+                if not existing.get("unit") and normalized["unit"]:
+                    existing["unit"] = normalized["unit"]
             else:
                 ingredient_map[name_key] = {
                     "name": normalized["name"].title(),
-                    "quantity": normalized["quantity"],
+                    "quantity": _format_quantity(incoming_qty),
                     "unit": normalized["unit"],
                     "category": normalized["category"],
                     "checked": False,
+                    "_total": incoming_qty,
                 }
+
+    # Remove internal tracking field before returning
+    for entry in ingredient_map.values():
+        entry.pop("_total", None)
 
     return list(ingredient_map.values())
 

@@ -4,6 +4,7 @@ import { fuelApi } from '../services/api';
 interface FuelSettings {
   fuel_target: number;
   expected_meals_per_week: number;
+  clean_eating_pct: number;
 }
 
 interface DailyFuel {
@@ -19,6 +20,14 @@ interface FlexBudget {
   meals_logged: number;
   total_score_points: number;
   avg_fuel_score: number;
+  // Credit-based flex fields
+  clean_pct: number;
+  clean_meals_target: number;
+  clean_meals_logged: number;
+  flex_budget: number;
+  flex_used: number;
+  flex_available: number;
+  // Legacy
   flex_points_total: number;
   flex_points_used: number;
   flex_points_remaining: number;
@@ -27,6 +36,15 @@ interface FlexBudget {
   projected_weekly_avg: number;
   week_start: string;
   week_end: string;
+}
+
+interface ManualFlexResult {
+  id: string;
+  date: string;
+  title: string;
+  fuel_score: number;
+  flex_available: number;
+  weekly_avg: number;
 }
 
 interface WeeklyFuel {
@@ -109,6 +127,7 @@ interface FuelState {
   fetchHealthPulse: (date?: string) => Promise<void>;
   fetchCalendar: (month?: string) => Promise<void>;
   fetchFlexSuggestions: (date?: string) => Promise<void>;
+  logManualFlex: (data: { meal_type?: string; tag?: string; date?: string }) => Promise<ManualFlexResult | null>;
   fetchAll: (date?: string) => Promise<void>;
 }
 
@@ -198,17 +217,41 @@ export const useFuelStore = create<FuelState>((set, get) => ({
     }
   },
 
+  logManualFlex: async (data) => {
+    try {
+      const result = await fuelApi.logManualFlex(data);
+      // Refresh weekly data after logging
+      get().fetchWeekly();
+      return result;
+    } catch (e: any) {
+      set({ error: e?.message || 'Failed to log flex meal' });
+      return null;
+    }
+  },
+
   fetchAll: async (date?: string) => {
     set({ loading: true, error: null });
     try {
-      const [settings, daily, weekly, streak, healthPulse] = await Promise.all([
+      const results = await Promise.allSettled([
         fuelApi.getSettings(),
         fuelApi.getDaily(date),
         fuelApi.getWeekly(date),
         fuelApi.getStreak(),
         fuelApi.getHealthPulse(date),
       ]);
-      set({ settings, daily, weekly, streak, healthPulse, loading: false });
+      const val = <T,>(r: PromiseSettledResult<T>) => r.status === 'fulfilled' ? r.value : null;
+      set({
+        settings: val(results[0]) ?? get().settings,
+        daily: val(results[1]) ?? get().daily,
+        weekly: val(results[2]) ?? get().weekly,
+        streak: val(results[3]) ?? get().streak,
+        healthPulse: val(results[4]) ?? get().healthPulse,
+        loading: false,
+      });
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length === results.length) {
+        set({ error: 'Failed to load fuel data' });
+      }
     } catch (e: any) {
       set({ error: e?.message || 'Failed to load fuel data', loading: false });
     }

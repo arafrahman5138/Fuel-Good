@@ -16,7 +16,7 @@ from app.schemas.chat import ChatRequest, ChatResponse, ChatSessionSummary
 from app.agents.healthify import healthify_agent, parse_healthify_response
 from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
 from typing import List
-from datetime import date
+from datetime import UTC, date, datetime
 from app.services.notifications import record_notification_event
 from app.services.chat_limits import acquire_chat_slot, enforce_chat_quota, record_chat_usage, release_chat_slot
 
@@ -101,7 +101,13 @@ async def healthify_food(
         )
         try:
             result = await asyncio.wait_for(
-                healthify_agent(db, request.message, messages[:-1], user_id=current_user.id),
+                healthify_agent(
+                    db,
+                    request.message,
+                    messages[:-1],
+                    user_id=current_user.id,
+                    chat_context=request.context.model_dump() if request.context else None,
+                ),
                 timeout=20,
             )
         except asyncio.TimeoutError:
@@ -251,7 +257,14 @@ async def healthify_food_stream(
             final_payload = None
             try:
                 async with asyncio.timeout(20):
-                    async for chunk in healthify_agent(db, request.message, messages[:-1], stream=True, user_id=current_user.id):
+                    async for chunk in healthify_agent(
+                        db,
+                        request.message,
+                        messages[:-1],
+                        stream=True,
+                        user_id=current_user.id,
+                        chat_context=request.context.model_dump() if request.context else None,
+                    ):
                         full_response += chunk
                         chunk_count += 1
                         yield f"data: {json.dumps({'content': chunk})}\n\n"
@@ -457,7 +470,7 @@ async def get_chat_suggestions(
     # Budget-aware adjustments
     try:
         budget = load_budget_for_user(db, current_user.id)
-        totals = aggregate_daily_totals(db, current_user.id, date.today())
+        totals = aggregate_daily_totals(db, current_user.id, datetime.now(UTC).date())
         rem = remaining_budget(totals, budget)
         protein_left = rem.get("protein_remaining_g", 0)
         carb_left = rem.get("carb_headroom_g", rem.get("sugar_headroom_g", 999))

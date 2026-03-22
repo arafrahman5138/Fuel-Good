@@ -8,7 +8,6 @@ import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
-import { FontSize, Spacing } from '../constants/Colors';
 
 const FUEL_TIERS = [
   { min: 90, label: 'Elite', color: '#22C55E', icon: 'leaf' as const },
@@ -33,6 +32,10 @@ interface FuelScoreRingProps {
   mesScore?: number;
   /** Ring color for MES tier. Defaults to fuel tier color. */
   mesTierColor?: string;
+  /** Controlled: whether to show MES. If provided, component is controlled. */
+  showMes?: boolean;
+  /** Controlled: called when user taps to toggle. */
+  onToggle?: () => void;
 }
 
 export function FuelScoreRing({
@@ -43,13 +46,17 @@ export function FuelScoreRing({
   trackColor,
   mesScore,
   mesTierColor,
+  showMes: showMesProp,
+  onToggle,
 }: FuelScoreRingProps) {
   const theme = useTheme();
   const tierCfg = getTierConfig(score);
   const borderWidth = Math.max(6, size * 0.065);
   const innerSize = size - borderWidth * 2;
 
-  const [showMes, setShowMes] = useState(false);
+  const isControlled = showMesProp !== undefined;
+  const [showMesInternal, setShowMesInternal] = useState(false);
+  const showMes = isControlled ? showMesProp! : showMesInternal;
   const canToggle = mesScore !== undefined;
 
   // Ring entrance animation
@@ -123,7 +130,11 @@ export function FuelScoreRing({
       ]),
     ]).start();
 
-    setShowMes((prev) => !prev);
+    if (isControlled) {
+      onToggle?.();
+    } else {
+      setShowMesInternal((prev) => !prev);
+    }
   };
 
   const resolvedScore = showMes ? (mesScore ?? 0) : displayScore;
@@ -139,10 +150,7 @@ export function FuelScoreRing({
           height: size,
           transform: [{ scale: scaleAnim }],
           // Soft glow shadow using the tier color
-          shadowColor: activeRingColor,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.35,
-          shadowRadius: size * 0.18,
+          boxShadow: `0px 0px ${size * 0.18}px ${activeRingColor}59`,
           elevation: 6,
         },
       ]}
@@ -232,6 +240,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 9999,
   },
   ring: {
     position: 'absolute',

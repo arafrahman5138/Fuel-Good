@@ -56,6 +56,7 @@ from app.services.metabolic_engine import (
     compute_mea_score,
     build_threshold_context,
     BASE_TIER_THRESHOLDS,
+    DEFAULT_COMPUTED_BUDGET,
 )
 from app.schemas.metabolic import SubScores, WeightsUsed
 
@@ -211,19 +212,22 @@ async def update_budget(
 
 def _budget_response(budget: MetabolicBudget, computed=None) -> MetabolicBudgetResponse:
     """Build budget response with both legacy and new fields."""
+    is_personalized = computed is not None and computed is not DEFAULT_COMPUTED_BUDGET
+    gis_weight = computed.weights.gis if computed else 0.35
     return MetabolicBudgetResponse(
         protein_target_g=budget.protein_target_g,
         fiber_floor_g=budget.fiber_floor_g,
         sugar_ceiling_g=budget.sugar_ceiling_g,
         weight_protein=budget.weight_protein,
         weight_fiber=budget.weight_fiber,
-        weight_sugar=budget.weight_sugar,
+        weight_sugar=gis_weight,  # Align with weight_gis (both map to GIS weight)
         carb_ceiling_g=computed.carb_ceiling_g if computed else budget.sugar_ceiling_g,
         fat_target_g=computed.fat_g if computed else 0,
         weight_fat=getattr(budget, "weight_fat", 0.15) or 0.15,
-        weight_gis=computed.weights.gis if computed else 0.35,
+        weight_gis=gis_weight,
         tdee=computed.tdee if computed else None,
         ism=computed.ism if computed else None,
+        is_personalized=is_personalized,
         tier_thresholds=computed.tier_thresholds if computed else None,
         threshold_context=build_threshold_context_from_computed(computed) if computed else None,
     )
@@ -260,6 +264,10 @@ async def save_profile(
     if not profile.height_cm and profile.height_ft:
         h_in = (profile.height_ft * 12) + (profile.height_in or 0)
         profile.height_cm = round(h_in * 2.54, 1)
+
+    # Auto-derive weight_lb from weight_kg if not explicitly provided
+    if not profile.weight_lb and payload.weight_kg:
+        profile.weight_lb = round(payload.weight_kg * 2.20462, 1)
 
     # Derive targets
     p_dict = {

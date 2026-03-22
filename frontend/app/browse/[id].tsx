@@ -14,12 +14,15 @@ import {
   Animated,
   Modal,
   useColorScheme,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useThemeStore } from '../../stores/themeStore';
+import { MealImage } from '../../components/MealImage';
 import LogoHeader from '../../components/LogoHeader';
 import { ChronometerSuccessModal } from '../../components/ChronometerSuccessModal';
 import { nutritionApi, recipeApi, metabolicApi, gameApi } from '../../services/api';
@@ -28,7 +31,7 @@ import { usePlateStore } from '../../stores/plateStore';
 import { MetabolicRing } from '../../components/MetabolicRing';
 import { MealMESBadge } from '../../components/MealMESBadge';
 import { getTierConfig } from '../../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { HEALTH_BENEFIT_OPTIONS } from '../../constants/Config';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
 import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
@@ -66,6 +69,7 @@ interface RecipeDetail {
   dietary_tags: string[];
   health_benefits: string[];
   tags: string[];
+  image_url?: string | null;
   // Composition fields
   recipe_role?: string;
   is_component?: boolean;
@@ -759,6 +763,7 @@ export default function RecipeDetailScreen() {
           style={[styles.navBackBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons
             name="chevron-back"
@@ -800,6 +805,19 @@ export default function RecipeDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero Image */}
+        {activeRecipe.image_url ? (
+          <View style={{ marginBottom: Spacing.md }}>
+            <MealImage
+              imageUrl={activeRecipe.image_url}
+              title={activeRecipe.title}
+              width={Dimensions.get('window').width}
+              height={280}
+              borderRadius={0}
+            />
+          </View>
+        ) : null}
+
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
@@ -1366,8 +1384,39 @@ export default function RecipeDetailScreen() {
           </View>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* ── Sticky Bottom CTA ── */}
+      <View style={[styles.stickyBottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <TouchableOpacity
+          onPress={() => handleLogMeal(popoverServings)}
+          disabled={loggingMeal || logSuccess}
+          activeOpacity={0.8}
+          style={{ flex: 1 }}
+        >
+          <LinearGradient
+            colors={logSuccess ? ['#22C55E', '#16A34A'] as const : ['#22C55E', '#059669'] as const}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.stickyLogBtn}
+          >
+            {loggingMeal ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : logSuccess ? (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.stickyLogBtnText}>Logged!</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="nutrition-outline" size={20} color="#fff" />
+                <Text style={styles.stickyLogBtnText}>Log This Meal</Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
 
       {showPlusMenu && (
         <>
@@ -1380,7 +1429,6 @@ export default function RecipeDetailScreen() {
                 right: Spacing.lg,
                 backgroundColor: theme.surface,
                 borderColor: theme.border,
-                shadowColor: '#000',
                 opacity: menuFade,
                 transform: [{ scale: menuFade.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
               },
@@ -1611,7 +1659,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xl,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   centered: {
     flex: 1,
@@ -1805,6 +1853,7 @@ const styles = StyleSheet.create({
   macroItem: {
     alignItems: 'center',
     gap: 6,
+    width: 64,
   },
   macroCircle: {
     width: 52,
@@ -1825,6 +1874,7 @@ const styles = StyleSheet.create({
   macroLabel: {
     fontSize: FontSize.xs,
     fontWeight: '600',
+    textAlign: 'center',
   },
   microSection: {
     gap: Spacing.sm,
@@ -2051,9 +2101,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 6,
     zIndex: 100,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 12,
   },
   popoverItem: {
@@ -2105,6 +2153,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     minWidth: 22,
     textAlign: 'center',
+  },
+  stickyBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxl + 8,
+    borderTopWidth: 1,
+  },
+  stickyLogBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  stickyLogBtnText: {
+    color: '#fff',
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   logBar: {
     position: 'absolute',
@@ -2367,10 +2439,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     maxHeight: '70%',
     paddingBottom: 44,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
+    boxShadow: '0px -4px 20px rgba(0, 0, 0, 0.15)',
     elevation: 20,
   },
   sheetHandleRow: {

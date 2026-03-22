@@ -59,17 +59,34 @@ function getFlexCopy(remaining: number, max: number): { headline: string; subtit
 }
 
 // ── Explainer Modal ─────────────────────────────────────────────────────────
-const HOW_ITEMS = [
-  { icon: 'leaf' as const, color: '#22C55E', title: 'Eat clean, earn points', body: 'Every meal you score above your target earns flex points.' },
-  { icon: 'ticket' as const, color: GOLD, title: 'Points convert to meals', body: 'Enough points = 1 flex meal. Eating well typically earns 5–7 flex meals per week.' },
-  { icon: 'pizza' as const, color: '#FB923C', title: 'Spend them guilt-free', body: 'Pizza, takeout, dessert — flex meals are earned treats, not cheat days.' },
-  { icon: 'refresh' as const, color: '#3B82F6', title: 'Budget resets each week', body: "Fresh start every Monday. Unused meals don't roll over." },
-];
 
-function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function buildHowItems(cleanPct: number, cleanTarget: number, flexBudget: number, expectedMeals: number, fuelTarget: number) {
+  const projectedAvg = Math.round((cleanTarget * 95 + flexBudget * 35) / expectedMeals);
+  const tierLabel = projectedAvg >= 90 ? 'Elite' : projectedAvg >= 75 ? 'Strong' : projectedAvg >= 60 ? 'Decent' : 'Mixed';
+  return [
+    { icon: 'leaf' as const, color: '#22C55E', title: `Eat clean (${cleanPct}% goal)`, body: `Meals scoring ${fuelTarget}+ count as clean. You need ${cleanTarget} clean meals per week to maintain your budget.` },
+    { icon: 'ticket' as const, color: GOLD, title: `${flexBudget} flex meals per week`, body: `Your ${cleanPct}% clean eating goal gives you ${flexBudget} guilt-free treats. Available from day one.` },
+    { icon: 'pizza' as const, color: '#FB923C', title: 'Spend them on anything', body: 'Pizza, takeout, dessert — whatever you want. Flex meals are earned treats, not cheat days.' },
+    { icon: 'analytics' as const, color: '#3B82F6', title: `Avg stays at ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean + ${flexBudget} flex = weekly avg ${projectedAvg}. Your body absorbs the treats without impact.` },
+    { icon: 'refresh' as const, color: '#8B5CF6', title: 'Fresh budget every Monday', body: "Your flex budget resets each week. Unused meals don't roll over, so use them!" },
+  ];
+}
+
+interface FlexExplainerModalProps {
+  visible: boolean;
+  onClose: () => void;
+  cleanPct?: number;
+  cleanTarget?: number;
+  flexBudget?: number;
+  expectedMeals?: number;
+  fuelTarget?: number;
+}
+
+function FlexExplainerModal({ visible, onClose, cleanPct = 80, cleanTarget = 17, flexBudget = 4, expectedMeals = 21, fuelTarget = 80 }: FlexExplainerModalProps) {
   const theme = useTheme();
   const sheetAnim = useRef(new Animated.Value(60)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const howItems = buildHowItems(cleanPct, cleanTarget, flexBudget, expectedMeals, fuelTarget);
 
   useEffect(() => {
     if (visible) {
@@ -101,11 +118,13 @@ function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: (
                 <Ionicons name="ticket" size={22} color="#fff" />
               </LinearGradient>
               <Text style={[modalStyles.title, { color: theme.text }]}>Flex Meals</Text>
-              <Text style={[modalStyles.subtitle, { color: theme.textSecondary }]}>Eat clean, earn cheat meals — that's the deal.</Text>
+              <Text style={[modalStyles.subtitle, { color: theme.textSecondary }]}>
+                Your goal: {cleanPct}% clean eating = {flexBudget} guilt-free treats
+              </Text>
             </LinearGradient>
             <ScrollView style={modalStyles.scroll} contentContainerStyle={modalStyles.scrollContent} showsVerticalScrollIndicator={false}>
-              {HOW_ITEMS.map((item, idx) => (
-                <View key={idx} style={[modalStyles.howRow, idx < HOW_ITEMS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.surfaceHighlight }]}>
+              {howItems.map((item, idx) => (
+                <View key={idx} style={[modalStyles.howRow, idx < howItems.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.surfaceHighlight }]}>
                   <View style={[modalStyles.howIcon, { backgroundColor: item.color + '18' }]}>
                     <Ionicons name={item.icon} size={18} color={item.color} />
                   </View>
@@ -142,6 +161,12 @@ interface FlexInsightsCardProps {
   /** Fuel coach suggestions — if provided, coach section renders below tickets */
   coachContext?: string;
   coachSuggestions?: FlexSuggestion[];
+  /** Personalized budget data for explainer */
+  cleanPct?: number;
+  cleanTarget?: number;
+  flexBudget?: number;
+  expectedMeals?: number;
+  fuelTarget?: number;
 }
 
 const CONTEXT_SUBTITLES: Record<string, string> = {
@@ -157,6 +182,11 @@ export function FlexInsightsCard({
   maxFlex = 7,
   coachContext,
   coachSuggestions,
+  cleanPct = 80,
+  cleanTarget = 17,
+  flexBudget = 4,
+  expectedMeals = 21,
+  fuelTarget = 80,
 }: FlexInsightsCardProps) {
   const theme = useTheme();
   const [explainerVisible, setExplainerVisible] = useState(false);
@@ -220,10 +250,7 @@ export function FlexInsightsCard({
                         ? {
                             backgroundColor: GOLD + '18',
                             borderColor: GOLD + '50',
-                            shadowColor: GOLD_GLOW,
-                            shadowOpacity: glowAnim as any,
-                            shadowRadius: 5,
-                            shadowOffset: { width: 0, height: 0 } as any,
+                            boxShadow: `0px 0px 5px ${GOLD_GLOW}59`,
                           }
                         : {
                             backgroundColor: theme.surfaceHighlight + '60',
@@ -298,7 +325,15 @@ export function FlexInsightsCard({
         )}
       </View>
 
-      <FlexExplainerModal visible={explainerVisible} onClose={() => setExplainerVisible(false)} />
+      <FlexExplainerModal
+        visible={explainerVisible}
+        onClose={() => setExplainerVisible(false)}
+        cleanPct={cleanPct}
+        cleanTarget={cleanTarget}
+        flexBudget={flexBudget}
+        expectedMeals={expectedMeals}
+        fuelTarget={fuelTarget}
+      />
     </>
   );
 }

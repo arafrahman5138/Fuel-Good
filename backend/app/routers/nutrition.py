@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime, date
+from datetime import UTC, datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -388,6 +388,19 @@ async def create_log(
     db: Session = Depends(get_db),
 ):
     day = _parse_date(payload.date)
+
+    # ── Dedup guard: prevent duplicate logs within 30 seconds ──
+    if payload.source_id:
+        cutoff = datetime.utcnow() - timedelta(seconds=30)
+        existing = db.query(FoodLog).filter(
+            FoodLog.user_id == current_user.id,
+            FoodLog.source_id == payload.source_id,
+            FoodLog.date == day,
+            FoodLog.created_at >= cutoff,
+        ).first()
+        if existing:
+            return _serialize_log(existing)
+
     title, base_nutrition = _resolve_source_nutrition(db, payload)
 
     factor = max(0.1, float(payload.servings or 1.0)) * max(0.1, float(payload.quantity or 1.0))
@@ -397,9 +410,10 @@ async def create_log(
     )
 
     # ── Fuel Score ──
+    normalized_source_type = (payload.source_type or "manual").lower()
     try:
         fuel_result = compute_fuel_score(
-            source_type=payload.source_type,
+            source_type=normalized_source_type,
             nutrition=nutrition_snapshot,
             ingredients_text=(payload.nutrition or {}).get("ingredients_text") if payload.nutrition else None,
         )

@@ -43,6 +43,7 @@ class User(Base):
     access_override_updated_at = Column(DateTime, nullable=True)
     fuel_target = Column(Integer, nullable=True, default=80)
     expected_meals_per_week = Column(Integer, nullable=True, default=21)
+    clean_eating_pct = Column(Integer, nullable=True, default=80)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

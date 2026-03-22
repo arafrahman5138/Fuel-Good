@@ -26,8 +26,9 @@ import { useTheme } from '../../hooks/useTheme';
 import { useChatStore } from '../../stores/chatStore';
 import { useSavedRecipesStore } from '../../stores/savedRecipesStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
-import { chatApi } from '../../services/api';
+import { chatApi, type ChatContext } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
+import { ChatHistoryDrawer } from '../../components/ChatHistoryDrawer';
 import { Shadows } from '../../constants/Shadows';
 import { useThemeStore } from '../../stores/themeStore';
 import { TypingIndicator } from '../../components/TypingIndicator';
@@ -68,7 +69,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { width } = useWindowDimensions();
-  const { prefill, autoSend } = useLocalSearchParams<{ prefill?: string; autoSend?: string }>();
+  const { prefill, autoSend, chatContext: chatContextParam } = useLocalSearchParams<{ prefill?: string; autoSend?: string; chatContext?: string }>();
   const isCompact = width < 410;
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
@@ -86,6 +87,9 @@ export default function ChatScreen() {
   const [questToast, setQuestToast] = useState<string | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const lastUserInputRef = useRef<string>('');
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const [showHistory, setShowHistory] = useState(false);
+  const pendingContextRef = useRef<ChatContext | null>(null);
   const {
     messages,
     isLoading,
@@ -99,6 +103,8 @@ export default function ChatScreen() {
   } = useChatStore();
   const clearChat = useChatStore((s) => s.clearChat);
   const loadLastSession = useChatStore((s) => s.loadLastSession);
+  const loadSessions = useChatStore((s) => s.loadSessions);
+  const sessions = useChatStore((s) => s.sessions);
   const savedRecipes = useSavedRecipesStore((s) => s.recipes);
   const awardXP = useGamificationStore((s) => s.awardXP);
   const saveRecipe = useSavedRecipesStore((s) => s.saveRecipe);
@@ -118,6 +124,7 @@ export default function ChatScreen() {
   useEffect(() => {
     fetchSaved();
     loadLastSession();
+    loadSessions();
     chatApi.getSuggestions().then((data) => {
       if (Array.isArray(data) && data.length > 0) {
         setSuggestions(data.map((s) => s.label || s.query));
@@ -125,6 +132,14 @@ export default function ChatScreen() {
     }).catch((err: any) => {
       console.warn('Failed to load chat suggestions:', err?.message);
     });
+
+    // Float animation for empty state icon
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: 1, duration: 2200, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 2200, useNativeDriver: true }),
+      ])
+    ).start();
   }, [fetchSaved]);
 
   // Handle deep-link prefill from coach or other screens
@@ -132,7 +147,16 @@ export default function ChatScreen() {
     if (prefill && typeof prefill === 'string' && prefill.trim()) {
       setInput(prefill.trim());
     }
-  }, [prefill]);
+    // Parse and store rich context from deep-links (e.g., scan results)
+    if (chatContextParam && typeof chatContextParam === 'string') {
+      try {
+        const parsed = JSON.parse(chatContextParam);
+        pendingContextRef.current = parsed;
+      } catch {
+        // ignore malformed context
+      }
+    }
+  }, [prefill, chatContextParam]);
 
   useEffect(() => {
     const trimmedPrefill = typeof prefill === 'string' ? prefill.trim() : '';
@@ -189,8 +213,10 @@ export default function ChatScreen() {
     });
   };
 
-  const submitChatMessage = async (userMessage: string) => {
+  const submitChatMessage = async (userMessage: string, chatContext?: ChatContext) => {
     lastUserInputRef.current = userMessage;
+    const ctx = chatContext ?? pendingContextRef.current ?? undefined;
+    pendingContextRef.current = null;
     addMessage({ role: 'user', content: userMessage });
     setLoading(true);
     setStreamingText('');
@@ -203,10 +229,11 @@ export default function ChatScreen() {
           (done) => {
             if (done?.session_id) setSessionId(done.session_id);
             if (done?.payload) addAssistantPayload(done.payload);
-          }
+          },
+          ctx,
         );
       } else {
-        const response = await chatApi.healthify(userMessage, sessionId || undefined);
+        const response = await chatApi.healthify(userMessage, sessionId || undefined, ctx);
         if (response.session_id) setSessionId(response.session_id);
         addAssistantPayload(response);
       }
@@ -330,6 +357,31 @@ export default function ChatScreen() {
     Alert.alert('Save failed', 'Unable to save recipe right now. Please try again.');
   };
 
+  const handleSelectSession = async (sessionId: string) => {
+    try {
+      const detail = await chatApi.getSession(sessionId);
+      if (detail?.messages?.length > 0) {
+        useChatStore.getState().clearChat();
+        useChatStore.getState().setSessionId(sessionId);
+        detail.messages.forEach((m: any) => useChatStore.getState().addMessage(m));
+      }
+    } catch (err) {
+      console.warn('Failed to load session:', err);
+    }
+  };
+
+  const handleDeleteSession = async (id: string) => {
+    try {
+      await chatApi.deleteSession(id);
+      loadSessions();
+      if (sessionId === id) {
+        clearChat();
+      }
+    } catch (err) {
+      console.warn('Failed to delete session:', err);
+    }
+  };
+
   const showQuestToast = (message: string) => {
     setQuestToast(message);
     toastAnim.setValue(0);
@@ -401,15 +453,24 @@ export default function ChatScreen() {
         {/* Header */}
         <View style={[styles.headerShell, { borderBottomColor: theme.border + '99' }]}>
           <View style={[styles.header, { maxWidth: maxContentWidth }]}>
+            {/* History Button */}
+            <TouchableOpacity
+              style={[styles.headerIconBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+              onPress={() => { loadSessions(); setShowHistory(true); }}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="menu" size={18} color={theme.textSecondary} />
+            </TouchableOpacity>
+
             <View style={styles.headerContent}>
               <LinearGradient
-                colors={theme.gradient.primary}
+                colors={theme.gradient.hero}
                 style={styles.headerIcon}
               >
-                <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+                <Ionicons name="nutrition" size={18} color="#FFFFFF" />
               </LinearGradient>
               <View style={styles.headerTextWrap}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Healthify</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Fuel Coach</Text>
                 <Text
                   style={[
                     styles.headerSubtitle,
@@ -419,23 +480,26 @@ export default function ChatScreen() {
                   numberOfLines={1}
                   allowFontScaling={false}
                 >
-                  Whole-food swaps, cleaner recipes, better macros
+                  {isCompact ? 'Your AI nutrition coach' : 'Recipes, swaps, nutrition advice & more'}
                 </Text>
               </View>
             </View>
+
             <TouchableOpacity
               style={[
                 styles.savedPill,
                 isCompact && styles.savedPillCompact,
-                { backgroundColor: theme.surfaceElevated, borderColor: theme.border, marginLeft: Spacing.xs },
+                { backgroundColor: theme.surfaceElevated, borderColor: theme.border },
               ]}
               onPress={() => router.push('/saved')}
               activeOpacity={0.75}
             >
               <Ionicons name="bookmark" size={14} color={theme.primary} />
-              <Text style={[styles.savedPillText, { color: theme.text }]}>
-                Saved {savedRecipes.length}
-              </Text>
+              {!isCompact && (
+                <Text style={[styles.savedPillText, { color: theme.text }]}>
+                  {savedRecipes.length}
+                </Text>
+              )}
             </TouchableOpacity>
             {messages.length > 0 && (
               <TouchableOpacity
@@ -447,8 +511,8 @@ export default function ChatScreen() {
                 onPress={clearChat}
                 activeOpacity={0.75}
               >
-                <Ionicons name="add" size={14} color={theme.primary} />
-                <Text style={[styles.savedPillText, { color: theme.text }]}>New</Text>
+                <Ionicons name="add" size={16} color={theme.primary} />
+                {!isCompact && <Text style={[styles.savedPillText, { color: theme.text }]}>New</Text>}
               </TouchableOpacity>
             )}
           </View>
@@ -508,7 +572,7 @@ export default function ChatScreen() {
                     <Text style={[styles.savedTitle, { color: theme.text }]}>{saved.title}</Text>
                     <Text style={[styles.savedMeta, { color: theme.textTertiary }]}>
                       {(saved.ingredients || []).length} ingredients
-                      {saved.servings ? ` • ${saved.servings} servings` : ''}
+                      {saved.servings ? ` • ${saved.servings} ${saved.servings === 1 ? 'serving' : 'servings'}` : ''}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -523,15 +587,28 @@ export default function ChatScreen() {
           ) : null}
           ListEmptyComponent={
             <View style={[styles.emptyState, { maxWidth: introWidth, alignSelf: 'center' }]}>
-              <LinearGradient
-                colors={theme.gradient.hero}
-                style={styles.emptyIcon}
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      translateY: floatAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -8],
+                      }),
+                    },
+                  ],
+                }}
               >
-                <Ionicons name="nutrition" size={32} color="#FFFFFF" />
-              </LinearGradient>
-              <Text style={[styles.emptyEyebrow, { color: theme.primary }]}>Healthify AI</Text>
+                <LinearGradient
+                  colors={theme.gradient.hero}
+                  style={styles.emptyIcon}
+                >
+                  <Ionicons name="nutrition" size={32} color="#FFFFFF" />
+                </LinearGradient>
+              </Animated.View>
+              <Text style={[styles.emptyEyebrow, { color: theme.primary }]}>Fuel Coach</Text>
               <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                What are you craving?
+                Your kitchen assistant
               </Text>
               <Text
                 style={[
@@ -540,22 +617,46 @@ export default function ChatScreen() {
                   { color: theme.textSecondary },
                 ]}
               >
-                Drop in any comfort food and get a cleaner whole-food version with smarter swaps, a full recipe, and clearer nutrition tradeoffs.
+                Ask for a healthier version of any meal, get recipes from what's in your fridge, or ask me anything about nutrition.
               </Text>
 
               <View style={[styles.emptyPanel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Text style={[styles.suggestionsTitle, { color: theme.textTertiary }]}>
-                  Quick starts
-                </Text>
+                <View style={styles.emptyPanelHeader}>
+                  <Ionicons name="flash" size={13} color={theme.primary} />
+                  <Text style={[styles.suggestionsTitle, { color: theme.textTertiary }]}>
+                    Quick starts
+                  </Text>
+                </View>
                 <View style={styles.suggestionsGrid}>
                   {suggestions.map((s, i) => (
                     <TouchableOpacity
                       key={i}
                       onPress={() => handleSuggestion(s)}
                       activeOpacity={0.7}
-                      style={[styles.suggestionChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                      style={[styles.suggestionChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border + 'CC' }]}
                     >
-                      <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>{s}</Text>
+                      <Ionicons name="sparkles" size={12} color={theme.primary} />
+                      <Text style={[styles.suggestionText, { color: theme.text }]}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Utility chips */}
+                <View style={[styles.utilitySeparator, { borderTopColor: theme.border }]} />
+                <View style={styles.suggestionsGrid}>
+                  {[
+                    { label: "What's in my fridge?", icon: 'cube-outline' as const, query: "I have chicken, sweet potatoes, and spinach — what can I make?" },
+                    { label: 'Explain my score', icon: 'analytics-outline' as const, query: "Why is my fuel score low today?" },
+                    { label: 'Quick 15-min meal', icon: 'time-outline' as const, query: "Give me a healthy 15 minute dinner" },
+                  ].map((chip, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => handleSuggestion(chip.query)}
+                      activeOpacity={0.7}
+                      style={[styles.suggestionChip, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '30' }]}
+                    >
+                      <Ionicons name={chip.icon} size={12} color={theme.primary} />
+                      <Text style={[styles.suggestionText, { color: theme.primary }]}>{chip.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -587,7 +688,6 @@ export default function ChatScreen() {
                     <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
                       <Ionicons name="sparkles" size={10} color="#FFF" />
                     </LinearGradient>
-                    <Text style={[styles.assistantLabel, { color: theme.primary }]}>Healthify AI</Text>
                   </View>
                 )}
                 {msg.role === 'user' ? (
@@ -695,7 +795,7 @@ export default function ChatScreen() {
                         <View style={[styles.metaChip, { backgroundColor: theme.surfaceHighlight }]}>
                           <Ionicons name="people-outline" size={12} color={theme.textTertiary} />
                           <Text style={[styles.metaChipText, { color: theme.textTertiary }]}>
-                            {recipe.servings} servings
+                            {recipe.servings} {recipe.servings === 1 ? 'serving' : 'servings'}
                           </Text>
                         </View>
                       ) : null}
@@ -909,6 +1009,33 @@ export default function ChatScreen() {
                   </Card>
                 )}
 
+                {/* Contextual Action Chips */}
+                {recipe && isNewest && !isLoading && (
+                  <View style={styles.contextChipsRow}>
+                    {[
+                      { label: 'Swap an ingredient', icon: 'swap-horizontal' as const, query: `Swap an ingredient in the ${recipe.title}` },
+                      { label: 'Higher protein', icon: 'barbell-outline' as const, query: `Make the ${recipe.title} higher protein` },
+                      { label: 'Save recipe', icon: 'bookmark-outline' as const, onPress: () => toggleSaveRecipe(key, recipe) },
+                    ].map((chip, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[styles.contextChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                        onPress={chip.onPress ?? (() => {
+                          setInput(chip.query || '');
+                          setTimeout(() => {
+                            setInput('');
+                            void submitChatMessage(chip.query || '');
+                          }, 0);
+                        })}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name={chip.icon} size={12} color={theme.primary} />
+                        <Text style={[styles.contextChipText, { color: theme.textSecondary }]}>{chip.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
                 {/* Nutrition Comparison */}
                 {payload?.nutrition?.original_estimate && payload?.nutrition?.healthified_estimate && (
                   <Card style={styles.swapsCard} padding={Spacing.md}>
@@ -959,7 +1086,7 @@ export default function ChatScreen() {
                 <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
                   <Ionicons name="sparkles" size={10} color="#FFF" />
                 </LinearGradient>
-                <Text style={[styles.assistantLabel, { color: theme.primary }]}>Healthify AI</Text>
+                <Text style={[styles.assistantLabel, { color: theme.primary }]}>Fuel Coach</Text>
               </View>
               <View style={[styles.bubbleContent, { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }]}>
                 {streamingText ? (
@@ -1008,7 +1135,7 @@ export default function ChatScreen() {
               ]}
               value={input}
               onChangeText={setInput}
-              placeholder={isCompact ? 'Describe a food...' : 'Describe a food you want to clean up...'}
+              placeholder="Ask about any food..."
               placeholderTextColor={theme.textTertiary}
               multiline
               maxLength={500}
@@ -1035,6 +1162,18 @@ export default function ChatScreen() {
           </View>
         </View>
       </View>
+
+      {/* Session History Drawer */}
+      <ChatHistoryDrawer
+        visible={showHistory}
+        sessions={sessions}
+        currentSessionId={sessionId}
+        onClose={() => setShowHistory(false)}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+        onNewChat={clearChat}
+        onSelectPrompt={(prompt) => { clearChat(); setInput(prompt); }}
+      />
     </ScreenContainer>
   );
 }
@@ -1063,15 +1202,23 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm,
     flex: 1,
     minWidth: 0,
-    paddingRight: Spacing.xs,
   },
   headerTextWrap: {
     flex: 1,
@@ -1196,16 +1343,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.xs,
   },
+  emptyPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginBottom: Spacing.sm,
+  },
+  utilitySeparator: {
+    borderTopWidth: 1,
+    marginVertical: Spacing.sm,
+  },
   suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   suggestionText: {
     fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  contextChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  contextChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs + 1,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  contextChipText: {
+    fontSize: 12,
     fontWeight: '600',
   },
   messageBubble: {
@@ -1378,12 +1556,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   swapItem: {
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
     borderBottomWidth: 1,
   },
   swapNames: {
-    gap: 4,
-    marginBottom: 6,
+    gap: 2,
+    marginBottom: 4,
   },
   swapArrowRow: {
     flexDirection: 'row',

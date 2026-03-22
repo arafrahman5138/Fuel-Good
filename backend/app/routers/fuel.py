@@ -1,8 +1,8 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -22,10 +22,14 @@ from app.schemas.fuel import (
     FuelCalendarResponse,
     SmartFlexResponse,
     FlexSuggestion,
+    ManualFlexLogRequest,
+    ManualFlexLogResponse,
 )
 from app.services.fuel_score import (
     DEFAULT_FUEL_TARGET,
     DEFAULT_MEALS_PER_WEEK,
+    DEFAULT_CLEAN_PCT,
+    AVG_CHEAT_MEAL_SCORE,
     get_week_bounds,
     get_weekly_meal_scores,
     get_daily_fuel_scores,
@@ -84,6 +88,7 @@ async def get_fuel_settings(
     return FuelSettingsResponse(
         fuel_target=current_user.fuel_target or DEFAULT_FUEL_TARGET,
         expected_meals_per_week=current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK,
+        clean_eating_pct=current_user.clean_eating_pct or DEFAULT_CLEAN_PCT,
     )
 
 
@@ -97,11 +102,14 @@ async def update_fuel_settings(
         current_user.fuel_target = payload.fuel_target
     if payload.expected_meals_per_week is not None:
         current_user.expected_meals_per_week = payload.expected_meals_per_week
+    if payload.clean_eating_pct is not None:
+        current_user.clean_eating_pct = payload.clean_eating_pct
     db.commit()
     db.refresh(current_user)
     return FuelSettingsResponse(
         fuel_target=current_user.fuel_target or DEFAULT_FUEL_TARGET,
         expected_meals_per_week=current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK,
+        clean_eating_pct=current_user.clean_eating_pct or DEFAULT_CLEAN_PCT,
     )
 
 
@@ -117,9 +125,9 @@ async def get_daily_fuel(
         try:
             day = datetime.fromisoformat(date_str).date()
         except Exception:
-            day = date.today()
+            day = datetime.now(UTC).date()
     else:
-        day = date.today()
+        day = datetime.now(UTC).date()
 
     logs = (
         db.query(FoodLog)
@@ -165,13 +173,14 @@ async def get_weekly_fuel(
         try:
             ref = datetime.fromisoformat(date_str).date()
         except Exception:
-            ref = date.today()
+            ref = datetime.now(UTC).date()
     else:
-        ref = date.today()
+        ref = datetime.now(UTC).date()
 
     week_start, week_end = get_week_bounds(ref)
     fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
 
     scores = get_weekly_meal_scores(db, current_user.id, week_start)
     budget = compute_flex_budget(
@@ -179,6 +188,7 @@ async def get_weekly_fuel(
         expected_meals=expected_meals,
         meal_scores=scores,
         week_start=week_start,
+        clean_pct=clean_pct,
     )
 
     # Build daily breakdown
@@ -379,9 +389,11 @@ async def get_fuel_calendar(
         try:
             year, mon = int(month[:4]), int(month[5:7])
         except Exception:
-            year, mon = date.today().year, date.today().month
+            today_utc = datetime.now(UTC).date()
+            year, mon = today_utc.year, today_utc.month
     else:
-        year, mon = date.today().year, date.today().month
+        today_utc = datetime.now(UTC).date()
+        year, mon = today_utc.year, today_utc.month
 
     # Build date range for the month
     month_start = date(year, mon, 1)
@@ -442,6 +454,7 @@ async def get_flex_suggestions(
     day = _safe_parse_date(date_str)
     fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
 
     scores = get_weekly_meal_scores(db, current_user.id, week_start)
@@ -450,6 +463,7 @@ async def get_flex_suggestions(
         expected_meals=expected_meals,
         meal_scores=scores,
         week_start=week_start,
+        clean_pct=clean_pct,
     )
 
     # Today's scores
@@ -463,7 +477,7 @@ async def get_flex_suggestions(
     had_flex_today = any(s < fuel_target for s in today_scores)
 
     # Determine context
-    flex_remaining = budget.flex_meals_remaining
+    flex_remaining = budget.flex_available
     suggestions: list[FlexSuggestion] = []
 
     if had_flex_today and today_avg < fuel_target:
@@ -562,6 +576,69 @@ async def get_flex_suggestions(
     )
 
 
+# ── Manual Flex Log ─────────────────────────────────────────────────
+
+FLEX_TAG_TITLES = {
+    "pizza": "Pizza night",
+    "burger": "Burger",
+    "takeout": "Takeout",
+    "dessert": "Dessert",
+    "drinks": "Drinks",
+    "other": "Cheat meal",
+}
+
+
+@router.post("/flex-log", response_model=ManualFlexLogResponse)
+async def log_manual_flex_meal(
+    payload: ManualFlexLogRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """One-tap cheat meal logging without scanning."""
+    import uuid
+
+    day = _safe_parse_date(payload.date)
+    title = FLEX_TAG_TITLES.get(payload.tag or "", "Cheat meal")
+    if payload.tag and payload.tag not in FLEX_TAG_TITLES:
+        title = payload.tag.capitalize()
+
+    log = FoodLog(
+        id=str(uuid.uuid4()),
+        user_id=current_user.id,
+        date=day,
+        meal_type=payload.meal_type or "meal",
+        source_type="manual_flex",
+        title=title,
+        fuel_score=float(AVG_CHEAT_MEAL_SCORE),
+        nutrition_snapshot={"manual_flex": True, "tag": payload.tag},
+    )
+    db.add(log)
+    db.commit()
+
+    # Recompute budget for response
+    fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
+    expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
+    week_start, _ = get_week_bounds(day)
+    scores = get_weekly_meal_scores(db, current_user.id, week_start)
+    budget = compute_flex_budget(
+        fuel_target=fuel_target,
+        expected_meals=expected_meals,
+        meal_scores=scores,
+        week_start=week_start,
+        clean_pct=clean_pct,
+    )
+
+    return ManualFlexLogResponse(
+        id=log.id,
+        date=day.isoformat(),
+        title=title,
+        fuel_score=float(AVG_CHEAT_MEAL_SCORE),
+        flex_available=budget.flex_available,
+        weekly_avg=budget.projected_weekly_avg,
+    )
+
+
 # ── Helpers ──────────────────────────────────────────────────────────
 
 def _safe_parse_date(date_str: str | None) -> date:
@@ -569,5 +646,5 @@ def _safe_parse_date(date_str: str | None) -> date:
         try:
             return datetime.fromisoformat(date_str).date()
         except Exception:
-            return date.today()
-    return date.today()
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {date_str!r}")
+    return datetime.now(UTC).date()

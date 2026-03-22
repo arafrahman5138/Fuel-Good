@@ -23,6 +23,11 @@ import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
 interface FlexMealsEarnedProps {
   flexMealsRemaining: number;
   maxFlex?: number;
+  cleanPct?: number;
+  cleanTarget?: number;
+  flexBudget?: number;
+  expectedMeals?: number;
+  fuelTarget?: number;
 }
 
 const GOLD = '#F59E0B';
@@ -58,37 +63,33 @@ function getCopyKey(remaining: number, max: number): string {
 
 // ── Explainer modal ──────────────────────────────────────────────────────────
 
-const HOW_ITEMS = [
-  {
-    icon: 'leaf' as const,
-    color: '#22C55E',
-    title: 'Eat clean, earn points',
-    body: 'Every meal you score above your target earns flex points. A 92-score meal with an 80 target earns you 12 points.',
-  },
-  {
-    icon: 'ticket' as const,
-    color: GOLD,
-    title: 'Points convert to meals',
-    body: 'Enough points = 1 flex meal. With an 80/20 balance, eating well most of the week typically earns 5–7 flex meals.',
-  },
-  {
-    icon: 'pizza' as const,
-    color: '#FB923C',
-    title: 'Spend them guilt-free',
-    body: 'Pizza, takeout, dessert — whatever you want. Flex meals are earned treats, not cheat days. No guilt, no reset.',
-  },
-  {
-    icon: 'refresh' as const,
-    color: '#3B82F6',
-    title: 'Budget resets each week',
-    body: 'Your flex budget starts fresh every Monday. Unused meals don\'t roll over, so use them if you have them!',
-  },
-];
+function buildHowItems(cleanPct: number, cleanTarget: number, flexBudgetCount: number, expectedMeals: number, fuelTarget: number) {
+  const projectedAvg = Math.round((cleanTarget * 95 + flexBudgetCount * 35) / expectedMeals);
+  const tierLabel = projectedAvg >= 90 ? 'Elite' : projectedAvg >= 75 ? 'Strong' : projectedAvg >= 60 ? 'Decent' : 'Mixed';
+  return [
+    { icon: 'leaf' as const, color: '#22C55E', title: `Eat clean (${cleanPct}% goal)`, body: `Meals scoring ${fuelTarget}+ count as clean. You need ${cleanTarget} clean meals per week to maintain your budget.` },
+    { icon: 'ticket' as const, color: GOLD, title: `${flexBudgetCount} flex meals per week`, body: `Your ${cleanPct}% clean eating goal gives you ${flexBudgetCount} guilt-free treats. Available from day one.` },
+    { icon: 'pizza' as const, color: '#FB923C', title: 'Spend them on anything', body: 'Pizza, takeout, dessert — whatever you want. Flex meals are earned treats, not cheat days. No guilt, no reset.' },
+    { icon: 'analytics' as const, color: '#3B82F6', title: `Avg stays at ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean + ${flexBudgetCount} flex = weekly avg ${projectedAvg}. Your body absorbs the treats without impact.` },
+    { icon: 'refresh' as const, color: '#8B5CF6', title: 'Fresh budget every Monday', body: "Your flex budget resets each week. Unused meals don't roll over, so use them!" },
+  ];
+}
 
-function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+interface FlexExplainerModalProps {
+  visible: boolean;
+  onClose: () => void;
+  cleanPct?: number;
+  cleanTarget?: number;
+  flexBudgetCount?: number;
+  expectedMeals?: number;
+  fuelTarget?: number;
+}
+
+function FlexExplainerModal({ visible, onClose, cleanPct = 80, cleanTarget = 17, flexBudgetCount = 4, expectedMeals = 21, fuelTarget = 80 }: FlexExplainerModalProps) {
   const theme = useTheme();
   const sheetAnim = useRef(new Animated.Value(60)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const howItems = buildHowItems(cleanPct, cleanTarget, flexBudgetCount, expectedMeals, fuelTarget);
 
   useEffect(() => {
     if (visible) {
@@ -135,7 +136,7 @@ function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: (
               </LinearGradient>
               <Text style={[styles.modalTitle, { color: theme.text }]}>Flex Meals</Text>
               <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                Eat clean, earn cheat meals — that's the deal.
+                Your goal: {cleanPct}% clean eating = {flexBudgetCount} guilt-free treats
               </Text>
             </LinearGradient>
 
@@ -145,12 +146,12 @@ function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: (
               contentContainerStyle={styles.modalScrollContent}
               showsVerticalScrollIndicator={false}
             >
-              {HOW_ITEMS.map((item, idx) => (
+              {howItems.map((item, idx) => (
                 <View
                   key={idx}
                   style={[
                     styles.howRow,
-                    idx < HOW_ITEMS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.surfaceHighlight },
+                    idx < howItems.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.surfaceHighlight },
                   ]}
                 >
                   <View style={[styles.howIcon, { backgroundColor: item.color + '18' }]}>
@@ -187,7 +188,7 @@ function FlexExplainerModal({ visible, onClose }: { visible: boolean; onClose: (
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEarnedProps) {
+export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7, cleanPct = 80, cleanTarget = 17, flexBudget = 4, expectedMeals = 21, fuelTarget = 80 }: FlexMealsEarnedProps) {
   const theme = useTheme();
   const [explainerVisible, setExplainerVisible] = useState(false);
   const ticketCount = Math.min(flexMealsRemaining, maxFlex);
@@ -269,10 +270,7 @@ export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEa
                     ? {
                         backgroundColor: GOLD + '18',
                         borderColor: GOLD + '50',
-                        shadowColor: GOLD_GLOW,
-                        shadowOpacity: glowAnim as any,
-                        shadowRadius: 6,
-                        shadowOffset: { width: 0, height: 0 } as any,
+                        boxShadow: `0px 0px 6px ${GOLD_GLOW}59`,
                       }
                     : {
                         backgroundColor: theme.surfaceHighlight + '60',
@@ -318,6 +316,11 @@ export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7 }: FlexMealsEa
       <FlexExplainerModal
         visible={explainerVisible}
         onClose={() => setExplainerVisible(false)}
+        cleanPct={cleanPct}
+        cleanTarget={cleanTarget}
+        flexBudgetCount={flexBudget}
+        expectedMeals={expectedMeals}
+        fuelTarget={fuelTarget}
       />
     </>
   );

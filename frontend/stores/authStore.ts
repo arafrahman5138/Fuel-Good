@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { API_URL } from '../constants/Config';
 import { reportClientError } from '../services/errorReporting';
 
@@ -65,12 +66,14 @@ const AUTH_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
 };
 
 function secureSetItem(key: string, value: string) {
+  if (Platform.OS === 'web') return Promise.resolve();
   return SecureStore.setItemAsync(key, value, AUTH_STORE_OPTIONS).catch((err) => {
     void reportClientError({ source: 'securestore', message: `SecureStore set failed: ${key}`, context: { error: err?.message } });
   });
 }
 
 function secureDeleteItem(key: string) {
+  if (Platform.OS === 'web') return Promise.resolve();
   return SecureStore.deleteItemAsync(key, AUTH_STORE_OPTIONS).catch((err) => {
     void reportClientError({ source: 'securestore', message: `SecureStore delete failed: ${key}`, context: { error: err?.message } });
   });
@@ -187,10 +190,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setBillingLoading: (isBillingLoading) => set({ isBillingLoading }),
   loadAuth: async () => {
     try {
-      const [token, refreshToken] = await Promise.all([
-        SecureStore.getItemAsync('auth_token', AUTH_STORE_OPTIONS),
-        SecureStore.getItemAsync('refresh_token', AUTH_STORE_OPTIONS),
-      ]);
+      const [token, refreshToken] = Platform.OS === 'web'
+        ? [null, null]
+        : await Promise.all([
+            SecureStore.getItemAsync('auth_token', AUTH_STORE_OPTIONS),
+            SecureStore.getItemAsync('refresh_token', AUTH_STORE_OPTIONS),
+          ]);
 
       if (!token && !refreshToken) {
         set({ isLoading: false });

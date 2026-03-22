@@ -11,7 +11,7 @@ import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { MetabolicRing } from './MetabolicRing';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MESScore, MetabolicBudget, RemainingBudget, MEAScore } from '../stores/metabolicBudgetStore';
-import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
+import { FontSize, MacroColors, Spacing, BorderRadius } from '../constants/Colors';
 
 interface EnergyBudgetCardProps {
   score: MESScore;
@@ -20,10 +20,13 @@ interface EnergyBudgetCardProps {
   mea?: MEAScore | null;
   fatTargetOverride?: number | null;
   fatConsumedOverride?: number | null;
+  weeklyMesScore?: number;
+  weeklyMesTierColor?: string;
 }
 
 function GoalRing({
   label,
+  subtitle,
   icon,
   color,
   consumed,
@@ -33,6 +36,7 @@ function GoalRing({
   animDelay = 0,
 }: {
   label: string;
+  subtitle?: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   consumed: number;
@@ -102,7 +106,7 @@ function GoalRing({
                   backgroundColor: index < animFilled ? color : theme.surfaceHighlight,
                   transform: [
                     { rotate: `${(index / segmentCount) * 360}deg` },
-                    { translateY: -16 },
+                    { translateY: -14 },
                   ],
                 },
               ]}
@@ -114,6 +118,9 @@ function GoalRing({
         </View>
         <View style={styles.goalTextBlock}>
           <Text style={[styles.goalLabel, { color: theme.text }]}>{label}</Text>
+          {!!subtitle && (
+            <Text style={{ color: theme.textTertiary, fontSize: 9, fontWeight: '500', marginTop: 1 }}>{subtitle}</Text>
+          )}
           <Text style={[styles.goalValue, { color: theme.text }]}>
             {Math.round(consumed)}
             <Text style={[styles.goalValueMuted, { color: theme.textSecondary }]}>
@@ -126,7 +133,7 @@ function GoalRing({
   );
 }
 
-export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverride, fatConsumedOverride }: EnergyBudgetCardProps) {
+export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverride, fatConsumedOverride, weeklyMesScore, weeklyMesTierColor }: EnergyBudgetCardProps) {
   const theme = useTheme();
   const rawScore = score.display_score || score.total_score;
   const hasAnyMeals = rawScore > 0;
@@ -160,7 +167,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
   }, [entrance, displayScore]);
 
   const goalItems = useMemo(() => {
-    const carbTarget = budget.carb_ceiling_g ?? budget.sugar_ceiling_g;
+    const carbTarget = budget.carb_ceiling_g ?? budget.sugar_ceiling_g ?? 0;
     const proteinPct = budget.protein_target_g > 0 ? (score.protein_g / budget.protein_target_g) * 100 : 0;
     const fatPct = fatTarget > 0 ? (fatConsumed / fatTarget) * 100 : 0;
     const fiberPct = budget.fiber_floor_g > 0 ? (score.fiber_g / budget.fiber_floor_g) * 100 : 0;
@@ -171,8 +178,9 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {
         key: 'protein',
         label: 'Protein',
+        subtitle: undefined as string | undefined,
         icon: 'barbell-outline' as const,
-        color: '#22C55E',
+        color: MacroColors.protein,
         consumed: score.protein_g,
         target: budget.protein_target_g,
         stateLabel: proteinPct >= 100 ? 'Hit' : 'Needs more',
@@ -180,8 +188,9 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {
         key: 'fat',
         label: 'Fat',
+        subtitle: undefined as string | undefined,
         icon: 'water-outline' as const,
-        color: '#A855F7',
+        color: MacroColors.fat,
         consumed: fatConsumed,
         target: fatTarget,
         stateLabel: fatPct >= 100 ? 'Hit' : 'Needs more',
@@ -189,8 +198,9 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {
         key: 'fiber',
         label: 'Fiber',
+        subtitle: undefined as string | undefined,
         icon: 'leaf-outline' as const,
-        color: '#3B82F6',
+        color: MacroColors.fiber,
         consumed: score.fiber_g,
         target: budget.fiber_floor_g,
         stateLabel: fiberPct >= 100 ? 'Hit' : 'Needs more',
@@ -198,8 +208,9 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {
         key: 'carbs',
         label: 'Carbs',
+        subtitle: 'Net carbs · metabolic ceiling',
         icon: 'shield-checkmark-outline' as const,
-        color: '#F59E0B',
+        color: MacroColors.carbs,
         consumed: carbConsumed,
         target: carbTarget,
         stateLabel: carbPct > 100 ? 'Over' : carbPct >= 85 ? 'Watch it' : 'Good',
@@ -248,9 +259,18 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
             <Ionicons name="flash" size={13} color={tierCfg.color} />
           </View>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Metabolic Energy</Text>
-          <View style={[styles.headerPill, { backgroundColor: tierCfg.color + '18' }]}>
-            <Text style={[styles.headerPillText, { color: tierCfg.color }]}>MES</Text>
-          </View>
+          {weeklyMesScore != null && weeklyMesScore > 0 ? (
+            <View style={[styles.headerPill, { backgroundColor: (weeklyMesTierColor || tierCfg.color) + '18', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <Ionicons name="flash" size={9} color={weeklyMesTierColor || tierCfg.color} />
+              <Text style={[styles.headerPillText, { color: weeklyMesTierColor || tierCfg.color }]}>
+                Week {Math.round(weeklyMesScore)}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.headerPill, { backgroundColor: tierCfg.color + '18' }]}>
+              <Text style={[styles.headerPillText, { color: tierCfg.color }]}>MES</Text>
+            </View>
+          )}
         </LinearGradient>
       </View>
 
@@ -320,6 +340,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
           <GoalRing
             key={item.key}
             label={item.label}
+            subtitle={item.subtitle}
             icon={item.icon}
             color={item.color}
             consumed={item.consumed}
@@ -446,7 +467,7 @@ const styles = StyleSheet.create({
   },
 
   goalGrid: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm + 2,
     paddingBottom: Spacing.sm,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -454,13 +475,13 @@ const styles = StyleSheet.create({
     rowGap: Spacing.sm + 2,
   },
   goalCard: {
-    width: '48%',
+    width: '48.5%',
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm + 2,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm + 2,
-    gap: Spacing.sm,
+    gap: Spacing.xs + 2,
   },
   goalTopRow: {
     flexDirection: 'row',
@@ -483,18 +504,18 @@ const styles = StyleSheet.create({
   goalMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm + 2,
+    gap: Spacing.sm,
   },
   goalRingWrap: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   goalRingSegment: {
     position: 'absolute',
-    width: 4,
-    height: 9,
+    width: 3.5,
+    height: 8,
     borderRadius: BorderRadius.full,
   },
   goalRingCenter: {
@@ -502,26 +523,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   goalPct: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   goalTextBlock: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 1,
   },
   goalLabel: {
-    fontSize: FontSize.sm,
+    fontSize: 12,
     fontWeight: '600',
   },
   goalValue: {
-    fontSize: FontSize.lg,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
   goalValueMuted: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
   },
   breakdownLink: {

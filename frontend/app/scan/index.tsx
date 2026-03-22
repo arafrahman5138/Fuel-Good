@@ -120,6 +120,7 @@ interface MealResult {
     inferred?: boolean;
   }>;
   fuel_score?: number | null;
+  fuel_reasoning?: string[];
   mes?: {
     score: number;
     tier: string;
@@ -206,6 +207,7 @@ function normalizeMealResult(result: MealResult): MealResult {
     upgrade_suggestions: result.upgrade_suggestions || [],
     recovery_plan: result.recovery_plan || [],
     fuel_score: result.fuel_score != null ? Number(result.fuel_score) : null,
+    fuel_reasoning: result.fuel_reasoning || [],
     snack_profile: result.snack_profile || null,
     pairing_opportunity: Boolean(result.pairing_opportunity),
     pairing_recommended_recipe_id: result.pairing_recommended_recipe_id || null,
@@ -857,14 +859,6 @@ export default function ScanScreen() {
                   <Ionicons name="barcode-outline" size={16} color="#FFFFFF" />
                   <Text style={styles.captureHintButtonText}>Use barcode</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => pickProductImage('library')}
-                  style={[styles.captureHintButton, styles.captureHintButtonMuted]}
-                >
-                  <Ionicons name="images-outline" size={16} color="#D1FAE5" />
-                  <Text style={styles.captureHintButtonText}>Photo library</Text>
-                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -1131,7 +1125,7 @@ export default function ScanScreen() {
           {/* Step indicators */}
           <View style={analyzeStyles.stepsWrap}>
             {steps.map((step, i) => (
-              <View key={i} style={[analyzeStyles.stepRow, { backgroundColor: ui.stepBg, borderColor: ui.stepBorder, borderLeftWidth: 2, borderLeftColor: '#22C55E50' }]}>
+              <View key={i} style={[analyzeStyles.stepRow, { backgroundColor: ui.stepBg, borderColor: ui.stepBorder }]}>
                 <View style={analyzeStyles.stepIcon}>
                   <Ionicons name={step.icon} size={16} color="#22C55E" />
                 </View>
@@ -1233,13 +1227,15 @@ export default function ScanScreen() {
               {mealResult.fuel_score != null && fuelSettings && (() => {
                 const score = mealResult.fuel_score!;
                 const target = fuelSettings.fuel_target;
-                const remaining = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+                const flexAvail = fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+                const cleanLogged = fuelWeekly?.flex_budget?.clean_meals_logged ?? 0;
+                const cleanTarget = fuelWeekly?.flex_budget?.clean_meals_target ?? 17;
                 if (score >= target) {
                   return (
                     <View style={[styles.flexImpactPill, { backgroundColor: '#22C55E14', borderColor: '#22C55E30' }]}>
                       <Ionicons name="trending-up" size={11} color="#22C55E" />
                       <Text style={[styles.flexImpactText, { color: '#16A34A' }]}>
-                        Earned flex points
+                        Clean meal · {cleanLogged}/{cleanTarget}
                       </Text>
                     </View>
                   );
@@ -1248,7 +1244,7 @@ export default function ScanScreen() {
                     <View style={[styles.flexImpactPill, { backgroundColor: '#F59E0B14', borderColor: '#F59E0B30' }]}>
                       <Ionicons name="ticket" size={11} color="#F59E0B" />
                       <Text style={[styles.flexImpactText, { color: '#D97706' }]}>
-                        Flex meal · {remaining} left
+                        Flex meal · {flexAvail} left
                       </Text>
                     </View>
                   );
@@ -1287,7 +1283,67 @@ export default function ScanScreen() {
               </View>
             ))}
           </View>
+          {/* Fuel Score Insight — explain low/processed scores */}
+          {(mealResult.fuel_reasoning || []).length > 0 && mealResult.fuel_score != null && mealResult.fuel_score < 75 && (() => {
+            const score = mealResult.fuel_score!;
+            const isLow = score < 50;
+            const bgColor = isLow ? '#FEF2F2' : '#FFFBEB';
+            const borderColor = isLow ? '#FECACA' : '#FDE68A';
+            const iconColor = isLow ? '#DC2626' : '#D97706';
+            const headingColor = isLow ? '#991B1B' : '#92400E';
+            const textColor = isLow ? '#B91C1C' : '#B45309';
+            // Skip the first item (starting score context) — show the meaningful adjustments
+            // Filter out the base-score context line — only show actionable insights
+            const reasons = (mealResult.fuel_reasoning || []).slice(1);
+            if (reasons.length === 0) return null;
+            return (
+              <View style={[styles.fuelInsightCard, { backgroundColor: bgColor, borderColor }]}>
+                <View style={styles.fuelInsightHeader}>
+                  <Ionicons name="flash" size={15} color={iconColor} />
+                  <Text style={[styles.fuelInsightHeading, { color: headingColor }]}>Why this score</Text>
+                </View>
+                {reasons.map((reason, idx) => (
+                  <View key={idx} style={styles.fuelInsightRow}>
+                    <Ionicons name="remove-circle-outline" size={14} color={textColor} style={{ marginTop: 1 }} />
+                    <Text style={[styles.fuelInsightText, { color: textColor }]}>{reason}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
         </View>
+
+        {/* ── Flex Mode Prompt (low-score scans) ── */}
+        {mealResult.fuel_score != null && fuelSettings && mealResult.fuel_score < fuelSettings.fuel_target && (() => {
+          const flexAvail = fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+          const projAvg = fuelWeekly?.flex_budget?.projected_weekly_avg ?? 0;
+          const tierLabel = projAvg >= 90 ? 'Elite' : projAvg >= 75 ? 'Strong' : projAvg >= 60 ? 'Decent' : 'Mixed';
+          return (
+            <View style={[styles.flexPromptCard, { backgroundColor: '#F59E0B08', borderColor: '#F59E0B30' }]}>
+              <View style={styles.flexPromptHeader}>
+                <View style={[styles.flexPromptIcon, { backgroundColor: '#F59E0B18' }]}>
+                  <Ionicons name="ticket" size={18} color="#F59E0B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.flexPromptTitle, { color: theme.text }]}>This is a flex meal</Text>
+                  <Text style={[styles.flexPromptSub, { color: theme.textSecondary }]}>
+                    {flexAvail > 0
+                      ? `Use 1 of your ${flexAvail} remaining`
+                      : 'No flex meals left this week'}
+                  </Text>
+                </View>
+              </View>
+              {flexAvail > 0 && projAvg > 0 && (
+                <View style={[styles.flexPromptProof, { backgroundColor: '#22C55E10' }]}>
+                  <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
+                  <Text style={[styles.flexPromptProofText, { color: '#16A34A' }]}>
+                    Weekly avg stays at {Math.round(projAvg)} — {tierLabel} tier
+                  </Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
         <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Detected ingredients</Text>
@@ -1570,18 +1626,49 @@ export default function ScanScreen() {
                 </Animated.View>
               )}
           {scanStep === 'result' && scanMode === 'meal' && mealResult && (
-            <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 12, backgroundColor: theme.surface + 'F5', borderTopColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={recomputeMeal}
-                activeOpacity={0.85}
-                style={[styles.footerButtonSecondary, { backgroundColor: theme.surface, borderColor: theme.border }]}
-              >
-                <Ionicons name="refresh-outline" size={18} color={theme.textSecondary} />
-                <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Recompute</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={logMeal} activeOpacity={0.9} disabled={isLoading} style={[styles.footerButtonPrimary, { backgroundColor: theme.primary, opacity: isLoading ? 0.6 : 1 }]}>
-                {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Log to Chronometer</Text>}
-              </TouchableOpacity>
+            <View style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.surface + 'F5', borderTopColor: theme.border, borderTopWidth: 1 }}>
+              {/* Ask Coach CTA — always shown, more prominent on low scores */}
+              {(mealResult.fuel_score == null || mealResult.fuel_score < 75) && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const ctx = JSON.stringify({
+                      source: 'scan',
+                      scan_result: {
+                        meal_label: mealResult.meal_label,
+                        fuel_score: mealResult.fuel_score,
+                        whole_food_flags: (mealResult.whole_food_flags || []).slice(0, 6),
+                      },
+                    });
+                    const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
+                      ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
+                      : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
+                    router.push(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
+                  }}
+                  activeOpacity={0.85}
+                  style={[styles.askCoachBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '40', marginHorizontal: 16, marginTop: 12, marginBottom: 4 }]}
+                >
+                  <Ionicons name="nutrition-outline" size={16} color={theme.primary} />
+                  <Text style={[styles.askCoachText, { color: theme.primary }]}>
+                    {mealResult.fuel_score != null && mealResult.fuel_score < 50
+                      ? 'Ask Coach for a better option'
+                      : 'Ask Coach for tips'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color={theme.primary} />
+                </TouchableOpacity>
+              )}
+              <View style={styles.resultFooterRow}>
+                <TouchableOpacity
+                  onPress={recomputeMeal}
+                  activeOpacity={0.85}
+                  style={[styles.footerButtonSecondary, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <Ionicons name="refresh-outline" size={18} color={theme.textSecondary} />
+                  <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Recompute</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={logMeal} activeOpacity={0.9} disabled={isLoading} style={[styles.footerButtonPrimary, { backgroundColor: theme.primary, opacity: isLoading ? 0.6 : 1 }]}>
+                  {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Log to Chronometer</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -2216,6 +2303,48 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  // Flex Mode prompt card
+  flexPromptCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  flexPromptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  flexPromptIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flexPromptTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  flexPromptSub: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  flexPromptProof: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  flexPromptProofText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
   mesSecondaryPill: {
     paddingHorizontal: 9,
     paddingVertical: 3,
@@ -2392,6 +2521,35 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: '600',
   },
+  fuelInsightCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  fuelInsightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  fuelInsightHeading: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  fuelInsightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 4,
+  },
+  fuelInsightText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
   resultSection: {
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
@@ -2518,6 +2676,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     borderTopWidth: 1,
+  },
+  resultFooterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  askCoachBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  askCoachText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
   },
   footerButtonSecondary: {
     flex: 0,

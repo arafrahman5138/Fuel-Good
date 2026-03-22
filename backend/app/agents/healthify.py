@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import re
 from copy import deepcopy
-from typing import Any, AsyncIterator, List
+from typing import Any, AsyncIterator, List, Optional
+from datetime import UTC, date, datetime
 
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
@@ -21,7 +22,6 @@ from app.services.metabolic_engine import (
     remaining_budget,
 )
 from app.models.metabolic_profile import MetabolicProfile
-from datetime import date
 
 
 PROMPT_VERSION = "healthify_v2_rag"
@@ -93,6 +93,57 @@ Rules:
 - `recipe` must remain non-null and include non-empty ingredients and steps.
 """
 
+FRIDGE_TO_MEAL_PROMPT = """You are Fuel Good Healthify AI — a kitchen assistant that turns whatever is in the fridge into clean, whole-food meals.
+
+Return strict JSON with keys: message, recipe, swaps, nutrition.
+
+Behavior:
+- The user has listed ingredients they have on hand. Generate a complete, Fuel 100-quality recipe using those ingredients plus common pantry staples (salt, pepper, olive oil, garlic, etc.).
+- Prioritize whole foods, no seed oils, no refined sugar, no ultra-processed ingredients.
+- The recipe should be realistic and easy to make.
+- Mention in `message` which provided ingredients you used and any pantry staples assumed.
+- Include full nutrition estimates.
+
+Recipe schema:
+- recipe.title: string
+- recipe.description: string
+- recipe.ingredients: list of {name, quantity, unit}
+- recipe.steps: list of strings
+- recipe.prep_time_min: integer
+- recipe.cook_time_min: integer
+- recipe.servings: integer
+
+Nutrition schema:
+- nutrition.original_estimate: null (no "original" for a from-scratch recipe)
+- nutrition.healthified_estimate: {calories, protein, carbs, fat, fiber}
+"""
+
+SCORE_EXPLAINER_PROMPT = """You are Fuel Good Healthify AI — a nutrition coach who explains food quality scores in plain, motivating language.
+
+Return strict JSON with keys: message, recipe, swaps, nutrition.
+Set recipe, swaps, and nutrition to null unless you are also providing a better alternative recipe.
+
+Behavior:
+- Explain what dragged the score down in simple, non-judgmental terms.
+- Identify the single highest-impact change the user can make.
+- If the user asks "what's better", generate a full healthified alternative (set recipe to non-null).
+- Be encouraging — the user is trying to improve.
+- Keep the explanation under 120 words unless providing a recipe.
+"""
+
+POST_SCAN_PROMPT = """You are Fuel Good Healthify AI — a food coach helping users understand a meal they just scanned.
+
+Return strict JSON with keys: message, recipe, swaps, nutrition.
+
+Behavior:
+- You have been given the scan result: the meal label, its Fuel Score, and any whole-food flags.
+- Explain in plain language WHY the score is what it is, referencing the specific flagged ingredients.
+- Suggest 2-3 specific, grocery-store-available swaps to improve the score.
+- If the user asks for a homemade version, generate a full recipe (set recipe to non-null).
+- Be empathetic — acknowledge the food tastes good, focus on the tradeoffs.
+- Keep the initial explanation under 100 words.
+"""
+
 
 def _clean_md_line(line: str) -> str:
     return ((line or "").replace("**", "").replace("__", "").strip())
@@ -134,7 +185,7 @@ def _retrieved_response(recipe: Recipe, confidence: float, user_context: str = "
     }
 
 
-def _build_user_context(db: Session, user_id: str | None) -> str:
+def _build_user_context(db: Session, user_id: str | None, chat_context: dict | None = None) -> str:
     """Build a natural-language context block from the user's metabolic profile and daily state."""
     if not user_id:
         return ""
@@ -146,10 +197,22 @@ def _build_user_context(db: Session, user_id: str | None) -> str:
             return ""
 
         budget = load_budget_for_user(db, user_id)
-        totals = aggregate_daily_totals(db, user_id, date.today())
+        totals = aggregate_daily_totals(db, user_id, datetime.now(UTC).date())
         rem = remaining_budget(totals, budget)
 
         lines = ["User context (tailor the recipe to these constraints):"]
+
+        # Time-of-day meal type bias
+        hour = datetime.now().hour
+        if 5 <= hour < 10:
+            meal_time = "breakfast"
+        elif 10 <= hour < 15:
+            meal_time = "lunch"
+        elif 15 <= hour < 18:
+            meal_time = "snack"
+        else:
+            meal_time = "dinner"
+        lines.append(f"- Time of day: {meal_time} time — bias suggestions toward a {meal_time} appropriate meal")
 
         # Goal and activity
         goal_label = (profile.goal or "maintenance").replace("_", " ")
@@ -195,6 +258,26 @@ def _build_user_context(db: Session, user_id: str | None) -> str:
             lines.append("")
             lines.extend(constraints)
 
+        # Inject deep-link context (scan result, flex status, etc.)
+        if chat_context:
+            scan = chat_context.get("scan_result")
+            if scan:
+                lines.append("")
+                lines.append("Scan context (the user just scanned this meal):")
+                if scan.get("meal_label"):
+                    lines.append(f"- Scanned meal: {scan['meal_label']}")
+                if scan.get("fuel_score") is not None:
+                    lines.append(f"- Fuel Score: {scan['fuel_score']}/100")
+                flags = scan.get("whole_food_flags") or []
+                if flags:
+                    flag_names = [f.get("ingredient", "") for f in flags[:5] if f.get("ingredient")]
+                    if flag_names:
+                        lines.append(f"- Flagged ingredients: {', '.join(flag_names)}")
+            flex = chat_context.get("flex_status")
+            if flex:
+                lines.append("")
+                lines.append(f"- Flex budget: {flex.get('earned', 0)} earned, {flex.get('remaining', 0)} remaining")
+
         return "\n".join(lines)
     except Exception:
         return ""
@@ -220,7 +303,7 @@ def _compute_recipe_mes(
         meal_result = compute_meal_mes(meal_nutrition, budget)
 
         # Projected daily score
-        totals = aggregate_daily_totals(db, user_id, date.today())
+        totals = aggregate_daily_totals(db, user_id, datetime.now(UTC).date())
         projected = {
             "protein_g": totals.get("protein_g", 0) + meal_nutrition["protein_g"],
             "fiber_g": totals.get("fiber_g", 0) + meal_nutrition["fiber_g"],
@@ -240,17 +323,40 @@ def _compute_recipe_mes(
         return None
 
 
-def _classify_intent(user_input: str) -> str:
+def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     text = (user_input or "").lower()
+
+    # Context-driven overrides — scan source always means post_scan_guidance
+    if chat_context and chat_context.get("source") == "scan" and chat_context.get("scan_result"):
+        return "post_scan_guidance"
+
+    # Fridge-to-meal: user lists ingredients they have
+    if re.search(r"\b(i have|i've got|using|got some|with these|ingredients?:)\b", text) and any(
+        token in text for token in ["make", "cook", "what can", "recipe", "meal", "dinner", "lunch", "breakfast"]
+    ):
+        return "fridge_to_meal"
+    if re.search(r"\bwhat (can|should) i (make|cook)\b", text):
+        return "fridge_to_meal"
+
+    # Score explainer
+    if re.search(r"\b(why|how come|explain|what dragged|what hurt)\b.*(score|mes|fuel)\b", text, re.IGNORECASE):
+        return "score_explainer"
+    if re.search(r"\b(score|mes|fuel).*(low|bad|why|explain|breakdown)\b", text, re.IGNORECASE):
+        return "score_explainer"
+
+    # General nutrition
     if any(token in text for token in ["what is", "how many", "is this healthy", "why is", "should i", "can i"]):
         return "general_nutrition_question"
     if any(token in text for token in ["protein", "fiber", "calories", "macros"]) and "?" in text:
         return "general_nutrition_question"
+
+    # Modify prior recipe
     if (
         any(token in text for token in ["change the", "modify", "swap", "instead of", "make it with", "without"])
         or re.search(r"\b(change|replace)\b.+\b(to|with)\b", text)
     ):
         return "modify_prior_recipe"
+
     if any(token in text for token in ["healthy version", "healthify", "clean up", "whole-food", "make this healthier"]):
         return "healthify_unhealthy_meal"
     words = re.findall(r"[a-zA-Z][a-zA-Z'-]*", text)
@@ -749,16 +855,136 @@ async def _answer_general_question(
     return payload
 
 
+async def _handle_fridge_to_meal(
+    user_input: str,
+    history: List[dict],
+    user_context: str = "",
+) -> dict[str, Any]:
+    llm = get_llm("chat")
+    system_prompt = FRIDGE_TO_MEAL_PROMPT
+    if user_context:
+        system_prompt = f"{FRIDGE_TO_MEAL_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+    messages.append(HumanMessage(content=f"User's available ingredients:\n{user_input}\n\nReturn JSON only."))
+    response = await llm.ainvoke(messages)
+    payload = parse_healthify_response(response.content)
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
+async def _handle_score_explainer(
+    user_input: str,
+    history: List[dict],
+    user_context: str = "",
+) -> dict[str, Any]:
+    llm = get_llm("chat")
+    system_prompt = SCORE_EXPLAINER_PROMPT
+    if user_context:
+        system_prompt = f"{SCORE_EXPLAINER_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+    messages.append(HumanMessage(content=user_input))
+    response = await llm.ainvoke(messages)
+    payload = parse_healthify_response(response.content)
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
+async def _handle_post_scan(
+    user_input: str,
+    history: List[dict],
+    chat_context: dict,
+    user_context: str = "",
+) -> dict[str, Any]:
+    llm = get_llm("chat")
+    system_prompt = POST_SCAN_PROMPT
+    if user_context:
+        system_prompt = f"{POST_SCAN_PROMPT}\n\n{user_context}"
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        else:
+            messages.append(AIMessage(content=msg["content"]))
+
+    scan = chat_context.get("scan_result") or {}
+    scan_summary = (
+        f"Scan result:\n"
+        f"- Meal: {scan.get('meal_label', 'Unknown')}\n"
+        f"- Fuel Score: {scan.get('fuel_score', 'N/A')}/100\n"
+    )
+    flags = scan.get("whole_food_flags") or []
+    if flags:
+        flag_lines = [f"  • {f.get('ingredient', '?')}: {f.get('reason', '')}" for f in flags[:6]]
+        scan_summary += "- Flagged ingredients:\n" + "\n".join(flag_lines) + "\n"
+
+    messages.append(HumanMessage(content=f"{scan_summary}\nUser message:\n{user_input}\n\nReturn JSON only."))
+    response = await llm.ainvoke(messages)
+    payload = parse_healthify_response(response.content)
+    payload["response_mode"] = "generated"
+    payload["matched_recipe_id"] = None
+    payload["retrieval_confidence"] = None
+    payload["prompt_version"] = PROMPT_VERSION
+    return payload
+
+
 async def healthify_agent(
     db: Session,
     user_input: str,
     history: List[dict],
     stream: bool = False,
     user_id: str | None = None,
+    chat_context: dict | None = None,
 ) -> dict[str, Any] | AsyncIterator[str]:
-    user_context = _build_user_context(db, user_id)
+    user_context = _build_user_context(db, user_id, chat_context)
 
-    intent = _classify_intent(user_input)
+    intent = _classify_intent(user_input, chat_context)
+
+    if intent == "fridge_to_meal":
+        payload = await _handle_fridge_to_meal(user_input, history, user_context)
+        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        if mes:
+            payload["mes_score"] = mes
+        if stream:
+            async def _fridge_stream():
+                yield json.dumps(payload)
+            return _fridge_stream()
+        return payload
+
+    if intent == "score_explainer":
+        payload = await _handle_score_explainer(user_input, history, user_context)
+        if stream:
+            async def _score_stream():
+                yield json.dumps(payload)
+            return _score_stream()
+        return payload
+
+    if intent == "post_scan_guidance":
+        payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
+        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        if mes:
+            payload["mes_score"] = mes
+        if stream:
+            async def _scan_stream():
+                yield json.dumps(payload)
+            return _scan_stream()
+        return payload
+
     if intent == "general_nutrition_question":
         if stream:
             async def _general_stream():

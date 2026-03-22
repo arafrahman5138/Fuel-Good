@@ -171,108 +171,112 @@ export function FlexBudgetCard({
         end={{ x: 0.9, y: 1 }}
         style={[styles.card, { borderColor: cardBorderColor }]}
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={[styles.leafDot, { backgroundColor: tier.color + '28' }]}>
-              <Ionicons name="leaf" size={12} color={tier.color} />
-            </View>
-            <Text style={[styles.headerTitle, { color: textPrimary }]}>Weekly Fuel</Text>
-            <Text style={[styles.headerSub, { color: textTertiary }]} numberOfLines={1}>
-              Target: {fuelTarget}+
-            </Text>
-          </View>
-          <View style={styles.headerRight}>
-            {targetMet && (
-              <Animated.View
-                style={[
-                  styles.onTrackPill,
-                  {
-                    backgroundColor: tier.color + '20',
-                    borderColor: tier.color + '50',
-                    transform: [{ scale: onTrackScale }],
-                  },
-                ]}
-              >
-                <Ionicons name="checkmark-circle" size={11} color={tier.color} />
-                <Text style={[styles.onTrackText, { color: tier.color }]}>On Track</Text>
-              </Animated.View>
-            )}
-            {onOpenSettings && (
-              <TouchableOpacity
-                onPress={onOpenSettings}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={[styles.gearBtn, { backgroundColor: chipBg }]}
-              >
-                <Ionicons name="settings-outline" size={14} color={textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* ── Body: ring left | clean stats right ── */}
+        {/* ── Body: ring left | stats right ── */}
         <View style={styles.body}>
-          {/* Ring */}
+          {/* Ring with MES badge overlay */}
           <View style={styles.ringWrap}>
             <FuelScoreRing
               score={hasData ? avgScore : 0}
-              size={118}
+              size={108}
               showLabel
               showIcon
               trackColor={ringTrack}
             />
-            {hasData && (
-              <Text style={[styles.tierLabel, { color: tier.color }]}>{tier.label}</Text>
+            {hasData && (weeklyMesScore ?? 0) > 0 && (
+              <View style={[styles.mesBadge, { backgroundColor: isDark ? '#1a1a24' : theme.surface }]}>
+                <View style={[styles.mesBadgeRing, { borderColor: weeklyMesTierColor ?? '#8B5CF6' }]}>
+                  <Ionicons name="pulse-outline" size={8} color={weeklyMesTierColor ?? '#8B5CF6'} />
+                  <Text style={[styles.mesBadgeScore, { color: weeklyMesTierColor ?? '#8B5CF6' }]}>
+                    {weeklyMesScore}
+                  </Text>
+                </View>
+              </View>
             )}
+            <Text style={[styles.thisWeekLabel, { color: hasData ? tier.color : textTertiary }]}>
+              this week
+            </Text>
           </View>
 
-          {/* Stats — clean vertical stack, no boxes */}
+          {/* Stats */}
           {hasData ? (
             <View style={styles.statsCol}>
-              {/* Flex Left */}
-              <View style={styles.statRow}>
-                <Ionicons name="pizza-outline" size={14} color={flexColor} />
-                <Text style={[styles.statValue, { color: flexColor }]}>
-                  {flexMealsRemaining}
-                  <Text style={[styles.statUnit, { color: textTertiary }]}> flex left</Text>
-                </Text>
-              </View>
-
-              {(weeklyMesScore ?? 0) > 0 && (
-                <>
-                  <View style={[styles.rowDivider, { backgroundColor: dividerColor }]} />
-                  <View style={styles.statRow}>
-                    <Ionicons name="flash" size={14} color={weeklyMesTierColor ?? '#8B5CF6'} />
-                    <Text style={[styles.statValue, { color: weeklyMesTierColor ?? '#8B5CF6' }]}>
-                      {weeklyMesScore}
-                      <Text style={[styles.statUnit, { color: textTertiary }]}> MES</Text>
-                    </Text>
-                  </View>
-                </>
-              )}
-
-              <View style={[styles.rowDivider, { backgroundColor: dividerColor }]} />
-
-              {/* Streak */}
-              <View style={styles.statRow}>
-                <Ionicons
-                  name={streakWeeks > 0 ? 'flash' : 'trending-up-outline'}
-                  size={14}
-                  color={streakColor}
-                />
-                {streakWeeks > 0 ? (
-                  <Text style={[styles.statValue, { color: streakColor }]}>
-                    {streakWeeks}
-                    <Text style={[styles.statUnit, { color: textTertiary }]}> wk streak</Text>
-                  </Text>
-                ) : (
-                  <Text style={[styles.statValue, { color: streakColor }]}>
-                    Build
-                    <Text style={[styles.statUnit, { color: textTertiary }]}> a streak</Text>
-                  </Text>
+              {/* Title row with gear */}
+              <View style={styles.titleRow}>
+                <Text style={[styles.cardTitle, { color: textPrimary }]}>Weekly Fuel</Text>
+                {onOpenSettings && (
+                  <TouchableOpacity
+                    onPress={onOpenSettings}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={[styles.gearBtn, { backgroundColor: chipBg }]}
+                  >
+                    <Ionicons name="settings-outline" size={14} color={textSecondary} />
+                  </TouchableOpacity>
                 )}
               </View>
 
+              {/* Tier pill + On Track */}
+              <View style={styles.tierRow}>
+                <View style={[styles.tierPill, { backgroundColor: tier.color + '18' }]}>
+                  <Text style={[styles.tierPillText, { color: tier.color }]}>{tier.label}</Text>
+                </View>
+                {targetMet && (
+                  <Animated.View
+                    style={[
+                      styles.onTrackPill,
+                      {
+                        backgroundColor: tier.color + '20',
+                        borderColor: tier.color + '50',
+                        transform: [{ scale: onTrackScale }],
+                      },
+                    ]}
+                  >
+                    <Ionicons name="checkmark-circle" size={10} color={tier.color} />
+                    <Text style={[styles.onTrackText, { color: tier.color }]}>On Track</Text>
+                  </Animated.View>
+                )}
+              </View>
+
+              {/* Flex remaining */}
+              {flexMealsRemaining > 0 && (
+                <View style={styles.compactRow}>
+                  <Ionicons name="ticket-outline" size={12} color={flexColor} />
+                  <Text style={[styles.compactText, { color: textSecondary }]}>
+                    <Text style={{ color: flexColor, fontWeight: '700' }}>{flexMealsRemaining}</Text> flex left
+                  </Text>
+                </View>
+              )}
+
+              {/* Streak — always visible */}
+              <View style={styles.compactRow}>
+                <Ionicons
+                  name={streakWeeks > 0 ? 'flash' : 'trending-up-outline'}
+                  size={12}
+                  color={streakWeeks > 0 ? streakColor : textTertiary}
+                />
+                {streakWeeks > 0 ? (
+                  <Text style={[styles.compactText, { color: textSecondary }]}>
+                    <Text style={{ color: streakColor, fontWeight: '700' }}>{streakWeeks}</Text> wk streak
+                  </Text>
+                ) : (
+                  <Text style={[styles.compactText, { color: textTertiary }]}>Build a streak</Text>
+                )}
+              </View>
+
+              {/* Trend vs last week */}
+              {prevWeekScore != null && prevWeekScore > 0 && (() => {
+                const diff = Math.round(avgScore - prevWeekScore);
+                if (diff === 0) return null;
+                const isUp = diff > 0;
+                const trendColor = isUp ? '#22C55E' : '#F59E0B';
+                return (
+                  <View style={styles.compactRow}>
+                    <Ionicons name={isUp ? 'arrow-up' : 'arrow-down'} size={12} color={trendColor} />
+                    <Text style={[styles.compactText, { color: textSecondary }]}>
+                      <Text style={{ color: trendColor, fontWeight: '700' }}>{isUp ? '+' : ''}{diff}</Text> vs last week
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -302,22 +306,9 @@ export function FlexBudgetCard({
                 style={[styles.progressFill, { width: `${mealProgressPct}%` }]}
               />
             </View>
-            <View style={styles.progressLabelRow}>
-              <Text style={[styles.progressLabel, { color: textTertiary }]}>
-                {mealCount} of {expectedMeals} meals logged this week
-              </Text>
-              {hasData && prevWeekScore != null && prevWeekScore > 0 && (() => {
-                const diff = Math.round(avgScore - prevWeekScore);
-                if (diff === 0) return null;
-                const isUp = diff > 0;
-                const trendColor = isUp ? '#22C55E' : '#F59E0B';
-                return (
-                  <Text style={[styles.trendText, { color: trendColor }]}>
-                    {isUp ? '↑' : '↓'} {Math.abs(diff)} pts
-                  </Text>
-                );
-              })()}
-            </View>
+            <Text style={[styles.progressLabel, { color: textTertiary }]}>
+              {mealCount} of {expectedMeals} meals logged this week
+            </Text>
           </View>
         )}
       </LinearGradient>
@@ -340,39 +331,16 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
 
-  // Header
-  header: {
+  // Body
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm + 2,
+    justifyContent: 'space-between',
   },
-  headerLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs + 1,
-  },
-  leafDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: FontSize.sm,
+  cardTitle: {
+    fontSize: FontSize.md,
     fontWeight: '700',
     letterSpacing: 0.1,
-  },
-  headerSub: {
-    fontSize: FontSize.xs,
-    fontWeight: '500',
-    marginLeft: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
   },
   gearBtn: {
     width: 28,
@@ -381,65 +349,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    flexWrap: 'wrap',
+  },
   onTrackPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.xs + 2,
+    paddingVertical: 3,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
   },
   onTrackText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-
-  // Body
   body: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.md + 2,
     paddingBottom: Spacing.xs,
   },
   ringWrap: {
     alignItems: 'center',
-    paddingBottom: 6,
+    gap: 4,
   },
-  tierLabel: {
+  mesBadge: {
+    position: 'absolute',
+    bottom: 22,
+    right: -8,
+    borderRadius: 20,
+    padding: 2,
+  },
+  mesBadgeRing: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mesBadgeScore: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'] as any,
+  },
+  thisWeekLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  statsCol: {
+    flex: 1,
+    gap: Spacing.xs + 2,
+  },
+  tierPill: {
+    alignSelf: 'flex-start',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+  },
+  tierPillText: {
     fontSize: FontSize.xs,
     fontWeight: '700',
     letterSpacing: 0.3,
-    marginTop: 6,
+    textTransform: 'uppercase',
   },
-
-  // Stats — clean rows
-  statsCol: {
-    flex: 1,
-  },
-  statRow: {
+  compactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    gap: 8,
+    gap: 5,
   },
-  statValue: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-  statDenom: {
+  compactText: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  statUnit: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  rowDivider: {
-    height: StyleSheet.hairlineWidth,
   },
 
   // Empty state

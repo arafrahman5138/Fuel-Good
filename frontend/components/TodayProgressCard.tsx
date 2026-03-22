@@ -11,10 +11,11 @@ import { Card } from './GradientCard';
 import { MacroRing } from './MacroRing';
 import { SingleMealRow } from './CompositeMealCard';
 import { MealMESBadge } from './MealMESBadge';
+import { FuelScoreBadge } from './FuelScoreBadge';
 import { useTheme } from '../hooks/useTheme';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES } from '../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { BorderRadius, FontSize, MacroColors, Spacing } from '../constants/Colors';
 
 // ── Fuel tier config ────────────────────────────────────────────────────────
 const FUEL_TIERS = [
@@ -31,10 +32,10 @@ function getFuelTier(score: number) {
 // ── Macro config ────────────────────────────────────────────────────────────
 const MACRO_RING_SIZE = 44;
 const MACRO_CONFIG = [
-  { key: 'calories', label: 'Cal', unit: '', color: '#22C55E' },
-  { key: 'protein', label: 'Protein', unit: 'g', color: '#22C55E' },
-  { key: 'carbs', label: 'Carbs', unit: 'g', color: '#F59E0B' },
-  { key: 'fat', label: 'Fat', unit: 'g', color: '#EC4899' },
+  { key: 'calories', label: 'Cal', unit: '', color: MacroColors.protein },
+  { key: 'protein', label: 'Protein', unit: 'g', color: MacroColors.protein },
+  { key: 'carbs', label: 'Carbs', unit: 'g', color: MacroColors.carbs },
+  { key: 'fat', label: 'Fat', unit: 'g', color: MacroColors.fatAlt },
 ];
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -207,7 +208,9 @@ export function TodayProgressCard({
           {MACRO_CONFIG.map((macro) => {
             const v = macroValues[macro.key];
             const pct = v.target > 0 ? v.consumed / v.target : 0;
-            const remaining = Math.max(0, Math.round(v.target - v.consumed));
+            const diff = Math.round(v.target - v.consumed);
+            const isOver = diff < 0;
+            const displayDiff = Math.abs(diff);
             const isCalories = macro.key === 'calories';
             const ringColor = isCalories && tier ? tier.color : macro.color;
 
@@ -229,8 +232,8 @@ export function TodayProgressCard({
                   {macro.label}
                 </Text>
                 {v.target > 0 && (
-                  <Text style={[styles.macroRemaining, { color: ringColor + 'AA' }]}>
-                    {remaining}{macro.unit} left
+                  <Text style={[styles.macroRemaining, { color: isOver ? '#EF4444AA' : ringColor + 'AA' }]}>
+                    {displayDiff}{macro.unit} {isOver ? 'over' : 'left'}
                   </Text>
                 )}
               </View>
@@ -278,6 +281,7 @@ export function TodayProgressCard({
                     side={item.side}
                     mealScores={mealScores}
                     isLast={isLast}
+                    fuelTarget={fuelTarget}
                   />
                 );
               }
@@ -314,11 +318,13 @@ function GroupedMealRow({
   side,
   mealScores,
   isLast,
+  fuelTarget,
 }: {
   main: DailyLog;
   side: DailyLog;
   mealScores: MealMES[];
   isLast: boolean;
+  fuelTarget?: number;
 }) {
   const theme = useTheme();
 
@@ -355,6 +361,9 @@ function GroupedMealRow({
             <Text style={[styles.rowTitle, { color: theme.text }]} numberOfLines={1}>
               {main.title || 'Untitled'}
             </Text>
+            {main.fuel_score != null && (
+              <FuelScoreBadge score={main.fuel_score} compact fuelTarget={fuelTarget} />
+            )}
             {displayScore != null && displayTier ? (
               <View
                 style={{

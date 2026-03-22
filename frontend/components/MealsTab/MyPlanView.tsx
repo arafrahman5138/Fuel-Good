@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../ScreenContainer';
 import { Card } from '../GradientCard';
+import { MealImage } from '../MealImage';
 import { Button } from '../Button';
 import { ChipSelector } from '../ChipSelector';
 import { useTheme } from '../../hooks/useTheme';
@@ -696,6 +697,14 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     <Text style={[styles.shortlistGroupLabel, { color: theme.text }]}>
                       {section.meal_type.charAt(0).toUpperCase() + section.meal_type.slice(1)}
                     </Text>
+                    {section.items.length === 0 ? (
+                      <View style={{ paddingVertical: Spacing.lg, paddingHorizontal: Spacing.md, alignItems: 'center' }}>
+                        <Ionicons name="restaurant-outline" size={28} color={theme.textTertiary} />
+                        <Text style={{ color: theme.textSecondary, fontSize: FontSize.sm, textAlign: 'center', marginTop: Spacing.sm }}>
+                          No {section.meal_type} recipes match your current preferences.
+                        </Text>
+                      </View>
+                    ) : (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortlistCardsRow}>
                       {section.items.map((item) => {
                         const included = preferredRecipeIds.includes(item.id);
@@ -712,7 +721,14 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                               },
                             ]}
                           >
-                            <View style={styles.shortlistCardTop}>
+                            <MealImage
+                              imageUrl={item.image_url}
+                              title={item.title}
+                              width={Dimensions.get('window').width * 0.58 - Spacing.md * 2}
+                              height={100}
+                              borderRadius={BorderRadius.lg}
+                            />
+                            <View style={[styles.shortlistCardTop, { marginTop: Spacing.sm }]}>
                               <Text style={[styles.shortlistCardTitle, { color: theme.text }]} numberOfLines={2}>
                                 {item.title}
                               </Text>
@@ -756,6 +772,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                         );
                       })}
                     </ScrollView>
+                    )}
                   </View>
                 ))}
               </View>
@@ -967,6 +984,17 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
           </View>
         </ScrollView>
 
+        {currentPlan?.warnings && currentPlan.warnings.length > 0 && (
+          <View style={{ backgroundColor: (theme as any).warningMuted || 'rgba(245,158,11,0.1)', borderRadius: BorderRadius.md, padding: Spacing.sm, marginBottom: Spacing.md }}>
+            {currentPlan.warnings.map((w: string, i: number) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: 2 }}>
+                <Ionicons name="warning-outline" size={14} color={theme.warning} />
+                <Text style={{ color: theme.warning, fontSize: FontSize.xs, flex: 1 }}>{w}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {prepTimeline.length > 0 ? (
           <View style={styles.prepTimelineSection}>
             <Text style={[styles.sectionLabel, { color: theme.text }]}>Prep Timeline</Text>
@@ -986,7 +1014,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                   <Text style={[styles.prepTimelineTitle, { color: theme.text }]} numberOfLines={2}>
                     {entry.recipe_title}
                   </Text>
-                  <Text style={[styles.prepTimelineSummary, { color: theme.textSecondary }]} numberOfLines={2}>
+                  <Text style={[styles.prepTimelineSummary, { color: theme.textSecondary }]} numberOfLines={3}>
                     {entry.summary_text}
                   </Text>
                 </View>
@@ -1071,7 +1099,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             return (
               <Card
                 key={index}
-                style={[styles.mealCard, { borderColor: theme.border, backgroundColor: theme.surface, borderLeftColor: mealTypeColor, borderLeftWidth: 3 }]}
+                style={[styles.mealCard, { borderColor: theme.border, backgroundColor: theme.surface }]}
                 padding={Spacing.lg}
                 onPress={() => {
                   if (!recipeId) return;
@@ -1083,6 +1111,17 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                   router.push(`/browse/${recipeId}`);
                 }}
               >
+                {recipe.image_url ? (
+                  <View style={{ marginBottom: Spacing.sm, marginHorizontal: -Spacing.lg, marginTop: -Spacing.lg }}>
+                    <MealImage
+                      imageUrl={recipe.image_url}
+                      title={recipe.title || 'Meal'}
+                      width={Dimensions.get('window').width - Spacing.xl * 2 - 2}
+                      height={140}
+                      borderRadius={0}
+                    />
+                  </View>
+                ) : null}
                 <View style={styles.mealTopRow}>
                   <Text style={[styles.mealType, { color: mealTypeColor }]}>
                     {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}
@@ -1646,7 +1685,7 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.lg,
   },
   prepTimelineCard: {
-    width: Dimensions.get('window').width * 0.59,
+    width: Dimensions.get('window').width * 0.72,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     padding: Spacing.md,
@@ -1664,7 +1703,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   prepTimelineSummary: {
-    marginTop: 6,
+    marginTop: 4,
     fontSize: FontSize.xs,
     lineHeight: 18,
   },
