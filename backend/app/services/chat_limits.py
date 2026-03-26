@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from threading import Lock
@@ -19,7 +20,8 @@ from app.utils import normalize_email as _normalize_email
 
 
 _IN_FLIGHT_LOCK = Lock()
-_IN_FLIGHT_REQUESTS: dict[str, int] = defaultdict(int)
+_IN_FLIGHT_SLOTS: dict[str, list[float]] = defaultdict(list)  # user_id → list of start timestamps
+_SLOT_TTL_SECONDS = 60  # Auto-expire slots older than this
 settings = get_settings()
 
 
@@ -97,27 +99,37 @@ def _ensure_usage_table() -> None:
     ChatUsageEvent.__table__.create(bind=engine, checkfirst=True)
 
 
+def _prune_expired_slots(user_id: str) -> None:
+    """Remove slots older than TTL. Must be called under _IN_FLIGHT_LOCK."""
+    now = time.monotonic()
+    slots = _IN_FLIGHT_SLOTS.get(user_id, [])
+    _IN_FLIGHT_SLOTS[user_id] = [t for t in slots if (now - t) < _SLOT_TTL_SECONDS]
+    if not _IN_FLIGHT_SLOTS[user_id]:
+        _IN_FLIGHT_SLOTS.pop(user_id, None)
+
+
 def acquire_chat_slot(user: User) -> None:
     if is_chat_quota_exempt(user):
         return
     config = _quota_config(user)
     with _IN_FLIGHT_LOCK:
-        active = _IN_FLIGHT_REQUESTS[str(user.id)]
+        _prune_expired_slots(str(user.id))
+        active = len(_IN_FLIGHT_SLOTS.get(str(user.id), []))
         if active >= int(config["max_concurrent"]):
             raise HTTPException(
                 status_code=429,
                 detail="You already have a chat request in progress. Please wait for it to finish.",
             )
-        _IN_FLIGHT_REQUESTS[str(user.id)] = active + 1
+        _IN_FLIGHT_SLOTS[str(user.id)].append(time.monotonic())
 
 
 def release_chat_slot(user_id: str) -> None:
     with _IN_FLIGHT_LOCK:
-        current = _IN_FLIGHT_REQUESTS.get(str(user_id), 0)
-        if current <= 1:
-            _IN_FLIGHT_REQUESTS.pop(str(user_id), None)
-        else:
-            _IN_FLIGHT_REQUESTS[str(user_id)] = current - 1
+        slots = _IN_FLIGHT_SLOTS.get(str(user_id), [])
+        if slots:
+            slots.pop(0)  # Remove oldest slot
+        if not slots:
+            _IN_FLIGHT_SLOTS.pop(str(user_id), None)
 
 
 def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> None:

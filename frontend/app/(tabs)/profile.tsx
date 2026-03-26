@@ -184,6 +184,24 @@ export default function ProfileScreen() {
           <XPBar xp={xp} />
         </Card>
 
+        {/* Quests & Streaks Link */}
+        <TouchableOpacity
+          onPress={() => router.push('/quests' as any)}
+          activeOpacity={0.85}
+          style={{ marginBottom: Spacing.lg }}
+        >
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg }}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentMuted }}>
+              <Ionicons name="flame" size={22} color={theme.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: FontSize.md, fontWeight: '700', color: theme.text }}>Quests & Streaks</Text>
+              <Text style={{ fontSize: FontSize.sm, color: theme.textSecondary }}>Daily goals and streak tracking</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+          </Card>
+        </TouchableOpacity>
+
         {/* Tab Selector */}
         <Animated.View style={contentEntrance.style}>
         <View style={[styles.tabRow, { backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.md }]}>

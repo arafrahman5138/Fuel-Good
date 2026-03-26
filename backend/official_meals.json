@@ -1,8 +1,8 @@
 {
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
-  "exported_at": "2026-03-19T22:32:42.248936Z",
-  "meal_count": 74,
+  "exported_at": "2026-03-23T23:36:37.990029Z",
+  "meal_count": 75,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -571,7 +571,7 @@
         "nonstarchy_veg"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/a24c6067986d.png",
       "recipe_role": "veg_side",
       "is_component": false,
       "meal_group_id": null,
@@ -2148,7 +2148,7 @@
         "potato"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/49e30eed166a.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -2585,7 +2585,7 @@
         "brown_rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/79478cb9ff9f.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -2698,7 +2698,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/c1a032541ad6.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -2782,7 +2782,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/78b25a94a60a.png",
       "recipe_role": "carb_base",
       "is_component": true,
       "meal_group_id": null,
@@ -2933,7 +2933,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/a67f32086faf.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
@@ -3164,7 +3164,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/565b6347ed0a.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -3293,7 +3293,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/3faac12b373e.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -3461,7 +3461,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/18b7a59b6b08.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
@@ -3674,7 +3674,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/ef12aabb0097.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -3789,7 +3789,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/b408a7a0fcda.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -4001,7 +4001,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/62f0c6bccf41.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -4202,7 +4202,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/5231f22403b6.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -4381,7 +4381,7 @@
         "chickpea_pasta"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/c81e71c1a374.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -4701,7 +4701,7 @@
         "tortillas"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/d726139d3bc0.png",
       "recipe_role": "dessert",
       "is_component": false,
       "meal_group_id": null,
@@ -4800,7 +4800,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/a4a7bd27c04f.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": "fiesta_bowl_group_v1",
@@ -5068,7 +5068,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/3c89a4d09aed.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -5434,7 +5434,7 @@
         "chickpeas"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/d9da730d36fc.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -5566,7 +5566,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/d039fe6f88f8.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": "red_pepper_bowl_group_v1",
@@ -5687,7 +5687,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/8fb9e5aad0cd.png",
       "recipe_role": "sauce",
       "is_component": true,
       "meal_group_id": null,
@@ -5698,6 +5698,221 @@
       "pairing_synergy_profile": null,
       "glycemic_profile": null,
       "created_at": "2026-03-13T22:16:25.731576"
+    },
+    {
+      "id": "c12de389-67db-473c-b885-a61f989ae432",
+      "title": "Crispy Beef Tacos",
+      "description": "Crispy pan-toasted corn tacos filled with seasoned beef, peppers, cheddar, lettuce, tomato, and a creamy salsa-yogurt drizzle.",
+      "ingredients": [
+        {
+          "name": "90/10 ground beef",
+          "quantity": "1",
+          "unit": "lb",
+          "category": "protein"
+        },
+        {
+          "name": "onion, finely diced",
+          "quantity": "1",
+          "unit": "large",
+          "category": "produce"
+        },
+        {
+          "name": "jalapeno, finely diced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "bell pepper, diced",
+          "quantity": "1/2",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "oregano",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "water",
+          "quantity": "2-3",
+          "unit": "tbsp",
+          "category": "other"
+        },
+        {
+          "name": "corn tortillas",
+          "quantity": "6",
+          "unit": "",
+          "category": "carbs"
+        },
+        {
+          "name": "shredded cheddar cheese",
+          "quantity": "2",
+          "unit": "oz",
+          "category": "dairy"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "fats"
+        },
+        {
+          "name": "shredded lettuce",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "tomato, diced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "produce"
+        },
+        {
+          "name": "plain Greek yogurt",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "salsa or taco-style hot sauce",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "sauces"
+        }
+      ],
+      "steps": [
+        "Heat a lightly oiled skillet over medium-high heat. Add the ground beef and press it into a flat layer so it can brown well before you break it apart.",
+        "Once the beef has good color on the bottom, break it up with a spoon. Add the onion, jalapeno, and bell pepper and cook for a few minutes until the vegetables soften.",
+        "Add the chili powder, paprika, cumin, garlic powder, oregano, salt, and black pepper. Pour in a small splash of water, stir, and let everything simmer briefly until the beef is well coated and flavorful.",
+        "In a small bowl, mix the Greek yogurt with the salsa or hot sauce to make the creamy taco drizzle.",
+        "Heat a shallow layer of oil in another skillet. Warm each corn tortilla just until it softens and starts to bubble, then sprinkle on a little cheese.",
+        "Add a generous spoonful of the beef mixture, fold the tortilla in half, and press gently. Toast until the outside is crisp and golden, then flip and crisp the second side.",
+        "Finish the tacos with shredded lettuce, diced tomato, and the yogurt-salsa sauce. If using the default pairing, have the cilantro lime cabbage slaw before or alongside the tacos."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 20,
+      "total_time_min": 30,
+      "servings": 2,
+      "nutrition_info": {
+        "calories": 656.0,
+        "protein": 42.5,
+        "carbs": 38.5,
+        "fat": 34.0,
+        "fiber": 5.9,
+        "sugar": 4.5,
+        "mes_score": 74.7,
+        "mes_display_score": 74.7,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 72.9,
+          "pas": 72.7,
+          "fs": 63.9,
+          "fas": 95.2
+        },
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": 81.6,
+        "mes_default_pairing_adjusted_score": 84.8,
+        "mes_default_pairing_delta": 10.1,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
+        "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
+        "mes_default_pairing_role": "veg_side",
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "stovetop",
+        "high_protein"
+      ],
+      "flavor_profile": [
+        "savory",
+        "crispy",
+        "spiced"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican-inspired",
+      "health_benefits": [
+        "muscle_recovery",
+        "satiety",
+        "blood_sugar_support"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "corn_tortilla"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/crispy-beef-tacos-draft.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "0a823513-6446-45a3-b605-f9ba207ed52c"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": "Corn tortillas do not receive ingredient-aware GIS relief in v1."
+      },
+      "created_at": "2026-03-23T23:35:08.197992"
     },
     {
       "id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
@@ -5782,7 +5997,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/f8729da4fcf6.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -5874,7 +6089,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/cdefb2943870.png",
       "recipe_role": "sauce",
       "is_component": true,
       "meal_group_id": null,
@@ -5976,7 +6191,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/594470e4d4c0.png",
       "recipe_role": "veg_side",
       "is_component": false,
       "meal_group_id": null,
@@ -6088,7 +6303,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/3844b2fedb68.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -6404,7 +6619,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/25c6d27f6b3a.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -6510,7 +6725,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/e6c7d8d528fb.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -6613,7 +6828,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/533968a57dda.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -6715,7 +6930,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/ee4db5c4e90f.png",
       "recipe_role": "veg_side",
       "is_component": false,
       "meal_group_id": null,
@@ -6833,7 +7048,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/706a9c5671be.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -6942,7 +7157,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/980c23861be2.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7045,7 +7260,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/4f4984674df7.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7304,7 +7519,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/e6f8cce35412.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
@@ -7393,7 +7608,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/0cd01f812b20.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7483,7 +7698,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/c3cf58340087.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7579,7 +7794,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/c2cac428e734.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7671,7 +7886,7 @@
         "sweet_potato"
       ],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/257a02884c4d.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7796,7 +8011,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/db232f426a29.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -7885,7 +8100,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/1bca6cb5bbcf.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7971,7 +8186,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/f5092ab6ae5d.png",
       "recipe_role": "carb_base",
       "is_component": true,
       "meal_group_id": null,
@@ -8082,7 +8297,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/bc7ad35fcdae.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
@@ -8210,7 +8425,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/a278c0535f0e.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
@@ -8401,7 +8616,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/30374ab88e89.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -8684,7 +8899,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/8b0d0a6eb8a7.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -8784,7 +8999,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/d88216b4d092.png",
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": "burrito_bowl_group_v1",
@@ -8981,7 +9196,7 @@
         "potato"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/2fb6d869157c.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -9198,7 +9413,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/73990db3f204.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -9346,7 +9561,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/4eb6c714ec61.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -9430,7 +9645,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/af7a01d1d95e.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -9518,7 +9733,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/070adb7eee9e.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -9608,7 +9823,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": true,
-      "image_url": null,
+      "image_url": "/static/meal-images/2cb4f451b33b.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -9799,7 +10014,7 @@
         "rice_noodles"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/e6cf250cd16f.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -10006,7 +10221,7 @@
         "sweet_potato"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/a073f073a968.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -10096,7 +10311,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/876adae77cee.png",
       "recipe_role": "carb_base",
       "is_component": true,
       "meal_group_id": "burrito_bowl_group_v1",
@@ -10181,7 +10396,7 @@
       "protein_type": [],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/9cb54bf6dded.png",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -10297,7 +10512,7 @@
       ],
       "carb_type": [],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/7af62ff9e27a.png",
       "recipe_role": "full_meal",
       "is_component": false,
       "meal_group_id": null,
@@ -10325,11 +10540,17 @@
           "quantity": "2",
           "unit": "cups",
           "category": "other"
+        },
+        {
+          "name": "sea salt",
+          "quantity": "1",
+          "unit": "pinch",
+          "category": "spices"
         }
       ],
       "steps": [
         "Rinse rice until water runs clear.",
-        "Cook rice with water until tender.",
+        "Cook rice with water and salt until tender.",
         "Fluff and portion for meal prep."
       ],
       "prep_time_min": 3,
@@ -10369,7 +10590,7 @@
         "rice"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "/static/meal-images/d053c58f5a05.png",
       "recipe_role": "carb_base",
       "is_component": true,
       "meal_group_id": null,
@@ -10380,6 +10601,211 @@
       "pairing_synergy_profile": null,
       "glycemic_profile": null,
       "created_at": "2026-03-13T22:16:25.731588"
+    },
+    {
+      "id": "b3853ca6-aee3-4f71-8cd7-3ef5ebc77ca7",
+      "title": "Smoky Chipotle Beef Mulitas",
+      "description": "Spiced ground beef pressed between crispy corn tortillas with melted Monterey Jack — a smoky, handheld meal inspired by birria flavors using easy-to-find grocery store ingredients.",
+      "ingredients": [
+        {
+          "name": "ground beef (85/15)",
+          "quantity": "2",
+          "unit": "lbs",
+          "category": "protein"
+        },
+        {
+          "name": "ancho chili powder",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "chipotle pepper in adobo, minced",
+          "quantity": "1",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "adobo sauce (from the can)",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "sauces"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "fats"
+        },
+        {
+          "name": "onion, roughly chopped",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves",
+          "quantity": "3-4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "oregano",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "paprika",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "corn tortillas (6-inch)",
+          "quantity": "8",
+          "unit": "",
+          "category": "carbs"
+        },
+        {
+          "name": "Monterey Jack cheese, shredded",
+          "quantity": "4",
+          "unit": "oz",
+          "category": "dairy"
+        },
+        {
+          "name": "chili powder (for glaze)",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin (for glaze)",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "smoked paprika (for glaze)",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder (for glaze)",
+          "quantity": "1/4",
+          "unit": "tsp",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "In a small bowl, mix the ancho chili powder with about a quarter cup of hot water and let it bloom for 5 minutes. This gives you a quick, rich chili paste without needing to hunt down dried whole chillies.",
+        "Heat a splash of olive oil in a hot pan. Add the chopped onion and garlic and cook until golden and fragrant, about 3 to 4 minutes.",
+        "Transfer the onion and garlic to a blender. Add the bloomed ancho paste, the minced chipotle pepper with a teaspoon of its adobo sauce, the oregano, paprika, and cumin. Blend until smooth — this is your marinade.",
+        "In a large bowl, season the ground beef with salt, then mix in the marinade until evenly combined.",
+        "Take a corn tortilla, spread a thin even layer of seasoned beef on top, add a pinch of shredded Monterey Jack, and press a second tortilla on top.",
+        "Mix the spice glaze ingredients (chili powder, cumin, smoked paprika, garlic powder) with a tablespoon of olive oil. Brush both sides of each stuffed tortilla.",
+        "Cook in a hot oiled pan until golden brown and crispy on both sides, about 3 to 4 minutes per side. The beef should be cooked through and the cheese melted.",
+        "Serve immediately with Cilantro Lime Cabbage Slaw on the side for a fresh, crunchy contrast."
+      ],
+      "prep_time_min": 15,
+      "cook_time_min": 10,
+      "total_time_min": 25,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 823.0,
+        "protein": 48.0,
+        "carbs": 28.0,
+        "fat": 57.0,
+        "fiber": 4.2,
+        "sugar": 3.0,
+        "mes_score": 79.2,
+        "mes_display_score": 79.2,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 82.4,
+          "pas": 100.0,
+          "fs": 44.8,
+          "fas": 87.4
+        },
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": 89.4,
+        "mes_default_pairing_delta": 10.2,
+        "mes_default_pairing_adjusted_score": 89.4,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element (lime)",
+          "healthy fat (olive oil dressing)",
+          "vegetable-forward side",
+          "before-meal timing"
+        ],
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element (lime)",
+          "healthy fat (olive oil dressing)",
+          "vegetable-forward side",
+          "before-meal timing"
+        ],
+        "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
+        "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
+        "mes_default_pairing_role": "veg_side"
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "quick",
+        "handheld"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "savory",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "muscle_recovery",
+        "heart_health"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "corn_tortilla"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/9c862c723c13.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [
+        "0a823513-6446-45a3-b605-f9ba207ed52c"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-23T12:00:00.000000"
     }
   ]
 }

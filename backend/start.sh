@@ -5,6 +5,10 @@ cd "$(dirname "$0")"
 
 # ── Ensure PostgreSQL is running via Docker ──
 DOCKER_BIN="${DOCKER_BIN:-docker}"
+LOCAL_DB_USER="realfood"
+LOCAL_DB_PASSWORD="realfood_local"
+PRIMARY_DB="fuelgood"
+LEGACY_DB="realfood"
 if ! command -v "$DOCKER_BIN" &>/dev/null; then
   # Docker Desktop on macOS puts the binary here
   DOCKER_BIN="/Applications/Docker.app/Contents/Resources/bin/docker"
@@ -12,6 +16,17 @@ fi
 
 if command -v "$DOCKER_BIN" &>/dev/null; then
   CONTAINER="realfood-postgres"
+
+  ensure_db() {
+    local db_name="$1"
+    local exists
+    exists=$("$DOCKER_BIN" exec "$CONTAINER" psql -U "$LOCAL_DB_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${db_name}'" 2>/dev/null | tr -d '[:space:]')
+    if [ "$exists" != "1" ]; then
+      echo "🛠  Creating PostgreSQL database '${db_name}'..."
+      "$DOCKER_BIN" exec "$CONTAINER" psql -U "$LOCAL_DB_USER" -d postgres -c "CREATE DATABASE ${db_name};" > /dev/null
+    fi
+  }
+
   echo "🐘 Starting PostgreSQL container..."
   "$DOCKER_BIN" compose -f ../docker-compose.yml up -d
   for i in $(seq 1 30); do
@@ -19,6 +34,8 @@ if command -v "$DOCKER_BIN" &>/dev/null; then
     sleep 1
   done
   "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1
+  ensure_db "$PRIMARY_DB"
+  ensure_db "$LEGACY_DB"
   echo "✅ PostgreSQL is ready"
 else
   echo "⚠️  Docker not found — skipping PostgreSQL auto-start (using DATABASE_URL from .env)"
@@ -54,6 +71,10 @@ echo "Docs: http://localhost:8000/docs"
 echo ""
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
 "$VENV_PYTHON" -m alembic upgrade heads
+LEGACY_DATABASE_URL="postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@localhost:5432/${LEGACY_DB}"
+if [ "${DATABASE_URL:-}" != "$LEGACY_DATABASE_URL" ]; then
+  DATABASE_URL="$LEGACY_DATABASE_URL" "$VENV_PYTHON" -m alembic upgrade heads
+fi
 "$VENV_PYTHON" - <<'PY'
 from sqlalchemy import create_engine, text
 from app.config import get_settings

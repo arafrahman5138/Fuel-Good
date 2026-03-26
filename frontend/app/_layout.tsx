@@ -32,9 +32,10 @@ export default function RootLayout() {
 
   const currentRootSegment = segments[0];
   const isAuthRoute = currentRootSegment === '(auth)';
-  const isOnboardingRoute = isAuthRoute && segments[1] === 'onboarding';
+  const isOnboardingV2Route = currentRootSegment === 'onboarding-v2';
+  const isOnboardingRoute = isOnboardingV2Route || (isAuthRoute && segments[1] === 'onboarding');
   const isSubscribeRoute = pathname === '/subscribe';
-  const canAccessWithoutPremium = isAuthRoute || isSubscribeRoute || pathname === '/';
+  const canAccessWithoutPremium = isAuthRoute || isOnboardingV2Route || isSubscribeRoute || pathname === '/';
 
   // 7-day free trial: allow authenticated, onboarded users to explore the app
   const isWithinFreeTrial = (() => {
@@ -67,8 +68,12 @@ export default function RootLayout() {
     }
   }, [token]);
 
+  const billingBootstrapped = useRef(false);
   useEffect(() => {
     if (!token || !user?.id) return;
+    // Prevent re-bootstrapping on every render — only run once per user session
+    if (billingBootstrapped.current) return;
+    billingBootstrapped.current = true;
 
     let active = true;
     setBillingLoading(true);
@@ -79,6 +84,9 @@ export default function RootLayout() {
         if (status?.entitlement && active) {
           setEntitlement(status.entitlement);
         }
+      })
+      .catch(() => {
+        // RevenueCat not configured — continue without billing
       })
       .finally(() => {
         if (active) setBillingLoading(false);
@@ -111,7 +119,7 @@ export default function RootLayout() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (isLoading || isBillingLoading) return;
+    if (isLoading) return;
 
     const needsOnboarding = Boolean(
       isAuthenticated && (!user?.flavor_preferences?.length || !user?.dietary_preferences?.length)
@@ -124,6 +132,7 @@ export default function RootLayout() {
       return;
     }
 
+    // Onboarding doesn't need billing — redirect immediately even while billing loads
     if (needsOnboarding) {
       if (!isOnboardingRoute) {
         router.replace('/(auth)/onboarding' as any);
@@ -131,6 +140,8 @@ export default function RootLayout() {
       return;
     }
 
+    // Billing-dependent routes can only enter protected tabs when the user
+    // has premium access or is inside the temporary free-trial window.
     if (!hasPremiumAccess && !isWithinFreeTrial) {
       if (!canAccessWithoutPremium) {
         router.replace('/subscribe');
@@ -138,7 +149,7 @@ export default function RootLayout() {
       return;
     }
 
-    if (isSubscribeRoute || isAuthRoute) {
+    if (isAuthRoute || isSubscribeRoute) {
       router.replace('/(tabs)' as any);
     }
   }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length]);
@@ -193,6 +204,7 @@ export default function RootLayout() {
         })}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding-v2" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false, headerTitle: '' }} />
         <Stack.Screen
           name="subscribe"

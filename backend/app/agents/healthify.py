@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, List, Optional
 from datetime import UTC, date, datetime
 
@@ -22,6 +25,18 @@ from app.services.metabolic_engine import (
     remaining_budget,
 )
 from app.models.metabolic_profile import MetabolicProfile
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _CachedUserContext:
+    """Request-scoped cache: computed once, used everywhere. Eliminates duplicate DB queries."""
+    profile: Any = None
+    budget: Any = None
+    daily_totals: dict = field(default_factory=dict)
+    remaining: dict = field(default_factory=dict)
+    context_text: str = ""
 
 
 PROMPT_VERSION = "healthify_v2_rag"
@@ -45,34 +60,13 @@ class RecipeSchema(BaseModel):
     servings: int = 1
 
 
-GENERATE_PROMPT = """You are Fuel Good Healthify AI.
-
-Return strict JSON with keys: message, recipe, swaps, nutrition.
-
-Behavior:
-- If the user wants a meal made healthier, preserve the spirit of the dish while replacing ultra-processed ingredients with whole-food alternatives.
-- If the user names a dish or cuisine with no extra context, treat that as a request for a complete healthified recipe.
-- Use realistic ingredients and plausible quantities.
-- Keep recipe steps actionable and concise.
-- Keep nutrition estimates plausible and internally consistent.
-- Do not copy retrieved recipes verbatim if told they are only context.
-- If you include swaps, every swap must include `original`, `replacement`, and `reason`.
-- Do not return partial swap entries or empty replacement fields.
-- For food and recipe requests, `recipe` must not be null and must include non-empty `ingredients` and `steps`.
-
-Recipe schema:
-- recipe.title: string
-- recipe.description: string
-- recipe.ingredients: list of {name, quantity, unit}
-- recipe.steps: list of strings
-- recipe.prep_time_min: integer
-- recipe.cook_time_min: integer
-- recipe.servings: integer
-
-Nutrition schema:
-- nutrition.original_estimate: {calories, protein, carbs, fat, fiber}
-- nutrition.healthified_estimate: {calories, protein, carbs, fat, fiber}
-"""
+GENERATE_PROMPT = """You are Fuel Good Healthify AI. Return JSON only.
+Keys: message, recipe, swaps, nutrition.
+Healthify meals by replacing ultra-processed ingredients with whole foods. Preserve the dish's spirit.
+recipe: {title, description, ingredients:[{name,quantity,unit}], steps:[], prep_time_min, cook_time_min, servings}
+nutrition: {original_estimate:{calories,protein,carbs,fat,fiber}, healthified_estimate:{calories,protein,carbs,fat,fiber}}
+swaps: [{original, replacement, reason}]
+CRITICAL: recipe must NOT be null for food requests. Include 3+ ingredients and 3+ steps. Output valid JSON only."""
 
 GENERAL_PROMPT = """You are Fuel Good Healthify AI.
 Return strict JSON with keys: message, recipe, swaps, nutrition.
@@ -343,6 +337,64 @@ def _compute_recipe_mes(
         return None
 
 
+def _build_cached_user_context(db: Session, user_id: str | None, chat_context: dict | None = None) -> _CachedUserContext:
+    """Single entry point: query DB once, cache everything for the request lifecycle."""
+    if not user_id:
+        return _CachedUserContext()
+    try:
+        profile = db.query(MetabolicProfile).filter(
+            MetabolicProfile.user_id == user_id
+        ).first()
+        if not profile or not profile.weight_lb:
+            return _CachedUserContext(profile=profile)
+
+        budget = load_budget_for_user(db, user_id, profile=profile)
+        totals = aggregate_daily_totals(db, user_id, datetime.now(UTC).date())
+        rem = remaining_budget(totals, budget)
+        context_text = _build_user_context(db, user_id, chat_context)
+
+        return _CachedUserContext(
+            profile=profile,
+            budget=budget,
+            daily_totals=totals,
+            remaining=rem,
+            context_text=context_text,
+        )
+    except Exception:
+        return _CachedUserContext()
+
+
+def _compute_recipe_mes_from_cache(
+    cached: _CachedUserContext, nutrition_data: dict | None
+) -> dict | None:
+    """Compute MES using pre-fetched budget and totals. Zero DB queries."""
+    if not cached.budget or not nutrition_data:
+        return None
+    try:
+        est = nutrition_data.get("healthified_estimate") or nutrition_data
+        meal_nutrition = {
+            "protein_g": float(est.get("protein") or est.get("protein_g") or 0),
+            "carbs_g": float(est.get("carbs") or est.get("carbs_g") or 0),
+            "fiber_g": float(est.get("fiber") or est.get("fiber_g") or 0),
+            "fat_g": float(est.get("fat") or est.get("fat_g") or 0),
+            "calories": float(est.get("calories") or 0),
+        }
+        meal_result = compute_meal_mes(meal_nutrition, cached.budget)
+        projected = {
+            k: cached.daily_totals.get(k, 0) + meal_nutrition.get(k, 0)
+            for k in ("protein_g", "fiber_g", "carbs_g", "fat_g", "calories")
+        }
+        daily_result = compute_daily_mes(projected, cached.budget)
+        return {
+            "meal_score": meal_result.get("display_score", meal_result.get("total_score", 0)),
+            "meal_tier": meal_result.get("display_tier", meal_result.get("tier", "moderate")),
+            "projected_daily_score": daily_result.get("display_score", daily_result.get("total_score", 0)),
+            "projected_daily_tier": daily_result.get("display_tier", daily_result.get("tier", "moderate")),
+        }
+    except Exception:
+        return None
+
+
 def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     text = (user_input or "").lower()
 
@@ -577,7 +629,8 @@ def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
         return payload
     try:
         normalized = RecipeSchema.model_validate(recipe)
-    except ValidationError:
+    except ValidationError as exc:
+        logger.warning("healthify.validate.schema_error title=%r errors=%s", recipe.get("title"), exc.error_count())
         payload["recipe"] = None
         payload["swaps"] = payload.get("swaps") or []
         payload["nutrition"] = payload.get("nutrition") or None
@@ -594,6 +647,10 @@ def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
     ]
     steps = [step.strip() for step in normalized.steps if step and step.strip()]
     if not ingredients or not steps:
+        logger.warning(
+            "healthify.validate.empty_recipe title=%r ingredients=%d steps=%d",
+            normalized.title, len(ingredients), len(steps),
+        )
         payload["recipe"] = None
         return payload
 
@@ -783,6 +840,52 @@ async def _modify_prior_recipe(
     return payload
 
 
+async def repair_missing_recipe(
+    user_input: str,
+    user_context: str = "",
+    retrieved_context: list[dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
+    """Standalone repair call: asks the LLM to produce a valid recipe when the first attempt failed.
+    Returns the repaired payload dict (with recipe, message, swaps, nutrition) or None."""
+    logger.warning("healthify.repair.started user_input=%r", user_input[:80])
+    try:
+        llm = get_llm("chat")
+        repair_prompt = """Your previous response did not include a valid recipe object.
+Return strict JSON only with keys: message, recipe, swaps, nutrition.
+Requirements:
+- recipe must be non-null
+- recipe.ingredients must contain at least 5 items
+- recipe.steps must contain at least 3 concise steps
+- keep the dish faithful to the user's request
+"""
+        system = f"{GENERATE_PROMPT}\n\n{user_context}\n\n{repair_prompt}" if user_context else f"{GENERATE_PROMPT}\n\n{repair_prompt}"
+        repair_messages: list = [SystemMessage(content=system)]
+        if retrieved_context:
+            repair_messages.append(
+                HumanMessage(
+                    content=(
+                        "Closest existing recipe context:\n"
+                        + json.dumps(retrieved_context, indent=2)
+                        + f"\n\nUser request:\n{user_input}\n\nReturn JSON only."
+                    )
+                )
+            )
+        else:
+            repair_messages.append(
+                HumanMessage(content=f"User request:\n{user_input}\n\nReturn JSON only.")
+            )
+        repair_response = await llm.ainvoke(repair_messages)
+        repaired = parse_healthify_response(repair_response.content)
+        if repaired.get("recipe"):
+            logger.info("healthify.repair.succeeded user_input=%r title=%r", user_input[:80], repaired["recipe"].get("title"))
+            return repaired
+        logger.warning("healthify.repair.failed user_input=%r", user_input[:80])
+        return None
+    except Exception as exc:
+        logger.exception("healthify.repair.error user_input=%r error=%s", user_input[:80], exc)
+        return None
+
+
 async def _generate_healthified_payload(
     user_input: str,
     history: List[dict],
@@ -813,39 +916,13 @@ async def _generate_healthified_payload(
     payload = parse_healthify_response(response.content)
 
     if not payload.get("recipe"):
-        repair_prompt = """Your previous response did not include a valid recipe object.
-Return strict JSON only with keys: message, recipe, swaps, nutrition.
-Requirements:
-- recipe must be non-null
-- recipe.ingredients must contain at least 5 items
-- recipe.steps must contain at least 3 concise steps
-- keep the dish faithful to the user's request
-"""
-        repair_messages = [SystemMessage(content=f"{GENERATE_PROMPT}\n\n{repair_prompt}")]
-        if user_context:
-            repair_messages = [SystemMessage(content=f"{GENERATE_PROMPT}\n\n{user_context}\n\n{repair_prompt}")]
-        if retrieved_context:
-            repair_messages.append(
-                HumanMessage(
-                    content=(
-                        "Closest existing recipe context:\n"
-                        + json.dumps(retrieved_context, indent=2)
-                        + f"\n\nUser request:\n{user_input}\n\nReturn JSON only."
-                    )
-                )
-            )
-        else:
-            repair_messages.append(
-                HumanMessage(content=f"User request:\n{user_input}\n\nReturn JSON only.")
-            )
-        repair_response = await llm.ainvoke(repair_messages)
-        repaired_payload = parse_healthify_response(repair_response.content)
-        if _nutrition_is_plausible(repaired_payload.get("nutrition")):
-            payload["nutrition"] = repaired_payload.get("nutrition") or payload.get("nutrition")
-        if repaired_payload.get("recipe"):
-            payload["recipe"] = repaired_payload.get("recipe")
-            payload["message"] = repaired_payload.get("message") or payload.get("message")
-            payload["swaps"] = repaired_payload.get("swaps") or payload.get("swaps")
+        repaired = await repair_missing_recipe(user_input, user_context, retrieved_context)
+        if repaired:
+            if _nutrition_is_plausible(repaired.get("nutrition")):
+                payload["nutrition"] = repaired.get("nutrition") or payload.get("nutrition")
+            payload["recipe"] = repaired.get("recipe")
+            payload["message"] = repaired.get("message") or payload.get("message")
+            payload["swaps"] = repaired.get("swaps") or payload.get("swaps")
 
     payload["response_mode"] = "generated"
     payload["matched_recipe_id"] = retrieved_context[0]["id"] if retrieved_context else None
@@ -1025,13 +1102,15 @@ async def healthify_agent(
     user_id: str | None = None,
     chat_context: dict | None = None,
 ) -> dict[str, Any] | AsyncIterator[str]:
-    user_context = _build_user_context(db, user_id, chat_context)
-
     intent = _classify_intent(user_input, chat_context)
+
+    # Build cached context once (eliminates all duplicate DB queries)
+    cached = _build_cached_user_context(db, user_id, chat_context)
+    user_context = cached.context_text
 
     if intent == "photo_analysis":
         payload = await _handle_photo_analysis(user_input, history, chat_context or {}, user_context)
-        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
         if stream:
@@ -1043,7 +1122,7 @@ async def healthify_agent(
 
     if intent == "fridge_to_meal":
         payload = await _handle_fridge_to_meal(user_input, history, user_context)
-        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
         if stream:
@@ -1062,7 +1141,7 @@ async def healthify_agent(
 
     if intent == "post_scan_guidance":
         payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
-        mes = _compute_recipe_mes(db, user_id, payload.get("nutrition"))
+        mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
         if stream:
@@ -1083,7 +1162,7 @@ async def healthify_agent(
         modified_payload = await _modify_prior_recipe(user_input, history, user_context)
         if modified_payload:
             nutrition = modified_payload.get("nutrition")
-            mes = _compute_recipe_mes(db, user_id, nutrition)
+            mes = _compute_recipe_mes_from_cache(cached, nutrition)
             if mes:
                 modified_payload["mes_score"] = mes
             if stream:
@@ -1100,9 +1179,8 @@ async def healthify_agent(
         recipe = top["recipe"]
         payload = _retrieved_response(recipe, top_score, user_context)
         payload["retrieval_debug"] = retrieval.get("timings_ms")
-        # Compute MES for retrieved recipe
         nutrition = payload.get("nutrition")
-        mes = _compute_recipe_mes(db, user_id, nutrition)
+        mes = _compute_recipe_mes_from_cache(cached, nutrition)
         if mes:
             payload["mes_score"] = mes
         if stream:
@@ -1125,7 +1203,7 @@ async def healthify_agent(
                 messages.append(AIMessage(content=msg["content"]))
         context_block = ""
         if retrieved_context:
-            context_block = "Closest existing recipe context:\n" + json.dumps(retrieved_context, indent=2)
+            context_block = "Reference recipes:\n" + json.dumps(retrieved_context, separators=(",", ":"))
         messages.append(HumanMessage(content=f"{context_block}\n\nUser request:\n{user_input}\n\nReturn JSON only."))
 
         async def stream_response():
@@ -1140,9 +1218,8 @@ async def healthify_agent(
         payload["matched_recipe_id"] = str(top["recipe"].id)
         payload["retrieval_confidence"] = float(top.get("score") or 0)
     payload["retrieval_debug"] = retrieval.get("timings_ms")
-    # Compute MES for generated recipe
     nutrition = payload.get("nutrition")
-    mes = _compute_recipe_mes(db, user_id, nutrition)
+    mes = _compute_recipe_mes_from_cache(cached, nutrition)
     if mes:
         payload["mes_score"] = mes
     return payload
