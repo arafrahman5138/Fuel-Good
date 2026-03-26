@@ -12,7 +12,6 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
@@ -135,12 +134,9 @@ export function ChatHistoryDrawer({
         {/* Drawer Header */}
         <View style={[styles.drawerHeader, { borderBottomColor: theme.border }]}>
           <View style={styles.drawerTitleRow}>
-            <LinearGradient
-              colors={['#22C55E', '#16A34A']}
-              style={styles.drawerIcon}
-            >
-              <Ionicons name="chatbubbles" size={14} color="#FFF" />
-            </LinearGradient>
+            <View style={[styles.drawerIcon, { backgroundColor: theme.primary + '14' }]}>
+              <Ionicons name="chatbubbles" size={14} color={theme.primary} />
+            </View>
             <Text style={[styles.drawerTitle, { color: theme.text }]}>Chat History</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -150,12 +146,12 @@ export function ChatHistoryDrawer({
 
         {/* New Chat Button */}
         <TouchableOpacity
-          style={[styles.newChatBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '40' }]}
+          style={[styles.newChatBtn, { backgroundColor: 'transparent', borderColor: theme.border }]}
           onPress={() => { onNewChat(); onClose(); }}
           activeOpacity={0.8}
         >
           <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
-          <Text style={[styles.newChatText, { color: theme.primary }]}>New Chat</Text>
+          <Text style={[styles.newChatText, { color: theme.text }]}>New Chat</Text>
         </TouchableOpacity>
 
         {/* Session List */}
@@ -179,8 +175,8 @@ export function ChatHistoryDrawer({
                   style={[
                     styles.sessionItem,
                     {
-                      backgroundColor: isActive ? theme.primaryMuted : 'transparent',
-                      borderColor: isActive ? theme.primary + '30' : 'transparent',
+                      backgroundColor: isActive ? theme.text + '08' : 'transparent',
+                      borderColor: 'transparent',
                     },
                   ]}
                   onPress={() => { onSelectSession(session.id); onClose(); }}
@@ -195,7 +191,7 @@ export function ChatHistoryDrawer({
                     />
                     <View style={styles.sessionMeta}>
                       <Text
-                        style={[styles.sessionTitle, { color: isActive ? theme.primary : theme.text }]}
+                        style={[styles.sessionTitle, { color: theme.text }]}
                         numberOfLines={1}
                       >
                         {session.title || 'Untitled'}
@@ -227,7 +223,7 @@ export function ChatHistoryDrawer({
             {SUGGESTED_PROMPTS.map((prompt, i) => (
               <TouchableOpacity
                 key={i}
-                style={[styles.suggestedItem, { backgroundColor: theme.primary + '0C', borderColor: theme.primary + '20', borderWidth: 1 }]}
+                style={[styles.suggestedItem, { backgroundColor: 'transparent', borderColor: theme.border, borderWidth: 1 }]}
                 onPress={() => { onSelectPrompt(prompt.text); onClose(); }}
                 activeOpacity={0.7}
               >

@@ -53,7 +53,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="meals"
         options={{
-          title: 'Eat',
+          title: 'Meals',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="restaurant" size={size} color={color} />
           ),
@@ -62,7 +62,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chronometer"
         options={{
-          title: 'Chrono',
+          title: 'Track',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="analytics" size={size} color={color} />
           ),
@@ -71,7 +71,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
+          title: 'Coach',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubbles" size={size} color={color} />
           ),

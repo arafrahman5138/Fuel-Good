@@ -194,19 +194,26 @@ export default function ChatScreen() {
     };
   }, [messages.length]);
 
-  const shouldPreferStreaming = (message: string) => {
-    const normalized = message.trim().toLowerCase();
-    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
-    return wordCount > 6 || /make|healthier|modify|swap|without|instead/.test(normalized);
+  const shouldPreferStreaming = (_message: string) => {
+    // Always stream — provides better UX (user sees text appear progressively)
+    // and the backend streaming path handles all intent types
+    return true;
   };
 
   const addAssistantPayload = (payload: any) => {
+    const rawRecipe = payload?.healthified_recipe || payload?.recipe;
+    if (!rawRecipe) {
+      console.warn('[Healthify] No recipe in payload:', JSON.stringify(payload)?.slice(0, 300));
+    }
     const normalized = normalizeAssistantPayload({
       content: payload?.message?.content || payload?.message || '',
-      recipe: payload?.healthified_recipe || payload?.recipe,
+      recipe: rawRecipe,
       swaps: payload?.ingredient_swaps || payload?.swaps,
       nutrition: payload?.nutrition_comparison || payload?.nutrition,
     });
+    if (!normalized.recipe) {
+      console.warn('[Healthify] normalizeAssistantPayload returned no recipe. Content preview:', (payload?.message?.content || payload?.message || '').slice(0, 200));
+    }
     addMessage({
       role: 'assistant',
       content: normalized.message,
@@ -232,7 +239,23 @@ export default function ChatScreen() {
           (chunk) => appendStreamingText(chunk),
           (done) => {
             if (done?.session_id) setSessionId(done.session_id);
-            if (done?.payload) addAssistantPayload(done.payload);
+            if (done?.payload) {
+              // Fallback: if backend returned no recipe, try parsing from the raw streamed text
+              const hasRecipe = done.payload.recipe || done.payload.healthified_recipe;
+              if (!hasRecipe) {
+                const rawText = useChatStore.getState().streamingText;
+                if (rawText) {
+                  const fallback = normalizeAssistantPayload({ content: rawText });
+                  if (fallback.recipe) {
+                    done.payload.recipe = fallback.recipe;
+                    if (fallback.message) done.payload.message = fallback.message;
+                    if (fallback.swaps?.length) done.payload.swaps = fallback.swaps;
+                    if (fallback.nutrition) done.payload.nutrition = fallback.nutrition;
+                  }
+                }
+              }
+              addAssistantPayload(done.payload);
+            }
           },
           ctx,
         );
@@ -301,6 +324,7 @@ export default function ChatScreen() {
 
   const handleSuggestion = (suggestion: string) => {
     trackBehaviorEvent('healthify_suggestion_tapped', { suggestion });
+    Keyboard.dismiss();
     setInput(suggestion);
     // Auto-send after a microtask to let state update
     setTimeout(() => {
@@ -398,9 +422,9 @@ export default function ChatScreen() {
   const handleSelectSession = async (sessionId: string) => {
     try {
       const detail = await chatApi.getSession(sessionId);
+      useChatStore.getState().clearChat();
+      useChatStore.getState().setSessionId(sessionId);
       if (detail?.messages?.length > 0) {
-        useChatStore.getState().clearChat();
-        useChatStore.getState().setSessionId(sessionId);
         detail.messages.forEach((m: any) => useChatStore.getState().addMessage(m));
       }
     } catch (err) {
@@ -455,8 +479,15 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!conversationData.length) return;
+    // Find the last user message index so the response starts visible near the top
+    const lastUserIdx = [...conversationData].reverse().findIndex((m) => m.role === 'user');
+    const targetIdx = lastUserIdx >= 0 ? conversationData.length - 1 - lastUserIdx : conversationData.length - 1;
     requestAnimationFrame(() => {
-      listRef.current?.scrollToEnd({ animated: true });
+      try {
+        listRef.current?.scrollToIndex({ index: targetIdx, animated: true, viewPosition: 0 });
+      } catch {
+        listRef.current?.scrollToEnd({ animated: true });
+      }
     });
   }, [conversationData.length, isLoading]);
 
@@ -591,6 +622,11 @@ export default function ChatScreen() {
           maxToRenderPerBatch={6}
           removeClippedSubviews={Platform.OS === 'android'}
           showsVerticalScrollIndicator={false}
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0 });
+            }, 200);
+          }}
           contentContainerStyle={[
             styles.messagesContent,
             {
@@ -1128,10 +1164,19 @@ export default function ChatScreen() {
               </View>
               <View style={[styles.bubbleContent, { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }]}>
                 {streamingText ? (
-                  <Text style={[styles.messageText, { color: theme.text }]}>
-                    {streamingText}
-                    <Text style={{ color: theme.primary }}>▍</Text>
-                  </Text>
+                  streamingText.trimStart().startsWith('{') || streamingText.trimStart().startsWith('```') ? (
+                    <View style={styles.loadingContent}>
+                      <TypingIndicator color={theme.primary} iconColor={theme.primary} />
+                      <Text style={[styles.messageText, { color: theme.textTertiary, fontStyle: 'italic' }]}>
+                        Crafting your recipe...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.messageText, { color: theme.text }]}>
+                      {streamingText}
+                      <Text style={{ color: theme.primary }}>▍</Text>
+                    </Text>
+                  )
                 ) : (
                   <View style={styles.loadingContent}>
                     <TypingIndicator color={theme.primary} iconColor={theme.primary} />
@@ -1165,12 +1210,22 @@ export default function ChatScreen() {
               </TouchableOpacity>
             </View>
           )}
+          <View style={styles.inputRow}>
+            {keyboardVisible && (
+              <TouchableOpacity
+                onPress={() => Keyboard.dismiss()}
+                activeOpacity={0.7}
+                style={styles.keyboardDismissBtn}
+              >
+                <Ionicons name="chevron-down-outline" size={22} color={theme.textTertiary} />
+              </TouchableOpacity>
+            )}
           <View
             style={[
               styles.inputCard,
               isCompact && styles.inputCardCompact,
               Shadows.md(isDark),
-              { backgroundColor: theme.surface, borderColor: theme.border },
+              { backgroundColor: theme.surface, borderColor: theme.border, flex: 1 },
             ]}
           >
             <TouchableOpacity
@@ -1219,6 +1274,7 @@ export default function ChatScreen() {
                 />
               </LinearGradient>
             </TouchableOpacity>
+          </View>
           </View>
         </View>
       </View>
@@ -1751,8 +1807,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  keyboardDismissBtn: {
+    padding: Spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   inputCard: {
-    width: '100%',
     maxWidth: MAX_CHAT_WIDTH,
     alignSelf: 'center',
     flexDirection: 'row',

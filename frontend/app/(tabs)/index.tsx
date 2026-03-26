@@ -20,8 +20,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
 
-import { StreakBadge } from '../../components/StreakBadge';
-import { MetabolicStreakBadge } from '../../components/MetabolicStreakBadge';
 import { XPToast } from '../../components/XPToast';
 import { FlexUnlockedToast } from '../../components/FlexUnlockedToast';
 
@@ -31,7 +29,6 @@ import { FlexSummaryCard } from '../../components/FlexSummaryCard';
 import { TodayProgressCard } from '../../components/TodayProgressCard';
 import { useTheme, useIsDark } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
-import { useGamificationStore } from '../../stores/gamificationStore';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../stores/metabolicBudgetStore';
 import { useFuelStore } from '../../stores/fuelStore';
@@ -140,12 +137,6 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const homeScrollRef = useRef<ScrollView>(null);
   const user = useAuthStore((s) => s.user);
-  const quests = useGamificationStore((s) => s.quests);
-  const completionPct = useGamificationStore((s) => s.completionPct);
-  const fetchQuests = useGamificationStore((s) => s.fetchQuests);
-  const fetchStats = useGamificationStore((s) => s.fetchStats);
-
-  const nutritionStreak = useGamificationStore((s) => s.nutritionStreak);
   const currentPlan = useMealPlanStore((s) => s.currentPlan);
   const loadCurrentPlan = useMealPlanStore((s) => s.loadCurrentPlan);
   const dailyMES = useMetabolicBudgetStore((s) => s.dailyScore);
@@ -270,8 +261,6 @@ export default function HomeScreen() {
     // Reset meal plan hasLoaded so it reloads
     useMealPlanStore.setState({ hasLoaded: false });
     await Promise.all([
-      fetchQuests(),
-      fetchStats(),
       loadRecommended(),
       loadCurrentPlan(),
       loadDailyNutrition(selectedDayKey),
@@ -282,11 +271,9 @@ export default function HomeScreen() {
       fetchHealthPulse(selectedDayKey),
     ]);
     setRefreshing(false);
-  }, [selectedDayKey, fetchMetabolic, fetchQuests, fetchStats, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
+  }, [selectedDayKey, fetchMetabolic, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
 
   useEffect(() => {
-    fetchQuests();
-    fetchStats();
     loadRecommended();
     loadCurrentPlan();
     loadDailyNutrition(selectedDayKey);
@@ -693,16 +680,14 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <View style={styles.stickyHeaderRight}>
-              {metabolicStreak && metabolicStreak.current_streak > 0 && (
-                <MetabolicStreakBadge currentStreak={metabolicStreak.current_streak} compact />
-              )}
-              {nutritionStreak > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.primaryMuted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.full }}>
-                  <Ionicons name="leaf" size={14} color={theme.primary} />
-                  <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>{nutritionStreak}d</Text>
-                </View>
-              )}
-              <StreakBadge streak={user?.current_streak || 0} compact />
+              <TouchableOpacity
+                onPress={() => router.push('/quests' as any)}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
+              >
+                <Ionicons name="flame" size={16} color={theme.accent} />
+                <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak ?? 0}</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
@@ -752,16 +737,14 @@ export default function HomeScreen() {
           </View>
           <View style={styles.headerRight}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              {metabolicStreak && metabolicStreak.current_streak > 0 && (
-                <MetabolicStreakBadge currentStreak={metabolicStreak.current_streak} compact />
-              )}
-              {nutritionStreak > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.primaryMuted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.full }}>
-                  <Ionicons name="leaf" size={14} color={theme.primary} />
-                  <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>{nutritionStreak}d</Text>
-                </View>
-              )}
-              <StreakBadge streak={user?.current_streak || 0} compact />
+              <TouchableOpacity
+                onPress={() => router.push('/quests' as any)}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
+              >
+                <Ionicons name="flame" size={16} color={theme.accent} />
+                <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak ?? 0}</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
@@ -1083,111 +1066,28 @@ export default function HomeScreen() {
           title={fuelCardTitle}
         />
 
-        {/* ── Daily Quests ──────────────────────────────────────────────── */}
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Today's Quests</Text>
-        <Card style={{ overflow: 'hidden', padding: 0, marginBottom: Spacing.xl }}>
-          <View style={[styles.questHeader, { backgroundColor: theme.surface }]}>
-            <View style={styles.questHeaderTop}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-                <Ionicons name="flame" size={18} color={theme.accent} />
-                <Text style={[styles.questHeaderTitle, { color: theme.text }]}>Daily Progress</Text>
-              </View>
-              <View style={[styles.questPctBadge, { backgroundColor: completionPct === 100 ? theme.primary : theme.accentMuted }]}>
-                <Text style={[styles.questPctText, { color: completionPct === 100 ? '#fff' : theme.accent }]}>{completionPct}%</Text>
-              </View>
-            </View>
-            <View style={[styles.questProgressTrack, { backgroundColor: theme.surfaceHighlight }]}>
-              <LinearGradient
-                colors={completionPct === 100 ? ['#22C55E', '#059669'] : ['#F59E0B', '#F97316']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.questProgressFill, { width: `${Math.max(completionPct, 2)}%` as any }]}
-              />
-            </View>
-          </View>
-          {quests.map((quest, idx) => {
-            const isCeiling = quest.direction === 'ceiling';
-            const progress = quest.target_value > 0
-              ? (isCeiling
-                  ? (quest.completed ? 1 : Math.min(quest.current_value / quest.target_value, 1))
-                  : quest.current_value / quest.target_value)
-              : 0;
-            const ceilingOver = isCeiling && quest.current_value > quest.target_value;
-            return (
-              <View
-                key={quest.id}
-                style={[
-                  styles.questItem,
-                  { borderBottomColor: theme.border },
-                  idx === quests.length - 1 && { borderBottomWidth: 0 },
-                ]}
+        {/* ── Recommended For You ─────────────────────────────────────── */}
+        {recommended.length > 0 && (
+          <View style={{ marginBottom: Spacing.xl, marginTop: Spacing.md }}>
+            <View style={s.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Recommended For You</Text>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/(tabs)/meals', params: { tab: 'browse' } } as any)}
+                hitSlop={12}
               >
-                <View style={[
-                  styles.questIcon,
-                  { backgroundColor: quest.completed ? theme.primaryMuted : theme.surfaceHighlight },
-                ]}>
-                  {quest.completed ? (
-                    <Ionicons name="checkmark" size={16} color={theme.primary} />
-                  ) : (
-                    <Ionicons
-                      name={
-                        quest.quest_type === 'log_meal' ? 'restaurant-outline' :
-                        quest.quest_type === 'logging' ? 'restaurant-outline' :
-                        quest.quest_type === 'healthify' ? 'heart-outline' :
-                        quest.quest_type === 'score' ? 'trophy-outline' :
-                        quest.quest_type === 'cook' ? 'flame-outline' :
-                        quest.quest_type === 'metabolic' ? 'flash-outline' :
-                        quest.quest_type === 'fuel' ? 'leaf-outline' :
-                        'star-outline'
-                      }
-                      size={16}
-                      color={
-                        quest.quest_type === 'metabolic' ? theme.accent :
-                        quest.quest_type === 'fuel' ? theme.primary :
-                        theme.textSecondary
-                      }
-                    />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.questItemTitleRow}>
-                    <Text
-                      style={[
-                        styles.questTitle,
-                        { color: quest.completed ? theme.textTertiary : theme.text },
-                        quest.completed && { textDecorationLine: 'line-through' },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {quest.title}
-                    </Text>
-                    <View style={[styles.questXpBadge, { backgroundColor: quest.completed ? theme.primaryMuted : theme.surfaceHighlight }]}>
-                      <Text style={[styles.questXpText, { color: quest.completed ? theme.primary : theme.textSecondary }]}>+{quest.xp_reward} XP</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.questMiniTrack, { backgroundColor: theme.surfaceHighlight }]}>
-                    <View
-                      style={[
-                        styles.questMiniFill,
-                        {
-                          width: `${Math.min(progress * 100, 100)}%` as any,
-                          backgroundColor: isCeiling
-                            ? (ceilingOver ? '#EF4444' : theme.primary)
-                            : (quest.completed ? theme.primary : theme.accent),
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.questMeta, { color: theme.textTertiary }]}>
-                    {isCeiling
-                      ? `${Math.round(quest.current_value)}g consumed (${Math.round(quest.target_value)}g limit)`
-                      : `${quest.current_value}/${quest.target_value}`}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </Card>
+                <Text style={[s.seeAll, { color: theme.primary }]}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={recommended}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderRecipeCard}
+              contentContainerStyle={{ paddingTop: Spacing.md }}
+            />
+          </View>
+        )}
 
         {/* ── Quick Actions (with Healthify CTA) ─────────────────────── */}
         <Animated.View style={[actionsEntrance.style, { marginTop: Spacing.md }]}>
@@ -1295,29 +1195,6 @@ export default function HomeScreen() {
           ))}
         </View>
         </Animated.View>
-
-        {/* ── Recommended For You ─────────────────────────────────────── */}
-        {recommended.length > 0 && (
-          <View style={{ marginBottom: Spacing.xl, marginTop: Spacing.md }}>
-            <View style={s.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Recommended For You</Text>
-              <TouchableOpacity
-                onPress={() => router.push({ pathname: '/(tabs)/meals', params: { tab: 'browse' } } as any)}
-                hitSlop={12}
-              >
-                <Text style={[s.seeAll, { color: theme.primary }]}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={recommended}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={renderRecipeCard}
-              contentContainerStyle={{ paddingTop: Spacing.md }}
-            />
-          </View>
-        )}
 
         {/* ── Daily Tip ──────────────────────────────────────────────── */}
         <Card style={{ marginTop: Spacing.md }}>
@@ -1780,86 +1657,5 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: FontSize.sm,
     lineHeight: 22,
-  },
-  questHeader: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  questHeaderTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  questHeaderTitle: {
-    fontSize: FontSize.md,
-    fontWeight: '700',
-  },
-  questPctBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  questPctText: {
-    fontSize: FontSize.xs,
-    fontWeight: '800',
-  },
-  questProgressTrack: {
-    height: 6,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-  },
-  questProgressFill: {
-    height: '100%',
-    borderRadius: BorderRadius.full,
-  },
-  questItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  questIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  questItemTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  questTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: Spacing.xs,
-  },
-  questXpBadge: {
-    paddingHorizontal: Spacing.xs + 2,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  questXpText: {
-    fontSize: FontSize.xs - 1,
-    fontWeight: '700',
-  },
-  questMiniTrack: {
-    height: 4,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  questMiniFill: {
-    height: '100%',
-    borderRadius: BorderRadius.full,
-  },
-  questMeta: {
-    fontSize: FontSize.xs - 1,
   },
 });

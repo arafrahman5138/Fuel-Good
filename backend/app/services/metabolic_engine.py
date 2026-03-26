@@ -1934,12 +1934,13 @@ def get_or_create_streak(db: Session, user_id: str) -> MetabolicStreak:
     return streak
 
 
-def load_budget_for_user(db: Session, user_id: str) -> ComputedBudget:
+def load_budget_for_user(db: Session, user_id: str, *, profile: "MetabolicProfile | None" = None) -> ComputedBudget:
     """Read DB profile -> MetabolicProfileInput -> ComputedBudget.
 
     Falls back to DEFAULT_PROFILE if no profile exists.
+    Pass `profile=` to skip the redundant MetabolicProfile query when caller already has it.
     """
-    orm_profile = db.query(MetabolicProfile).filter(
+    orm_profile = profile if profile is not None else db.query(MetabolicProfile).filter(
         MetabolicProfile.user_id == user_id,
     ).first()
     if not orm_profile or not orm_profile.weight_lb:

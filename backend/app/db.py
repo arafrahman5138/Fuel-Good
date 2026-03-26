@@ -72,9 +72,74 @@ def _run_alembic_upgrade() -> None:
 
 
 def ensure_legacy_schema_columns() -> None:
-    """Add missing columns in PostgreSQL for legacy environments."""
+    """Add missing columns and tables in PostgreSQL for legacy environments."""
     from sqlalchemy import text
 
+    # ── Create missing tables first ──────────────────────────────────
+    table_ddls = [
+        ("chat_usage_events", """
+            CREATE TABLE IF NOT EXISTS chat_usage_events (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                route VARCHAR NOT NULL DEFAULT 'healthify',
+                response_mode VARCHAR NOT NULL DEFAULT 'unknown',
+                cost_units FLOAT NOT NULL DEFAULT 1.0,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+        """),
+        ("product_label_scans", """
+            CREATE TABLE IF NOT EXISTS product_label_scans (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                capture_type VARCHAR,
+                image_url VARCHAR,
+                image_bucket VARCHAR,
+                image_path VARCHAR,
+                image_mime_type VARCHAR,
+                product_name VARCHAR,
+                brand VARCHAR,
+                ingredients_text VARCHAR,
+                confidence FLOAT DEFAULT 0.0,
+                confidence_breakdown JSON,
+                analysis JSON,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """),
+        ("daily_fuel_summaries", """
+            CREATE TABLE IF NOT EXISTS daily_fuel_summaries (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                date DATE NOT NULL,
+                avg_fuel_score FLOAT DEFAULT 0.0,
+                meal_count INTEGER DEFAULT 0,
+                total_score_points FLOAT DEFAULT 0.0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE (user_id, date)
+            )
+        """),
+        ("weekly_fuel_summaries", """
+            CREATE TABLE IF NOT EXISTS weekly_fuel_summaries (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+                week_start DATE NOT NULL,
+                avg_fuel_score FLOAT DEFAULT 0.0,
+                meal_count INTEGER DEFAULT 0,
+                total_score_points FLOAT DEFAULT 0.0,
+                flex_meals_used INTEGER DEFAULT 0,
+                flex_budget_total FLOAT DEFAULT 0.0,
+                flex_budget_remaining FLOAT DEFAULT 0.0,
+                target_met BOOLEAN DEFAULT FALSE,
+                streak_weeks INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE (user_id, week_start)
+            )
+        """),
+    ]
+
+    # ── Column migrations ────────────────────────────────────────────
     migrations = [
         ("metabolic_scores", "display_score", "ALTER TABLE metabolic_scores ADD COLUMN display_score FLOAT DEFAULT 0"),
         ("metabolic_scores", "display_tier", "ALTER TABLE metabolic_scores ADD COLUMN display_tier VARCHAR DEFAULT 'crash_risk'"),
@@ -96,6 +161,7 @@ def ensure_legacy_schema_columns() -> None:
         ("users", "access_override_updated_at", "ALTER TABLE users ADD COLUMN access_override_updated_at TIMESTAMP"),
         ("users", "fuel_target", "ALTER TABLE users ADD COLUMN fuel_target INTEGER DEFAULT 80"),
         ("users", "expected_meals_per_week", "ALTER TABLE users ADD COLUMN expected_meals_per_week INTEGER DEFAULT 21"),
+        ("users", "clean_eating_pct", "ALTER TABLE users ADD COLUMN clean_eating_pct INTEGER DEFAULT 80"),
         ("local_foods", "brand", "ALTER TABLE local_foods ADD COLUMN brand VARCHAR"),
         ("local_foods", "source_kind", "ALTER TABLE local_foods ADD COLUMN source_kind VARCHAR DEFAULT 'whole_food'"),
         ("local_foods", "aliases", "ALTER TABLE local_foods ADD COLUMN aliases JSON"),
@@ -132,6 +198,35 @@ def ensure_legacy_schema_columns() -> None:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         except Exception as exc:
             logger.warning("ensure_legacy_schema: pgvector extension creation skipped: %s", exc)
+
+        # Create missing tables
+        for table_name, ddl in table_ddls:
+            try:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.tables "
+                    "WHERE table_schema = 'public' AND table_name = :t"
+                ), {"t": table_name}).scalar()
+                if not exists:
+                    conn.execute(text(ddl))
+                    logger.info("ensure_legacy_schema: created table %s", table_name)
+            except Exception as exc:
+                logger.warning("ensure_legacy_schema: table %s skipped: %s", table_name, exc)
+
+        # Create indexes for new tables
+        for idx_sql in [
+            "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_user_id ON chat_usage_events(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_created_at ON chat_usage_events(created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_product_label_scans_user_id ON product_label_scans(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_daily_fuel_summaries_user_id ON daily_fuel_summaries(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_daily_fuel_summaries_date ON daily_fuel_summaries(date)",
+            "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_user_id ON weekly_fuel_summaries(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_week_start ON weekly_fuel_summaries(week_start)",
+        ]:
+            try:
+                conn.execute(text(idx_sql))
+            except Exception as exc:
+                logger.warning("ensure_legacy_schema: index skipped: %s", exc)
+
         for table, col, ddl in migrations:
             try:
                 rows = conn.execute(text(
@@ -177,10 +272,17 @@ def ensure_pgvector_schema() -> None:
             logger.warning("ensure_pgvector_schema: embedding column failed: %s", exc)
             return
 
-        try:
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_recipe_embeddings_embedding_ivfflat "
-                "ON recipe_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
-            ))
-        except Exception as exc:
-            logger.warning("ensure_pgvector_schema: ivfflat index creation skipped: %s", exc)
+        # ivfflat and hnsw indexes support max 2000 dimensions
+        if embed_dim <= 2000:
+            try:
+                conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_recipe_embeddings_embedding_ivfflat "
+                    "ON recipe_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+                ))
+            except Exception as exc:
+                logger.warning("ensure_pgvector_schema: ivfflat index creation skipped: %s", exc)
+        else:
+            logger.info(
+                "ensure_pgvector_schema: skipping ivfflat index (embedding_dimension=%d > 2000 limit)",
+                embed_dim,
+            )

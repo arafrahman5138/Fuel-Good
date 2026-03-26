@@ -13,7 +13,7 @@ from app.models.user import User
 from app.models.meal_plan import ChatSession
 from app.models.metabolic_profile import MetabolicProfile
 from app.schemas.chat import ChatRequest, ChatResponse, ChatSessionSummary
-from app.agents.healthify import healthify_agent, parse_healthify_response
+from app.agents.healthify import healthify_agent, parse_healthify_response, repair_missing_recipe
 from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
 from typing import List
 from datetime import UTC, date, datetime
@@ -310,6 +310,28 @@ async def healthify_food_stream(
                 release_chat_slot(str(current_user.id))
 
             final_payload = parse_healthify_response(full_response)
+            if not final_payload.get("recipe"):
+                logger.warning(
+                    "healthify.stream.no_recipe request_id=%s user_id=%s session_id=%s response_chars=%s preview=%r",
+                    request_id,
+                    current_user.id,
+                    session.id,
+                    len(full_response),
+                    full_response[:200],
+                )
+                # Repair: retry with a strict prompt to get a valid recipe
+                repaired = await repair_missing_recipe(request.message)
+                if repaired:
+                    if repaired.get("recipe"):
+                        final_payload["recipe"] = repaired["recipe"]
+                        final_payload["message"] = repaired.get("message") or final_payload.get("message")
+                        final_payload["swaps"] = repaired.get("swaps") or final_payload.get("swaps")
+                        final_payload["nutrition"] = repaired.get("nutrition") or final_payload.get("nutrition")
+                        logger.info(
+                            "healthify.stream.repair_succeeded request_id=%s user_id=%s",
+                            request_id,
+                            current_user.id,
+                        )
             messages.append(
                 {
                     "role": "assistant",

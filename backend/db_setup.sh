@@ -13,6 +13,10 @@ if ! command -v docker &>/dev/null; then
 fi
 
 DB_CONTAINER="realfood-postgres"
+DB_USER="realfood"
+DB_PASSWORD="realfood_local"
+PRIMARY_DB="fuelgood"
+LEGACY_DB="realfood"
 RESET_DB=false
 RUN_BACKUP=true
 RUN_SEED=true
@@ -27,6 +31,16 @@ for arg in "$@"; do
   esac
 done
 
+ensure_db() {
+  local db_name="$1"
+  local exists
+  exists=$(docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${db_name}'" 2>/dev/null | tr -d '[:space:]')
+  if [[ "$exists" != "1" ]]; then
+    echo "🛠  Creating PostgreSQL database '${db_name}'..."
+    docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d postgres -c "CREATE DATABASE ${db_name};" > /dev/null
+  fi
+}
+
 # ── 1. Start Docker Compose ────────────────────────────
 echo "🐘 Starting PostgreSQL via Docker Compose..."
 docker compose -f ../docker-compose.yml up -d
@@ -40,6 +54,8 @@ done
 docker exec "$DB_CONTAINER" pg_isready -U realfood > /dev/null 2>&1 || {
   echo "❌ PostgreSQL did not start in time"; exit 1;
 }
+ensure_db "$PRIMARY_DB"
+ensure_db "$LEGACY_DB"
 echo "✅ PostgreSQL is ready"
 
 # ── 2. Optional reset ──────────────────────────────────
@@ -49,8 +65,10 @@ fi
 
 if [[ "$RESET_DB" == true ]]; then
   echo "🗑  Resetting database..."
-  docker exec "$DB_CONTAINER" psql -U realfood -d fuelgood -c \
-    "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  for db_name in "$PRIMARY_DB" "$LEGACY_DB"; do
+    docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$db_name" -c \
+      "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  done
   echo "✅ Database reset"
 fi
 
@@ -63,6 +81,10 @@ fi
 
 echo "📦 Running Alembic migrations..."
 PYTHONPATH=. alembic upgrade head
+LEGACY_DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${LEGACY_DB}"
+if [[ "${DATABASE_URL:-}" != "$LEGACY_DATABASE_URL" ]]; then
+  PYTHONPATH=. DATABASE_URL="$LEGACY_DATABASE_URL" alembic upgrade head
+fi
 python - <<'PY'
 from sqlalchemy import create_engine, text
 from app.config import get_settings
