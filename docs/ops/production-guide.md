@@ -41,7 +41,7 @@
   `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID`, and optionally `EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL`.
 
 - Confirm the Apple Developer account is active.
-- Confirm bundle ID `com.fuelgood.app` matches in Expo, Apple, and OAuth provider settings.
+- Confirm bundle ID `com.fuelgood.ios` matches in Expo, Apple, and OAuth provider settings.
 - Configure Sign in with Apple.
 - Verify Google OAuth production credentials.
 - In App Store Connect, create the auto-renewable subscription group and both products used by the app:

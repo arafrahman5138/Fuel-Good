@@ -10,14 +10,16 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
+  Pressable,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { recipeApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
-import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTIONS } from '../../constants/Config';
+import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTIONS, CUISINE_OPTIONS } from '../../constants/Config';
 import { MealImage } from '../MealImage';
 import { MealMESBadge } from '../MealMESBadge';
 import { PlateComposer } from '../PlateComposer';
@@ -79,6 +81,7 @@ interface Filters {
   cook_time?: string;
   difficulty?: string;
   health_benefit?: string;
+  cuisine?: string;
 }
 
 const MULTI_SELECT_FILTERS: (keyof Filters)[] = ['protein_type', 'carb_type'];
@@ -178,6 +181,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
           if (filters.cook_time) params.cook_time = filters.cook_time;
           if (filters.difficulty) params.difficulty = filters.difficulty;
           if (filters.health_benefit) params.health_benefit = filters.health_benefit;
+          if (filters.cuisine) params.cuisine = filters.cuisine;
         }
 
         const data: BrowseResult = await recipeApi.browse(params);
@@ -364,6 +368,14 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
       <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
         {item.title}
       </Text>
+      {item.description ? (
+        <Text
+          style={[styles.cardDescription, { color: theme.textSecondary }]}
+          numberOfLines={1}
+        >
+          {item.description}
+        </Text>
+      ) : null}
 
       <View style={styles.cardMeta}>
         <View style={styles.cardMetaItem}>
@@ -380,78 +392,10 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         </View>
       </View>
 
-      {displayScore !== null ? (
-        <View style={{ gap: 4 }}>
-          <MealMESBadge score={displayScore} tier={displayTier} compact />
-          {item.needs_default_pairing === true && item.default_pairing_ids && item.default_pairing_ids.length > 0 && (
-            <View style={styles.sideIndicatorRow}>
-              <View style={[styles.sideIndicatorPill, { backgroundColor: theme.primary + '12', borderColor: theme.primary + '30' }]}>
-                <Text style={{ fontSize: 10 }}>🥗</Text>
-                <Text style={[styles.sideIndicatorText, { color: theme.primary }]}>+side included</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      ) : hint ? (
-        <View style={styles.contextHintRow}>
-          <View
-            style={[
-              styles.contextHintPill,
-              {
-                backgroundColor: hintTheme.bg,
-                borderColor: hintTheme.border,
-              },
-            ]}
-          >
-            <Ionicons name={hintTheme.icon} size={10} color={hintTheme.text} />
-            <Text style={[styles.contextHintText, { color: hintTheme.text }]} numberOfLines={1}>{hint}</Text>
-          </View>
-        </View>
-      ) : null}
-
-      {item.flavor_profile?.length > 0 && (
-        <View style={styles.cardTags}>
-          {item.flavor_profile.slice(0, 2).map((f) => (
-            <View key={f} style={[styles.flavorTag, { backgroundColor: theme.accentMuted }]}>
-              <Text style={[styles.flavorTagText, { color: theme.accent }]}>{f}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {item.health_benefits?.length > 0 && (
-        <View style={styles.cardBenefits}>
-          {item.health_benefits.slice(0, 2).map((hb) => {
-            const info = getBenefitInfo(hb);
-            return (
-              <View
-                key={hb}
-                style={[
-                  styles.benefitPill,
-                  { backgroundColor: (info?.color || '#666') + '18' },
-                ]}
-              >
-                <Ionicons
-                  name={(info?.icon as any) || 'leaf'}
-                  size={10}
-                  color={info?.color || '#666'}
-                />
-                <Text
-                  style={[styles.benefitPillText, { color: info?.color || '#666' }]}
-                  numberOfLines={1}
-                >
-                  {info?.label || hb}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
       {item.nutrition_info?.calories && (
-        <View style={{ backgroundColor: theme.surfaceHighlight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.full, alignSelf: 'flex-start' }}>
-          <Text style={[styles.cardCalories, { color: theme.text }]}>
-            {item.nutrition_info.calories} cal
+        <View style={{ backgroundColor: theme.primary + '14', paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full, alignSelf: 'flex-start' }}>
+          <Text style={[styles.cardCalories, { color: theme.primary }]}>
+            {Math.round(item.nutrition_info.calories)} cal{item.nutrition_info.protein ? ` · ${Math.round(item.nutrition_info.protein)}g protein` : ''}
           </Text>
         </View>
       )}
@@ -485,6 +429,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         displayLabel = getMultiSelectLabel(key, label);
       } else if (key === 'health_benefit') displayLabel = getBenefitInfo(activeValue!)?.label || activeValue!;
       else if (key === 'cook_time') displayLabel = COOK_TIME_OPTIONS.find((c) => c.id === activeValue)?.label || activeValue!;
+      else if (key === 'cuisine') displayLabel = CUISINE_OPTIONS.find((c) => c.id === activeValue)?.label || activeValue!;
       else displayLabel = activeValue!.charAt(0).toUpperCase() + activeValue!.slice(1);
     }
 
@@ -572,17 +517,22 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         filterKey = 'cook_time';
         options = COOK_TIME_OPTIONS.map((c) => ({ value: c.id, label: c.label, count: 0 }));
         break;
+      case 'cuisine':
+        title = 'Cuisine';
+        filterKey = 'cuisine';
+        options = CUISINE_OPTIONS.map((c) => ({ value: c.id, label: c.label, count: 0 }));
+        break;
     }
 
     const selectedValues = filters[filterKey] ? filters[filterKey]!.split(',') : [];
 
     return (
       <Modal transparent animationType="slide" visible onRequestClose={() => setFilterModal(null)}>
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setFilterModal(null)}
-        >
+        <View style={{ flex: 1 }}>
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setFilterModal(null)}
+          />
           <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
             {/* Drag handle */}
             <View style={styles.modalHandleRow}>
@@ -672,7 +622,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     );
   };
@@ -873,6 +823,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
       {/* Filter Chips (Full Meals only) */}
       {isFullMealsMode && (
         <>
+          <View style={{ position: 'relative' }}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -888,6 +839,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             {renderFilterChip('Difficulty', 'difficulty')}
             {renderFilterChip('Flavor', 'flavor')}
             {renderFilterChip('Health Benefit', 'health_benefit')}
+            {renderFilterChip('Cuisine', 'cuisine')}
             {/* Fits My Budget toggle */}
             <TouchableOpacity
               style={[
@@ -919,6 +871,14 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
               </TouchableOpacity>
             )}
           </ScrollView>
+          <LinearGradient
+            colors={[theme.background + '00', theme.background]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.filterFadeRight}
+            pointerEvents="none"
+          />
+          </View>
 
           {/* Active Filters */}
           {activeFilterCount > 0 && (
@@ -982,9 +942,8 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         initialNumToRender={8}
-        maxToRenderPerBatch={6}
-        windowSize={5}
-        removeClippedSubviews
+        maxToRenderPerBatch={10}
+        windowSize={11}
         refreshing={refreshing}
         onRefresh={async () => {
           setRefreshing(true);
@@ -1109,6 +1068,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     height: 48,
   },
+  filterFadeRight: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
   filterRowContent: {
     paddingLeft: Spacing.xl,
     paddingRight: Spacing.xl + Spacing.lg,
@@ -1188,6 +1154,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 20,
     letterSpacing: -0.2,
+  },
+  cardDescription: {
+    fontSize: FontSize.xs,
+    lineHeight: 16,
+    marginTop: -2,
   },
   cardMeta: {
     flexDirection: 'row',
@@ -1322,7 +1293,6 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
   },
   modalContent: {
     borderTopLeftRadius: 28,

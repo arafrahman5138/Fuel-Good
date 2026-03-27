@@ -14,11 +14,11 @@ class Settings(BaseSettings):
     password_reset_token_expire_minutes: int = 30
 
     # Security / network hardening
-    cors_allowed_origins: str = "http://localhost:8081,http://localhost:3000"
+    cors_allowed_origins: str = "http://localhost:8081,http://localhost:3000,http://localhost:19006"
     rate_limit_per_minute: int = 120
     auth_rate_limit_per_minute: int = 20
     social_auth_enabled: bool = True
-    apple_bundle_id: str = "com.fuelgood.app"
+    apple_bundle_id: str = "com.fuelgood.ios"
     google_userinfo_url: str = "https://openidconnect.googleapis.com/v1/userinfo"
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     notification_cron_batch_size: int = 100
     notification_cron_user_limit: int = 250
     run_startup_seeding: bool = False
-    support_email: str = "support@fuelgood.com"
+    support_email: str = "support@fuelgood.app"
     privacy_policy_url: str = ""
     terms_url: str = ""
     support_url: str = ""

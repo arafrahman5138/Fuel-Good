@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fuelgood.app",
+      "bundleIdentifier": "com.fuelgood.ios",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -29,7 +29,7 @@
         "NSPhotoLibraryAddUsageDescription": "Fuel Good may save temporary label images you choose during scanning.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["fuelgood", "com.fuelgood.app"]
+            "CFBundleURLSchemes": ["fuelgood", "com.fuelgood.ios"]
           }
         ]
       }

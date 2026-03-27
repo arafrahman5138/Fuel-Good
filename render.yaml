@@ -50,7 +50,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: APPLE_BUNDLE_ID
-        value: com.fuelgood.app
+        value: com.fuelgood.ios
       - key: SUPPORT_EMAIL
         sync: false
       - key: PRIVACY_POLICY_URL

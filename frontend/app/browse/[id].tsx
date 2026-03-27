@@ -1389,6 +1389,18 @@ export default function RecipeDetailScreen() {
 
       {/* ── Sticky Bottom CTA ── */}
       <View style={[styles.stickyBottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        {/* Cook Mode button (secondary) */}
+        <TouchableOpacity
+          onPress={() => router.push(`/cook/${recipe.id}`)}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.cookModeBottomBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+            <Ionicons name="sparkles" size={18} color={theme.primary} />
+            <Text style={[styles.cookModeBottomText, { color: theme.primary }]}>Cook</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Log This Meal button (primary) */}
         <TouchableOpacity
           onPress={() => handleLogMeal(popoverServings)}
           disabled={loggingMeal || logSuccess}
@@ -2159,10 +2171,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl + 8,
     borderTopWidth: 1,
+  },
+  cookModeBottomBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: Spacing.xs,
+  },
+  cookModeBottomText: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
   },
   stickyLogBtn: {
     flexDirection: 'row',

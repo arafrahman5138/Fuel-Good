@@ -15,7 +15,7 @@ This guide explains how to set up Google and Apple OAuth for social authenticati
 3. Configure the OAuth consent screen if prompted
 4. Create two OAuth 2.0 Client IDs:
    - **iOS Client**: Select "iOS" as application type
-     - Bundle ID: `com.fuelgood.app`
+     - Bundle ID: `com.fuelgood.ios`
    - **Web Client**: Select "Web application" as application type (used for Expo Go)
      - Authorized redirect URIs: 
        - `https://auth.expo.io/@YOUR_EXPO_USERNAME/fuelgood`
@@ -57,7 +57,7 @@ Or check in code by logging `redirectUri` in login.tsx.
 ### 1. Configure App ID in Apple Developer Portal
 1. Go to [Apple Developer](https://developer.apple.com/account/)
 2. Navigate to **Certificates, Identifiers & Profiles** → **Identifiers**
-3. Select your App ID (`com.fuelgood.app`) or create one
+3. Select your App ID (`com.fuelgood.ios`) or create one
 4. Enable **Sign In with Apple** capability
 5. Save changes
 

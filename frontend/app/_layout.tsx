@@ -121,16 +121,20 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    const needsOnboarding = Boolean(
-      isAuthenticated && (!user?.flavor_preferences?.length || !user?.dietary_preferences?.length)
-    );
-
     if (!isAuthenticated) {
       if (!isAuthRoute) {
         router.replace('/(auth)/login');
       }
       return;
     }
+
+    // A short gap exists after tokens are stored but before `/auth/me`
+    // has populated the user profile. Avoid misrouting to onboarding/paywall.
+    if (!user) {
+      return;
+    }
+
+    const needsOnboarding = !user.flavor_preferences?.length || !user.dietary_preferences?.length;
 
     // Onboarding doesn't need billing — redirect immediately even while billing loads
     if (needsOnboarding) {

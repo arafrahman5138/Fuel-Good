@@ -34,7 +34,7 @@ function getDevApiUrl(): string {
 function getProdApiUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (!envUrl) {
-    return 'https://api.fuelgood.com/api';
+    return 'https://api.fuelgood.app/api';
   }
   if (!envUrl.startsWith('https://')) {
     throw new Error('Production API URL must use HTTPS.');
@@ -54,7 +54,7 @@ export const EXPO_PROJECT_ID =
   process.env.EXPO_PUBLIC_EXPO_PROJECT_ID?.trim()
   || (Constants.expoConfig?.extra as any)?.eas?.projectId
   || '';
-export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@fuelgood.com';
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@fuelgood.app';
 export const PRIVACY_POLICY_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
 export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL);
 export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL);
@@ -179,6 +179,9 @@ export const HEALTH_BENEFIT_OPTIONS = [
   { id: 'blood_sugar', label: 'Blood Sugar', icon: 'pulse', color: '#5C6BC0' },
   { id: 'hormone_support', label: 'Hormone Support', icon: 'fitness', color: '#66BB6A' },
   { id: 'detox_support', label: 'Detox & Liver', icon: 'water', color: '#29B6F6' },
+  { id: 'satiety', label: 'Satiety', icon: 'scale', color: '#78909C' },
+  { id: 'blood_sugar_support', label: 'Blood Sugar', icon: 'pulse', color: '#5C6BC0' },
+  { id: 'high_protein', label: 'High Protein', icon: 'barbell', color: '#FF7043' },
 ];
 
 export const XP_VALUES = {

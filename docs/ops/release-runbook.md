@@ -21,7 +21,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 ## One-Time Setup
 
 1. Create or connect the Expo project to EAS.
-2. Add Apple credentials and confirm `com.fuelgood.app`.
+2. Add Apple credentials and confirm `com.fuelgood.ios`.
 3. Configure EAS secrets for all `EXPO_PUBLIC_*` release variables.
 4. Provision the production Render API service. Add temporary staging only if you need a migration or notification rehearsal.
 5. Create the production Supabase project, enable `pgvector`, create private `meal-scans` and `label-scans` Storage buckets, and enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`.

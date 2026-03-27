@@ -10,21 +10,20 @@ export default function TabLayout() {
   const theme = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
   }
 
+  if (!user) {
+    return null;
+  }
+
   const needsOnboarding =
-    !user?.flavor_preferences?.length || !user?.dietary_preferences?.length;
+    !user.flavor_preferences?.length || !user.dietary_preferences?.length;
 
   if (needsOnboarding) {
     return <Redirect href={"/(auth)/onboarding" as any} />;
-  }
-
-  if (!hasPremiumAccess) {
-    return <Redirect href="/subscribe" />;
   }
 
   return (
