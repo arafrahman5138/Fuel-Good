@@ -33,22 +33,26 @@ export default function QuestsScreen() {
   const fetchStats = useGamificationStore((s) => s.fetchStats);
   const stats = useGamificationStore((s) => s.stats);
   const fuelStreak = useFuelStore((s) => s.streak);
+  const fetchFuelStreak = useFuelStore((s) => s.fetchStreak);
   const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
+  const fetchMetabolicStreak = useMetabolicBudgetStore((s) => s.fetchStreak);
   const [refreshing, setRefreshing] = useState(false);
 
-  const xp = user?.xp_points || 0;
+  const xp = stats?.xp_points ?? user?.xp_points ?? 0;
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
 
   useEffect(() => {
     fetchQuests();
     fetchStats();
+    fetchFuelStreak();
+    fetchMetabolicStreak();
   }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchQuests(), fetchStats()]);
+    await Promise.all([fetchQuests(), fetchStats(), fetchFuelStreak(), fetchMetabolicStreak()]);
     setRefreshing(false);
-  }, [fetchQuests, fetchStats]);
+  }, [fetchQuests, fetchStats, fetchFuelStreak, fetchMetabolicStreak]);
 
   return (
     <ScreenContainer>

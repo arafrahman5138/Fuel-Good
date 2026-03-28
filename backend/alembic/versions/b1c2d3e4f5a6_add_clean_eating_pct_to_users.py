@@ -18,8 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("clean_eating_pct", sa.Integer(), nullable=True, server_default="80"))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "clean_eating_pct" not in existing_columns:
+        op.add_column("users", sa.Column("clean_eating_pct", sa.Integer(), nullable=True, server_default="80"))
 
 
 def downgrade() -> None:
-    op.drop_column("users", "clean_eating_pct")
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "clean_eating_pct" in existing_columns:
+        op.drop_column("users", "clean_eating_pct")
