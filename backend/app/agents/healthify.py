@@ -66,7 +66,8 @@ Healthify meals by replacing ultra-processed ingredients with whole foods. Prese
 recipe: {title, description, ingredients:[{name,quantity,unit}], steps:[], prep_time_min, cook_time_min, servings}
 nutrition: {original_estimate:{calories,protein,carbs,fat,fiber}, healthified_estimate:{calories,protein,carbs,fat,fiber}}
 swaps: [{original, replacement, reason}]
-CRITICAL: recipe must NOT be null for food requests. Include 3+ ingredients and 3+ steps. Output valid JSON only."""
+CRITICAL: recipe must NOT be null for food requests. Include 3+ ingredients and 3+ steps. Output valid JSON only.
+CRITICAL: If the user has dietary restrictions or allergies listed below, you MUST comply. Every single ingredient must be safe for their diet and allergies. Violations are unacceptable."""
 
 GENERAL_PROMPT = """You are Fuel Good Healthify AI.
 Return strict JSON with keys: message, recipe, swaps, nutrition.
@@ -204,17 +205,52 @@ def _build_user_context(db: Session, user_id: str | None, chat_context: dict | N
     if not user_id:
         return ""
     try:
+        from app.models.user import User
+
         profile = db.query(MetabolicProfile).filter(
             MetabolicProfile.user_id == user_id
         ).first()
         if not profile or not profile.weight_lb:
             return ""
 
+        # Load user for dietary preferences and allergies
+        user = db.query(User).filter(User.id == user_id).first()
+
         budget = load_budget_for_user(db, user_id)
         totals = aggregate_daily_totals(db, user_id, datetime.now(UTC).date())
         rem = remaining_budget(totals, budget)
 
-        lines = ["User context (tailor the recipe to these constraints):"]
+        lines = []
+
+        # ── MANDATORY dietary and allergy constraints (placed FIRST for maximum LLM attention) ──
+        if user:
+            dietary_prefs = user.dietary_preferences or []
+            allergies = user.allergies or []
+            protein_prefs = user.protein_preferences or {}
+
+            if dietary_prefs or allergies:
+                lines.append("⚠️ MANDATORY DIETARY CONSTRAINTS — MUST BE FOLLOWED:")
+            if dietary_prefs:
+                prefs_str = ", ".join(str(p) for p in dietary_prefs if p)
+                lines.append(f"  • This user follows a strict {prefs_str} diet.")
+                lines.append(f"  • EVERY ingredient in the recipe MUST be {prefs_str}-compliant.")
+                lines.append(f"  • Do NOT include ANY ingredients that violate the {prefs_str} diet.")
+            if allergies:
+                allergy_str = ", ".join(str(a) for a in allergies if a)
+                lines.append(f"  • ALLERGY ALERT: User is allergic to {allergy_str}.")
+                lines.append(f"  • NEVER use any form of {allergy_str} in the recipe — not even as optional ingredients or garnishes.")
+            if dietary_prefs or allergies:
+                lines.append("")
+
+            if isinstance(protein_prefs, dict):
+                liked = protein_prefs.get("liked", [])
+                disliked = protein_prefs.get("disliked", [])
+                if liked:
+                    lines.append(f"- Preferred proteins: {', '.join(str(p) for p in liked)}")
+                if disliked:
+                    lines.append(f"- Avoided proteins: {', '.join(str(p) for p in disliked)}")
+
+        lines.append("User context (tailor the recipe to these constraints):")
 
         # Time-of-day meal type bias
         hour = datetime.now().hour
@@ -256,6 +292,16 @@ def _build_user_context(db: Session, user_id: str | None, chat_context: dict | N
 
         # Key constraints as IMPORTANT instructions
         constraints = []
+
+        # Dietary and allergy constraints (highest priority)
+        if user:
+            if user.allergies:
+                allergy_str = ", ".join(str(a) for a in user.allergies if a)
+                constraints.append(f"CRITICAL: User has allergies to {allergy_str}. NEVER include any ingredient containing these allergens.")
+            if user.dietary_preferences:
+                diet_str = ", ".join(str(d) for d in user.dietary_preferences if d)
+                constraints.append(f"IMPORTANT: User follows a {diet_str} diet. ALL suggested recipes and ingredients MUST comply.")
+
         if budget.carb_ceiling_g <= 100:
             max_carbs_per_meal = round(budget.carb_ceiling_g / 3 * 0.8)
             constraints.append(f"IMPORTANT: This user has a LOW carb ceiling ({round(budget.carb_ceiling_g)}g/day). Keep carbs under ~{max_carbs_per_meal}g per serving.")

@@ -70,6 +70,8 @@ class ManualFlexLogResponse(BaseModel):
     fuel_score: float
     flex_available: int
     weekly_avg: float
+    flex_counted: Optional[bool] = None
+    flex_note: Optional[str] = None
 
 
 class WeeklyFuelResponse(BaseModel):

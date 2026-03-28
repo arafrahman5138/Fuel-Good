@@ -29,7 +29,16 @@
         "NSPhotoLibraryAddUsageDescription": "Fuel Good may save temporary label images you choose during scanning.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["fuelgood", "com.fuelgood.ios"]
+            "CFBundleURLSchemes": [
+              "fuelgood",
+              "com.fuelgood.ios"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "fuelgood",
+              "com.fuelgood.ios"
+            ]
           }
         ]
       }
@@ -43,7 +52,12 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -74,7 +88,8 @@
       "typedRoutes": true
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/fd207039-72fe-4e1c-a344-495e48d4bc4f"
     },
     "extra": {
       "router": {},

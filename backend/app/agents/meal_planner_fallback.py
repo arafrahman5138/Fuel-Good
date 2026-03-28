@@ -125,13 +125,113 @@ def _meal_display_mes(recipe: Recipe, budget: Any, recipe_index: dict[str, Recip
 # Lifestyle preferences that are NOT dietary restrictions — skip them in filtering
 _NON_RESTRICTIVE_DIETS = {"balanced", "none", "everything", "flexible", "standard", "moderate"}
 
+# ── Allergen expansion: map category allergies to specific ingredient keywords ──
+ALLERGEN_EXPANSIONS: dict[str, list[str]] = {
+    "nuts": [
+        "almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut",
+        "macadamia", "brazil nut", "pine nut", "nut butter", "nut milk",
+        "praline", "marzipan", "nougat",
+    ],
+    "tree nuts": [
+        "almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut",
+        "macadamia", "brazil nut", "pine nut",
+    ],
+    "peanuts": ["peanut"],
+    "wheat": [
+        "wheat", " flour", "bread", "pasta", "couscous", "bulgur",
+        "farro", "semolina", "naan", "pita", "crouton",
+    ],
+    "gluten": [
+        "wheat", " flour", "bread", "pasta", "couscous", "bulgur",
+        "farro", "semolina", "barley", "rye", "naan", "pita",
+    ],
+    "dairy": [
+        "milk", "cheese", "butter", "cream", "yogurt", "whey",
+        "casein", "ghee", "sour cream", "ice cream", "kefir",
+    ],
+    "eggs": ["egg"],
+    "soy": ["soy", "tofu", "edamame", "tempeh", "miso"],
+    "shellfish": [
+        "shrimp", "crab", "lobster", "mussel", "clam", "oyster",
+        "scallop", "crawfish", "prawn",
+    ],
+    "fish": [
+        "salmon", "tuna", "cod", "trout", "sardine", "mackerel",
+        "anchovy", "tilapia", "halibut", "bass", "mahi", "swordfish",
+    ],
+    "sesame": ["sesame", "tahini"],
+}
+
+
+def _expand_allergies(allergies: list[str]) -> set[str]:
+    """Expand category allergies (e.g., 'nuts') into specific ingredient keywords."""
+    expanded: set[str] = set()
+    for allergy in allergies:
+        key = allergy.lower().strip()
+        expanded.add(key)
+        if key in ALLERGEN_EXPANSIONS:
+            expanded.update(ALLERGEN_EXPANSIONS[key])
+    return expanded
+
+
+# ── Dietary inference keywords ──
+_KETO_EXCLUDED_INGREDIENTS = {
+    "rice", "bread", "pasta", "oats", "oatmeal", "potato", "potatoes",
+    "flour", "sugar", "honey", "maple syrup", "corn", "beans", "lentils",
+    "quinoa", "couscous", "noodles", "tortilla", "pita", "naan",
+    "sweet potato", "banana", "mango", "pineapple", "chickpeas",
+}
+
+_PALEO_EXCLUDED_INGREDIENTS = {
+    "rice", "oats", "oatmeal", "wheat", "bread", "pasta", "flour", "corn",
+    "quinoa", "couscous", "noodles", "tortilla", "pita", "naan",
+    "beans", "lentils", "chickpeas", "peanut", "edamame",
+    "milk", "yogurt", "cheese", "butter", "cream", "sour cream", "whey",
+    "sugar", "corn syrup",
+}
+
+
+def _recipe_ingredient_text(recipe: Recipe) -> str:
+    """Join all ingredient names into one lowercase string for keyword matching."""
+    return " ".join(
+        ing.get("name", "") for ing in (recipe.ingredients or [])
+    ).lower()
+
+
+def _infer_dietary_compatibility(recipe: Recipe, diet: str) -> bool:
+    """Check if a recipe is compatible with a diet based on macros and ingredients."""
+    ingredient_text = _recipe_ingredient_text(recipe)
+    nutrition = _recipe_nutrition(recipe)
+
+    if diet == "keto":
+        if nutrition.get("carbs", 999) > 20:
+            return False
+        return not any(kw in ingredient_text for kw in _KETO_EXCLUDED_INGREDIENTS)
+
+    if diet == "paleo":
+        return not any(kw in ingredient_text for kw in _PALEO_EXCLUDED_INGREDIENTS)
+
+    if diet in ("gluten-free", "gluten_free"):
+        gluten_kw = {"wheat", "flour", "bread", "pasta", "couscous", "bulgur", "farro", "semolina", "barley", "rye"}
+        return not any(kw in ingredient_text for kw in gluten_kw)
+
+    if diet == "dairy-free":
+        dairy_kw = {"milk", "cheese", "butter", "cream", "yogurt", "whey", "ghee", "sour cream"}
+        return not any(kw in ingredient_text for kw in dairy_kw)
+
+    # Unknown diet — can't infer, so fail safe (don't include)
+    return False
+
 
 def _matches_dietary(recipe: Recipe, dietary: list[str]) -> bool:
     required = {item.lower() for item in dietary if item and item.lower() not in _NON_RESTRICTIVE_DIETS}
     if not required:
         return True
     recipe_tags = {item.lower() for item in (recipe.dietary_tags or [])}
-    return required.issubset(recipe_tags)
+    for diet in required:
+        if diet not in recipe_tags and not _infer_dietary_compatibility(recipe, diet):
+            return False
+    return True
 
 
 def _is_breakfast_safe(recipe: Recipe, context: dict | None = None) -> bool:
@@ -255,7 +355,7 @@ def _candidate_pool(
     budget: Any,
     cooking_time_budget: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
-    allergy_lower = {a.lower() for a in allergies}
+    allergy_lower = _expand_allergies(allergies)
     disliked_ingredients_lower = {d.lower() for d in disliked_ingredients}
     disliked_proteins_lower = {p.lower() for p in disliked_proteins}
 
@@ -562,15 +662,141 @@ def get_replacement_candidates(
     return _top_unique_candidates(candidates, limit, exclude_recipe_ids=exclude_recipe_ids)
 
 
+_KETO_DIETS = {"keto", "ketogenic", "low-carb", "low carb"}
+_PALEO_DIETS = {"paleo", "primal"}
+
+# Carb components that are paleo-safe (tubers, not grains/legumes)
+_PALEO_SAFE_CARB_KEYWORDS = {"sweet potato", "plantain", "squash", "yam", "cassava", "taro"}
+
+
+def _compose_component_meals(
+    all_recipes: list[Recipe],
+    recipe_index: dict[str, Recipe],
+    dietary: list[str],
+    allergies: list[str],
+    disliked_ingredients: list[str],
+    disliked_proteins: list[str],
+    budget: Any,
+    meal_type: str,
+) -> list[dict[str, Any]]:
+    """Build composed meals from protein_base + veg_side (+ optional carb for paleo).
+
+    Used as a fallback when full_meal candidates are insufficient for keto/paleo.
+    """
+    dietary_lower = {d.lower() for d in dietary if d}
+    is_keto = bool(dietary_lower & _KETO_DIETS)
+    is_paleo = bool(dietary_lower & _PALEO_DIETS)
+
+    if not is_keto and not is_paleo:
+        return []
+
+    allergy_expanded = _expand_allergies(allergies)
+    disliked_lower = {d.lower() for d in disliked_ingredients}
+    disliked_p_lower = {p.lower() for p in disliked_proteins}
+
+    def _passes_filters(recipe: Recipe) -> bool:
+        ingredient_text = _recipe_ingredient_text(recipe)
+        if any(a in ingredient_text for a in allergy_expanded):
+            return False
+        if any(d in ingredient_text for d in disliked_lower):
+            return False
+        if any(d in ingredient_text for d in disliked_p_lower):
+            return False
+        # Check dietary compatibility (keto/paleo) on each component
+        for diet in dietary_lower:
+            if diet in _NON_RESTRICTIVE_DIETS:
+                continue
+            if diet not in {t.lower() for t in (recipe.dietary_tags or [])}:
+                if not _infer_dietary_compatibility(recipe, diet):
+                    return False
+        return True
+
+    # Collect protein bases and veg sides
+    proteins = [r for r in all_recipes if r.recipe_role == "protein_base" and _passes_filters(r)]
+    vegs = [r for r in all_recipes if r.recipe_role == "veg_side" and _passes_filters(r)]
+
+    # For paleo, also collect paleo-safe carb components
+    paleo_carbs: list[Recipe] = []
+    if is_paleo:
+        for r in all_recipes:
+            if r.recipe_role != "carb_base":
+                continue
+            if not _passes_filters(r):
+                continue
+            ing_text = _recipe_ingredient_text(r)
+            if any(kw in ing_text for kw in _PALEO_SAFE_CARB_KEYWORDS):
+                paleo_carbs.append(r)
+
+    composed: list[dict[str, Any]] = []
+    random.shuffle(proteins)
+    random.shuffle(vegs)
+
+    for protein in proteins:
+        for veg in vegs:
+            p_nutr = _recipe_nutrition(protein)
+            v_nutr = _recipe_nutrition(veg)
+            combined_nutr = _combine_nutrition(p_nutr, v_nutr)
+
+            # For keto, skip if combined carbs > 20g
+            if is_keto and combined_nutr.get("carbs", 0) > 20:
+                continue
+
+            # For paleo with carb, combine all three
+            if is_paleo and paleo_carbs:
+                carb = random.choice(paleo_carbs)
+                c_nutr = _recipe_nutrition(carb)
+                combined_nutr = _combine_nutrition(p_nutr, v_nutr, c_nutr)
+                combined_title = f"{protein.title} + {veg.title} + {carb.title}"
+                component_ids = [str(protein.id), str(veg.id), str(carb.id)]
+                combined_ingredients = (protein.ingredients or []) + (veg.ingredients or []) + (carb.ingredients or [])
+            else:
+                combined_title = f"{protein.title} + {veg.title}"
+                component_ids = [str(protein.id), str(veg.id)]
+                combined_ingredients = (protein.ingredients or []) + (veg.ingredients or [])
+
+            # Compute MES for combined nutrition
+            mes_result = compute_meal_mes(combined_nutr, budget) if budget else {}
+            display_score = float(mes_result.get("display_score", 0) or 0)
+
+            composed.append({
+                "recipe": protein,  # primary recipe for metadata
+                "mes": {
+                    **mes_result,
+                    "display_score": display_score,
+                    "display_tier": mes_result.get("display_tier", "critical"),
+                    "composite_display_score": display_score,
+                    "composite_display_tier": display_tier(display_score),
+                    "paired_recipe_id": str(veg.id),
+                    "paired_recipe_title": veg.title,
+                },
+                "preference_score": 0,
+                "budget_alignment": 0,
+                "time_bonus": 0,
+                "tiebreak": random.random(),
+                "is_composed": True,
+                "composed_title": combined_title,
+                "component_ids": component_ids,
+                "composed_nutrition": combined_nutr,
+                "composed_ingredients": combined_ingredients,
+            })
+
+    # Sort by MES score descending
+    composed.sort(key=lambda c: float(c["mes"].get("display_score", 0) or 0), reverse=True)
+    return composed
+
+
 def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | None = None) -> dict[str, Any]:
     """Build a 7-day plan from DB recipes without LLMs or substitutions."""
     context = _preferences_context(preferences, db, user_id)
     all_recipes = db.query(Recipe).all()
     recipe_index = {str(recipe.id): recipe for recipe in all_recipes}
 
+    dietary_lower = {d.lower() for d in context["dietary"] if d}
+    needs_composition = bool(dietary_lower & (_KETO_DIETS | _PALEO_DIETS))
+
     slot_pools: dict[str, list[dict[str, Any]]] = {}
     for slot in MEAL_SLOTS:
-        slot_pools[slot] = _candidate_pool(
+        pool = _candidate_pool(
             all_recipes=all_recipes,
             recipe_index=recipe_index,
             meal_type=slot,
@@ -586,6 +812,22 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             budget=context["budget"],
             cooking_time_budget=context["cooking_time_budget"],
         )
+
+        # If pool is too small and user needs keto/paleo, supplement with composed meals
+        if needs_composition and len(pool) < 3:
+            composed = _compose_component_meals(
+                all_recipes=all_recipes,
+                recipe_index=recipe_index,
+                dietary=context["dietary"],
+                allergies=context["allergies"],
+                disliked_ingredients=context["disliked_ingredients"],
+                disliked_proteins=context["disliked_proteins"],
+                budget=context["budget"],
+                meal_type=slot,
+            )
+            pool.extend(composed)
+
+        slot_pools[slot] = pool
 
     days_map: dict[str, list[dict[str, Any]]] = {day: [] for day in DAYS}
     prep_timeline: list[dict[str, Any]] = []
@@ -660,8 +902,15 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
                 )
                 meal_data["is_bulk_cook"] = is_bulk
 
+                # Handle composed meals (keto/paleo component combinations)
+                if candidate.get("is_composed"):
+                    meal_data["recipe"]["title"] = candidate["composed_title"]
+                    meal_data["recipe"]["ingredients"] = candidate.get("composed_ingredients", [])
+                    meal_data["recipe"]["nutrition_estimate"] = candidate.get("composed_nutrition", {})
+                    meal_data["recipe"]["component_ids"] = candidate.get("component_ids", [])
+                    meal_data["recipe"]["is_composed"] = True
                 # Embed pairing ingredients for grocery list
-                if recipe.needs_default_pairing and recipe.default_pairing_ids:
+                elif recipe.needs_default_pairing and recipe.default_pairing_ids:
                     pairing_id = recipe.default_pairing_ids[0] if recipe.default_pairing_ids else None
                     if pairing_id:
                         pairing_recipe = db.query(Recipe).filter(Recipe.id == pairing_id).first()

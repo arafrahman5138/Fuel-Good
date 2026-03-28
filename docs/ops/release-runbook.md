@@ -28,7 +28,7 @@ Ship **iOS TestFlight first** with a reproducible path to production App Store r
 6. Publish privacy policy, terms, and support pages to public HTTPS URLs.
 7. If monetization is included, create App Store subscription products. Do not use Stripe checkout for iOS digital access.
 8. Create RevenueCat products and entitlement mapping:
-   - entitlement: `premium`
+   - entitlement: `Fuel Good Premium`
    - offering: `default`
    - product ids: `premium_monthly_999`, `premium_annual_4999`
    - attach a `7-day` introductory free trial to both products in App Store Connect

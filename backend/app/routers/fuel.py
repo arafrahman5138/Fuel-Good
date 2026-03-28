@@ -643,6 +643,14 @@ async def log_manual_flex_meal(
         clean_pct=clean_pct,
     )
 
+    # ── Flex Snack Transparency ──
+    meal_type_val = payload.meal_type or "snack"
+    flex_counted = meal_type_val in {"breakfast", "lunch", "dinner", "meal"}
+    if flex_counted:
+        flex_note = "This meal counts toward your weekly flex budget."
+    else:
+        flex_note = f"Snacks and desserts are tracked but don't count against your flex budget."
+
     return ManualFlexLogResponse(
         id=log.id,
         date=day.isoformat(),
@@ -650,6 +658,8 @@ async def log_manual_flex_meal(
         fuel_score=float(AVG_CHEAT_MEAL_SCORE),
         flex_available=budget.flex_available,
         weekly_avg=budget.projected_weekly_avg,
+        flex_counted=flex_counted,
+        flex_note=flex_note,
     )
 
 

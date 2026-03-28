@@ -271,31 +271,42 @@ def _compute_daily(db: Session, user_id: str, day: date):
         for micro in micros.keys():
             micros[micro] += float(snap.get(micro, 0) or 0)
 
+    # Scale targets based on meals logged vs expected
+    main_meal_types_logged = {log.meal_type for log in logs if log.meal_type in {"breakfast", "lunch", "dinner"}}
+    meals_logged_count = len(main_meal_types_logged) or (1 if logs else 0)
+    target_scale = meals_logged_count / 3.0 if meals_logged_count < 3 else 1.0
+
+    scaled_cal = float(targets.calories_target or 0) * target_scale
+    scaled_pro = float(targets.protein_g_target or 0) * target_scale
+    scaled_carb = float(targets.carbs_g_target or 0) * target_scale
+    scaled_fat = float(targets.fat_g_target or 0) * target_scale
+    scaled_fiber = float(targets.fiber_g_target or 0) * target_scale
+
     comparison = {
         "calories": {
             "consumed": totals["calories"],
-            "target": float(targets.calories_target or 0),
-            "pct": (totals["calories"] / float(targets.calories_target or 1)) * 100,
+            "target": scaled_cal,
+            "pct": (totals["calories"] / (scaled_cal or 1)) * 100,
         },
         "protein": {
             "consumed": totals["protein"],
-            "target": float(targets.protein_g_target or 0),
-            "pct": (totals["protein"] / float(targets.protein_g_target or 1)) * 100,
+            "target": scaled_pro,
+            "pct": (totals["protein"] / (scaled_pro or 1)) * 100,
         },
         "carbs": {
             "consumed": totals["carbs"],
-            "target": float(targets.carbs_g_target or 0),
-            "pct": (totals["carbs"] / float(targets.carbs_g_target or 1)) * 100,
+            "target": scaled_carb,
+            "pct": (totals["carbs"] / (scaled_carb or 1)) * 100,
         },
         "fat": {
             "consumed": totals["fat"],
-            "target": float(targets.fat_g_target or 0),
-            "pct": (totals["fat"] / float(targets.fat_g_target or 1)) * 100,
+            "target": scaled_fat,
+            "pct": (totals["fat"] / (scaled_fat or 1)) * 100,
         },
         "fiber": {
             "consumed": totals["fiber"],
-            "target": float(targets.fiber_g_target or 0),
-            "pct": (totals["fiber"] / float(targets.fiber_g_target or 1)) * 100,
+            "target": scaled_fiber,
+            "pct": (totals["fiber"] / (scaled_fiber or 1)) * 100,
         },
     }
 
@@ -493,6 +504,41 @@ async def create_log(
         "daily_mes_updated",
         properties={"date": day.isoformat(), "daily_score": daily_score},
         source="server",
+    )
+    db.commit()
+
+    # ── Auto-update daily streak on meal log ──
+    # Recalculate streak from actual logged dates instead of tracking incrementally.
+    # This handles backdated logs, out-of-order logs, and any data inconsistencies.
+    from datetime import date as _date_type
+    from sqlalchemy import func as sa_func
+
+    log_date = day if isinstance(day, _date_type) else datetime.strptime(str(day), "%Y-%m-%d").date()
+
+    # Query all unique dates with food logs for this user, ordered descending
+    logged_dates = (
+        db.query(sa_func.distinct(FoodLog.date))
+        .filter(FoodLog.user_id == current_user.id)
+        .order_by(FoodLog.date.desc())
+        .all()
+    )
+    unique_dates = sorted([row[0] for row in logged_dates], reverse=True)
+
+    # Calculate streak: count consecutive days from most recent
+    streak = 0
+    if unique_dates:
+        streak = 1
+        for i in range(len(unique_dates) - 1):
+            if (unique_dates[i] - unique_dates[i + 1]).days == 1:
+                streak += 1
+            else:
+                break
+
+    current_user.current_streak = streak
+    if streak > (current_user.longest_streak or 0):
+        current_user.longest_streak = streak
+    current_user.last_active_date = datetime.combine(
+        unique_dates[0] if unique_dates else log_date, datetime.min.time()
     )
     db.commit()
 
