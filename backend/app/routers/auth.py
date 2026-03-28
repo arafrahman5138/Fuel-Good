@@ -104,12 +104,16 @@ async def _verify_apple_identity_token(identity_token: str) -> dict[str, str]:
     if not key:
         raise HTTPException(status_code=401, detail="Unable to verify Apple identity token.")
 
+    valid_audiences = [settings.apple_bundle_id]
+    if settings.apple_bundle_id != "com.fuelgood.app":
+        valid_audiences.append("com.fuelgood.app")
+
     try:
         claims = jwt.decode(
             identity_token,
             key,
             algorithms=[header.get("alg", "RS256")],
-            audience=settings.apple_bundle_id,
+            audience=valid_audiences,
             issuer=APPLE_ISSUER,
         )
     except JWTError as exc:
