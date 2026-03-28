@@ -4,6 +4,13 @@
 **Method:** API verification (curl) + iOS Simulator UI (iPhone 17 Pro)
 **Rounds:** 3 rounds of testing, 2 rounds of fix iteration
 
+## Additional Fix: Quests Screen XP/Level Display
+During simulator UI verification, the Quests screen showed **Lv 1 / 0 XP** despite the API reporting 3795 XP / Level 4. Root cause: the screen read XP from `authStore.user.xp_points` (stale from login) instead of `gamificationStore.stats.xp_points` (live from API).
+
+**Fix:** `frontend/app/quests.tsx` — changed `const xp = user?.xp_points || 0` to `const xp = stats?.xp_points ?? user?.xp_points ?? 0`. Also added `fetchFuelStreak()` and `fetchMetabolicStreak()` to the screen's data loading.
+
+**Verified in simulator:** After fix, screen correctly shows **Lv 4 / 795 / 1000 XP**.
+
 ---
 
 ## Final Results: 7/7 PASS

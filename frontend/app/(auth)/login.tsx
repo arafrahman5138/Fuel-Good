@@ -100,7 +100,6 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
     } finally {
@@ -135,7 +134,6 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       if (err.code === 'ERR_CANCELED') {
         // User canceled the sign-in flow
@@ -172,7 +170,6 @@ export default function LoginScreen() {
       setTokens(result.access_token, result.refresh_token);
       const profile = await authApi.getProfile();
       setUser(profile);
-      router.replace(getPostLoginRoute(profile) as any);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {

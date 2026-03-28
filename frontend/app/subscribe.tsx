@@ -55,6 +55,7 @@ export default function SubscribeScreen() {
   const [config, setConfig] = useState<BillingConfig | null>(null);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [openingPaywall, setOpeningPaywall] = useState(false);
@@ -73,17 +74,28 @@ export default function SubscribeScreen() {
         setLoading(false);
         return;
       }
+      let billingConfig: BillingConfig | null = null;
       try {
-        const [billingConfig, currentOffering] = await Promise.all([
-          billingApi.getConfig(),
-          billingService.bootstrap(user.id, user.email, user.name).then(() => billingService.getOfferings()),
-        ]);
+        billingConfig = await billingApi.getConfig();
         if (!active) return;
         setConfig(billingConfig);
+      } catch (err: any) {
+        if (active) {
+          const message = err?.message || 'Unable to load subscription options right now.';
+          setBillingError(message);
+          Alert.alert('Billing unavailable', message);
+        }
+      }
+
+      try {
+        await billingService.bootstrap(user.id, user.email, user.name);
+        const currentOffering = await billingService.getOfferings();
+        if (!active) return;
         setOffering(currentOffering);
       } catch (err: any) {
         if (active) {
-          Alert.alert('Billing unavailable', err?.message || 'Unable to load subscription options right now.');
+          setOffering(null);
+          setBillingError(err?.message || 'Subscriptions are temporarily unavailable in this build.');
         }
       } finally {
         if (active) setLoading(false);
@@ -219,6 +231,23 @@ export default function SubscribeScreen() {
         </LinearGradient>
 
         <View style={styles.content}>
+          {!billingSupported || billingError ? (
+            <View
+              style={[
+                styles.noticeCard,
+                {
+                  backgroundColor: theme.errorMuted,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.noticeTitle, { color: theme.text }]}>Subscriptions unavailable</Text>
+              <Text style={[styles.noticeBody, { color: theme.textSecondary }]}>
+                {billingError || 'This build does not have live billing configured yet. You can continue testing the rest of the app.'}
+              </Text>
+            </View>
+          ) : null}
+
           <Button
             title={openingPaywall ? 'Opening Paywall...' : 'Open RevenueCat Paywall'}
             onPress={handleRevenueCatPaywall}
@@ -390,6 +419,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noticeCard: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  noticeTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+  },
+  noticeBody: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   hero: {
     paddingTop: 60,

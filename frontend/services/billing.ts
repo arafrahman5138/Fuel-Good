@@ -30,8 +30,22 @@ function isRevenueCatSupportedPlatform(): boolean {
   return Platform.OS === 'ios';
 }
 
+function isTestRevenueCatKey(apiKey: string): boolean {
+  return apiKey.trim().startsWith('test_');
+}
+
 function isRevenueCatEnabled(): boolean {
-  return isRevenueCatSupportedPlatform() && Boolean(REVENUECAT_IOS_API_KEY);
+  if (!isRevenueCatSupportedPlatform() || !REVENUECAT_IOS_API_KEY) {
+    return false;
+  }
+
+  // Prevent production/TestFlight builds from bootstrapping RevenueCat with a
+  // test placeholder key. Internal QA can still use preview/internal builds.
+  if (APP_ENV === 'production' && isTestRevenueCatKey(REVENUECAT_IOS_API_KEY)) {
+    return false;
+  }
+
+  return true;
 }
 
 function billingUnavailableError(): Error {
