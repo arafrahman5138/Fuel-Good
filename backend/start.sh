@@ -5,16 +5,21 @@ cd "$(dirname "$0")"
 
 # ── Ensure PostgreSQL is running via Docker ──
 DOCKER_BIN="${DOCKER_BIN:-docker}"
+DOCKER_APP_BIN_DIR="/Applications/Docker.app/Contents/Resources/bin"
 LOCAL_DB_USER="realfood"
 LOCAL_DB_PASSWORD="realfood_local"
 PRIMARY_DB="fuelgood"
 LEGACY_DB="realfood"
 if ! command -v "$DOCKER_BIN" &>/dev/null; then
   # Docker Desktop on macOS puts the binary here
-  DOCKER_BIN="/Applications/Docker.app/Contents/Resources/bin/docker"
+  DOCKER_BIN="${DOCKER_APP_BIN_DIR}/docker"
 fi
 
 if command -v "$DOCKER_BIN" &>/dev/null; then
+  if [ -d "$DOCKER_APP_BIN_DIR" ] && [[ ":$PATH:" != *":${DOCKER_APP_BIN_DIR}:"* ]]; then
+    export PATH="${DOCKER_APP_BIN_DIR}:$PATH"
+  fi
+
   CONTAINER="realfood-postgres"
 
   ensure_db() {
@@ -28,7 +33,12 @@ if command -v "$DOCKER_BIN" &>/dev/null; then
   }
 
   echo "🐘 Starting PostgreSQL container..."
-  "$DOCKER_BIN" compose -f ../docker-compose.yml up -d
+  if ! "$DOCKER_BIN" compose -f ../docker-compose.yml up -d; then
+    echo "❌ Failed to start PostgreSQL via Docker."
+    echo "   If you're on macOS, make sure Docker Desktop is running and responsive."
+    echo "   This shell also needs access to Docker Desktop helpers from ${DOCKER_APP_BIN_DIR}."
+    exit 1
+  fi
   for i in $(seq 1 30); do
     "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1 && break
     sleep 1

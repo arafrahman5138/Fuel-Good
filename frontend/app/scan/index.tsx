@@ -635,13 +635,21 @@ export default function ScanScreen() {
   const analyzeProductImageWithUri = async (uri: string) => {
     setIsLoading(true);
     setScanStep('result');
+    setNotFoodReason(null);
     try {
-      const next = normalizeProductResult(
-        await wholeFoodScanApi.analyzeProductImage({
-          imageUri: uri,
-          capture_type: 'front_label',
-        })
-      );
+      const raw = await wholeFoodScanApi.analyzeProductImage({
+        imageUri: uri,
+        capture_type: 'front_label',
+      });
+      if (raw?.is_not_food) {
+        setNotFoodReason(raw.not_food_reason || "That doesn't look like a food product.");
+        return;
+      }
+      const next = normalizeProductResult(raw);
+      if (!next || !next.product_name) {
+        setNotFoodReason("Couldn't identify a food product in this image. Try scanning the ingredient label or barcode instead.");
+        return;
+      }
       setProductResult(next);
       syncProductDrafts(next);
       setShowBarcodeSheet(false);
@@ -1452,6 +1460,29 @@ export default function ScanScreen() {
   const renderProductResultStep = () => {
     if (!productResult || !productTierMeta) {
       if (isLoading) return renderAnalyzingScreen();
+      if (notFoodReason) {
+        return (
+          <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl }}>
+            <View style={[styles.notFoodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.notFoodIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="ban-outline" size={36} color="#D97706" />
+              </View>
+              <Text style={[styles.notFoodTitle, { color: theme.text }]}>Not a food product</Text>
+              <Text style={[styles.notFoodBody, { color: theme.textSecondary }]}>
+                {notFoodReason}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setNotFoodReason(null); setScanStep('capture'); }}
+                style={[styles.notFoodRetakeBtn, { backgroundColor: theme.primary }]}
+              >
+                <Ionicons name="camera-outline" size={18} color="#FFF" />
+                <Text style={styles.notFoodRetakeBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      }
       return null;
     }
     const confidenceCopy = confidenceBand(productResult.confidence);

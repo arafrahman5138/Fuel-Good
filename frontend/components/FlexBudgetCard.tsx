@@ -183,8 +183,8 @@ export function FlexBudgetCard({
               trackColor={ringTrack}
             />
             {hasData && (weeklyMesScore ?? 0) > 0 && (
-              <View style={[styles.mesBadge, { backgroundColor: isDark ? '#1a1a24' : theme.surface }]}>
-                <View style={[styles.mesBadgeRing, { borderColor: weeklyMesTierColor ?? '#8B5CF6' }]}>
+              <View style={[styles.mesBadge, { backgroundColor: isDark ? '#111916' : theme.surface }]}>
+                <View style={[styles.mesBadgeRing, { borderColor: weeklyMesTierColor ?? '#8B5CF6', backgroundColor: isDark ? '#111916' : '#fff' }]}>
                   <Ionicons name="pulse-outline" size={8} color={weeklyMesTierColor ?? '#8B5CF6'} />
                   <Text style={[styles.mesBadgeScore, { color: weeklyMesTierColor ?? '#8B5CF6' }]}>
                     {weeklyMesScore}

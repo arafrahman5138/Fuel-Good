@@ -1575,7 +1575,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    padding: 4,
+    padding: 3,
     marginBottom: Spacing.md,
     width: '96%',
     alignSelf: 'center',
@@ -1585,7 +1585,6 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
-    minHeight: 44,
   },
   toggleBtnActive: {
   },

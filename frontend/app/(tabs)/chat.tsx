@@ -272,7 +272,7 @@ export default function ChatScreen() {
       const friendlyMessage =
         /quota|rate.?limit|resourceexhausted|429/i.test(rawMessage)
           ? "The AI provider quota is currently exceeded. Please try again later."
-          : "Something went wrong. Tap below to try again.";
+          : "Something went wrong. Tap to try again.";
       addMessage({ role: 'assistant', content: friendlyMessage, isError: true } as any);
     } finally {
       setLoading(false);
@@ -719,9 +719,9 @@ export default function ChatScreen() {
                 <View style={[styles.utilitySeparator, { borderTopColor: theme.border }]} />
                 <View style={styles.suggestionsGrid}>
                   {[
-                    { label: "What's in my fridge?", icon: 'cube-outline' as const, query: "I have chicken, sweet potatoes, and spinach — what can I make?" },
-                    { label: 'Explain my score', icon: 'analytics-outline' as const, query: "Why is my fuel score low today?" },
-                    { label: 'Quick 15-min meal', icon: 'time-outline' as const, query: "Give me a healthy 15 minute dinner" },
+                    { label: "What's in my fridge?", icon: 'cube-outline' as const, query: "What can I make with what's in my fridge?" },
+                    { label: 'Explain my score', icon: 'analytics-outline' as const, query: "Explain my fuel score today" },
+                    { label: 'Quick 15-min meal', icon: 'time-outline' as const, query: `Give me a healthy 15 minute ${(() => { const h = new Date().getHours(); if (h >= 5 && h < 10) return 'breakfast'; if (h >= 10 && h < 15) return 'lunch'; if (h >= 15 && h < 18) return 'snack'; return 'dinner'; })()}` },
                   ].map((chip, i) => (
                     <TouchableOpacity
                       key={i}

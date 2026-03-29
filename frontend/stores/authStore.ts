@@ -79,6 +79,22 @@ function secureDeleteItem(key: string) {
   });
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackMessage: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(fallbackMessage)), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -193,8 +209,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const [token, refreshToken] = Platform.OS === 'web'
         ? [null, null]
         : await Promise.all([
-            SecureStore.getItemAsync('auth_token', AUTH_STORE_OPTIONS),
-            SecureStore.getItemAsync('refresh_token', AUTH_STORE_OPTIONS),
+            withTimeout(
+              SecureStore.getItemAsync('auth_token', AUTH_STORE_OPTIONS),
+              2500,
+              'Timed out reading auth token from SecureStore.',
+            ).catch(() => null),
+            withTimeout(
+              SecureStore.getItemAsync('refresh_token', AUTH_STORE_OPTIONS),
+              2500,
+              'Timed out reading refresh token from SecureStore.',
+            ).catch(() => null),
           ]);
 
       if (!token && !refreshToken) {

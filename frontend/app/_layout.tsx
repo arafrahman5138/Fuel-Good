@@ -15,6 +15,22 @@ import { registerNotificationListeners, syncPushTokenWithBackend } from '../serv
 import { subscribeToBillingChanges } from '../services/supabase';
 import { OfflineBanner } from '../components/OfflineBanner';
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export default function RootLayout() {
   const theme = useTheme();
   const mode = useThemeStore((s) => s.mode);
@@ -36,6 +52,7 @@ export default function RootLayout() {
   const isOnboardingRoute = isOnboardingV2Route || (isAuthRoute && segments[1] === 'onboarding');
   const isSubscribeRoute = pathname === '/subscribe';
   const canAccessWithoutPremium = isAuthRoute || isOnboardingV2Route || isSubscribeRoute || pathname === '/';
+  const skipBillingGate = __DEV__;
 
   // 7-day free trial: allow authenticated, onboarded users to explore the app
   const isWithinFreeTrial = (() => {
@@ -78,15 +95,21 @@ export default function RootLayout() {
     let active = true;
     setBillingLoading(true);
 
-    billingService.bootstrap(user.id, user.email, user.name)
+    withTimeout(
+      billingService.bootstrap(user.id, user.email, user.name),
+      8000,
+    )
       .then(async () => {
-        const status = await billingApi.sync(false).catch(() => null);
+        const status = await withTimeout(
+          billingApi.sync(false).catch(() => null),
+          8000,
+        ).catch(() => null);
         if (status?.entitlement && active) {
           setEntitlement(status.entitlement);
         }
       })
       .catch(() => {
-        // RevenueCat not configured — continue without billing
+        // Billing should never block the app indefinitely in local/dev flows.
       })
       .finally(() => {
         if (active) setBillingLoading(false);
@@ -146,7 +169,7 @@ export default function RootLayout() {
 
     // Billing-dependent routes can only enter protected tabs when the user
     // has premium access or is inside the temporary free-trial window.
-    if (!hasPremiumAccess && !isWithinFreeTrial) {
+    if (!skipBillingGate && !hasPremiumAccess && !isWithinFreeTrial) {
       if (!canAccessWithoutPremium) {
         router.replace('/subscribe');
       }
@@ -156,7 +179,7 @@ export default function RootLayout() {
     if (isAuthRoute || isSubscribeRoute) {
       router.replace('/(tabs)' as any);
     }
-  }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length]);
+  }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length, skipBillingGate]);
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
@@ -184,7 +207,7 @@ export default function RootLayout() {
     <>
       <StatusBar style={mode === 'light' ? 'dark' : 'light'} />
       <OfflineBanner />
-      {(isLoading || isBillingLoading) ? (
+      {isLoading ? (
         <View style={[styles.loadingScreen, { backgroundColor: theme.background }]}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>

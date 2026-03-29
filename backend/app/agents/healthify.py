@@ -119,8 +119,11 @@ Return strict JSON with keys: message, recipe, swaps, nutrition.
 Set recipe, swaps, and nutrition to null unless you are also providing a better alternative recipe.
 
 Behavior:
-- Explain what dragged the score down in simple, non-judgmental terms.
-- Identify the single highest-impact change the user can make.
+- You will receive the user's current Fuel Score (0-100) and context about their day.
+- If the score is high (85+): congratulate them, highlight what they did well, and encourage them to keep it up.
+- If the score is moderate (50-84): acknowledge the effort, explain the main factors affecting the score, and suggest the single highest-impact improvement.
+- If the score is low (<50): be non-judgmental, explain what affected the score most, and identify the easiest change they can make.
+- If no meals are logged yet today, let the user know and offer a suggestion for their next meal.
 - If the user asks "what's better", generate a full healthified alternative (set recipe to non-null).
 - Be encouraging — the user is trying to improve.
 - Keep the explanation under 120 words unless providing a recipe.
@@ -1031,11 +1034,29 @@ async def _handle_score_explainer(
     user_input: str,
     history: List[dict],
     user_context: str = "",
+    db: Session | None = None,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
     llm = get_llm("chat")
-    system_prompt = SCORE_EXPLAINER_PROMPT
+
+    # Inject actual Fuel Score data so the LLM knows the user's current score
+    score_context = ""
+    if db and user_id:
+        try:
+            from app.services.fuel_score import get_daily_fuel_scores
+            today = datetime.now(UTC).date()
+            scores = get_daily_fuel_scores(db, user_id, today)
+            if scores:
+                avg_score = round(sum(scores) / len(scores))
+                score_context = f"\n\nUser's current Fuel Score today: {avg_score}/100 (based on {len(scores)} meal(s) logged today)."
+            else:
+                score_context = "\n\nUser has not logged any meals today yet. No Fuel Score data available for today."
+        except Exception:
+            pass
+
+    system_prompt = SCORE_EXPLAINER_PROMPT + score_context
     if user_context:
-        system_prompt = f"{SCORE_EXPLAINER_PROMPT}\n\n{user_context}"
+        system_prompt = f"{system_prompt}\n\n{user_context}"
     messages = [SystemMessage(content=system_prompt)]
     for msg in history:
         if msg["role"] == "user":
@@ -1178,7 +1199,7 @@ async def healthify_agent(
         return payload
 
     if intent == "score_explainer":
-        payload = await _handle_score_explainer(user_input, history, user_context)
+        payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
         if stream:
             async def _score_stream():
                 yield json.dumps(payload)

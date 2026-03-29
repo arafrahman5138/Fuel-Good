@@ -51,24 +51,27 @@ export function Card({
 
   const shadowStyle = shadow !== 'none' ? Shadows[shadow](isDark) : {};
 
+  // iOS cannot render shadows + overflow:hidden on the same View (causes square
+  // corner artifacts). Use an outer View for the shadow and an inner
+  // LinearGradient with overflow:hidden for the rounded-corner clipping.
   const cardView = (
-    <LinearGradient
-      colors={theme.gradient.card as readonly [string, string, ...string[]]}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={[
-        styles.card,
-        shadowStyle,
-        {
-          borderColor: theme.card.border,
-          borderWidth: 1,
-          padding: padding ?? Spacing.lg,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </LinearGradient>
+    <View style={[styles.shadowWrapper, shadowStyle, style]}>
+      <LinearGradient
+        colors={theme.gradient.card as readonly [string, string, ...string[]]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[
+          styles.card,
+          {
+            borderColor: theme.card.border,
+            borderWidth: 1,
+            padding: padding ?? Spacing.lg,
+          },
+        ]}
+      >
+        {children}
+      </LinearGradient>
+    </View>
   );
 
   if (onPress) {
@@ -90,6 +93,9 @@ export function Card({
 }
 
 const styles = StyleSheet.create({
+  shadowWrapper: {
+    borderRadius: BorderRadius.xl,
+  },
   card: {
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',

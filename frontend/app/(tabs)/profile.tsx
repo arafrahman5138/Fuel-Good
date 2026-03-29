@@ -180,30 +180,36 @@ export default function ProfileScreen() {
         </Animated.View>
 
         {/* XP Progress */}
-        <Card style={{ marginBottom: Spacing.xl }}>
+        <Card style={{ marginBottom: Spacing.md }}>
           <XPBar xp={xp} />
         </Card>
 
-        {/* Quests & Streaks Link */}
-        <TouchableOpacity
-          onPress={() => router.push('/quests' as any)}
-          activeOpacity={0.85}
-          style={{ marginBottom: Spacing.lg }}
-        >
-          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg }}>
-            <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentMuted }}>
-              <Ionicons name="flame" size={22} color={theme.accent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: FontSize.md, fontWeight: '700', color: theme.text }}>Quests & Streaks</Text>
-              <Text style={{ fontSize: FontSize.sm, color: theme.textSecondary }}>Daily goals and streak tracking</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+        {/* Stats Grid — streak, XP, achievements, quests link */}
+        <Animated.View style={contentEntrance.style}>
+        <View style={styles.statsGrid}>
+          <Card style={styles.statCard} padding={Spacing.md}>
+            <Ionicons name="flame" size={22} color={theme.accent} />
+            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.current_streak || 0}</Text>
+            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
           </Card>
-        </TouchableOpacity>
+          <Card style={styles.statCard} padding={Spacing.md}>
+            <Ionicons name="trophy" size={22} color={theme.accent} />
+            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.longest_streak || 0}</Text>
+            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
+          </Card>
+          <Card style={styles.statCard} padding={Spacing.md}>
+            <Ionicons name="star" size={22} color={theme.primary} />
+            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{xp}</Text>
+            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
+          </Card>
+          <Card style={styles.statCard} padding={Spacing.md} onPress={() => router.push('/quests' as any)}>
+            <Ionicons name="flash" size={22} color={theme.accent} />
+            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>Quests</Text>
+            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Goals & Streaks</Text>
+          </Card>
+        </View>
 
         {/* Tab Selector */}
-        <Animated.View style={contentEntrance.style}>
         <View style={[styles.tabRow, { backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.md }]}>
           {(['stats', 'achievements'] as const).map((tab) => (
             <TouchableOpacity
@@ -229,27 +235,16 @@ export default function ProfileScreen() {
 
         {activeTab === 'stats' ? (
           <>
-            {/* Stats Grid */}
-            <View style={styles.statsGrid}>
-              <Card style={styles.statCard} padding={Spacing.lg}>
-                <Ionicons name="flame" size={24} color={theme.accent} />
-                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.current_streak || 0}</Text>
-                <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
-              </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
-                <Ionicons name="trophy" size={24} color={theme.accent} />
-                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.longest_streak || 0}</Text>
-                <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
-              </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
-                <Ionicons name="star" size={24} color={theme.primary} />
-                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{xp}</Text>
-                <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
-              </Card>
-              <Card style={styles.statCard} padding={Spacing.lg}>
-                <Ionicons name="ribbon" size={24} color={theme.info} />
-                <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{unlockedCount}</Text>
-                <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Achievements</Text>
+            {/* Detailed stats */}
+            <View style={{ gap: Spacing.sm }}>
+              <Card padding={Spacing.md} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primaryMuted }}>
+                  <Ionicons name="ribbon" size={20} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: FontSize.md, fontWeight: '700', color: theme.text }}>{unlockedCount} Achievements</Text>
+                  <Text style={{ fontSize: FontSize.xs, color: theme.textSecondary, marginTop: 1 }}>Switch to Achievements tab to see all</Text>
+                </View>
               </Card>
             </View>
           </>
@@ -427,7 +422,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.lg,
   },
   avatarTouchable: {
     position: 'relative',
@@ -493,13 +488,12 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    padding: Spacing.xs,
-    marginBottom: Spacing.xl,
+    padding: 3,
+    marginBottom: Spacing.lg,
   },
   tab: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    minHeight: 44,
+    paddingVertical: Spacing.sm,
     justifyContent: 'center',
     borderRadius: BorderRadius.sm,
     alignItems: 'center',

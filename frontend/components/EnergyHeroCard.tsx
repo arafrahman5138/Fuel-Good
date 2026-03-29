@@ -108,11 +108,13 @@ function MiniMesRing({
   tierColor,
   trackColor,
   icon,
+  backgroundColor,
 }: {
   score: number;
   tierColor: string;
   trackColor: string;
   icon: 'pulse-outline' | 'leaf';
+  backgroundColor?: string;
 }) {
   const size = 38;
   const borderWidth = 2.5;
@@ -146,7 +148,7 @@ function MiniMesRing({
         ]}
       />
       {/* Center content */}
-      <View style={[miniStyles.center, { width: size - borderWidth * 2, height: size - borderWidth * 2, borderRadius: (size - borderWidth * 2) / 2 }]}>
+      <View style={[miniStyles.center, { width: size - borderWidth * 2, height: size - borderWidth * 2, borderRadius: (size - borderWidth * 2) / 2, backgroundColor: backgroundColor ?? 'transparent' }]}>
         <Ionicons name={icon} size={9} color={tierColor} />
         <Text style={[miniStyles.score, { color: tierColor }]}>{score}</Text>
       </View>
@@ -265,13 +267,14 @@ export function EnergyHeroCard({
             />
             {hasMes && (
               <Animated.View
-                style={[styles.mesBadge, { backgroundColor: isDark ? '#1a1a24' : theme.surface, transform: [{ scale: badgeBounce }] }]}
+                style={[styles.mesBadge, { backgroundColor: isDark ? '#111916' : theme.surface, transform: [{ scale: badgeBounce }] }]}
               >
                 <MiniMesRing
                   score={showMes ? fuelScore : mesScore!}
                   tierColor={showMes ? tier.color : resolvedMesColor}
                   trackColor={ringTrack}
                   icon={showMes ? 'leaf' : 'pulse-outline'}
+                  backgroundColor={isDark ? '#111916' : '#fff'}
                 />
               </Animated.View>
             )}
