@@ -3,10 +3,24 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { FontSize } from '../constants/Colors';
 
-const PHASES = [
+const DEFAULT_PHASES = [
   'Finding a whole-food match…',
   'Analyzing nutrition profile…',
   'Crafting your healthified version…',
+  'Almost ready…',
+];
+
+export const SCORE_PHASES = [
+  'Analyzing your fuel score…',
+  'Reviewing today\'s meals…',
+  'Preparing your breakdown…',
+  'Almost ready…',
+];
+
+export const GENERAL_PHASES = [
+  'Thinking…',
+  'Looking up nutrition info…',
+  'Preparing answer…',
   'Almost ready…',
 ];
 
@@ -15,16 +29,18 @@ const FADE_DURATION = 280;
 
 interface LoadingPhaseTextProps {
   color?: string;
+  phases?: string[];
 }
 
-export function LoadingPhaseText({ color = '#9CA3AF' }: LoadingPhaseTextProps) {
+export function LoadingPhaseText({ color = '#9CA3AF', phases }: LoadingPhaseTextProps) {
+  const activePhases = phases || DEFAULT_PHASES;
   const [phaseIndex, setPhaseIndex] = useState(0);
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (isReduceMotionEnabled()) {
       const timer = setInterval(() => {
-        setPhaseIndex((prev) => (prev + 1) % PHASES.length);
+        setPhaseIndex((prev) => (prev + 1) % activePhases.length);
       }, PHASE_INTERVAL);
       return () => clearInterval(timer);
     }
@@ -37,7 +53,7 @@ export function LoadingPhaseText({ color = '#9CA3AF' }: LoadingPhaseTextProps) {
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
       }).start(() => {
-        setPhaseIndex((prev) => (prev + 1) % PHASES.length);
+        setPhaseIndex((prev) => (prev + 1) % activePhases.length);
         Animated.timing(opacity, {
           toValue: 1,
           duration: FADE_DURATION,
@@ -48,12 +64,12 @@ export function LoadingPhaseText({ color = '#9CA3AF' }: LoadingPhaseTextProps) {
     }, PHASE_INTERVAL);
 
     return () => clearInterval(timer);
-  }, [opacity]);
+  }, [opacity, activePhases]);
 
   return (
     <View style={styles.container}>
       <Animated.Text style={[styles.text, { color, opacity }]}>
-        {PHASES[phaseIndex]}
+        {activePhases[phaseIndex]}
       </Animated.Text>
     </View>
   );

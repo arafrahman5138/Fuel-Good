@@ -58,7 +58,7 @@ export default function QuestsScreen() {
     <ScreenContainer>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.sm, paddingTop: Spacing.md, paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {/* Header */}

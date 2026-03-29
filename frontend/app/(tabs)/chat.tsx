@@ -35,7 +35,7 @@ import { ChatHistoryDrawer } from '../../components/ChatHistoryDrawer';
 import { Shadows } from '../../constants/Shadows';
 import { useThemeStore } from '../../stores/themeStore';
 import { TypingIndicator } from '../../components/TypingIndicator';
-import { LoadingPhaseText } from '../../components/LoadingPhaseText';
+import { LoadingPhaseText, SCORE_PHASES, GENERAL_PHASES } from '../../components/LoadingPhaseText';
 import { ChatBubbleEntrance } from '../../components/ChatBubbleEntrance';
 import { RecipeCardShimmer } from '../../components/RecipeCardShimmer';
 import { MesBadgePopIn } from '../../components/MesBadgePopIn';
@@ -195,9 +195,9 @@ export default function ChatScreen() {
   }, [messages.length]);
 
   const shouldPreferStreaming = (_message: string) => {
-    // Always stream — provides better UX (user sees text appear progressively)
-    // and the backend streaming path handles all intent types
-    return true;
+    // React Native fetch on iOS does not expose a Web Streams reader, so
+    // native builds should use the stable non-streaming path for now.
+    return Platform.OS === 'web';
   };
 
   const addAssistantPayload = (payload: any) => {
@@ -1180,7 +1180,16 @@ export default function ChatScreen() {
                 ) : (
                   <View style={styles.loadingContent}>
                     <TypingIndicator color={theme.primary} iconColor={theme.primary} />
-                    <LoadingPhaseText color={theme.textTertiary} />
+                    <LoadingPhaseText
+                      color={theme.textTertiary}
+                      phases={
+                        /\b(score|fuel|mes|explain)\b/i.test(lastUserInputRef.current)
+                          ? SCORE_PHASES
+                          : /\?/.test(lastUserInputRef.current) && !/\b(make|cook|recipe|meal|give me|healthy)\b/i.test(lastUserInputRef.current)
+                            ? GENERAL_PHASES
+                            : undefined
+                      }
+                    />
                   </View>
                 )}
               </View>

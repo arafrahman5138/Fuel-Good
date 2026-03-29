@@ -1,6 +1,7 @@
 import { API_URL } from '../constants/Config';
 import { useAuthStore } from '../stores/authStore';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { reportClientError } from './errorReporting';
 
 class ApiClient {
@@ -271,11 +272,24 @@ class ApiClient {
     onChunk: (text: string) => void,
     onDone?: (data: any) => void,
   ): Promise<void> {
+    const fallbackToNonStreaming = async () => {
+      const fallbackEndpoint = endpoint.endsWith('/stream')
+        ? endpoint.replace(/\/stream$/, '')
+        : endpoint;
+      const payload = await this.post<any>(fallbackEndpoint, body);
+      onDone?.({ session_id: payload?.session_id, payload });
+    };
+
     const timeout = this.aiTimeout;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
+      if (Platform.OS !== 'web') {
+        await fallbackToNonStreaming();
+        return;
+      }
+
       let response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -301,7 +315,10 @@ class ApiClient {
         throw new Error(error.detail || `Stream failed: ${response.status}`);
       }
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
+      if (!reader) {
+        await fallbackToNonStreaming();
+        return;
+      }
 
       const decoder = new TextDecoder();
       while (true) {

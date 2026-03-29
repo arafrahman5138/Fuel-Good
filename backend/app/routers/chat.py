@@ -455,6 +455,113 @@ _METABOLIC_RESET = [
     "Herb-Crusted Chicken", "Veggie Frittata",
 ]
 
+# Tags for dietary/allergen filtering: maps suggestion name → set of tags
+# Tags: meat proteins, seafood, dairy, eggs, gluten, tree_nuts, peanuts, soy, shellfish
+_SUGGESTION_TAGS: dict[str, set[str]] = {
+    # Base fun
+    "Mac and Cheese": {"dairy", "gluten"},
+    "Pizza": {"dairy", "gluten"},
+    "Burger and Fries": {"beef", "gluten"},
+    "Chocolate Cake": {"dairy", "gluten", "eggs"},
+    "Fried Chicken": {"chicken", "gluten"},
+    "Ice Cream": {"dairy"},
+    # Low carb fun
+    "Cauliflower Fried Rice": {"eggs"},
+    "Zucchini Lasagna": {"dairy"},
+    "Lettuce Wrap Tacos": {"beef"},
+    "Eggplant Parmesan": {"dairy", "gluten"},
+    "Stuffed Bell Peppers": {"beef"},
+    "Chicken Crust Pizza": {"chicken", "dairy"},
+    # Fat loss
+    "Grilled Chicken Caesar Salad": {"chicken", "dairy", "eggs"},
+    "Turkey Lettuce Wraps": {"turkey"},
+    "Shrimp Stir Fry": {"shellfish", "shrimp", "soy"},
+    "Salmon with Roasted Veggies": {"fish", "salmon"},
+    "Greek Yogurt Parfait": {"dairy"},
+    "Egg White Veggie Omelette": {"eggs"},
+    # Muscle gain
+    "Steak and Eggs": {"beef", "steak", "eggs"},
+    "Chicken Stir Fry with Rice": {"chicken", "soy"},
+    "Protein Overnight Oats": {"dairy", "gluten"},
+    "Salmon Power Bowl": {"fish", "salmon"},
+    "Turkey Meatballs": {"turkey"},
+    "Beef and Broccoli": {"beef", "soy"},
+    # Metabolic reset
+    "Mediterranean Salmon Bowl": {"fish", "salmon"},
+    "Lentil Soup": set(),
+    "Grilled Fish with Greens": {"fish"},
+    "Chickpea Buddha Bowl": set(),
+    "Herb-Crusted Chicken": {"chicken"},
+    "Veggie Frittata": {"eggs", "dairy"},
+}
+
+# Which tags indicate meat/animal protein (for vegetarian/vegan filtering)
+_MEAT_TAGS = {"beef", "steak", "chicken", "turkey", "pork", "lamb", "fish", "salmon", "shellfish", "shrimp"}
+_ANIMAL_TAGS = _MEAT_TAGS | {"dairy", "eggs"}
+
+# Map common allergy names → tag names
+_ALLERGY_TAG_MAP: dict[str, set[str]] = {
+    "dairy": {"dairy"},
+    "milk": {"dairy"},
+    "eggs": {"eggs"},
+    "egg": {"eggs"},
+    "tree nuts": {"tree_nuts"},
+    "tree nut": {"tree_nuts"},
+    "peanuts": {"peanuts"},
+    "peanut": {"peanuts"},
+    "soy": {"soy"},
+    "soybean": {"soy"},
+    "fish": {"fish", "salmon"},
+    "shellfish": {"shellfish", "shrimp"},
+    "shrimp": {"shrimp", "shellfish"},
+    "gluten": {"gluten"},
+    "wheat": {"gluten"},
+}
+
+
+def _filter_suggestions(suggestions: list[str], user: User | None) -> list[str]:
+    """Filter suggestion list by user's dietary preferences, allergies, and protein preferences."""
+    if not user:
+        return suggestions
+
+    excluded_tags: set[str] = set()
+
+    # Dietary preferences (vegetarian, vegan, pescatarian, etc.)
+    for pref in (user.dietary_preferences or []):
+        pref_lower = str(pref).lower()
+        if "vegan" in pref_lower:
+            excluded_tags |= _ANIMAL_TAGS
+        elif "vegetarian" in pref_lower:
+            excluded_tags |= _MEAT_TAGS
+        elif "pescatarian" in pref_lower:
+            excluded_tags |= (_MEAT_TAGS - {"fish", "salmon", "shellfish", "shrimp"})
+
+    # Allergies
+    for allergy in (user.allergies or []):
+        allergy_lower = str(allergy).lower()
+        mapped = _ALLERGY_TAG_MAP.get(allergy_lower)
+        if mapped:
+            excluded_tags |= mapped
+        else:
+            # Direct tag match as fallback
+            excluded_tags.add(allergy_lower)
+
+    # Protein preferences — disliked proteins
+    protein_prefs = user.protein_preferences or {}
+    if isinstance(protein_prefs, dict):
+        for disliked in (protein_prefs.get("disliked") or []):
+            dl = str(disliked).lower()
+            excluded_tags.add(dl)
+            # Also map common protein names
+            mapped = _ALLERGY_TAG_MAP.get(dl)
+            if mapped:
+                excluded_tags |= mapped
+
+    if not excluded_tags:
+        return suggestions
+
+    return [s for s in suggestions if not (_SUGGESTION_TAGS.get(s, set()) & excluded_tags)]
+
 
 @router.get("/suggestions")
 async def get_chat_suggestions(
@@ -470,7 +577,7 @@ async def get_chat_suggestions(
 
     # Default: generic fun suggestions
     if not profile or not profile.goal:
-        suggestions = list(_BASE_FUN)
+        suggestions = _filter_suggestions(list(_BASE_FUN), current_user)
         random.shuffle(suggestions)
         return [{"label": s, "query": s} for s in suggestions[:8]]
 
@@ -506,6 +613,10 @@ async def get_chat_suggestions(
             goal_pool = list(_MUSCLE_GAIN) + goal_pool[:2]
     except Exception:
         pass
+
+    # Filter by dietary preferences, allergies, and protein preferences
+    goal_pool = _filter_suggestions(goal_pool, current_user)
+    fun_pool = _filter_suggestions(fun_pool, current_user)
 
     random.shuffle(goal_pool)
     random.shuffle(fun_pool)

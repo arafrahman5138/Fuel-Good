@@ -69,9 +69,14 @@ swaps: [{original, replacement, reason}]
 CRITICAL: recipe must NOT be null for food requests. Include 3+ ingredients and 3+ steps. Output valid JSON only.
 CRITICAL: If the user has dietary restrictions or allergies listed below, you MUST comply. Every single ingredient must be safe for their diet and allergies. Violations are unacceptable."""
 
-GENERAL_PROMPT = """You are Fuel Good Healthify AI.
+GENERAL_PROMPT = """You are Fuel Good Healthify AI — a friendly nutrition coach inside a food and health app.
 Return strict JSON with keys: message, recipe, swaps, nutrition.
 For general questions, provide a helpful answer in message and set recipe, swaps, and nutrition to null.
+
+Behavior:
+- If the question is about food, nutrition, cooking, health, diet, or wellness — answer helpfully and knowledgeably.
+- If the question is completely unrelated to food, nutrition, or health (e.g., weather, math, sports, politics), politely explain that you're a nutrition coach and can help with food-related questions. Suggest something relevant they could ask instead.
+- Always be friendly and encouraging.
 """
 
 MODIFY_PROMPT = """You are Fuel Good Healthify AI.
@@ -444,6 +449,100 @@ def _compute_recipe_mes_from_cache(
         return None
 
 
+def _recipe_conflicts_with_user(recipe, user) -> bool:
+    """Check if a retrieved recipe conflicts with user's dietary preferences or allergies.
+    Returns True if the recipe should be skipped."""
+    if not user:
+        return False
+    try:
+        ingredients = recipe.ingredients or []
+        ingredient_text = " ".join(
+            str(ing.get("name", "") if isinstance(ing, dict) else ing).lower()
+            for ing in ingredients
+        ).lower()
+        # Also check title and description
+        title = (recipe.title or "").lower()
+        full_text = f"{title} {ingredient_text}"
+
+        # Check allergies
+        for allergy in (user.allergies or []):
+            allergy_lower = str(allergy).lower()
+            if allergy_lower in full_text:
+                return True
+
+        # Check dietary preferences
+        meat_keywords = {"chicken", "beef", "steak", "pork", "bacon", "ham", "lamb",
+                         "turkey", "duck", "veal", "sausage", "salami", "pepperoni",
+                         "prosciutto", "chorizo", "ground meat", "meatball"}
+        seafood_keywords = {"fish", "salmon", "tuna", "shrimp", "crab", "lobster",
+                            "cod", "tilapia", "halibut", "anchovy", "sardine", "scallop",
+                            "oyster", "clam", "mussel", "squid", "octopus"}
+        animal_keywords = meat_keywords | seafood_keywords | {"egg", "dairy", "milk",
+                          "cheese", "butter", "cream", "yogurt", "whey", "honey"}
+
+        for pref in (user.dietary_preferences or []):
+            pref_lower = str(pref).lower()
+            if "vegan" in pref_lower:
+                if any(kw in full_text for kw in animal_keywords):
+                    return True
+            elif "vegetarian" in pref_lower:
+                if any(kw in full_text for kw in (meat_keywords | seafood_keywords)):
+                    return True
+            elif "pescatarian" in pref_lower:
+                if any(kw in full_text for kw in meat_keywords):
+                    return True
+
+        # Check disliked proteins
+        protein_prefs = user.protein_preferences or {}
+        if isinstance(protein_prefs, dict):
+            for disliked in (protein_prefs.get("disliked") or []):
+                if str(disliked).lower() in full_text:
+                    return True
+    except Exception:
+        pass
+    return False
+
+
+# Food-related keywords for intent detection (not exhaustive — just enough to gate the fallback)
+_FOOD_KEYWORDS = {
+    # Common foods
+    "chicken", "beef", "steak", "pork", "lamb", "turkey", "salmon", "fish", "shrimp", "tuna",
+    "egg", "eggs", "rice", "pasta", "bread", "noodle", "noodles", "pizza", "burger", "taco",
+    "salad", "soup", "sandwich", "wrap", "bowl", "smoothie", "oatmeal", "pancake", "waffle",
+    "sushi", "curry", "stir", "fry", "grill", "roast", "bake", "toast",
+    "cheese", "yogurt", "milk", "cream", "butter", "tofu", "tempeh", "lentil", "lentils",
+    "bean", "beans", "chickpea", "quinoa", "oats", "cereal", "granola",
+    "bacon", "ham", "sausage", "meatball", "stew", "chili", "casserole",
+    "cake", "cookie", "brownie", "pie", "ice cream", "chocolate", "candy",
+    "fries", "nachos", "wings", "ramen", "pho", "mac",
+    # Vegetables & fruits
+    "broccoli", "spinach", "kale", "avocado", "tomato", "potato", "sweet potato",
+    "onion", "garlic", "pepper", "carrot", "zucchini", "mushroom", "corn",
+    "apple", "banana", "berry", "berries", "mango", "orange", "lemon",
+    "cucumber", "celery", "lettuce", "cabbage", "cauliflower", "peas",
+    # Cooking & meal terms
+    "recipe", "meal", "dish", "cook", "cooking", "food", "eat", "eating", "snack",
+    "breakfast", "lunch", "dinner", "dessert", "appetizer", "ingredient", "ingredients",
+    "serve", "serving", "portion", "prep", "minute",
+    # Nutrition terms
+    "protein", "carb", "carbs", "fat", "fiber", "calorie", "calories", "macro", "macros",
+    "vitamin", "mineral", "sodium", "sugar", "cholesterol", "nutrition", "nutrient",
+    "healthy", "unhealthy", "whole food", "processed", "organic",
+    # Diet & health terms
+    "diet", "keto", "paleo", "vegan", "vegetarian", "fasting", "intermittent",
+    "weight", "muscle", "energy", "metabolism", "gut", "digestion",
+    "fuel", "score", "mes",
+    # Healthify terms
+    "healthify", "healthier", "clean up", "whole-food",
+}
+
+
+def _looks_food_related(text: str) -> bool:
+    """Quick heuristic: does this text look like it's about food, nutrition, cooking, or health?"""
+    words = set(re.findall(r"[a-zA-Z][a-zA-Z'-]*", text.lower()))
+    return bool(words & _FOOD_KEYWORDS)
+
+
 def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     text = (user_input or "").lower()
 
@@ -466,14 +565,8 @@ def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     # Score explainer
     if re.search(r"\b(why|how come|explain|what dragged|what hurt)\b.*(score|mes|fuel)\b", text, re.IGNORECASE):
         return "score_explainer"
-    if re.search(r"\b(score|mes|fuel).*(low|bad|why|explain|breakdown)\b", text, re.IGNORECASE):
+    if re.search(r"\b(score|mes|fuel).*(low|bad|why|explain|breakdown|high|good)\b", text, re.IGNORECASE):
         return "score_explainer"
-
-    # General nutrition
-    if any(token in text for token in ["what is", "how many", "is this healthy", "why is", "should i", "can i"]):
-        return "general_nutrition_question"
-    if any(token in text for token in ["protein", "fiber", "calories", "macros"]) and "?" in text:
-        return "general_nutrition_question"
 
     # Modify prior recipe
     if (
@@ -482,12 +575,30 @@ def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
     ):
         return "modify_prior_recipe"
 
+    # General nutrition / health questions (broader matching)
+    if any(token in text for token in ["what is", "how many", "is this healthy", "why is", "should i", "can i",
+                                       "how much", "is it", "are there", "do i need", "how does", "what are",
+                                       "is intermittent", "what about", "tell me about"]):
+        if _looks_food_related(text) or "?" in text:
+            return "general_nutrition_question"
+    if any(token in text for token in ["protein", "fiber", "calories", "macros", "carbs", "fat",
+                                       "nutrition", "diet", "keto", "paleo", "fasting", "weight",
+                                       "metabolism", "gut health", "vitamins"]):
+        return "general_nutrition_question"
+
+    # Explicit healthify requests
     if any(token in text for token in ["healthy version", "healthify", "clean up", "whole-food", "make this healthier"]):
         return "healthify_unhealthy_meal"
-    words = re.findall(r"[a-zA-Z][a-zA-Z'-]*", text)
-    if 1 <= len(words) <= 6:
-        return "healthify_unhealthy_meal"
-    return "lookup_existing_meal"
+
+    # If the text looks food-related, treat as a food request (healthify or lookup)
+    if _looks_food_related(text):
+        words = re.findall(r"[a-zA-Z][a-zA-Z'-]*", text)
+        if 1 <= len(words) <= 6:
+            return "healthify_unhealthy_meal"
+        return "lookup_existing_meal"
+
+    # Not food-related — route to general handler (LLM will politely redirect)
+    return "general_nutrition_question"
 
 
 def _parse_markdown_recipe(raw_text: str) -> dict[str, Any] | None:
@@ -1188,38 +1299,51 @@ async def healthify_agent(
         return payload
 
     if intent == "fridge_to_meal":
+        if stream:
+            async def _fridge_stream():
+                yield ""  # heartbeat: keeps SSE connection alive during LLM processing
+                payload = await _handle_fridge_to_meal(user_input, history, user_context)
+                mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
+                if mes:
+                    payload["mes_score"] = mes
+                yield json.dumps(payload)
+            return _fridge_stream()
         payload = await _handle_fridge_to_meal(user_input, history, user_context)
         mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
-        if stream:
-            async def _fridge_stream():
-                yield json.dumps(payload)
-            return _fridge_stream()
         return payload
 
     if intent == "score_explainer":
-        payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
         if stream:
             async def _score_stream():
+                yield ""  # heartbeat
+                payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
                 yield json.dumps(payload)
             return _score_stream()
+        payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
         return payload
 
     if intent == "post_scan_guidance":
+        if stream:
+            async def _scan_stream():
+                yield ""  # heartbeat
+                payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
+                mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
+                if mes:
+                    payload["mes_score"] = mes
+                yield json.dumps(payload)
+            return _scan_stream()
         payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
         mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
-        if stream:
-            async def _scan_stream():
-                yield json.dumps(payload)
-            return _scan_stream()
         return payload
 
     if intent == "general_nutrition_question":
         if stream:
             async def _general_stream():
+                yield ""  # heartbeat
                 payload = await _answer_general_question(user_input, history, user_context)
                 yield json.dumps(payload)
             return _general_stream()
@@ -1242,19 +1366,29 @@ async def healthify_agent(
     top = (retrieval.get("results") or [None])[0]
     top_score = float((top or {}).get("score") or 0)
     top_lexical = float((top or {}).get("lexical_score") or 0)
+    # Validate retrieved recipe against user's dietary constraints before returning
+    from app.models.user import User as UserModel
+    user_obj = db.query(UserModel).filter(UserModel.id == user_id).first() if user_id else None
     if top and (top_score >= RETRIEVAL_THRESHOLD or top_lexical >= LEXICAL_RETRIEVAL_THRESHOLD):
         recipe = top["recipe"]
-        payload = _retrieved_response(recipe, top_score, user_context)
-        payload["retrieval_debug"] = retrieval.get("timings_ms")
-        nutrition = payload.get("nutrition")
-        mes = _compute_recipe_mes_from_cache(cached, nutrition)
-        if mes:
-            payload["mes_score"] = mes
-        if stream:
-            async def _retrieved_stream():
-                yield json.dumps(payload)
-            return _retrieved_stream()
-        return payload
+        if _recipe_conflicts_with_user(recipe, user_obj):
+            logger.info(
+                "healthify.retrieval.skipped_conflict user_id=%s recipe=%s",
+                user_id, recipe.title,
+            )
+            # Fall through to LLM generation which respects dietary constraints via system prompt
+        else:
+            payload = _retrieved_response(recipe, top_score, user_context)
+            payload["retrieval_debug"] = retrieval.get("timings_ms")
+            nutrition = payload.get("nutrition")
+            mes = _compute_recipe_mes_from_cache(cached, nutrition)
+            if mes:
+                payload["mes_score"] = mes
+            if stream:
+                async def _retrieved_stream():
+                    yield json.dumps(payload)
+                return _retrieved_stream()
+            return payload
 
     retrieved_context = [_recipe_to_payload(item["recipe"]) for item in (retrieval.get("results") or [])[:3]]
     if stream:

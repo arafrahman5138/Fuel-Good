@@ -41,7 +41,7 @@ interface Achievement {
 export default function ProfileScreen() {
   const theme = useTheme();
   const user = useAuthStore((s) => s.user);
-  const [activeTab, setActiveTab] = useState<'stats' | 'achievements'>('stats');
+  // activeTab removed — profile now shows stats + achievements inline
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loadingAchievements, setLoadingAchievements] = useState(false);
   const [achievementsError, setAchievementsError] = useState(false);
@@ -99,10 +99,10 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'achievements' && achievements.length === 0) {
+    if (achievements.length === 0) {
       loadAchievements();
     }
-  }, [activeTab]);
+  }, []);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
@@ -184,72 +184,49 @@ export default function ProfileScreen() {
           <XPBar xp={xp} />
         </Card>
 
-        {/* Stats Grid — streak, XP, achievements, quests link */}
         <Animated.View style={contentEntrance.style}>
-        <View style={styles.statsGrid}>
-          <Card style={styles.statCard} padding={Spacing.md}>
-            <Ionicons name="flame" size={22} color={theme.accent} />
-            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.current_streak || 0}</Text>
-            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Current Streak</Text>
-          </Card>
-          <Card style={styles.statCard} padding={Spacing.md}>
-            <Ionicons name="trophy" size={22} color={theme.accent} />
-            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{user?.longest_streak || 0}</Text>
-            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Best Streak</Text>
-          </Card>
-          <Card style={styles.statCard} padding={Spacing.md}>
-            <Ionicons name="star" size={22} color={theme.primary} />
-            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{xp}</Text>
-            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Total XP</Text>
-          </Card>
-          <Card style={styles.statCard} padding={Spacing.md} onPress={() => router.push('/quests' as any)}>
-            <Ionicons name="flash" size={22} color={theme.accent} />
-            <Text style={[styles.statValue, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>Quests</Text>
-            <Text style={[styles.statLabel, { color: theme.textTertiary }]}>Goals & Streaks</Text>
-          </Card>
-        </View>
 
-        {/* Tab Selector */}
-        <View style={[styles.tabRow, { backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.md }]}>
-          {(['stats', 'achievements'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.7}
-              style={[
-                styles.tab,
-                activeTab === tab && { backgroundColor: theme.primary + '18', borderWidth: 1, borderColor: theme.primary + '30' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  { color: activeTab === tab ? theme.text : theme.textTertiary },
-                ]}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {activeTab === 'stats' ? (
-          <>
-            {/* Detailed stats */}
-            <View style={{ gap: Spacing.sm }}>
-              <Card padding={Spacing.md} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-                <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primaryMuted }}>
-                  <Ionicons name="ribbon" size={20} color={theme.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: FontSize.md, fontWeight: '700', color: theme.text }}>{unlockedCount} Achievements</Text>
-                  <Text style={{ fontSize: FontSize.xs, color: theme.textSecondary, marginTop: 1 }}>Switch to Achievements tab to see all</Text>
-                </View>
-              </Card>
+        {/* Stats — single card with divider rows */}
+        <Card padding={0} style={{ marginBottom: Spacing.md }}>
+          <View style={styles.statRow}>
+            <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
+              <Ionicons name="flame" size={18} color={theme.accent} />
             </View>
-          </>
-        ) : (
-          <>
+            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+            <Text style={[styles.statRowValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={styles.statRow}>
+            <View style={[styles.statIcon, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="star" size={18} color={theme.primary} />
+            </View>
+            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Total XP</Text>
+            <Text style={[styles.statRowValue, { color: theme.text }]}>{xp}</Text>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={styles.statRow}>
+            <View style={[styles.statIcon, { backgroundColor: theme.infoMuted }]}>
+              <Ionicons name="ribbon" size={18} color={theme.info} />
+            </View>
+            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Achievements</Text>
+            <Text style={[styles.statRowValue, { color: theme.text }]}>{unlockedCount} / {achievements.length || '–'}</Text>
+          </View>
+        </Card>
+
+        {/* Quests link */}
+        <Card padding={0} onPress={() => router.push('/quests' as any)} style={{ marginBottom: Spacing.lg }}>
+          <View style={styles.statRow}>
+            <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
+              <Ionicons name="flash" size={18} color={theme.accent} />
+            </View>
+            <Text style={[styles.statRowLabel, { color: theme.text, fontWeight: '600' }]}>Quests & Streaks</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+          </View>
+        </Card>
+
+        {/* Achievements Section */}
+        <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: theme.text, marginBottom: Spacing.sm }}>Achievements</Text>
+
             {loadingAchievements ? (
               <ActivityIndicator
                 size="large"
@@ -393,8 +370,7 @@ export default function ProfileScreen() {
                 ))}
               </View>
             )}
-          </>
-        )}
+
         </Animated.View>
 
       </ScrollView>
@@ -486,41 +462,32 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
-  tabRow: {
+  statRow: {
     flexDirection: 'row',
-    padding: 3,
-    marginBottom: Spacing.lg,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    justifyContent: 'center',
-    borderRadius: BorderRadius.sm,
     alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md + 2,
+    gap: Spacing.md,
   },
-  tabText: {
+  statIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statRowLabel: {
+    flex: 1,
     fontSize: FontSize.sm,
+    fontWeight: '500',
+  },
+  statRowValue: {
+    fontSize: FontSize.md,
     fontWeight: '700',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: Spacing.md,
-    marginBottom: Spacing.xxl,
-  },
-  statCard: {
-    width: '48.5%' as any,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  statValue: {
-    fontSize: FontSize.xxl,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: '500',
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: Spacing.lg + 34 + Spacing.md,
   },
 
   achieveCard: {
