@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -14,6 +14,7 @@ settings = get_settings()
 
 ACTIVE_STATES = {"trialing", "active", "grace_period"}
 OVERRIDE_PREMIUM_LEVELS = {"premium", "premium_lifetime", "complimentary"}
+FRONTEND_FREE_TRIAL_DAYS = 7
 
 
 def _utcnow() -> datetime:
@@ -52,6 +53,13 @@ def has_active_access_override(user: User) -> bool:
     return not expires_at or expires_at >= _utcnow()
 
 
+def has_frontend_trial_access(user: User) -> bool:
+    created_at = _parse_dt(getattr(user, "created_at", None))
+    if not created_at:
+        return False
+    return (_utcnow() - created_at).total_seconds() <= FRONTEND_FREE_TRIAL_DAYS * 24 * 60 * 60
+
+
 def build_entitlement_info(user: User) -> EntitlementInfo:
     if has_active_access_override(user):
         expires_at = _parse_dt(user.access_override_expires_at)
@@ -65,6 +73,22 @@ def build_entitlement_info(user: User) -> EntitlementInfo:
             store="manual_override",
             will_renew=expires_at is None,
             manage_url=None,
+            requires_paywall=False,
+        )
+
+    if has_frontend_trial_access(user):
+        trial_started_at = _parse_dt(getattr(user, "created_at", None))
+        trial_ends_at = trial_started_at + timedelta(days=FRONTEND_FREE_TRIAL_DAYS) if trial_started_at else None
+        return EntitlementInfo(
+            access_level="premium",
+            subscription_state="trialing",
+            trial_started_at=trial_started_at,
+            trial_ends_at=trial_ends_at,
+            current_period_ends_at=trial_ends_at,
+            product_id="frontend_free_trial",
+            store="promo",
+            will_renew=False,
+            manage_url=settings.app_store_manage_subscriptions_url,
             requires_paywall=False,
         )
 

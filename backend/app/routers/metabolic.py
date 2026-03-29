@@ -34,6 +34,7 @@ from app.schemas.metabolic import (
 )
 from app.models.recipe import Recipe
 from app.models.nutrition import FoodLog, NutritionTarget
+from app.models.meal_plan import MealPlanItem
 from app.services.metabolic_engine import (
     build_glycemic_nutrition_input,
     get_or_create_budget,
@@ -135,10 +136,18 @@ def _score_with_default_pairing_override(
     db: Session,
     current_user: User,
 ) -> MESScoreResponse:
-    if not food_log or food_log.source_type != "recipe" or not food_log.source_id:
+    if not food_log or not food_log.source_id:
+        return score
+    if food_log.source_type not in ("recipe", "meal_plan"):
         return score
 
-    recipe = db.query(Recipe).filter(Recipe.id == str(food_log.source_id)).first()
+    recipe = None
+    if food_log.source_type == "recipe":
+        recipe = db.query(Recipe).filter(Recipe.id == str(food_log.source_id)).first()
+    elif food_log.source_type == "meal_plan":
+        item = db.query(MealPlanItem).filter(MealPlanItem.id == str(food_log.source_id)).first()
+        if item and item.recipe_id:
+            recipe = db.query(Recipe).filter(Recipe.id == str(item.recipe_id)).first()
     if not recipe or getattr(recipe, "needs_default_pairing", None) is not True:
         return score
 

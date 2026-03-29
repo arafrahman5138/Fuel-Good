@@ -201,12 +201,12 @@ export default function FlexScreen() {
             </View>
             <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.text }]}>{cleanLogged}/{cleanTarget}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Clean meals</Text>
+              <Text style={[styles.statValue, { color: theme.text }]}>{cleanLogged}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>of {cleanTarget} clean target</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: tier.color }]}>{Math.round(projectedAvg)}</Text>
+              <Text style={[styles.statValue, { color: tier.color }]}>{Math.min(100, Math.round(projectedAvg))}</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{tier.label}</Text>
             </View>
           </View>
@@ -277,7 +277,7 @@ export default function FlexScreen() {
                 Flex budget: {flexAvailable} → {Math.max(0, flexAvailable - 1)} remaining
               </Text>
               <Text style={[styles.impactText, { color: theme.textSecondary }]}>
-                Weekly avg stays around {Math.round(projectedAvg > 0 ? projectedAvg - 3 : 85)} — {tier.label} tier
+                Weekly avg stays around {Math.min(100, Math.round(projectedAvg > 0 ? projectedAvg - 3 : 85))} — {tier.label} tier
               </Text>
             </View>
 
@@ -325,8 +325,8 @@ export default function FlexScreen() {
               <Ionicons name="checkmark-circle" size={16} color={GREEN} />
               <Text style={[styles.proofText, { color: GREEN }]}>
                 {flexUsed > 0
-                  ? `Even with ${flexUsed} treat${flexUsed !== 1 ? 's' : ''}, your weekly avg is ${Math.round(projectedAvg)} — ${tier.label} tier`
-                  : `Weekly avg: ${Math.round(projectedAvg)} — ${tier.label} tier`}
+                  ? `Even with ${flexUsed} treat${flexUsed !== 1 ? 's' : ''}, your weekly avg is ${Math.min(100, Math.round(projectedAvg))} — ${tier.label} tier`
+                  : `Weekly avg: ${Math.min(100, Math.round(projectedAvg))} — ${tier.label} tier`}
               </Text>
             </View>
           )}
@@ -359,7 +359,7 @@ export default function FlexScreen() {
                     { color: meal.isClean ? GREEN : GOLD },
                   ]}
                 >
-                  {meal.isClean ? `Fuel ${Math.round(meal.score)}` : 'FLEX'}
+                  {meal.isClean ? `Fuel ${Math.min(100, Math.round(meal.score))}` : 'FLEX'}
                 </Text>
               </View>
             ))}

@@ -341,13 +341,23 @@ export default function ScanScreen() {
     }
   }, [mealResult, productResult, resultScale, resultOpacity]);
 
+  const [permUndetermined, setPermUndetermined] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     if (scanStep !== 'capture') return undefined;
 
-    ImagePicker.requestCameraPermissionsAsync()
-      .then(({ granted }) => {
-        if (!cancelled) setCameraGranted(granted);
+    // Pre-check permission status without triggering system dialog
+    ImagePicker.getCameraPermissionsAsync()
+      .then(({ granted, status }) => {
+        if (cancelled) return;
+        if (granted) {
+          setCameraGranted(true);
+        } else if (status === 'undetermined') {
+          setPermUndetermined(true);
+        } else {
+          setCameraGranted(false);
+        }
       })
       .catch(() => {
         if (!cancelled) setCameraGranted(false);
@@ -357,6 +367,13 @@ export default function ScanScreen() {
       cancelled = true;
     };
   }, [scanStep]);
+
+  const handleGrantCamera = () => {
+    setPermUndetermined(false);
+    ImagePicker.requestCameraPermissionsAsync()
+      .then(({ granted }) => setCameraGranted(granted))
+      .catch(() => setCameraGranted(false));
+  };
 
   useEffect(() => {
     if (!isAnalyzingMeal) {
@@ -801,7 +818,18 @@ export default function ScanScreen() {
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
             style={styles.cameraPreview}
-          />
+          >
+            {permUndetermined && (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+                <Ionicons name="camera-outline" size={48} color="#22C55E" style={{ marginBottom: 16 }} />
+                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>Camera Access Needed</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>Scan food items and ingredient labels to get instant nutrition scores.</Text>
+                <TouchableOpacity onPress={handleGrantCamera} style={{ backgroundColor: '#22C55E', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 }}>
+                  <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Grant Access</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </LinearGradient>
         )}
         <LinearGradient
           colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.65)']}

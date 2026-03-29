@@ -196,7 +196,7 @@ export default function FuelWeeklyScreen() {
               />
             </View>
             <Text style={[styles.progressLabel, { color: textTertiary }]}>
-              {weekly.meal_count} of {expectedMeals} meals logged this week
+              {weekly.meal_count} meals logged this week
             </Text>
           </View>
 
@@ -259,7 +259,7 @@ export default function FuelWeeklyScreen() {
                   {hasMeals ? (
                     <View style={[styles.dayScoreDot, { backgroundColor: dayTier.color + '18' }]}>
                       <Text style={[styles.dayScoreDotText, { color: dayTier.color }]}>
-                        {Math.round(day.avg_fuel_score)}
+                        {Math.min(100, Math.round(day.avg_fuel_score))}
                       </Text>
                     </View>
                   ) : (

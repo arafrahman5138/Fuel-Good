@@ -127,20 +127,7 @@ export default function ProfileScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {/* ── Top Bar ─────────────────────────────────────────── */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={() => router.canGoBack() ? router.back() : router.push('/(tabs)' as any)}
-            activeOpacity={0.7}
-            style={[styles.topBarBtn, { backgroundColor: theme.surfaceElevated }]}
-            hitSlop={8}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={20}
-              color={theme.text}
-              style={{ transform: [{ translateX: -1 }] }}
-            />
-          </TouchableOpacity>
+        <View style={[styles.topBar, { justifyContent: 'flex-end' }]}>
           <TouchableOpacity
             onPress={() => router.push('/settings' as any)}
             activeOpacity={0.7}
@@ -206,7 +193,7 @@ export default function ProfileScreen() {
                   <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
                     <Ionicons name="flame" size={18} color={theme.accent} />
                   </View>
-                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Logging Streak</Text>
                   <Text style={[styles.statRowValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />

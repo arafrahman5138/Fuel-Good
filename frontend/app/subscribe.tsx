@@ -63,7 +63,9 @@ export default function SubscribeScreen() {
 
   useEffect(() => {
     if (hasPremiumAccess || userHasDirectPremium) {
-      router.replace('/(tabs)' as any);
+      Alert.alert('Premium Active', 'You already have premium access.', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)' as any) },
+      ]);
     }
   }, [hasPremiumAccess, userHasDirectPremium]);
 

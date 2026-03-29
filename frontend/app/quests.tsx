@@ -205,7 +205,9 @@ export default function QuestsScreen() {
                   <Text style={[styles.questMeta, { color: theme.textTertiary }]}>
                     {isCeiling
                       ? `${Math.round(quest.current_value)}g consumed (${Math.round(quest.target_value)}g limit)`
-                      : `${quest.current_value}/${quest.target_value}`}
+                      : (quest.quest_type === 'fuel' && quest.target_value >= 50
+                        ? (quest.completed ? 'Target met' : `Score: ${Math.round(quest.current_value)} / ${Math.round(quest.target_value)} min`)
+                        : `${quest.current_value}/${quest.target_value}`)}
                   </Text>
                 </View>
               </View>
