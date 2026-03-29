@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Image,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,9 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { Card } from '../../components/GradientCard';
 import { XPBar } from '../../components/XPBar';
 import { StreakBadge } from '../../components/StreakBadge';
+import { ProfileSegmentedControl, type ProfileSegment } from '../../components/ProfileSegmentedControl';
+import { AchievementTile, type Achievement } from '../../components/AchievementTile';
+import { AchievementDetailSheet } from '../../components/AchievementDetailSheet';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { gameApi } from '../../services/api';
@@ -28,26 +32,18 @@ import { Shadows } from '../../constants/Shadows';
 import { XP_PER_LEVEL } from '../../constants/Config';
 import { useEntranceAnimation, useStaggeredEntrance } from '../../hooks/useAnimations';
 
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  xp_reward: number;
-  category: string;
-}
-
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
-  // activeTab removed — profile now shows stats + achievements inline
+  const [activeSegment, setActiveSegment] = useState<ProfileSegment>('overview');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loadingAchievements, setLoadingAchievements] = useState(false);
   const [achievementsError, setAchievementsError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [detailAchievement, setDetailAchievement] = useState<Achievement | null>(null);
   const xp = user?.xp_points || 0;
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
   const headerEntrance = useEntranceAnimation(0);
@@ -105,12 +101,23 @@ export default function ProfileScreen() {
   }, []);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const unlockedAchievements = achievements.filter((a) => a.unlocked);
+
+  // Sort: unlocked first, then locked — both grouped by category
+  const sortedAchievements = [...achievements].sort((a, b) => {
+    if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+    return a.category.localeCompare(b.category);
+  });
 
   const categories = Array.from(new Set(achievements.map((a) => a.category))).filter(Boolean);
   const filteredAchievements = selectedCategory
-    ? achievements.filter((a) => a.category === selectedCategory)
-    : achievements;
-  const achieveStagger = useStaggeredEntrance(filteredAchievements.length, 50, selectedCategory ?? 'all');
+    ? sortedAchievements.filter((a) => a.category === selectedCategory)
+    : sortedAchievements;
+  const achieveStagger = useStaggeredEntrance(filteredAchievements.length, 30, (selectedCategory ?? 'all') + activeSegment);
+
+  // Grid dimensions
+  const gridGap = Spacing.sm;
+  const tileWidth = (screenWidth - Spacing.xl * 2 - gridGap) / 2;
 
   return (
     <ScreenContainer>
@@ -144,7 +151,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Header */}
+        {/* ── Persistent Hero ────────────────────────────────── */}
         <Animated.View style={[styles.profileHeader, headerEntrance.style]}>
           <TouchableOpacity
             onPress={pickAvatar}
@@ -163,7 +170,6 @@ export default function ProfileScreen() {
                 )}
               </LinearGradient>
             </View>
-            {/* Camera badge overlay */}
             <View style={[styles.avatarBadge, { backgroundColor: theme.primary, borderColor: theme.background }]}>
               <Ionicons name="camera" size={12} color="#fff" />
             </View>
@@ -177,203 +183,216 @@ export default function ProfileScreen() {
             </View>
             <StreakBadge streak={user?.current_streak || 0} compact />
           </View>
+
+          {/* Compact XP Bar */}
+          <View style={{ width: '100%', marginTop: Spacing.lg }}>
+            <XPBar xp={xp} compact />
+          </View>
         </Animated.View>
 
-        {/* XP Progress */}
-        <Card style={{ marginBottom: Spacing.md }}>
-          <XPBar xp={xp} />
-        </Card>
+        {/* ── Segmented Control ──────────────────────────────── */}
+        <View style={{ marginBottom: Spacing.lg }}>
+          <ProfileSegmentedControl active={activeSegment} onChange={setActiveSegment} />
+        </View>
 
+        {/* ── Segment Content ────────────────────────────────── */}
         <Animated.View style={contentEntrance.style}>
-
-        {/* Stats — single card with divider rows */}
-        <Card padding={0} style={{ marginBottom: Spacing.md }}>
-          <View style={styles.statRow}>
-            <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
-              <Ionicons name="flame" size={18} color={theme.accent} />
-            </View>
-            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Day Streak</Text>
-            <Text style={[styles.statRowValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
-          </View>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          <View style={styles.statRow}>
-            <View style={[styles.statIcon, { backgroundColor: theme.primaryMuted }]}>
-              <Ionicons name="star" size={18} color={theme.primary} />
-            </View>
-            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Total XP</Text>
-            <Text style={[styles.statRowValue, { color: theme.text }]}>{xp}</Text>
-          </View>
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          <View style={styles.statRow}>
-            <View style={[styles.statIcon, { backgroundColor: theme.infoMuted }]}>
-              <Ionicons name="ribbon" size={18} color={theme.info} />
-            </View>
-            <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Achievements</Text>
-            <Text style={[styles.statRowValue, { color: theme.text }]}>{unlockedCount} / {achievements.length || '–'}</Text>
-          </View>
-        </Card>
-
-        {/* Quests link */}
-        <Card padding={0} onPress={() => router.push('/quests' as any)} style={{ marginBottom: Spacing.lg }}>
-          <View style={styles.statRow}>
-            <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
-              <Ionicons name="flash" size={18} color={theme.accent} />
-            </View>
-            <Text style={[styles.statRowLabel, { color: theme.text, fontWeight: '600' }]}>Quests & Streaks</Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-          </View>
-        </Card>
-
-        {/* Achievements Section */}
-        <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: theme.text, marginBottom: Spacing.sm }}>Achievements</Text>
-
-            {loadingAchievements ? (
-              <ActivityIndicator
-                size="large"
-                color={theme.primary}
-                style={{ marginTop: Spacing.huge }}
-              />
-            ) : achievements.length === 0 ? (
-              <View style={styles.emptyState}>
-                <LinearGradient
-                  colors={[theme.primary + '20', theme.primary + '08'] as any}
-                  style={{ width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Ionicons name={achievementsError ? 'cloud-offline-outline' : 'trophy-outline'} size={32} color={achievementsError ? theme.textTertiary : theme.primary} />
-                </LinearGradient>
-                <Text style={[{ fontSize: FontSize.lg, fontWeight: '700' }, { color: theme.text }]}>
-                  {achievementsError ? 'Connection issue' : 'No achievements yet'}
-                </Text>
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                  {achievementsError ? 'Unable to load achievements' : 'Keep fueling — your first badge is closer than you think'}
-                </Text>
-                {achievementsError && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setAchievementsError(false);
-                      setLoadingAchievements(true);
-                      gameApi
-                        .getAchievements()
-                        .then((data) => setAchievements(data || []))
-                        .catch(() => setAchievementsError(true))
-                        .finally(() => setLoadingAchievements(false));
-                    }}
-                    style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full }}
-                  >
-                    <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '700' }}>Retry</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <View style={{ gap: Spacing.sm }}>
-                {/* Summary pill */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
-                  <View style={[styles.achieveSummaryPill, { backgroundColor: theme.primaryMuted }]}>
-                    <Ionicons name="trophy" size={12} color={theme.primary} />
-                    <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>{unlockedCount}/{achievements.length} Unlocked</Text>
+          {activeSegment === 'overview' ? (
+            /* ── OVERVIEW ──────────────────────────────────────── */
+            <View style={{ gap: Spacing.md }}>
+              {/* Stats card */}
+              <Card padding={0}>
+                <View style={styles.statRow}>
+                  <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
+                    <Ionicons name="flame" size={18} color={theme.accent} />
                   </View>
+                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+                  <Text style={[styles.statRowValue, { color: theme.text }]}>{user?.current_streak || 0}</Text>
                 </View>
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                <View style={styles.statRow}>
+                  <View style={[styles.statIcon, { backgroundColor: theme.primaryMuted }]}>
+                    <Ionicons name="star" size={18} color={theme.primary} />
+                  </View>
+                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Total XP</Text>
+                  <Text style={[styles.statRowValue, { color: theme.text }]}>{xp}</Text>
+                </View>
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                <View style={styles.statRow}>
+                  <View style={[styles.statIcon, { backgroundColor: theme.infoMuted }]}>
+                    <Ionicons name="ribbon" size={18} color={theme.info} />
+                  </View>
+                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Achievements</Text>
+                  <Text style={[styles.statRowValue, { color: theme.text }]}>{unlockedCount} / {achievements.length || '–'}</Text>
+                </View>
+              </Card>
 
-                {/* Category filter chips */}
-                {categories.length > 1 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }}>
-                    <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
-                      <TouchableOpacity
-                        onPress={() => setSelectedCategory(null)}
-                        style={[
-                          styles.categoryChip,
-                          { backgroundColor: !selectedCategory ? theme.primary : theme.surfaceElevated },
-                        ]}
-                      >
-                        <Text style={{ fontSize: FontSize.xs, fontWeight: '600', color: !selectedCategory ? '#fff' : theme.textSecondary }}>All</Text>
-                      </TouchableOpacity>
-                      {categories.map((cat) => {
-                        const isActive = selectedCategory === cat;
-                        const catIcon = cat === 'metabolic' ? 'flash' : cat === 'nutrition' ? 'nutrition' : cat === 'progression' ? 'trending-up' : 'ribbon';
-                        return (
-                          <TouchableOpacity
-                            key={cat}
-                            onPress={() => setSelectedCategory(isActive ? null : cat)}
-                            style={[
-                              styles.categoryChip,
-                              { backgroundColor: isActive ? theme.primary : theme.surfaceElevated },
-                            ]}
-                          >
-                            <Ionicons name={catIcon as any} size={12} color={isActive ? '#fff' : theme.textSecondary} />
-                            <Text style={{ fontSize: FontSize.xs, fontWeight: '600', color: isActive ? '#fff' : theme.textSecondary }}>
-                              {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+              {/* Quests link */}
+              <Card padding={0} onPress={() => router.push('/quests' as any)}>
+                <View style={styles.statRow}>
+                  <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
+                    <Ionicons name="flash" size={18} color={theme.accent} />
+                  </View>
+                  <Text style={[styles.statRowLabel, { color: theme.text, fontWeight: '600' }]}>Quests & Streaks</Text>
+                  <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+                </View>
+              </Card>
+
+              {/* Recent Unlocks */}
+              {unlockedAchievements.length > 0 && (
+                <View style={{ gap: Spacing.sm }}>
+                  <Text style={[styles.sectionLabel, { color: theme.text }]}>Recent Unlocks</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                      {unlockedAchievements.slice(0, 5).map((a) => (
+                        <TouchableOpacity
+                          key={a.id}
+                          activeOpacity={0.7}
+                          onPress={() => setDetailAchievement(a)}
+                          style={[styles.recentBadge, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                        >
+                          <View style={[styles.recentIcon, { backgroundColor: theme.surfaceHighlight }]}>
+                            <Ionicons name={a.icon as any} size={20} color={theme.primary} />
+                          </View>
+                          <Text style={[styles.recentName, { color: theme.text }]} numberOfLines={1}>{a.name}</Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   </ScrollView>
-                )}
+                </View>
+              )}
 
-                {filteredAchievements.map((achievement, achIdx) => (
-                  <Animated.View key={achievement.id} style={achieveStagger[achIdx]}>
-                  <View
-                    style={[
-                      styles.achieveCard,
-                      {
-                        backgroundColor: theme.surface,
-                        borderColor: achievement.unlocked ? theme.primary + '30' : theme.border,
-                        opacity: achievement.unlocked ? 1 : 0.65,
-                      },
-                      achievement.unlocked && {
-                        boxShadow: `0px 0px 12px ${theme.primary}1F`,
-                        elevation: 3,
-                      },
-                    ]}
+              {/* View All Achievements shortcut */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setActiveSegment('achievements')}
+                style={[styles.viewAllBtn, { backgroundColor: theme.surfaceElevated }]}
+              >
+                <Ionicons name="trophy-outline" size={18} color={theme.primary} />
+                <Text style={[styles.viewAllText, { color: theme.primary }]}>
+                  View All Achievements ({achievements.length})
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* ── ACHIEVEMENTS ──────────────────────────────────── */
+            <View style={{ gap: Spacing.sm }}>
+              {loadingAchievements ? (
+                <ActivityIndicator
+                  size="large"
+                  color={theme.primary}
+                  style={{ marginTop: Spacing.huge }}
+                />
+              ) : achievements.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <LinearGradient
+                    colors={[theme.primary + '20', theme.primary + '08'] as any}
+                    style={{ width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-                      {/* Icon */}
-                      <View
-                        style={[
-                          styles.achieveIcon,
-                          {
-                            backgroundColor: achievement.unlocked
-                              ? theme.primary + '15'
-                              : theme.surfaceHighlight,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={achievement.icon as any}
-                          size={22}
-                          color={achievement.unlocked ? theme.primary : theme.textTertiary}
-                        />
-                        {achievement.unlocked && (
-                          <View style={[styles.achieveCheck, { backgroundColor: theme.primary }]}>
-                            <Ionicons name="checkmark" size={8} color="#fff" />
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Text */}
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={[styles.achieveName, { color: theme.text }]}>
-                          {achievement.name}
-                        </Text>
-                        <Text style={[styles.achieveDesc, { color: theme.textTertiary }]} numberOfLines={2}>
-                          {achievement.description}
-                        </Text>
-                      </View>
-
-                      {/* XP badge */}
-                      <View style={[styles.achieveXP, { backgroundColor: theme.accentMuted }]}>
-                        <Text style={[styles.achieveXPText, { color: theme.accent }]}>+{achievement.xp_reward} XP</Text>
-                      </View>
+                    <Ionicons name={achievementsError ? 'cloud-offline-outline' : 'trophy-outline'} size={32} color={achievementsError ? theme.textTertiary : theme.primary} />
+                  </LinearGradient>
+                  <Text style={[{ fontSize: FontSize.lg, fontWeight: '700' }, { color: theme.text }]}>
+                    {achievementsError ? 'Connection issue' : 'No achievements yet'}
+                  </Text>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                    {achievementsError ? 'Unable to load achievements' : 'Keep fueling — your first badge is closer than you think'}
+                  </Text>
+                  {achievementsError && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setAchievementsError(false);
+                        setLoadingAchievements(true);
+                        gameApi
+                          .getAchievements()
+                          .then((data) => setAchievements(data || []))
+                          .catch(() => setAchievementsError(true))
+                          .finally(() => setLoadingAchievements(false));
+                      }}
+                      style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full }}
+                    >
+                      <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '700' }}>Retry</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <>
+                  {/* Summary pill */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <View style={[styles.achieveSummaryPill, { backgroundColor: theme.primaryMuted }]}>
+                      <Ionicons name="trophy" size={12} color={theme.primary} />
+                      <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>{unlockedCount}/{achievements.length} Unlocked</Text>
                     </View>
                   </View>
-                  </Animated.View>
-                ))}
-              </View>
-            )}
 
+                  {/* Category filter chips */}
+                  {categories.length > 1 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                        <TouchableOpacity
+                          onPress={() => setSelectedCategory(null)}
+                          style={[
+                            styles.categoryChip,
+                            { backgroundColor: !selectedCategory ? theme.primary : theme.surfaceElevated },
+                          ]}
+                        >
+                          <Text style={{ fontSize: FontSize.xs, fontWeight: '600', color: !selectedCategory ? '#fff' : theme.textSecondary }}>All</Text>
+                        </TouchableOpacity>
+                        {categories.map((cat) => {
+                          const isActive = selectedCategory === cat;
+                          const catIcon = cat === 'metabolic' ? 'flash' : cat === 'nutrition' ? 'nutrition' : cat === 'progression' ? 'trending-up' : cat === 'fuel' ? 'leaf' : 'ribbon';
+                          return (
+                            <TouchableOpacity
+                              key={cat}
+                              onPress={() => setSelectedCategory(isActive ? null : cat)}
+                              style={[
+                                styles.categoryChip,
+                                { backgroundColor: isActive ? theme.primary : theme.surfaceElevated },
+                              ]}
+                            >
+                              <Ionicons name={catIcon as any} size={12} color={isActive ? '#fff' : theme.textSecondary} />
+                              <Text style={{ fontSize: FontSize.xs, fontWeight: '600', color: isActive ? '#fff' : theme.textSecondary }}>
+                                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  )}
+
+                  {/* 2-column grid */}
+                  <View style={styles.grid}>
+                    {filteredAchievements.map((achievement, achIdx) => (
+                      <Animated.View
+                        key={achievement.id}
+                        style={[{ width: tileWidth }, achieveStagger[achIdx]]}
+                      >
+                        <AchievementTile
+                          achievement={achievement}
+                          onPress={setDetailAchievement}
+                        />
+                      </Animated.View>
+                    ))}
+                    {/* Spacer for odd count */}
+                    {filteredAchievements.length % 2 !== 0 && (
+                      <View style={{ width: tileWidth }} />
+                    )}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
         </Animated.View>
-
       </ScrollView>
+
+      {/* Achievement Detail Sheet */}
+      {detailAchievement && (
+        <AchievementDetailSheet
+          achievement={detailAchievement}
+          onClose={() => setDetailAchievement(null)}
+        />
+      )}
     </ScreenContainer>
   );
 }
@@ -422,7 +441,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   avatarText: {
-    fontSize: FontSize.xxxl,
+    fontSize: 32,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -489,49 +508,47 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginLeft: Spacing.lg + 34 + Spacing.md,
   },
-
-  achieveCard: {
-    flexDirection: 'column',
+  sectionLabel: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  recentBadge: {
+    alignItems: 'center',
+    width: 80,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
     borderWidth: 1,
+    gap: Spacing.sm,
   },
-  achieveIcon: {
-    width: 44,
-    height: 44,
+  recentIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recentName: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
   },
-  achieveCheck: {
-    position: 'absolute',
-    top: -3,
-    right: -3,
-    width: 16,
-    height: 16,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  achieveName: {
+  viewAllText: {
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
-  achieveDesc: {
-    fontSize: FontSize.xs,
-    lineHeight: 16,
-  },
-  achieveXP: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  achieveXPText: {
-    fontSize: FontSize.xs,
-    fontWeight: '800',
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   achieveSummaryPill: {
     flexDirection: 'row',

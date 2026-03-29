@@ -82,7 +82,6 @@ export default function SettingsScreen() {
   }, [budget]);
 
   const saveBudgetWeights = async () => {
-    // Normalize to sum to 1.0
     const total = proteinW + fiberW + sugarW;
     const pw = proteinW / total;
     const fw = fiberW / total;
@@ -104,7 +103,10 @@ export default function SettingsScreen() {
   return (
     <ScreenContainer safeArea={false} padded={false}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* ── Appearance ──────────────────────────────────────────── */}
+
+        {/* ══════════════════════════════════════════════════════
+            1. APPEARANCE
+           ══════════════════════════════════════════════════════ */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
         <View style={[styles.themeRow, { backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.md }]}>
           {themeOptions.map((opt) => (
@@ -134,11 +136,210 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        {/* ── Energy Budget ─────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════
+            2. FOOD & DIET
+           ══════════════════════════════════════════════════════ */}
         <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
-          Energy Budget
+          Food & Diet
         </Text>
 
+        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+            onPress={() => router.push('/saved')}
+          >
+            <View style={[styles.settingsIcon, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="bookmark" size={18} color={theme.primary} />
+            </View>
+            <View style={styles.settingsInfo}>
+              <Text style={[styles.settingsLabel, { color: theme.text }]}>Saved Recipes</Text>
+              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                View all recipes you bookmarked
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+
+          {[
+            {
+              icon: 'nutrition' as const,
+              label: 'Dietary Preferences',
+              desc: user?.dietary_preferences?.join(', ') || 'Not set',
+              section: 'dietary',
+            },
+            {
+              icon: 'flame' as const,
+              label: 'Flavor Profile',
+              desc: user?.flavor_preferences?.join(', ') || 'Not set',
+              section: 'flavor',
+            },
+            {
+              icon: 'alert-circle' as const,
+              label: 'Allergies',
+              desc: user?.allergies?.join(', ') || 'None',
+              section: 'allergies',
+            },
+            {
+              icon: 'close-circle' as const,
+              label: 'Disliked Ingredients',
+              desc: user?.disliked_ingredients?.join(', ') || 'None',
+              section: 'disliked',
+            },
+            {
+              icon: 'restaurant' as const,
+              label: 'Liked Proteins',
+              desc: user?.protein_preferences?.liked?.join(', ') || 'Not set',
+              section: 'liked_proteins',
+            },
+            {
+              icon: 'remove-circle' as const,
+              label: 'Proteins to Avoid',
+              desc: user?.protein_preferences?.disliked?.join(', ') || 'None',
+              section: 'disliked_proteins',
+            },
+            {
+              icon: 'people' as const,
+              label: 'Household Size',
+              desc: `${user?.household_size || 1} person(s)`,
+              section: 'household',
+            },
+          ].map((item, index, arr) => (
+            <TouchableOpacity
+              key={index}
+              activeOpacity={0.7}
+              style={[styles.settingsRow, { borderBottomColor: theme.border, borderBottomWidth: index === arr.length - 1 ? 0 : 1 }]}
+              onPress={() => router.push({ pathname: '/preferences', params: { section: item.section } })}
+            >
+              <View style={[styles.settingsIcon, { backgroundColor: theme.primaryMuted }]}>
+                <Ionicons name={item.icon} size={18} color={theme.primary} />
+              </View>
+              <View style={styles.settingsInfo}>
+                <Text style={[styles.settingsLabel, { color: theme.text }]}>{item.label}</Text>
+                <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                  {item.desc}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ══════════════════════════════════════════════════════
+            3. NOTIFICATIONS
+           ══════════════════════════════════════════════════════ */}
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
+          Notifications
+        </Text>
+
+        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.settingsRow, { borderBottomWidth: 0 }]}
+            onPress={() => router.push('/notification-settings')}
+          >
+            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+              <Ionicons name="notifications" size={18} color="#3B82F6" />
+            </View>
+            <View style={styles.settingsInfo}>
+              <Text style={[styles.settingsLabel, { color: theme.text }]}>Push Notifications</Text>
+              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                Meal reminders, streak saves, and follow-ups
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ══════════════════════════════════════════════════════
+            4. HEALTH & SCORING
+           ══════════════════════════════════════════════════════ */}
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
+          Health & Scoring
+        </Text>
+
+        {/* Metabolic Profile */}
+        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden', marginBottom: Spacing.md }}>
+          {!profile?.onboarding_step_completed ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={[styles.settingsRow, { borderBottomWidth: 0 }]}
+              onPress={() => router.push('/metabolic-onboarding')}
+            >
+              <View style={[styles.settingsIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
+                <Ionicons name="person-add" size={18} color="#8B5CF6" />
+              </View>
+              <View style={styles.settingsInfo}>
+                <Text style={[styles.settingsLabel, { color: theme.text }]}>Set Up Profile</Text>
+                <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                  Personalize your metabolic scoring
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+                onPress={() => router.push('/metabolic-onboarding')}
+              >
+                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
+                  <Ionicons name="body" size={18} color="#8B5CF6" />
+                </View>
+                <View style={styles.settingsInfo}>
+                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Body & Activity</Text>
+                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                    {profile.weight_lb ? `${profile.weight_lb} lbs` : ''}
+                    {profile.height_ft ? ` · ${profile.height_ft}'${profile.height_in ?? 0}"` : ''}
+                    {profile.activity_level ? ` · ${profile.activity_level}` : ''}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+                onPress={() => router.push('/metabolic-onboarding')}
+              >
+                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
+                  <Ionicons name="fitness" size={18} color="#22C55E" />
+                </View>
+                <View style={styles.settingsInfo}>
+                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Body Composition</Text>
+                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                    {profile.body_fat_pct ? `${profile.body_fat_pct}% body fat` : 'Not set — default ISM'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={[styles.settingsRow, { borderBottomWidth: 0 }]}
+                onPress={() => router.push('/metabolic-onboarding')}
+              >
+                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
+                  <Ionicons name="heart" size={18} color="#EF4444" />
+                </View>
+                <View style={styles.settingsInfo}>
+                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Health Context</Text>
+                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
+                    {[
+                      profile.insulin_resistant && 'IR',
+                      profile.prediabetes && 'Prediabetes',
+                      profile.type_2_diabetes && 'T2D',
+                    ].filter(Boolean).join(', ') || 'No conditions set'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* Energy Budget */}
         <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
           <TouchableOpacity
             activeOpacity={0.75}
@@ -186,7 +387,6 @@ export default function SettingsScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  {/* Visual bar */}
                   <View style={{ height: 6, backgroundColor: theme.surfaceHighlight, borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
                     <View style={{ height: '100%', width: `${Math.round(item.value * 100)}%`, backgroundColor: item.color, borderRadius: 3 }} />
                   </View>
@@ -207,120 +407,11 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* ── Metabolic Profile ────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════
+            5. SUBSCRIPTION & SUPPORT
+           ══════════════════════════════════════════════════════ */}
         <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
-          Metabolic Profile
-        </Text>
-
-        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-          {!profile?.onboarding_step_completed ? (
-            <TouchableOpacity
-              activeOpacity={0.75}
-              style={[styles.settingsRow, { borderBottomWidth: 0 }]}
-              onPress={() => router.push('/metabolic-onboarding')}
-            >
-              <View style={[styles.settingsIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
-                <Ionicons name="person-add" size={18} color="#8B5CF6" />
-              </View>
-              <View style={styles.settingsInfo}>
-                <Text style={[styles.settingsLabel, { color: theme.text }]}>Set Up Profile</Text>
-                <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                  Personalize your metabolic scoring
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-            </TouchableOpacity>
-          ) : (
-            <>
-              {/* Body & Activity summary */}
-              <TouchableOpacity
-                activeOpacity={0.75}
-                style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-                onPress={() => router.push('/metabolic-onboarding')}
-              >
-                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
-                  <Ionicons name="body" size={18} color="#8B5CF6" />
-                </View>
-                <View style={styles.settingsInfo}>
-                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Body & Activity</Text>
-                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                    {profile.weight_lb ? `${profile.weight_lb} lbs` : ''}
-                    {profile.height_ft ? ` · ${profile.height_ft}′${profile.height_in ?? 0}″` : ''}
-                    {profile.activity_level ? ` · ${profile.activity_level}` : ''}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-              </TouchableOpacity>
-
-              {/* Body Composition */}
-              <TouchableOpacity
-                activeOpacity={0.75}
-                style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-                onPress={() => router.push('/metabolic-onboarding')}
-              >
-                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-                  <Ionicons name="fitness" size={18} color="#22C55E" />
-                </View>
-                <View style={styles.settingsInfo}>
-                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Body Composition</Text>
-                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                    {profile.body_fat_pct ? `${profile.body_fat_pct}% body fat` : 'Not set — default ISM'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-              </TouchableOpacity>
-
-              {/* Health Profile */}
-              <TouchableOpacity
-                activeOpacity={0.75}
-                style={[styles.settingsRow, { borderBottomWidth: 0 }]}
-                onPress={() => router.push('/metabolic-onboarding')}
-              >
-                <View style={[styles.settingsIcon, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-                  <Ionicons name="heart" size={18} color="#EF4444" />
-                </View>
-                <View style={styles.settingsInfo}>
-                  <Text style={[styles.settingsLabel, { color: theme.text }]}>Health Context</Text>
-                  <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                    {[
-                      profile.insulin_resistant && 'IR',
-                      profile.prediabetes && 'Prediabetes',
-                      profile.type_2_diabetes && 'T2D',
-                    ].filter(Boolean).join(', ') || 'No conditions set'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-
-        {/* ── Preferences ─────────────────────────────────────────── */}
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
-          Preferences
-        </Text>
-
-        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden', marginBottom: Spacing.xs }}>
-          <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-            onPress={() => router.push('/notification-settings')}
-          >
-            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-              <Ionicons name="notifications" size={18} color="#3B82F6" />
-            </View>
-            <View style={styles.settingsInfo}>
-              <Text style={[styles.settingsLabel, { color: theme.text }]}>Push Notifications</Text>
-              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                Control meal reminders, streak saves, and Healthify follow-ups.
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
-          Legal & Support
+          Subscription & Support
         </Text>
 
         <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
@@ -348,40 +439,6 @@ export default function SettingsScreen() {
           <TouchableOpacity
             activeOpacity={0.75}
             style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-            onPress={() => openExternalLink(PRIVACY_POLICY_URL, 'Privacy policy URL has not been configured for this build.')}
-          >
-            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(37,99,235,0.12)' }]}>
-              <Ionicons name="document-text" size={18} color="#2563EB" />
-            </View>
-            <View style={styles.settingsInfo}>
-              <Text style={[styles.settingsLabel, { color: theme.text }]}>Privacy Policy</Text>
-              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                Review how Fuel Good handles account, photo, and diagnostics data.
-              </Text>
-            </View>
-            <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-            onPress={() => openExternalLink(TERMS_URL, 'Terms of service URL has not been configured for this build.')}
-          >
-            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-              <Ionicons name="shield-checkmark" size={18} color="#16A34A" />
-            </View>
-            <View style={styles.settingsInfo}>
-              <Text style={[styles.settingsLabel, { color: theme.text }]}>Terms of Service</Text>
-              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                Review wellness-only product terms and acceptable use.
-              </Text>
-            </View>
-            <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
             onPress={contactSupport}
           >
             <View style={[styles.settingsIcon, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
@@ -399,7 +456,7 @@ export default function SettingsScreen() {
           {SUPPORT_URL ? (
             <TouchableOpacity
               activeOpacity={0.75}
-              style={[styles.settingsRow, { borderBottomWidth: 0 }]}
+              style={[styles.settingsRow, { borderBottomColor: theme.border }]}
               onPress={() => openExternalLink(SUPPORT_URL)}
             >
               <View style={[styles.settingsIcon, { backgroundColor: 'rgba(168,85,247,0.12)' }]}>
@@ -408,16 +465,47 @@ export default function SettingsScreen() {
               <View style={styles.settingsInfo}>
                 <Text style={[styles.settingsLabel, { color: theme.text }]}>Support Center</Text>
                 <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                  Open the public support and status page.
+                  Open the public support and status page
                 </Text>
               </View>
               <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
             </TouchableOpacity>
           ) : null}
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
+            onPress={() => openExternalLink(PRIVACY_POLICY_URL, 'Privacy policy URL has not been configured for this build.')}
+          >
+            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(37,99,235,0.12)' }]}>
+              <Ionicons name="document-text" size={18} color="#2563EB" />
+            </View>
+            <View style={styles.settingsInfo}>
+              <Text style={[styles.settingsLabel, { color: theme.text }]}>Privacy Policy</Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.settingsRow, { borderBottomWidth: 0 }]}
+            onPress={() => openExternalLink(TERMS_URL, 'Terms of service URL has not been configured for this build.')}
+          >
+            <View style={[styles.settingsIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
+              <Ionicons name="shield-checkmark" size={18} color="#16A34A" />
+            </View>
+            <View style={styles.settingsInfo}>
+              <Text style={[styles.settingsLabel, { color: theme.text }]}>Terms of Service</Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
         </View>
 
+        {/* ══════════════════════════════════════════════════════
+            6. ABOUT
+           ══════════════════════════════════════════════════════ */}
         <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
-          Build Info
+          About
         </Text>
         <View style={[styles.infoCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Environment</Text>
@@ -426,89 +514,13 @@ export default function SettingsScreen() {
           <Text style={[styles.infoValue, { color: theme.text }]}>{APP_VERSION}</Text>
         </View>
 
-        <View style={{ backgroundColor: theme.surfaceElevated, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-          <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.settingsRow, { borderBottomColor: theme.border }]}
-            onPress={() => router.push('/saved')}
-          >
-            <View style={[styles.settingsIcon, { backgroundColor: theme.primaryMuted }]}>
-              <Ionicons name="bookmark" size={18} color={theme.primary} />
-            </View>
-            <View style={styles.settingsInfo}>
-              <Text style={[styles.settingsLabel, { color: theme.text }]}>Saved Recipes</Text>
-              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                View all recipes you bookmarked
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-          </TouchableOpacity>
+        {/* ══════════════════════════════════════════════════════
+            7. ACCOUNT (Danger Zone)
+           ══════════════════════════════════════════════════════ */}
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: Spacing.xxl }]}>
+          Account
+        </Text>
 
-          {[
-          {
-            icon: 'nutrition' as const,
-            label: 'Dietary Preferences',
-            desc: user?.dietary_preferences?.join(', ') || 'Not set',
-            section: 'dietary',
-          },
-          {
-            icon: 'flame' as const,
-            label: 'Flavor Profile',
-            desc: user?.flavor_preferences?.join(', ') || 'Not set',
-            section: 'flavor',
-          },
-          {
-            icon: 'alert-circle' as const,
-            label: 'Allergies',
-            desc: user?.allergies?.join(', ') || 'None',
-            section: 'allergies',
-          },
-          {
-            icon: 'close-circle' as const,
-            label: 'Disliked Ingredients',
-            desc: user?.disliked_ingredients?.join(', ') || 'None',
-            section: 'disliked',
-          },
-          {
-            icon: 'restaurant' as const,
-            label: 'Liked Proteins',
-            desc: user?.protein_preferences?.liked?.join(', ') || 'Not set',
-            section: 'liked_proteins',
-          },
-          {
-            icon: 'remove-circle' as const,
-            label: 'Proteins to Avoid',
-            desc: user?.protein_preferences?.disliked?.join(', ') || 'None',
-            section: 'disliked_proteins',
-          },
-          {
-            icon: 'people' as const,
-            label: 'Household Size',
-            desc: `${user?.household_size || 1} person(s)`,
-            section: 'household',
-          },
-        ].map((item, index, arr) => (
-          <TouchableOpacity
-            key={index}
-            activeOpacity={0.7}
-            style={[styles.settingsRow, { borderBottomColor: theme.border, borderBottomWidth: index === arr.length - 1 ? 0 : 1 }]}
-            onPress={() => router.push({ pathname: '/preferences', params: { section: item.section } })}
-          >
-            <View style={[styles.settingsIcon, { backgroundColor: theme.primaryMuted }]}>
-              <Ionicons name={item.icon} size={18} color={theme.primary} />
-            </View>
-            <View style={styles.settingsInfo}>
-              <Text style={[styles.settingsLabel, { color: theme.text }]}>{item.label}</Text>
-              <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                {item.desc}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-          </TouchableOpacity>
-        ))}
-        </View>
-
-        {/* ── Sign Out ────────────────────────────────────────────── */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => {
@@ -530,7 +542,6 @@ export default function SettingsScreen() {
           <Text style={[styles.signOutText, { color: '#EF4444' }]}>Sign Out</Text>
         </TouchableOpacity>
 
-        {/* ── Delete Account ────────────────────────────────────── */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => {
@@ -655,7 +666,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    marginTop: Spacing.xxl,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,

@@ -54,8 +54,28 @@ export function Card({
   // iOS cannot render shadows + overflow:hidden on the same View (causes square
   // corner artifacts). Use an outer View for the shadow and an inner
   // LinearGradient with overflow:hidden for the rounded-corner clipping.
+  //
+  // The shadow wrapper must ONLY receive layout/position styles — applying
+  // backgroundColor, borderWidth, or borderColor to it creates a ghost-card
+  // artifact where the wrapper's background/border bleeds through at the edges.
+  // Visual styles (background, border) stay on the inner gradient only.
+  const flatStyle = StyleSheet.flatten(style) as ViewStyle | undefined;
+  const innerRadius = flatStyle?.borderRadius ?? BorderRadius.xl;
+
+  // Strip visual properties that must not appear on the shadow wrapper
+  const {
+    backgroundColor: _bg,
+    borderColor: _bc,
+    borderWidth: _bw,
+    borderTopWidth: _btw,
+    borderBottomWidth: _bbw,
+    borderLeftWidth: _blw,
+    borderRightWidth: _brw,
+    ...wrapperStyle
+  } = flatStyle ?? {};
+
   const cardView = (
-    <View style={[styles.shadowWrapper, shadowStyle, style]}>
+    <View style={[styles.shadowWrapper, shadowStyle, wrapperStyle]}>
       <LinearGradient
         colors={theme.gradient.card as readonly [string, string, ...string[]]}
         start={{ x: 0.5, y: 0 }}
@@ -63,6 +83,7 @@ export function Card({
         style={[
           styles.card,
           {
+            borderRadius: innerRadius,
             borderColor: theme.card.border,
             borderWidth: 1,
             padding: padding ?? Spacing.lg,
@@ -95,8 +116,10 @@ export function Card({
 const styles = StyleSheet.create({
   shadowWrapper: {
     borderRadius: BorderRadius.xl,
+    flexDirection: 'column',
   },
   card: {
+    flex: 1,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
   },
