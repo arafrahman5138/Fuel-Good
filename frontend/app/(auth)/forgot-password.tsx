@@ -20,12 +20,12 @@ import { authApi } from '../../services/api';
 export default function ForgotPasswordScreen() {
   const theme = useTheme();
   const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
+  const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [devToken, setDevToken] = useState('');
+  const [devCode, setDevCode] = useState('');
 
   const handleRequestReset = async () => {
     setError('');
@@ -39,9 +39,9 @@ export default function ForgotPasswordScreen() {
     try {
       const result = await authApi.requestPasswordReset({ email });
       setMessage(result.message);
-      if (result.reset_token) {
-        setDevToken(result.reset_token);
-        setToken(result.reset_token);
+      if (result.reset_code) {
+        setDevCode(result.reset_code);
+        setCode(result.reset_code);
       }
     } catch (err: any) {
       setError(err.message || 'Unable to request password reset');
@@ -53,8 +53,8 @@ export default function ForgotPasswordScreen() {
   const handleResetPassword = async () => {
     setError('');
     setMessage('');
-    if (!token.trim()) {
-      setError('Enter the reset token');
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError('Enter the 6-digit reset code');
       return;
     }
     if (newPassword.length < 8) {
@@ -69,7 +69,8 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       const result = await authApi.resetPassword({
-        token: token.trim(),
+        email: email.trim(),
+        code: code.trim(),
         new_password: newPassword,
       });
       setMessage(result.message);
@@ -94,7 +95,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.content}>
             <Text style={[styles.title, { color: theme.text }]}>Reset Password</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              Request a reset token, then set a new password.
+              Request a 6-digit code, then enter it here with your new password.
             </Text>
 
             {error ? (
@@ -130,24 +131,24 @@ export default function ForgotPasswordScreen() {
               size="lg"
             />
 
-            {devToken ? (
+            {devCode ? (
               <View style={styles.group}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Dev Reset Token</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Dev Reset Code</Text>
                 <Text selectable style={[styles.tokenBox, { color: theme.text, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-                  {devToken}
+                  {devCode}
                 </Text>
               </View>
             ) : null}
 
             <View style={styles.group}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Reset Token</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>6-Digit Code</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.surfaceElevated, color: theme.text, borderColor: theme.border }]}
-                value={token}
-                onChangeText={setToken}
-                placeholder="Paste reset token"
+                value={code}
+                onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="123456"
                 placeholderTextColor={theme.textTertiary}
-                autoCapitalize="none"
+                keyboardType="number-pad"
               />
             </View>
 

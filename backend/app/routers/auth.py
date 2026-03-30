@@ -1,6 +1,8 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+import hashlib
 import json
 import logging
+import secrets
 from typing import Any
 
 import httpx
@@ -12,12 +14,10 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.auth import (
-    create_password_reset_token,
     create_token_pair,
     get_current_user,
     get_password_hash,
     verify_password,
-    verify_password_reset_token,
     verify_refresh_token,
 )
 from app.models.user import User
@@ -44,6 +44,15 @@ settings = get_settings()
 logger = logging.getLogger("fuelgood.auth")
 APPLE_ISSUER = "https://appleid.apple.com"
 _apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
+
+
+def _generate_password_reset_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _hash_password_reset_code(email: str, code: str) -> str:
+    payload = f"{settings.secret_key}:{_normalize_email(email)}:{code.strip()}".encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 async def _fetch_apple_jwks() -> list[dict[str, Any]]:
@@ -227,7 +236,12 @@ async def forgot_password(
     if not user:
         return PasswordResetRequestResponse(message=message)
 
-    reset_token = create_password_reset_token(str(user.id), user.email)
+    reset_code = _generate_password_reset_code()
+    user.password_reset_code_hash = _hash_password_reset_code(user.email, reset_code)
+    user.password_reset_code_expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
+        minutes=settings.password_reset_token_expire_minutes
+    )
+    db.commit()
     logger.info(
         json.dumps(
             {
@@ -241,7 +255,7 @@ async def forgot_password(
     if (settings.environment or "").lower() in {"dev", "development"}:
         return PasswordResetRequestResponse(
             message=message,
-            reset_token=reset_token,
+            reset_code=reset_code,
             expires_in_minutes=settings.password_reset_token_expire_minutes,
         )
 
@@ -249,7 +263,7 @@ async def forgot_password(
         background_tasks.add_task(
             send_password_reset_email,
             to_email=user.email,
-            reset_token=reset_token,
+            reset_code=reset_code,
             expires_in_minutes=settings.password_reset_token_expire_minutes,
             name=user.name,
         )
@@ -258,20 +272,23 @@ async def forgot_password(
 
 @router.post("/reset-password", response_model=PasswordResetConfirmResponse)
 async def reset_password(body: PasswordResetConfirm, db: Session = Depends(get_db)):
-    payload = verify_password_reset_token(body.token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+    email = _normalize_email(body.email)
+    code = (body.code or "").strip()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset code")
 
-    user_id = str(payload.get("sub") or "").strip()
-    email = _normalize_email(str(payload.get("email") or ""))
-    if not user_id or not email:
-        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+    expires_at = user.password_reset_code_expires_at
+    if not user.password_reset_code_hash or not expires_at or expires_at < datetime.now(UTC).replace(tzinfo=None):
+        raise HTTPException(status_code=401, detail="Invalid or expired reset code")
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or _normalize_email(user.email) != email:
-        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+    expected_hash = _hash_password_reset_code(email, code)
+    if not secrets.compare_digest(user.password_reset_code_hash, expected_hash):
+        raise HTTPException(status_code=401, detail="Invalid or expired reset code")
 
     user.hashed_password = get_password_hash(body.new_password)
+    user.password_reset_code_hash = None
+    user.password_reset_code_expires_at = None
     db.commit()
     return PasswordResetConfirmResponse(message="Password updated successfully.")
 

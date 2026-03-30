@@ -377,8 +377,8 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/login', data),
   requestPasswordReset: (data: { email: string }) =>
-    api.post<{ message: string; reset_token?: string; expires_in_minutes?: number }>('/auth/forgot-password', data),
-  resetPassword: (data: { token: string; new_password: string }) =>
+    api.post<{ message: string; reset_code?: string; expires_in_minutes?: number }>('/auth/forgot-password', data),
+  resetPassword: (data: { email: string; code: string; new_password: string }) =>
     api.post<{ message: string }>('/auth/reset-password', data),
   socialAuth: (data: { provider: string; token: string; name?: string; email?: string; provider_subject?: string }) =>
     api.post<{ access_token: string; refresh_token: string }>('/auth/social', data),

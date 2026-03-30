@@ -109,7 +109,7 @@ async def send_welcome_email(*, to_email: str, name: str | None = None) -> dict[
 async def send_password_reset_email(
     *,
     to_email: str,
-    reset_token: str,
+    reset_code: str,
     expires_in_minutes: int,
     name: str | None = None,
 ) -> dict[str, Any]:
@@ -117,9 +117,9 @@ async def send_password_reset_email(
     body = f"""
     <p>Hi {html.escape(first_name)},</p>
     <p>We received a request to reset your Fuel Good password.</p>
-    <p><strong>Your reset token:</strong></p>
-    <p style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;background:#F8FAFC;padding:12px;border-radius:10px;border:1px solid #E2E8F0;word-break:break-all">{html.escape(reset_token)}</p>
-    <p>This token expires in {expires_in_minutes} minutes.</p>
+    <p><strong>Your 6-digit reset code:</strong></p>
+    <p style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:28px;letter-spacing:0.16em;font-weight:700;background:#F8FAFC;padding:14px 18px;border-radius:10px;border:1px solid #E2E8F0;text-align:center">{html.escape(reset_code)}</p>
+    <p>This code expires in {expires_in_minutes} minutes.</p>
     <p>If you didn’t request this, you can safely ignore this email.</p>
     """
     return await send_transactional_email(
@@ -129,7 +129,7 @@ async def send_password_reset_email(
             eyebrow="Security",
             headline="Password reset instructions",
             body_html=body,
-            footer="For security, this reset token can only be used for a short time.",
+            footer="For security, this reset code can only be used for a short time.",
         ),
         tags=[{"name": "type", "value": "password_reset"}],
     )
@@ -167,4 +167,3 @@ async def send_transactional_email_safe(**kwargs: Any) -> None:
         await send_transactional_email(**kwargs)
     except Exception:
         logger.exception("Transactional email send failed")
-

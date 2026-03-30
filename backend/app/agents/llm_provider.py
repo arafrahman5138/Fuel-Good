@@ -2,7 +2,7 @@ from langchain_core.language_models import BaseChatModel
 from app.config import get_settings
 
 
-def get_llm(role: str = "chat") -> BaseChatModel:
+def get_llm(role: str = "chat", max_tokens: int = 16384) -> BaseChatModel:
     settings = get_settings()
     ollama_base_url = settings.ollama_host
     model_name = settings.chat_model if role == "chat" else settings.scan_model
@@ -15,7 +15,7 @@ def get_llm(role: str = "chat") -> BaseChatModel:
             model=model_name or settings.gemini_model,
             google_api_key=settings.google_api_key or settings.gemini_api_key,
             temperature=0.7,
-            max_output_tokens=4096,
+            max_output_tokens=max_tokens,
         )
     elif settings.llm_provider == "ollama":
         from langchain_ollama import ChatOllama
@@ -30,7 +30,7 @@ def get_llm(role: str = "chat") -> BaseChatModel:
             model="claude-sonnet-4-20250514",
             api_key=settings.anthropic_api_key,
             temperature=0.7,
-            max_tokens=4096,
+            max_tokens=max_tokens,
         )
     else:
         from langchain_openai import ChatOpenAI
@@ -38,5 +38,5 @@ def get_llm(role: str = "chat") -> BaseChatModel:
             model=model_name or "gpt-4o",
             api_key=settings.openai_api_key,
             temperature=0.7,
-            max_tokens=4096,
+            max_tokens=max_tokens,
         )

@@ -40,8 +40,8 @@ class _CachedUserContext:
 
 
 PROMPT_VERSION = "healthify_v2_rag"
-RETRIEVAL_THRESHOLD = 0.72
-LEXICAL_RETRIEVAL_THRESHOLD = 0.74
+RETRIEVAL_THRESHOLD = 0.62
+LEXICAL_RETRIEVAL_THRESHOLD = 0.65
 
 
 class RecipeIngredientSchema(BaseModel):
@@ -777,15 +777,74 @@ def _parse_markdown_recipe(raw_text: str) -> dict[str, Any] | None:
     }
 
 
+def _try_repair_truncated_json(text: str) -> str | None:
+    """Attempt to close truncated JSON by adding missing brackets/braces.
+    Uses a stack-based approach to track nesting properly."""
+    if not text or not text.strip():
+        return None
+    stack: list[str] = []  # tracks open delimiters: { or [
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == '\\':
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in ('{', '['):
+            stack.append(ch)
+        elif ch == '}' and stack and stack[-1] == '{':
+            stack.pop()
+        elif ch == ']' and stack and stack[-1] == '[':
+            stack.pop()
+    if not stack:
+        return None  # JSON is balanced — not truncated
+
+    # Strip trailing incomplete content
+    repaired = text.rstrip()
+    if in_string:
+        # Close the open string, then remove the incomplete key-value pair
+        repaired += '"'
+        # Check if this was a value in an object/array — if the last complete structure
+        # before this string can be identified, trim to it
+    # Remove trailing comma
+    repaired = repaired.rstrip().rstrip(',')
+    # Close all open delimiters in reverse order
+    for opener in reversed(stack):
+        repaired += ']' if opener == '[' else '}'
+    return repaired
+
+
 def _extract_payload(raw_text: str) -> dict[str, Any]:
     text = (raw_text or "").strip()
     fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
     if fence_match:
         text = fence_match.group(1).strip()
+    else:
+        # Handle incomplete fenced JSON (opening ``` but no closing ```)
+        fence_open = re.search(r"```(?:json)?\s*", text, re.IGNORECASE)
+        if fence_open:
+            text = text[fence_open.end():].strip()
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
-        text = text[start : end + 1]
+        candidate_slice = text[start : end + 1]
+        # Verify this is balanced JSON, not just an inner brace
+        try:
+            json.loads(candidate_slice)
+            text = candidate_slice
+        except json.JSONDecodeError:
+            # The rfind("}") found an inner brace, not the outer close — treat as truncated
+            text = text[start:]
+    elif start != -1:
+        # JSON starts but never closes — truncated response
+        text = text[start:]
     normalized = text.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
     normalized = re.sub(r'("quantity"\s*:\s*)(\d+\s*/\s*\d+)(\s*[,}])', r'\1"\2"\3', normalized)
     normalized = re.sub(r",\s*([}\]])", r"\1", normalized)
@@ -804,7 +863,27 @@ def _extract_payload(raw_text: str) -> dict[str, Any]:
                     "retrieval_confidence": parsed.get("retrieval_confidence"),
                     "prompt_version": parsed.get("prompt_version"),
                 }
-        except Exception:
+        except json.JSONDecodeError:
+            pass
+    # Attempt to repair truncated JSON before falling back to markdown
+    repaired_text = _try_repair_truncated_json(normalized) or _try_repair_truncated_json(text)
+    if repaired_text:
+        try:
+            parsed = json.loads(repaired_text)
+            if isinstance(parsed, dict):
+                logger.info("healthify.parse.truncated_json_repaired chars=%d", len(text))
+                return {
+                    "message": parsed.get("message", raw_text),
+                    "recipe": parsed.get("recipe"),
+                    "swaps": parsed.get("swaps"),
+                    "nutrition": parsed.get("nutrition"),
+                    "mes_score": parsed.get("mes_score"),
+                    "response_mode": parsed.get("response_mode"),
+                    "matched_recipe_id": parsed.get("matched_recipe_id"),
+                    "retrieval_confidence": parsed.get("retrieval_confidence"),
+                    "prompt_version": parsed.get("prompt_version"),
+                }
+        except json.JSONDecodeError:
             pass
     markdown_payload = _parse_markdown_recipe(raw_text)
     if markdown_payload:
@@ -865,6 +944,8 @@ def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
 def _nutrition_is_plausible(nutrition: dict[str, Any] | None) -> bool:
     if not nutrition:
         return True
+    if not isinstance(nutrition, dict):
+        return False
     for branch in ("original_estimate", "healthified_estimate"):
         values = nutrition.get(branch) or {}
         if not isinstance(values, dict):
@@ -1132,7 +1213,7 @@ async def _generate_healthified_payload(
 async def _answer_general_question(
     user_input: str, history: List[dict], user_context: str = ""
 ) -> dict[str, Any]:
-    llm = get_llm("chat")
+    llm = get_llm("chat", max_tokens=1024)
     system_prompt = GENERAL_PROMPT
     if user_context:
         system_prompt = f"{GENERAL_PROMPT}\n\n{user_context}"
@@ -1186,7 +1267,7 @@ async def _handle_score_explainer(
     db: Session | None = None,
     user_id: str | None = None,
 ) -> dict[str, Any]:
-    llm = get_llm("chat")
+    llm = get_llm("chat", max_tokens=1024)
 
     # Inject actual Fuel Score data so the LLM knows the user's current score
     score_context = ""

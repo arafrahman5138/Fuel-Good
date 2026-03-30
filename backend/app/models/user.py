@@ -37,6 +37,8 @@ class User(Base):
     subscription_will_renew = Column(Boolean, default=False)
     subscription_manage_url = Column(String, nullable=True)
     subscription_last_synced_at = Column(DateTime, nullable=True)
+    password_reset_code_hash = Column(String, nullable=True)
+    password_reset_code_expires_at = Column(DateTime, nullable=True)
     access_override_level = Column(String, nullable=True)
     access_override_reason = Column(String, nullable=True)
     access_override_expires_at = Column(DateTime, nullable=True)

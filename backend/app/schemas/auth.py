@@ -43,12 +43,13 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetRequestResponse(BaseModel):
     message: str
-    reset_token: Optional[str] = None
+    reset_code: Optional[str] = None
     expires_in_minutes: Optional[int] = None
 
 
 class PasswordResetConfirm(BaseModel):
-    token: str
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
     new_password: str = Field(min_length=8, max_length=128)
 
     @field_validator('new_password')

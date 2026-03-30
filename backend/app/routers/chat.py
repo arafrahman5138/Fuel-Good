@@ -92,13 +92,14 @@ async def healthify_food(
 
         messages = session.messages or []
         messages.append({"role": "user", "content": request.message})
-        record_notification_event(
-            db,
-            current_user.id,
-            "healthify_started",
-            properties={"session_id": str(session.id), "message_preview": _message_preview(request.message, 60)},
-            source="server",
-        )
+        try:
+            record_notification_event(
+                db, current_user.id, "healthify_started",
+                properties={"session_id": str(session.id), "message_preview": _message_preview(request.message, 60)},
+                source="server",
+            )
+        except Exception:
+            pass  # Non-critical; don't block the chat request
         try:
             result = await asyncio.wait_for(
                 healthify_agent(
@@ -164,15 +165,15 @@ async def healthify_food(
         }
         messages.append(assistant_message)
         session.messages = messages
-        db.commit()
         record_chat_usage(db, str(current_user.id), "healthify", result.get("response_mode") or "unknown")
-        record_notification_event(
-            db,
-            current_user.id,
-            "healthify_completed",
-            properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
-            source="server",
-        )
+        try:
+            record_notification_event(
+                db, current_user.id, "healthify_completed",
+                properties={"session_id": str(session.id), "has_recipe": bool(result.get("recipe"))},
+                source="server",
+            )
+        except Exception:
+            pass
         db.commit()
 
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)

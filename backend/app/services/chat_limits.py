@@ -141,71 +141,46 @@ def enforce_chat_quota(db: Session, user: User, route: str = "healthify") -> Non
     window_start = now - timedelta(minutes=int(config["window_minutes"]))
     day_start = now - timedelta(days=1)
 
-    base = db.query(ChatUsageEvent).filter(
-        ChatUsageEvent.user_id == user.id,
-        ChatUsageEvent.route == route,
-    )
-
+    # Single aggregation query replaces 4 separate COUNT/SUM queries
     try:
-        requests_in_window = base.filter(ChatUsageEvent.created_at >= window_start).count()
+        row = db.query(
+            func.count().label("daily_total"),
+            func.count().filter(ChatUsageEvent.created_at >= window_start).label("window_total"),
+            func.count().filter(ChatUsageEvent.response_mode == "generated").label("daily_generated"),
+            func.coalesce(func.sum(ChatUsageEvent.cost_units), 0.0).label("daily_cost"),
+        ).filter(
+            ChatUsageEvent.user_id == user.id,
+            ChatUsageEvent.route == route,
+            ChatUsageEvent.created_at >= day_start,
+        ).one()
     except ProgrammingError:
         db.rollback()
         _ensure_usage_table()
-        requests_in_window = base.filter(ChatUsageEvent.created_at >= window_start).count()
+        row = db.query(
+            func.count().label("daily_total"),
+            func.count().filter(ChatUsageEvent.created_at >= window_start).label("window_total"),
+            func.count().filter(ChatUsageEvent.response_mode == "generated").label("daily_generated"),
+            func.coalesce(func.sum(ChatUsageEvent.cost_units), 0.0).label("daily_cost"),
+        ).filter(
+            ChatUsageEvent.user_id == user.id,
+            ChatUsageEvent.route == route,
+            ChatUsageEvent.created_at >= day_start,
+        ).one()
     except SQLAlchemyError as exc:
         db.rollback()
         raise HTTPException(
             status_code=429,
             detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
         ) from exc
-    if requests_in_window >= int(config["max_requests_per_window"]):
-        raise HTTPException(
-            status_code=429,
-            detail="Chat limit reached for the current time window. Please try again later.",
-        )
 
-    daily = base.filter(ChatUsageEvent.created_at >= day_start)
-    try:
-        daily_requests = daily.count()
-    except SQLAlchemyError as exc:
-        db.rollback()
-        raise HTTPException(
-            status_code=429,
-            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
-        ) from exc
-    if daily_requests >= int(config["max_daily_requests"]):
-        raise HTTPException(
-            status_code=429,
-            detail="Daily chat limit reached. Please try again tomorrow or upgrade for higher limits.",
-        )
-
-    try:
-        daily_generated = daily.filter(ChatUsageEvent.response_mode == "generated").count()
-    except SQLAlchemyError as exc:
-        db.rollback()
-        raise HTTPException(
-            status_code=429,
-            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
-        ) from exc
-    if daily_generated >= int(config["max_daily_generated"]):
-        raise HTTPException(
-            status_code=429,
-            detail="Daily generated-chat limit reached. Please try again tomorrow or upgrade for higher limits.",
-        )
-
-    try:
-        daily_cost = daily.with_entities(func.coalesce(func.sum(ChatUsageEvent.cost_units), 0.0)).scalar() or 0.0
-    except SQLAlchemyError as exc:
-        db.rollback()
-        raise HTTPException(
-            status_code=429,
-            detail="Chat limit check is temporarily unavailable. Please try again in a moment.",
-        ) from exc
-    if float(daily_cost) >= float(config["max_daily_cost_units"]):
-        raise HTTPException(
-            status_code=429,
-            detail="Daily AI usage limit reached. Please try again tomorrow or upgrade for higher limits.",
-        )
+    if row.window_total >= int(config["max_requests_per_window"]):
+        raise HTTPException(status_code=429, detail="Chat limit reached for the current time window. Please try again later.")
+    if row.daily_total >= int(config["max_daily_requests"]):
+        raise HTTPException(status_code=429, detail="Daily chat limit reached. Please try again tomorrow or upgrade for higher limits.")
+    if row.daily_generated >= int(config["max_daily_generated"]):
+        raise HTTPException(status_code=429, detail="You've reached the daily limit for AI-generated recipes. Try again tomorrow or upgrade for higher limits.")
+    if float(row.daily_cost) >= float(config["max_daily_cost_units"]):
+        raise HTTPException(status_code=429, detail="Daily AI usage limit reached. Please try again tomorrow or upgrade for higher limits.")
 
 
 def record_chat_usage(db: Session, user_id: str, route: str, response_mode: str) -> None:

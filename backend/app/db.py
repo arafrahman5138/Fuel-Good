@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-engine = create_engine(settings.database_url)
+engine = create_engine(
+    settings.database_url,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -155,6 +161,8 @@ def ensure_legacy_schema_columns() -> None:
         ("users", "subscription_will_renew", "ALTER TABLE users ADD COLUMN subscription_will_renew BOOLEAN DEFAULT FALSE"),
         ("users", "subscription_manage_url", "ALTER TABLE users ADD COLUMN subscription_manage_url VARCHAR"),
         ("users", "subscription_last_synced_at", "ALTER TABLE users ADD COLUMN subscription_last_synced_at TIMESTAMP"),
+        ("users", "password_reset_code_hash", "ALTER TABLE users ADD COLUMN password_reset_code_hash VARCHAR"),
+        ("users", "password_reset_code_expires_at", "ALTER TABLE users ADD COLUMN password_reset_code_expires_at TIMESTAMP"),
         ("users", "access_override_level", "ALTER TABLE users ADD COLUMN access_override_level VARCHAR"),
         ("users", "access_override_reason", "ALTER TABLE users ADD COLUMN access_override_reason VARCHAR"),
         ("users", "access_override_expires_at", "ALTER TABLE users ADD COLUMN access_override_expires_at TIMESTAMP"),
@@ -216,6 +224,9 @@ def ensure_legacy_schema_columns() -> None:
         for idx_sql in [
             "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_user_id ON chat_usage_events(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_created_at ON chat_usage_events(created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_user_route_created ON chat_usage_events(user_id, route, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_food_logs_user_date ON food_logs(user_id, date)",
+            "CREATE INDEX IF NOT EXISTS ix_chat_sessions_user_updated ON chat_sessions(user_id, updated_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_product_label_scans_user_id ON product_label_scans(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_daily_fuel_summaries_user_id ON daily_fuel_summaries(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_daily_fuel_summaries_date ON daily_fuel_summaries(date)",

@@ -5,7 +5,7 @@ services:
     rootDir: backend
     plan: starter
     buildCommand: pip install -r requirements.txt && alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
     healthCheckPath: /health
     autoDeploy: false
     envVars:
@@ -30,9 +30,9 @@ services:
       - key: LLM_PROVIDER
         value: gemini
       - key: CHAT_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.1-flash-lite-preview
       - key: SCAN_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.1-flash-lite-preview
       - key: EMBEDDING_PROVIDER
         value: gemini
       - key: EMBEDDING_MODEL

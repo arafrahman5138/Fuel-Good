@@ -58,7 +58,7 @@ class AuthPasswordResetTests(unittest.TestCase):
         finally:
             db.close()
 
-    def test_forgot_password_returns_dev_token_for_existing_user(self) -> None:
+    def test_forgot_password_returns_dev_code_for_existing_user(self) -> None:
         self._create_user("reset@example.com")
 
         response = self.client.post("/api/auth/forgot-password", json={"email": "reset@example.com"})
@@ -66,7 +66,7 @@ class AuthPasswordResetTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
         self.assertIn("message", body)
-        self.assertTrue(body.get("reset_token"))
+        self.assertRegex(body.get("reset_code") or "", r"^\d{6}$")
         self.assertEqual(body.get("expires_in_minutes"), 30)
 
     def test_forgot_password_is_generic_for_unknown_user(self) -> None:
@@ -75,18 +75,18 @@ class AuthPasswordResetTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
         self.assertIn("message", body)
-        self.assertIsNone(body.get("reset_token"))
+        self.assertIsNone(body.get("reset_code"))
 
     def test_reset_password_updates_login_credentials(self) -> None:
         self._create_user("reset@example.com", password="OldPass123!")
 
         forgot = self.client.post("/api/auth/forgot-password", json={"email": "reset@example.com"})
         self.assertEqual(forgot.status_code, 200, forgot.text)
-        token = forgot.json()["reset_token"]
+        code = forgot.json()["reset_code"]
 
         reset = self.client.post(
             "/api/auth/reset-password",
-            json={"token": token, "new_password": "NewPass456!"},
+            json={"email": "reset@example.com", "code": code, "new_password": "NewPass456!"},
         )
         self.assertEqual(reset.status_code, 200, reset.text)
 
