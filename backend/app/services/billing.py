@@ -14,7 +14,6 @@ settings = get_settings()
 
 ACTIVE_STATES = {"trialing", "active", "grace_period"}
 OVERRIDE_PREMIUM_LEVELS = {"premium", "premium_lifetime", "complimentary"}
-FRONTEND_FREE_TRIAL_DAYS = 7
 
 
 def _utcnow() -> datetime:
@@ -57,7 +56,7 @@ def has_frontend_trial_access(user: User) -> bool:
     created_at = _parse_dt(getattr(user, "created_at", None))
     if not created_at:
         return False
-    return (_utcnow() - created_at).total_seconds() <= FRONTEND_FREE_TRIAL_DAYS * 24 * 60 * 60
+    return (_utcnow() - created_at).total_seconds() <= settings.revenuecat_trial_days * 24 * 60 * 60
 
 
 def build_entitlement_info(user: User) -> EntitlementInfo:
@@ -78,7 +77,7 @@ def build_entitlement_info(user: User) -> EntitlementInfo:
 
     if has_frontend_trial_access(user):
         trial_started_at = _parse_dt(getattr(user, "created_at", None))
-        trial_ends_at = trial_started_at + timedelta(days=FRONTEND_FREE_TRIAL_DAYS) if trial_started_at else None
+        trial_ends_at = trial_started_at + timedelta(days=settings.revenuecat_trial_days) if trial_started_at else None
         return EntitlementInfo(
             access_level="premium",
             subscription_state="trialing",
@@ -280,7 +279,7 @@ def get_billing_config() -> dict[str, Any]:
             },
         ],
         "paywall": {
-            "title": "Start your 7-day free trial",
+            "title": f"Start your {settings.revenuecat_trial_days}-day free trial",
             "subtitle": "Unlock the full app after onboarding with an iOS subscription.",
             "legal_copy": f"Free for {settings.revenuecat_trial_days} days, then auto-renews unless canceled at least 24 hours before renewal.",
             "annual_savings_copy": "Save over 58% with annual billing.",

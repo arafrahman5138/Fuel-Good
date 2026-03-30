@@ -198,7 +198,7 @@ export function ChatHistoryDrawer({
                       </Text>
                       <Text style={[styles.sessionSubtitle, { color: theme.textTertiary }]}>
                         {formatSessionDate(session.created_at)}
-                        {session.message_count > 0 ? ` · ${Math.ceil(session.message_count / 2)} msg${Math.ceil(session.message_count / 2) !== 1 ? 's' : ''}` : ''}
+                        {session.message_count > 0 ? ` · ${session.message_count} msg${session.message_count !== 1 ? 's' : ''}` : ''}
                       </Text>
                     </View>
                   </View>

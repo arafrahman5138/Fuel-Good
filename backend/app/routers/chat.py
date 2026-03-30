@@ -69,7 +69,7 @@ async def healthify_food(
             session = db.query(ChatSession).filter(
                 ChatSession.id == request.session_id,
                 ChatSession.user_id == current_user.id,
-            ).first()
+            ).with_for_update().first()
             if not session:
                 logger.warning(
                     "healthify.request.session_not_found request_id=%s user_id=%s session_id=%s",
@@ -227,7 +227,7 @@ async def healthify_food_stream(
             session = db.query(ChatSession).filter(
                 ChatSession.id == request.session_id,
                 ChatSession.user_id == current_user.id,
-            ).first()
+            ).with_for_update().first()
             if not session:
                 logger.warning(
                     "healthify.stream.session_not_found request_id=%s user_id=%s session_id=%s",
@@ -455,6 +455,12 @@ _METABOLIC_RESET = [
     "Herb-Crusted Chicken", "Veggie Frittata",
 ]
 
+_PLANT_BASED = [
+    "Lentil Soup", "Chickpea Buddha Bowl", "Tofu Stir Fry",
+    "Black Bean Tacos", "Quinoa Power Bowl", "Veggie Curry",
+    "Sweet Potato Black Bean Bowl", "Falafel Wrap",
+]
+
 # Tags for dietary/allergen filtering: maps suggestion name → set of tags
 # Tags: meat proteins, seafood, dairy, eggs, gluten, tree_nuts, peanuts, soy, shellfish
 _SUGGESTION_TAGS: dict[str, set[str]] = {
@@ -493,6 +499,13 @@ _SUGGESTION_TAGS: dict[str, set[str]] = {
     "Chickpea Buddha Bowl": set(),
     "Herb-Crusted Chicken": {"chicken"},
     "Veggie Frittata": {"eggs", "dairy"},
+    # Plant-based (universal fallback)
+    "Tofu Stir Fry": {"soy"},
+    "Black Bean Tacos": set(),
+    "Quinoa Power Bowl": set(),
+    "Veggie Curry": set(),
+    "Sweet Potato Black Bean Bowl": set(),
+    "Falafel Wrap": {"gluten"},
 }
 
 # Which tags indicate meat/animal protein (for vegetarian/vegan filtering)
@@ -505,6 +518,7 @@ _ALLERGY_TAG_MAP: dict[str, set[str]] = {
     "milk": {"dairy"},
     "eggs": {"eggs"},
     "egg": {"eggs"},
+    "nuts": {"tree_nuts"},
     "tree nuts": {"tree_nuts"},
     "tree nut": {"tree_nuts"},
     "peanuts": {"peanuts"},
@@ -516,6 +530,7 @@ _ALLERGY_TAG_MAP: dict[str, set[str]] = {
     "shrimp": {"shrimp", "shellfish"},
     "gluten": {"gluten"},
     "wheat": {"gluten"},
+    "sesame": {"sesame"},
 }
 
 
@@ -632,5 +647,16 @@ async def get_chat_suggestions(
             result.append(s)
         if len(result) >= 8:
             break
+
+    # Fallback: if filtering eliminated too many suggestions, backfill from plant-based pool
+    if len(result) < 3:
+        fallback_pool = _filter_suggestions(list(_PLANT_BASED) + list(_METABOLIC_RESET), current_user)
+        random.shuffle(fallback_pool)
+        for s in fallback_pool:
+            if s not in seen:
+                seen.add(s)
+                result.append(s)
+            if len(result) >= 8:
+                break
 
     return [{"label": s, "query": s} for s in result]

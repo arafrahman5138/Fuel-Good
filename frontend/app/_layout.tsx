@@ -54,15 +54,16 @@ export default function RootLayout() {
   const canAccessWithoutPremium = isAuthRoute || isOnboardingV2Route || isSubscribeRoute || pathname === '/';
   const skipBillingGate = __DEV__;
 
-  // 7-day free trial: allow authenticated, onboarded users to explore the app
+  // Honor the server-issued entitlement instead of re-implementing trial math
+  // on the client. This keeps route gating aligned with protected API routes.
   const isWithinFreeTrial = (() => {
-    if (!user || hasPremiumAccess) return false;
-    const createdAt = (user as any).created_at;
-    if (!createdAt) return false;
-    const signupDate = new Date(createdAt);
-    const now = new Date();
-    const daysSinceSignup = (now.getTime() - signupDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceSignup <= 7;
+    const entitlement = user?.entitlement;
+    if (!entitlement || hasPremiumAccess) return false;
+    if (entitlement.access_level !== 'premium' || entitlement.requires_paywall) return false;
+    if (entitlement.subscription_state !== 'trialing') return false;
+    if (!entitlement.trial_ends_at) return true;
+    const trialEndsAt = new Date(entitlement.trial_ends_at);
+    return trialEndsAt.getTime() > Date.now();
   })();
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -35,6 +35,7 @@ from app.schemas.auth import (
     UserRegister,
 )
 from app.services.billing import build_entitlement_info
+from app.services.email import is_transactional_email_configured, send_password_reset_email, send_welcome_email
 from app.services.notifications import record_notification_event
 from app.utils import normalize_email as _normalize_email
 
@@ -171,7 +172,11 @@ def _auto_update_streak(user: User, db: Session):
 
 
 @router.post("/register", response_model=Token)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+async def register(
+    user_data: UserRegister,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     normalized_email = _normalize_email(user_data.email)
     existing = db.query(User).filter(User.email == normalized_email).first()
     if existing:
@@ -185,6 +190,13 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    if is_transactional_email_configured():
+        background_tasks.add_task(
+            send_welcome_email,
+            to_email=user.email,
+            name=user.name,
+        )
 
     token = create_token_pair(str(user.id))
     return token
@@ -203,7 +215,11 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password", response_model=PasswordResetRequestResponse)
-async def forgot_password(body: PasswordResetRequest, db: Session = Depends(get_db)):
+async def forgot_password(
+    body: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     normalized_email = _normalize_email(body.email)
     user = db.query(User).filter(User.email == normalized_email).first()
     message = "If an account exists for that email, password reset instructions have been generated."
@@ -227,6 +243,15 @@ async def forgot_password(body: PasswordResetRequest, db: Session = Depends(get_
             message=message,
             reset_token=reset_token,
             expires_in_minutes=settings.password_reset_token_expire_minutes,
+        )
+
+    if is_transactional_email_configured():
+        background_tasks.add_task(
+            send_password_reset_email,
+            to_email=user.email,
+            reset_token=reset_token,
+            expires_in_minutes=settings.password_reset_token_expire_minutes,
+            name=user.name,
         )
     return PasswordResetRequestResponse(message=message)
 

@@ -449,26 +449,59 @@ def _compute_recipe_mes_from_cache(
         return None
 
 
+# Allergen expansion: maps stored allergy keys → specific ingredient keywords to check
+_ALLERGY_EXPANSION: dict[str, set[str]] = {
+    "nuts": {"walnut", "almond", "cashew", "pecan", "pistachio", "macadamia", "hazelnut", "brazil nut", "pine nut"},
+    "tree nuts": {"walnut", "almond", "cashew", "pecan", "pistachio", "macadamia", "hazelnut", "brazil nut", "pine nut"},
+    "peanuts": {"peanut", "peanut butter"},
+    "peanut": {"peanut", "peanut butter"},
+    "shellfish": {"shrimp", "crab", "lobster", "crayfish", "scallop", "clam", "mussel", "oyster", "crawfish"},
+    "fish": {"salmon", "tuna", "cod", "tilapia", "halibut", "anchovy", "sardine", "trout", "bass", "mahi", "swordfish", "catfish"},
+    "soy": {"soy", "soybean", "tofu", "tempeh", "edamame", "soy sauce", "miso"},
+    "wheat": {"wheat", "flour", "bread", "pasta", "noodle", "couscous", "tortilla", "pita"},
+    "eggs": {"egg", "egg white", "egg yolk", "eggs"},
+    "egg": {"egg", "egg white", "egg yolk", "eggs"},
+    "dairy": {"milk", "cheese", "butter", "cream", "yogurt", "whey", "casein", "ghee", "sour cream", "ice cream"},
+    "milk": {"milk", "cheese", "butter", "cream", "yogurt", "whey", "casein", "ghee"},
+    "sesame": {"sesame", "tahini"},
+    "gluten": {"wheat", "flour", "bread", "pasta", "noodle", "barley", "rye", "couscous"},
+}
+
+# Words that look like allergens but aren't (to prevent false positives)
+_ALLERGY_FALSE_POSITIVES: dict[str, set[str]] = {
+    "nuts": {"coconut", "nutmeg", "butternut", "doughnut", "donut"},
+}
+
+
 def _recipe_conflicts_with_user(recipe, user) -> bool:
     """Check if a retrieved recipe conflicts with user's dietary preferences or allergies.
-    Returns True if the recipe should be skipped."""
+    Returns True if the recipe should be skipped. Fails safe (returns True) on any error."""
     if not user:
         return False
+    has_restrictions = bool((user.allergies or []) or (user.dietary_preferences or []))
     try:
-        ingredients = recipe.ingredients or []
+        if not isinstance(recipe.ingredients, list):
+            # Can't verify ingredient safety — fail safe if user has any restrictions
+            return has_restrictions
+        ingredients = recipe.ingredients
         ingredient_text = " ".join(
             str(ing.get("name", "") if isinstance(ing, dict) else ing).lower()
             for ing in ingredients
+            if ing is not None
         ).lower()
-        # Also check title and description
-        title = (recipe.title or "").lower()
+        title = (getattr(recipe, "title", "") or "").lower()
         full_text = f"{title} {ingredient_text}"
 
-        # Check allergies
+        # Check allergies using expansion map + word-boundary matching
         for allergy in (user.allergies or []):
             allergy_lower = str(allergy).lower()
-            if allergy_lower in full_text:
-                return True
+            keywords = _ALLERGY_EXPANSION.get(allergy_lower, {allergy_lower})
+            false_positives = _ALLERGY_FALSE_POSITIVES.get(allergy_lower, set())
+            for kw in keywords:
+                if re.search(r'\b' + re.escape(kw) + r'(?:s|es)?\b', full_text):
+                    # Check it's not a false positive
+                    if not any(fp in full_text for fp in false_positives if kw in fp):
+                        return True
 
         # Check dietary preferences
         meat_keywords = {"chicken", "beef", "steak", "pork", "bacon", "ham", "lamb",
@@ -498,8 +531,9 @@ def _recipe_conflicts_with_user(recipe, user) -> bool:
             for disliked in (protein_prefs.get("disliked") or []):
                 if str(disliked).lower() in full_text:
                     return True
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.error("_recipe_conflicts_with_user failed, assuming conflict for safety: %s", exc)
+        return True  # Fail safe: assume conflict if check fails
     return False
 
 
@@ -544,7 +578,11 @@ def _looks_food_related(text: str) -> bool:
 
 
 def _classify_intent(user_input: str, chat_context: dict | None = None) -> str:
-    text = (user_input or "").lower()
+    text = (user_input or "").strip().lower()
+
+    # Empty input — no image context either
+    if not text and not (chat_context and chat_context.get("image_base64")):
+        return "empty_input"
 
     # Photo analysis — image attached
     if chat_context and chat_context.get("image_base64"):
@@ -1298,15 +1336,37 @@ async def healthify_agent(
             return _gen()
         return payload
 
+    _STREAM_ERROR_PAYLOAD = json.dumps({
+        "message": "Sorry, I hit a snag. Please try again.",
+        "recipe": None, "swaps": None, "nutrition": None,
+    })
+
+    if intent == "empty_input":
+        empty_payload = {
+            "message": "Hi! I'm your Fuel Coach. Ask me to healthify a meal, suggest a recipe, or answer any nutrition question.",
+            "recipe": None, "swaps": None, "nutrition": None,
+            "response_mode": "generated", "matched_recipe_id": None,
+            "retrieval_confidence": None, "prompt_version": PROMPT_VERSION,
+        }
+        if stream:
+            async def _empty_stream():
+                yield json.dumps(empty_payload)
+            return _empty_stream()
+        return empty_payload
+
     if intent == "fridge_to_meal":
         if stream:
             async def _fridge_stream():
                 yield ""  # heartbeat: keeps SSE connection alive during LLM processing
-                payload = await _handle_fridge_to_meal(user_input, history, user_context)
-                mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
-                if mes:
-                    payload["mes_score"] = mes
-                yield json.dumps(payload)
+                try:
+                    payload = await _handle_fridge_to_meal(user_input, history, user_context)
+                    mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
+                    if mes:
+                        payload["mes_score"] = mes
+                    yield json.dumps(payload)
+                except Exception as exc:
+                    logger.exception("_fridge_stream failed: %s", exc)
+                    yield _STREAM_ERROR_PAYLOAD
             return _fridge_stream()
         payload = await _handle_fridge_to_meal(user_input, history, user_context)
         mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
@@ -1318,8 +1378,12 @@ async def healthify_agent(
         if stream:
             async def _score_stream():
                 yield ""  # heartbeat
-                payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
-                yield json.dumps(payload)
+                try:
+                    payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
+                    yield json.dumps(payload)
+                except Exception as exc:
+                    logger.exception("_score_stream failed: %s", exc)
+                    yield _STREAM_ERROR_PAYLOAD
             return _score_stream()
         payload = await _handle_score_explainer(user_input, history, user_context, db=db, user_id=user_id)
         return payload
@@ -1328,11 +1392,15 @@ async def healthify_agent(
         if stream:
             async def _scan_stream():
                 yield ""  # heartbeat
-                payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
-                mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
-                if mes:
-                    payload["mes_score"] = mes
-                yield json.dumps(payload)
+                try:
+                    payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
+                    mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
+                    if mes:
+                        payload["mes_score"] = mes
+                    yield json.dumps(payload)
+                except Exception as exc:
+                    logger.exception("_scan_stream failed: %s", exc)
+                    yield _STREAM_ERROR_PAYLOAD
             return _scan_stream()
         payload = await _handle_post_scan(user_input, history, chat_context or {}, user_context)
         mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
@@ -1344,8 +1412,12 @@ async def healthify_agent(
         if stream:
             async def _general_stream():
                 yield ""  # heartbeat
-                payload = await _answer_general_question(user_input, history, user_context)
-                yield json.dumps(payload)
+                try:
+                    payload = await _answer_general_question(user_input, history, user_context)
+                    yield json.dumps(payload)
+                except Exception as exc:
+                    logger.exception("_general_stream failed: %s", exc)
+                    yield _STREAM_ERROR_PAYLOAD
             return _general_stream()
         return await _answer_general_question(user_input, history, user_context)
 

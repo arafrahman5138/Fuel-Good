@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     notification_cron_user_limit: int = 250
     run_startup_seeding: bool = False
     support_email: str = "support@fuelgood.app"
+    resend_api_key: str = ""
+    email_from: str = "noreply@fuelgood.app"
+    email_reply_to: str = "support@fuelgood.app"
     privacy_policy_url: str = ""
     terms_url: str = ""
     support_url: str = ""

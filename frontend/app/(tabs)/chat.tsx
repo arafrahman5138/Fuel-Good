@@ -432,16 +432,29 @@ export default function ChatScreen() {
     }
   };
 
-  const handleDeleteSession = async (id: string) => {
-    try {
-      await chatApi.deleteSession(id);
-      loadSessions();
-      if (sessionId === id) {
-        clearChat();
-      }
-    } catch (err) {
-      console.warn('Failed to delete session:', err);
-    }
+  const handleDeleteSession = (id: string) => {
+    Alert.alert(
+      'Delete Chat',
+      'This will permanently remove this conversation.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await chatApi.deleteSession(id);
+              loadSessions();
+              if (sessionId === id) {
+                clearChat();
+              }
+            } catch (err) {
+              console.warn('Failed to delete session:', err);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const showQuestToast = (message: string) => {
@@ -859,7 +872,7 @@ export default function ChatScreen() {
                       </View>
 
                     {!!cleanRecipeDescription(recipe.description) && (
-                      <Text style={[styles.recipeDescription, { color: theme.textSecondary }]}>
+                      <Text style={[styles.recipeDescription, { color: theme.textSecondary }]} numberOfLines={4}>
                         {cleanRecipeDescription(recipe.description)}
                       </Text>
                     )}

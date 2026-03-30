@@ -254,12 +254,11 @@ class TestRecipeConflictsWithUser:
         assert _recipe_conflicts_with_user(recipe, user) is False
 
     def test_allergy_detected_in_ingredients(self):
+        # Dairy allergy now uses expansion map: "dairy" → {milk, cheese, butter, cream, ...}
         user = _MockUser(allergies=["dairy"])
         recipe = _MockRecipe(ingredients=[{"name": "cheddar cheese"}, {"name": "pasta"}])
-        # "cheese" contains "dairy"? No — the allergy check uses keyword in full_text
-        # "dairy" is not in "cheddar cheese pasta" as a substring
-        # This tests that the check is reasonable but may need ingredient-level intelligence
-        # Let's use a more direct match:
+        assert _recipe_conflicts_with_user(recipe, user) is True  # "cheese" matched via expansion
+
         recipe2 = _MockRecipe(ingredients=[{"name": "milk"}, {"name": "flour"}])
         user2 = _MockUser(allergies=["milk"])
         assert _recipe_conflicts_with_user(recipe2, user2) is True
