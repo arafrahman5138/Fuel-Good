@@ -83,6 +83,69 @@ class MealScanLogRequest(BaseModel):
     include_recommended_pairing: bool = False
 
 
+def _build_degraded_meal_scan_result(
+    *,
+    meal_type: str | None,
+    portion_size: str | None,
+    source_context: str | None,
+) -> dict[str, Any]:
+    resolved_meal_type = (meal_type or "lunch").strip().lower() or "lunch"
+    resolved_portion_size = (portion_size or "medium").strip().lower() or "medium"
+    resolved_source_context = (source_context or "home").strip().lower() or "home"
+    return {
+        "meal_label": "Scanned meal",
+        "meal_context": "full_meal",
+        "meal_type": resolved_meal_type,
+        "portion_size": resolved_portion_size,
+        "source_context": resolved_source_context,
+        "estimated_ingredients": [],
+        "normalized_ingredients": [],
+        "nutrition_estimate": {
+            "calories": 450,
+            "protein": 25,
+            "carbs": 40,
+            "fat": 18,
+            "fiber": 5,
+            "sugar": 8,
+        },
+        "whole_food_status": "unknown",
+        "whole_food_flags": [],
+        "suggested_swaps": {},
+        "upgrade_suggestions": [
+            "Retake the photo in brighter light for a more accurate meal scan.",
+        ],
+        "recovery_plan": [
+            "You can edit the meal name, ingredients, and portion size after this scan finishes.",
+        ],
+        "mes": None,
+        "confidence": 0.1,
+        "confidence_breakdown": {
+            "extraction": 0.0,
+            "portion": 0.0,
+            "grounding": 0.0,
+            "nutrition": 0.0,
+            "estimate_mode": "fallback",
+            "review_required": True,
+        },
+        "source_model": "degraded_fallback",
+        "grounding_source": None,
+        "grounding_candidates": [],
+        "prompt_version": None,
+        "matched_recipe_id": None,
+        "matched_recipe_confidence": None,
+        "whole_food_summary": "We couldn't confidently analyze this meal yet.",
+        "pairing_opportunity": False,
+        "pairing_recommended_recipe_id": None,
+        "pairing_recommended_title": None,
+        "pairing_projected_mes": None,
+        "pairing_projected_delta": None,
+        "pairing_reasons": [],
+        "pairing_timing": None,
+        "is_degraded": True,
+        "degraded_reason": "AI analysis temporarily unavailable. You can correct this scan manually.",
+    }
+
+
 def _serialize_snack_profile(scan: ScannedMealLog) -> dict[str, Any] | None:
     if scan.meal_context != "snack":
         return None
@@ -429,18 +492,11 @@ async def scan_meal(
         )
     except Exception as exc:
         logger.exception("LLM meal scan failed, returning degraded result")
-        # Fallback: return a minimal scan result so the user's photo isn't wasted
-        result = {
-            "meal_label": meal_type or "Meal",
-            "components": [],
-            "nutrition_estimate": {
-                "calories": 450, "protein": 25, "carbs": 40,
-                "fat": 18, "fiber": 5, "sugar": 8,
-            },
-            "confidence": 0.1,
-            "is_degraded": True,
-            "degraded_reason": "AI analysis temporarily unavailable. You can correct this scan manually.",
-        }
+        result = _build_degraded_meal_scan_result(
+            meal_type=meal_type,
+            portion_size=portion_size,
+            source_context=source_context,
+        )
 
     # Non-food image — return immediately without persisting a scan record
     if result.get("is_not_food"):
@@ -526,6 +582,9 @@ async def scan_meal(
     db.commit()
     db.refresh(scan)
     serialized = _serialize_scan(scan)
+    if result.get("is_degraded"):
+        serialized["is_degraded"] = True
+        serialized["degraded_reason"] = result.get("degraded_reason")
     serialized["fuel_reasoning"] = scan_fuel_reasoning
     serialized["image"] = await _storage_reference_async(
         bucket=scan.image_bucket,
