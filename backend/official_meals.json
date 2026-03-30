@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-03-23T23:36:37.990029Z",
-  "meal_count": 80,
+  "meal_count": 86,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -11372,6 +11372,887 @@
       "pairing_synergy_profile": null,
       "glycemic_profile": null,
       "created_at": "2026-03-29T12:00:00.000000"
+    },
+    {
+      "id": "d48ee157-cf11-4c69-96b0-00a37d9dff24",
+      "title": "Mediterranean Seasoned Beef",
+      "description": "Lean ground beef seared with garlic, olive oil, and a Greek or Mediterranean seasoning blend. A savory, versatile protein component for bowls, plates, and wraps.",
+      "ingredients": [
+        {
+          "name": "avocado oil spray",
+          "quantity": "as needed",
+          "unit": "",
+          "category": "fats"
+        },
+        {
+          "name": "lean ground beef (90/10)",
+          "quantity": "1",
+          "unit": "pound",
+          "category": "protein"
+        },
+        {
+          "name": "fresh minced garlic",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "fats"
+        },
+        {
+          "name": "Greek or Mediterranean seasoning blend",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Get a large skillet going over medium-high heat and spray with avocado oil. Add the ground beef and let it cook unbothered for a few minutes to build a nice crust.",
+        "Break the beef up, then add the minced garlic, olive oil, and seasoning blend. Give it a good mix and continue cooking until done to your liking."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 12,
+      "total_time_min": 17,
+      "servings": 3,
+      "nutrition_info": {
+        "calories": 314,
+        "protein": 27,
+        "carbs": 1,
+        "fat": 22,
+        "fiber": 0,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep"
+      ],
+      "flavor_profile": [
+        "savory",
+        "herby",
+        "garlicky"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "med_beef_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "b5b955ef-7834-4fe7-b06b-a284ce928572",
+      "title": "Bone Broth Basmati Rice",
+      "description": "White basmati rice cooked in chicken bone broth for extra flavor and nutrients. A light, fragrant carb base for Mediterranean and Middle Eastern bowls.",
+      "ingredients": [
+        {
+          "name": "white basmati rice",
+          "quantity": "3/4",
+          "unit": "cup (dry)",
+          "category": "grains"
+        },
+        {
+          "name": "chicken bone broth",
+          "quantity": "per package ratio",
+          "unit": "",
+          "category": "protein"
+        }
+      ],
+      "steps": [
+        "Cook the basmati rice according to package directions, substituting chicken bone broth for water. Fluff with a fork when done."
+      ],
+      "prep_time_min": 2,
+      "cook_time_min": 18,
+      "total_time_min": 20,
+      "servings": 3,
+      "nutrition_info": {
+        "calories": 160,
+        "protein": 4,
+        "carbs": 35,
+        "fat": 0,
+        "fiber": 0,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep"
+      ],
+      "flavor_profile": [
+        "savory",
+        "mild"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [],
+      "protein_type": [],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": "med_beef_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "1d1ba7f1-8ad0-41a4-9301-6afcab22b9bc",
+      "title": "Lemon Dill Yogurt Sauce",
+      "description": "A bright, creamy sauce made with fat-free Greek yogurt, fresh dill, lemon, garlic, and a touch of olive oil. The defining drizzle for Mediterranean bowls and plates.",
+      "ingredients": [
+        {
+          "name": "fat free plain Greek yogurt",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "fresh minced garlic",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "produce"
+        },
+        {
+          "name": "lemon, juiced (half)",
+          "quantity": "1/2",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "fresh dill, chopped",
+          "quantity": "2.5",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "fats"
+        },
+        {
+          "name": "salt, pepper, and paprika",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Combine the yogurt, garlic, lemon juice, dill, olive oil, salt, pepper, and paprika in a bowl. Stir until smooth, cover, and refrigerate until ready to serve."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 5,
+      "servings": 3,
+      "nutrition_info": {
+        "calories": 91,
+        "protein": 8,
+        "carbs": 4,
+        "fat": 5,
+        "fiber": 0,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "sauce",
+        "meal-prep",
+        "no-cook"
+      ],
+      "flavor_profile": [
+        "tangy",
+        "herby",
+        "bright"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "gut_health"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": "med_beef_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "bb751224-98f4-49a6-bfe6-ae0d4d56a6d4",
+      "title": "Balsamic Cucumber Tomato Chickpea Salad",
+      "description": "A crunchy Mediterranean salad with sliced cucumber, cherry tomatoes, red onion, chickpeas, and parsley tossed in a balsamic-honey vinaigrette. High-fiber side that pairs perfectly with beef and rice bowls.",
+      "ingredients": [
+        {
+          "name": "english cucumber, sliced",
+          "quantity": "1",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "cherry tomatoes, sliced",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "red onion, sliced",
+          "quantity": "1",
+          "unit": "small",
+          "category": "produce"
+        },
+        {
+          "name": "chickpeas, drained and rinsed",
+          "quantity": "1",
+          "unit": "can (15 oz)",
+          "category": "protein"
+        },
+        {
+          "name": "chopped parsley",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh minced garlic",
+          "quantity": "2",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "2",
+          "unit": "tablespoons",
+          "category": "fats"
+        },
+        {
+          "name": "balsamic vinegar",
+          "quantity": "2",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "honey",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "sweetener"
+        },
+        {
+          "name": "salt and pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Combine the sliced cucumber, cherry tomatoes, red onion, chickpeas, and parsley in a bowl.",
+        "Whisk together the olive oil, balsamic vinegar, honey, minced garlic, salt, and pepper. Pour over the salad and toss well. Refrigerate until ready to serve."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 0,
+      "total_time_min": 10,
+      "servings": 3,
+      "nutrition_info": {
+        "calories": 257,
+        "protein": 9,
+        "carbs": 34,
+        "fat": 11,
+        "fiber": 7,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 5.0,
+        "ingredient_gis_reasons": [
+          "legume_carb_source"
+        ],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "side",
+        "meal-prep",
+        "no-cook"
+      ],
+      "flavor_profile": [
+        "tangy",
+        "fresh",
+        "sweet"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "gut_health",
+        "blood_sugar",
+        "heart_health"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "legumes"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "fiber_class": "high",
+        "acid": true,
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "with_meal"
+      },
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "2b0875e0-6723-454e-b129-d03373b04a44",
+      "title": "Mediterranean Beef and Rice Bowl",
+      "description": "Seasoned lean ground beef over basmati rice cooked in bone broth, drizzled with a lemon dill yogurt sauce and topped with hummus, feta, kalamata olives, and pickled red onions. Pairs with a balsamic cucumber tomato chickpea salad for a complete Mediterranean spread.",
+      "ingredients": [
+        {
+          "name": "avocado oil spray",
+          "quantity": "as needed",
+          "unit": "",
+          "category": "fats"
+        },
+        {
+          "name": "lean ground beef (90/10)",
+          "quantity": "1",
+          "unit": "pound",
+          "category": "protein"
+        },
+        {
+          "name": "fresh minced garlic",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "2",
+          "unit": "tablespoons",
+          "category": "fats"
+        },
+        {
+          "name": "Greek or Mediterranean seasoning blend",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "white basmati rice",
+          "quantity": "3/4",
+          "unit": "cup (dry)",
+          "category": "grains"
+        },
+        {
+          "name": "chicken bone broth",
+          "quantity": "per package ratio",
+          "unit": "",
+          "category": "protein"
+        },
+        {
+          "name": "fat free plain Greek yogurt",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "fresh dill, chopped",
+          "quantity": "2.5",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "lemon, juiced (half)",
+          "quantity": "1/2",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "salt, pepper, and paprika",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "hummus",
+          "quantity": "6",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "kalamata olives, pitted",
+          "quantity": "15",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "crumbled feta cheese",
+          "quantity": "3",
+          "unit": "tablespoons",
+          "category": "dairy"
+        },
+        {
+          "name": "pickled red onions",
+          "quantity": "3",
+          "unit": "tablespoons",
+          "category": "produce"
+        },
+        {
+          "name": "chopped parsley",
+          "quantity": "for garnish",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Start by making the lemon dill yogurt sauce. Combine the yogurt, half the garlic, lemon juice, dill, a tablespoon of olive oil, salt, pepper, and paprika. Stir until smooth and refrigerate until serving.",
+        "Cook the basmati rice in chicken bone broth according to package directions. Fluff with a fork when done.",
+        "Get a large skillet going over medium-high heat and spray with avocado oil. Add the ground beef and let it cook unbothered for a few minutes to build a nice crust.",
+        "Break the beef up, then add the remaining garlic, the other tablespoon of olive oil, and the seasoning blend. Mix well and continue cooking until done to your liking.",
+        "Assemble each bowl with a bed of basmati rice, topped with the seasoned beef, a generous drizzle of lemon dill yogurt sauce, a spoonful of hummus, kalamata olives, crumbled feta, pickled red onions, and fresh parsley.",
+        "Serve alongside the balsamic cucumber tomato chickpea salad."
+      ],
+      "prep_time_min": 15,
+      "cook_time_min": 20,
+      "total_time_min": 35,
+      "servings": 3,
+      "nutrition_info": {
+        "calories": 762,
+        "protein": 45,
+        "carbs": 48,
+        "fat": 43,
+        "fiber": 2,
+        "mes_default_pairing_adjusted_score": 76.9,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
+        "glycemic_profile": null,
+        "mes_score": 64.3,
+        "mes_display_score": 64.3,
+        "mes_tier": "moderate",
+        "mes_display_tier": "moderate",
+        "mes_sub_scores": {
+          "gis": 56.1,
+          "pas": 88.0,
+          "fs": 14.0,
+          "fas": 97.8
+        },
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": 76.9,
+        "mes_default_pairing_delta": 12.6,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 7.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ],
+        "mes_default_pairing_id": "bb751224-98f4-49a6-bfe6-ae0d4d56a6d4",
+        "mes_default_pairing_title": "Balsamic Cucumber Tomato Chickpea Salad",
+        "mes_default_pairing_role": "veg_side"
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep"
+      ],
+      "flavor_profile": [
+        "savory",
+        "tangy",
+        "herby",
+        "bright"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mediterranean",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health",
+        "heart_health"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/3a1a51d873be.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "med_beef_bowl_group_v1",
+      "default_pairing_ids": [
+        "bb751224-98f4-49a6-bfe6-ae0d4d56a6d4"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "ae259d41-52b0-42d8-ba50-0eb8a642429f",
+      "title": "Smoky Pulled Beef Loaded Potato Plate",
+      "description": "Slow-smoked shredded chuck roast piled over crispy roasted yukon gold potatoes with sautéed peppers and onions, fresh guacamole, a creamy garlic sauce, colby jack cheese, and cilantro. A big, bold, feed-the-crew kind of meal.",
+      "ingredients": [
+        {
+          "name": "chuck roasts",
+          "quantity": "2",
+          "unit": "pieces (2.5-3 lb each)",
+          "category": "protein"
+        },
+        {
+          "name": "hot sauce of choice",
+          "quantity": "to coat",
+          "unit": "",
+          "category": "sauce"
+        },
+        {
+          "name": "beef rub of choice",
+          "quantity": "to coat",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "butter",
+          "quantity": "8",
+          "unit": "tablespoons",
+          "category": "fats"
+        },
+        {
+          "name": "honey",
+          "quantity": "drizzle",
+          "unit": "",
+          "category": "sweetener"
+        },
+        {
+          "name": "beef broth",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "protein"
+        },
+        {
+          "name": "yukon gold potatoes, diced",
+          "quantity": "3",
+          "unit": "pounds",
+          "category": "produce"
+        },
+        {
+          "name": "extra virgin olive oil",
+          "quantity": "2",
+          "unit": "tablespoons",
+          "category": "fats"
+        },
+        {
+          "name": "salt, pepper, garlic powder, onion powder, smoked paprika",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "yellow onion, diced",
+          "quantity": "1",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "orange bell pepper, diced",
+          "quantity": "1",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "red bell pepper, diced",
+          "quantity": "1",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "yellow bell pepper, diced",
+          "quantity": "1",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "fats"
+        },
+        {
+          "name": "large avocados, mashed",
+          "quantity": "2",
+          "unit": "whole",
+          "category": "fats"
+        },
+        {
+          "name": "diced tomatoes (for guacamole)",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "diced red onion (for guacamole)",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh cilantro, chopped (for guacamole)",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "lime, juiced (half)",
+          "quantity": "1/2",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "avocado mayo",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "fats"
+        },
+        {
+          "name": "light sour cream",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "dijon mustard",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "sauce"
+        },
+        {
+          "name": "worcestershire sauce",
+          "quantity": "1",
+          "unit": "teaspoon",
+          "category": "sauce"
+        },
+        {
+          "name": "garlic cloves (for sauce)",
+          "quantity": "3",
+          "unit": "whole",
+          "category": "produce"
+        },
+        {
+          "name": "apple cider vinegar",
+          "quantity": "1",
+          "unit": "teaspoon",
+          "category": "produce"
+        },
+        {
+          "name": "shredded colby jack cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "fresh cilantro, chopped (for garnish)",
+          "quantity": "for garnish",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Pat the chuck roasts dry, coat all sides generously in hot sauce, then season heavy with the beef rub on every surface. Smoke at 250 degrees Fahrenheit until the internal temperature reaches about 165 degrees.",
+        "Transfer the roasts to a deep pan. Top with knobs of butter, a drizzle of honey, and pour in the beef broth. Cover tightly with foil and place back on the smoker at 275 degrees until the internal temperature hits 203 to 205 degrees and the meat is probe tender. Let rest for 30 to 45 minutes, then shred.",
+        "While the beef rests, dice the yukon gold potatoes and toss with olive oil, salt, pepper, garlic powder, onion powder, and smoked paprika. Spread on a sheet pan and roast at 425 degrees for 30 to 35 minutes until golden and crispy on the edges.",
+        "Dice the peppers and onion and sauté in avocado oil over medium-high heat for 10 to 15 minutes until softened and slightly charred. Season with salt, pepper, and garlic powder.",
+        "Make the guacamole by mashing the avocados and folding in the diced tomatoes, red onion, cilantro, lime juice, salt, and garlic pepper.",
+        "Blend the creamy garlic sauce by combining avocado mayo, light sour cream, dijon mustard, worcestershire sauce, garlic, apple cider vinegar, salt, pepper, and onion powder until smooth.",
+        "To plate, pile the roasted potatoes high, top with a generous mound of shredded beef, add the peppers and onions, a scoop of guacamole, a drizzle of creamy garlic sauce, shredded colby jack cheese, and fresh cilantro."
+      ],
+      "prep_time_min": 30,
+      "cook_time_min": 360,
+      "total_time_min": 390,
+      "servings": 8,
+      "nutrition_info": {
+        "calories": 1020,
+        "protein": 57,
+        "carbs": 53,
+        "fat": 65,
+        "fiber": 8,
+        "mes_default_pairing_adjusted_score": null,
+        "mes_default_pairing_reasons": null,
+        "glycemic_profile": null,
+        "mes_score": 79.6,
+        "mes_display_score": 79.6,
+        "mes_tier": "good",
+        "mes_display_tier": "good",
+        "mes_sub_scores": {
+          "gis": 58.4,
+          "pas": 100.0,
+          "fs": 74.4,
+          "fas": 76.3
+        },
+        "ingredient_gis_adjustment": 1.0,
+        "ingredient_gis_reasons": [
+          "potato_carb_source"
+        ],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null
+      },
+      "difficulty": "medium",
+      "tags": [
+        "dinner",
+        "meal-prep",
+        "bbq",
+        "weekend"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "savory",
+        "rich",
+        "tangy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "potato"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/8381e16a3e2e.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
     }
   ]
 }

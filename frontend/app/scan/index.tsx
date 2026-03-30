@@ -50,6 +50,10 @@ type MealKind = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type SourceContext = 'home' | 'restaurant';
 type ProductSource = 'label_image' | 'barcode' | 'label_manual';
 type ProductCaptureType = 'ingredients' | 'nutrition' | 'front_label';
+type ScanImageMeta = {
+  fileName?: string | null;
+  mimeType?: string | null;
+};
 
 interface ProductResult {
   product_name: string;
@@ -247,6 +251,16 @@ function normalizeProductResult(result: ProductResult): ProductResult {
   };
 }
 
+function inferImageMeta(uri: string, fileName?: string | null, mimeType?: string | null): ScanImageMeta {
+  const fallbackMimeType = wholeFoodScanApi.inferImageMimeType(uri, mimeType);
+  const extension = fallbackMimeType.split('/')[1] || 'jpg';
+  const fallbackName = fileName || `scan-upload.${extension}`;
+  return {
+    fileName: fallbackName,
+    mimeType: fallbackMimeType,
+  };
+}
+
 export default function ScanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -282,10 +296,12 @@ export default function ScanScreen() {
   const [carbs, setCarbs] = useState('');
   const [sodium, setSodium] = useState('');
   const [productImageUri, setProductImageUri] = useState<string | null>(null);
+  const [productImageMeta, setProductImageMeta] = useState<ScanImageMeta>({});
   const [showBarcodeSheet, setShowBarcodeSheet] = useState(false);
   const [showProductEditSheet, setShowProductEditSheet] = useState(false);
 
   const [mealImageUri, setMealImageUri] = useState<string | null>(null);
+  const [mealImageMeta, setMealImageMeta] = useState<ScanImageMeta>({});
   const [mealType, setMealType] = useState<MealKind>('lunch');
   const [portionSize, setPortionSize] = useState<PortionSize>('medium');
   const [sourceContext, setSourceContext] = useState<SourceContext>('home');
@@ -430,6 +446,7 @@ export default function ScanScreen() {
   const resetProductState = () => {
     setProductResult(null);
     setProductImageUri(null);
+    setProductImageMeta({});
     setBarcodeValue('');
     setProductName('');
     setBrand('');
@@ -446,6 +463,7 @@ export default function ScanScreen() {
 
   const resetMealState = () => {
     setMealImageUri(null);
+    setMealImageMeta({});
     setMealResult(null);
     setNotFoodReason(null);
     setMealLabelDraft('');
@@ -522,10 +540,13 @@ export default function ScanScreen() {
           ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
           : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
-      const uri = result.assets[0].uri;
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      const imageMeta = inferImageMeta(uri, asset.fileName, asset.mimeType);
       setMealImageUri(uri);
+      setMealImageMeta(imageMeta);
       setMealResult(null);
-      await analyzeMealWithUri(uri);
+      await analyzeMealWithUri({ uri, ...imageMeta });
     } catch (err: any) {
       Alert.alert('Unable to open camera', err?.message || 'Camera or photo permissions are missing.');
     }
@@ -550,22 +571,26 @@ export default function ScanScreen() {
       }
 
       const uri = photo.uri;
+      const imageMeta = inferImageMeta(uri);
       setMealImageUri(uri);
+      setMealImageMeta(imageMeta);
       setMealResult(null);
-      await analyzeMealWithUri(uri);
+      await analyzeMealWithUri({ uri, ...imageMeta });
     } catch (err: any) {
       setIsLoading(false);
       Alert.alert('Unable to capture photo', err?.message || 'Could not take a photo right now.');
     }
   };
 
-  const analyzeMealWithUri = async (uri: string) => {
+  const analyzeMealWithUri = async (image: { uri: string; fileName?: string | null; mimeType?: string | null }) => {
     setIsLoading(true);
     setScanStep('result');
     setNotFoodReason(null);
     try {
       const raw = await wholeFoodScanApi.analyzeMeal({
-        imageUri: uri,
+        imageUri: image.uri,
+        imageName: image.fileName,
+        imageType: image.mimeType,
         meal_type: mealType,
         portion_size: portionSize,
         source_context: sourceContext,
@@ -612,10 +637,13 @@ export default function ScanScreen() {
           ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
           : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
-      const uri = result.assets[0].uri;
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      const imageMeta = inferImageMeta(uri, asset.fileName, asset.mimeType);
       setProductImageUri(uri);
+      setProductImageMeta(imageMeta);
       setProductResult(null);
-      await analyzeProductImageWithUri(uri);
+      await analyzeProductImageWithUri({ uri, ...imageMeta });
     } catch (err: any) {
       Alert.alert('Unable to open camera', err?.message || 'Camera or photo permissions are missing.');
     }
@@ -640,22 +668,26 @@ export default function ScanScreen() {
       }
 
       const uri = photo.uri;
+      const imageMeta = inferImageMeta(uri);
       setProductImageUri(uri);
+      setProductImageMeta(imageMeta);
       setProductResult(null);
-      await analyzeProductImageWithUri(uri);
+      await analyzeProductImageWithUri({ uri, ...imageMeta });
     } catch (err: any) {
       setIsLoading(false);
       Alert.alert('Unable to capture photo', err?.message || 'Could not take a label photo right now.');
     }
   };
 
-  const analyzeProductImageWithUri = async (uri: string) => {
+  const analyzeProductImageWithUri = async (image: { uri: string; fileName?: string | null; mimeType?: string | null }) => {
     setIsLoading(true);
     setScanStep('result');
     setNotFoodReason(null);
     try {
       const raw = await wholeFoodScanApi.analyzeProductImage({
-        imageUri: uri,
+        imageUri: image.uri,
+        imageName: image.fileName,
+        imageType: image.mimeType,
         capture_type: 'front_label',
       });
       if (raw?.is_not_food) {
@@ -684,7 +716,7 @@ export default function ScanScreen() {
       Alert.alert('Meal photo required', 'Take a photo or choose one from your library first.');
       return;
     }
-    await analyzeMealWithUri(mealImageUri);
+    await analyzeMealWithUri({ uri: mealImageUri, ...mealImageMeta });
   };
 
   const recomputeMeal = async () => {

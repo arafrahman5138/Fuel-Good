@@ -448,17 +448,44 @@ export const foodApi = {
 };
 
 export const wholeFoodScanApi = {
+  inferImageMimeType: (uri?: string, providedType?: string | null) => {
+    const normalized = (providedType || '').trim().toLowerCase();
+    if (normalized) {
+      if (normalized === 'image/jpg') return 'image/jpeg';
+      return normalized;
+    }
+    const extension = (uri?.split('?')[0].split('.').pop() || '').trim().toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      default:
+        return 'image/jpeg';
+    }
+  },
   analyzeBarcode: (barcode: string) =>
     api.get<any>(`/scan/product/barcode/${encodeURIComponent(barcode)}`),
   analyzeProductImage: (data: {
     imageUri: string;
+    imageName?: string | null;
+    imageType?: string | null;
     capture_type?: 'ingredients' | 'nutrition' | 'front_label';
   }) => {
     const form = new FormData();
+    const imageType = wholeFoodScanApi.inferImageMimeType(data.imageUri, data.imageType);
+    const extension = imageType.split('/')[1] || 'jpg';
     form.append('image', {
       uri: data.imageUri,
-      name: 'product-scan.jpg',
-      type: 'image/jpeg',
+      name: data.imageName || `product-scan.${extension}`,
+      type: imageType,
     } as any);
     if (data.capture_type) form.append('capture_type', data.capture_type);
     return api.upload<any>('/scan/product/image', form);
@@ -478,15 +505,19 @@ export const wholeFoodScanApi = {
   }) => api.post<any>('/scan/product/analyze', data),
   analyzeMeal: (data: {
     imageUri: string;
+    imageName?: string | null;
+    imageType?: string | null;
     meal_type?: string;
     portion_size?: string;
     source_context?: string;
   }) => {
     const form = new FormData();
+    const imageType = wholeFoodScanApi.inferImageMimeType(data.imageUri, data.imageType);
+    const extension = imageType.split('/')[1] || 'jpg';
     form.append('image', {
       uri: data.imageUri,
-      name: 'meal-scan.jpg',
-      type: 'image/jpeg',
+      name: data.imageName || `meal-scan.${extension}`,
+      type: imageType,
     } as any);
     if (data.meal_type) form.append('meal_type', data.meal_type);
     if (data.portion_size) form.append('portion_size', data.portion_size);
