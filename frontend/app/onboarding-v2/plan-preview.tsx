@@ -24,6 +24,20 @@ function getFlexMealCount(goal: string | null, activity: string | null): number 
   return 4;
 }
 
+function getGoalHeadline(goal: string | null): string {
+  switch (goal) {
+    case 'weight':
+      return 'Your fat loss week with Fuel Good';
+    case 'muscle':
+      return 'Your muscle fuel week';
+    case 'cleaner':
+      return 'Your clean eating week';
+    case 'energy':
+    default:
+      return 'Your energy transformation week';
+  }
+}
+
 export default function PlanPreviewScreen() {
   const router = useRouter();
   const analytics = useOnboardingAnalytics();
@@ -89,7 +103,7 @@ export default function PlanPreviewScreen() {
             { opacity: headlineFade, transform: [{ translateY: headlineSlide }] },
           ]}
         >
-          Your week with Fuel Good
+          {getGoalHeadline(primaryGoal)}
         </Animated.Text>
 
         {/* Weekly Bar Chart */}

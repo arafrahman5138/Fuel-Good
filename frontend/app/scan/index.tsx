@@ -20,6 +20,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { FuelScoreRing } from '../../components/FuelScoreRing';
 import { useTheme } from '../../hooks/useTheme';
@@ -339,6 +340,7 @@ export default function ScanScreen() {
   // Animate result entrance when scan result arrives
   useEffect(() => {
     if (mealResult || productResult) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       resultScale.setValue(0.88);
       resultOpacity.setValue(0);
       Animated.parallel([

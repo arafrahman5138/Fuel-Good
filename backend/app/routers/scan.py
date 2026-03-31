@@ -45,6 +45,23 @@ settings = get_settings()
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
+def _validate_image_magic_bytes(data: bytes) -> str | None:
+    """Return detected MIME type from magic bytes, or None if unrecognized."""
+    if len(data) < 12:
+        return None
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[4:8] == b"ftyp":
+        brand = data[8:12]
+        if brand in {b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1", b"heif"}:
+            return "image/heic"
+    return None
+
+
 class MealTypeEnum(str, Enum):
     breakfast = "breakfast"
     lunch = "lunch"
@@ -400,6 +417,10 @@ async def analyze_product_image(
     if len(image_bytes) > 8 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
 
+    detected_mime = _validate_image_magic_bytes(image_bytes)
+    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(status_code=400, detail="Uploaded file is not a supported image format.")
+
     try:
         storage_ref = None
         if is_supabase_storage_configured():
@@ -478,6 +499,10 @@ async def scan_meal(
     if len(image_bytes) > 8 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
 
+    detected_mime = _validate_image_magic_bytes(image_bytes)
+    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(status_code=400, detail="Uploaded file is not a supported image format.")
+
     try:
         result = await analyze_meal_scan(
             db=db,
@@ -507,13 +532,20 @@ async def scan_meal(
 
     storage_ref = None
     if is_supabase_storage_configured():
-        storage_ref = await _store_scan_image(
-            user_id=current_user.id,
-            namespace="meal-scans",
-            bucket=settings.supabase_storage_meal_scans_bucket,
-            image_bytes=image_bytes,
-            mime_type=image.content_type,
-        )
+        try:
+            storage_ref = await _store_scan_image(
+                user_id=current_user.id,
+                namespace="meal-scans",
+                bucket=settings.supabase_storage_meal_scans_bucket,
+                image_bytes=image_bytes,
+                mime_type=image.content_type,
+            )
+        except SupabaseStorageUnavailable:
+            logger.exception("Supabase storage unavailable during meal scan")
+        except httpx.HTTPError:
+            logger.exception("Meal scan image storage request failed; continuing without stored image")
+        except Exception:
+            logger.exception("Unexpected meal scan image storage failure; continuing without stored image")
 
     # ── Fuel Score for scanned meal ──
     # Skip fuel scoring for degraded results (LLM failure fallback) —

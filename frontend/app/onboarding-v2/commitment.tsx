@@ -60,7 +60,7 @@ export default function CommitmentScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCommitted(true);
     analytics.trackEvent('onboarding_committed', { committed: true });
-    router.push('/onboarding-v2/paywall');
+    router.push('/onboarding-v2/generating-plan');
   };
 
   const handleNotYet = () => {
@@ -80,11 +80,11 @@ export default function CommitmentScreen() {
     Animated.timing(responseFade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
 
     analytics.trackEvent('onboarding_objection', { objection });
+  };
 
-    // Auto-navigate to paywall after showing response
-    setTimeout(() => {
-      router.push('/onboarding-v2/paywall');
-    }, 2500);
+  const handleSeeOptions = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/onboarding-v2/generating-plan');
   };
 
   return (
@@ -170,6 +170,22 @@ export default function CommitmentScreen() {
               <Animated.View style={[styles.responseCard, { opacity: responseFade }]}>
                 <Ionicons name="sparkles" size={18} color="#22C55E" style={{ marginBottom: 8 }} />
                 <Text style={styles.responseText}>{responseText}</Text>
+              </Animated.View>
+            )}
+
+            {selectedObjection !== null && (
+              <Animated.View style={{ opacity: responseFade, marginTop: 20, width: '100%' }}>
+                <TouchableOpacity activeOpacity={0.85} onPress={handleSeeOptions}>
+                  <LinearGradient
+                    colors={['#22C55E', '#16A34A']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.seeOptionsButton}
+                  >
+                    <Text style={styles.seeOptionsText}>See my options</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#000" />
+                  </LinearGradient>
+                </TouchableOpacity>
               </Animated.View>
             )}
           </Animated.View>
@@ -284,6 +300,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#E5E7EB',
     lineHeight: 22,
+  },
+
+  seeOptionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    paddingVertical: 18,
+    gap: 8,
+  },
+  seeOptionsText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#000',
   },
 
   progressWrapper: {

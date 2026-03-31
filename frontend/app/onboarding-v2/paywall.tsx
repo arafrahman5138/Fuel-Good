@@ -23,6 +23,11 @@ import { useAuthStore } from '../../stores/authStore';
 
 type PlanChoice = 'annual' | 'weekly';
 
+const LOSS_AVERSION_MESSAGES: Record<number, string> = {
+  0: "Without Fuel Good, you won't know what's really in your food.",
+  1: "You'll lose your personalized meal plan and scanner access.",
+};
+
 const FEATURES = [
   { icon: 'scan-outline' as const, label: 'Scan any food \u2014 instant Fuel Score' },
   { icon: 'calendar-outline' as const, label: 'Weekly meal plans \u2014 all Fuel 100' },
@@ -34,7 +39,7 @@ const FEATURES = [
 function getHeadline(dismissCount: number): string {
   if (dismissCount === 0) return 'Start fueling good';
   if (dismissCount === 1) return 'Wait \u2014 here\u2019s 50% off to get started.';
-  return 'Okay, final offer. 80% off \u2014 just for you.';
+  return 'Try Fuel Good free';
 }
 
 function getAnnualPrice(dismissCount: number): { original: string; current: string; monthly: string } {
@@ -52,6 +57,9 @@ export default function PaywallScreen() {
 
   const [selectedPlan, setSelectedPlan] = useState<PlanChoice>('annual');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLossMessage, setShowLossMessage] = useState(false);
+
+  const lossFade = useRef(new Animated.Value(0)).current;
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(30)).current;
@@ -178,6 +186,22 @@ export default function PaywallScreen() {
       return;
     }
 
+    // Show loss aversion message briefly before escalating discount
+    const lossMessage = LOSS_AVERSION_MESSAGES[paywallDismissCount];
+    if (lossMessage && !showLossMessage) {
+      setShowLossMessage(true);
+      lossFade.setValue(0);
+      Animated.timing(lossFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+
+      setTimeout(() => {
+        Animated.timing(lossFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+          setShowLossMessage(false);
+          incrementPaywallDismiss();
+        });
+      }, 2500);
+      return;
+    }
+
     incrementPaywallDismiss();
   };
 
@@ -187,6 +211,18 @@ export default function PaywallScreen() {
       <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss} activeOpacity={0.7}>
         <Ionicons name="close" size={22} color="#6B7280" />
       </TouchableOpacity>
+
+      {/* Loss aversion overlay */}
+      {showLossMessage && (
+        <Animated.View style={[styles.lossOverlay, { opacity: lossFade }]}>
+          <View style={styles.lossCard}>
+            <Ionicons name="warning-outline" size={24} color="#F59E0B" style={{ marginBottom: 8 }} />
+            <Text style={styles.lossText}>
+              {LOSS_AVERSION_MESSAGES[paywallDismissCount]}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -201,70 +237,120 @@ export default function PaywallScreen() {
           {paywallDismissCount === 1 && (
             <Text style={styles.urgencyText}>This offer won't appear again</Text>
           )}
-          {paywallDismissCount === 2 && (
-            <Text style={styles.urgencyText}>That's less than $1/month</Text>
+
+          {/* Free tier view (3rd paywall) */}
+          {paywallDismissCount === 2 ? (
+            <>
+              <Text style={styles.freeTierSubtext}>
+                Limited features — 3 scans/week, no meal plans.
+              </Text>
+
+              <View style={styles.featureList}>
+                {FEATURES.map((feature, i) => {
+                  const isLocked = i >= 1; // Only scanning is free
+                  return (
+                    <View key={feature.label} style={[styles.featureRow, isLocked && { opacity: 0.4 }]}>
+                      <View style={[styles.featureIconCircle, isLocked && { backgroundColor: 'rgba(107, 114, 128, 0.08)' }]}>
+                        <Ionicons name={isLocked ? 'lock-closed-outline' : feature.icon} size={18} color={isLocked ? '#6B7280' : '#22C55E'} />
+                      </View>
+                      <Text style={styles.featureText}>{feature.label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Upgrade nudge */}
+              <View style={styles.upgradeNudge}>
+                <Text style={styles.upgradeNudgeText}>
+                  Or unlock everything for just <Text style={{ color: '#22C55E', fontWeight: '700' }}>$11.99/year</Text>
+                </Text>
+              </View>
+
+              {/* Price card for upgrade option */}
+              <View style={styles.priceCards}>
+                <TouchableOpacity
+                  style={[styles.priceCard, styles.priceCardSelected]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.priceCardContent}>
+                    <View style={styles.radioOuter}>
+                      <View style={styles.radioInner} />
+                    </View>
+                    <View style={styles.priceInfo}>
+                      <View style={styles.priceRow}>
+                        <Text style={styles.originalPrice}>$59.99</Text>
+                        <Text style={styles.currentPrice}>$11.99/year</Text>
+                      </View>
+                      <Text style={styles.priceSubtext}>Less than $1/month</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Feature list */}
+              <View style={styles.featureList}>
+                {FEATURES.map((feature) => (
+                  <View key={feature.label} style={styles.featureRow}>
+                    <View style={styles.featureIconCircle}>
+                      <Ionicons name={feature.icon} size={18} color="#22C55E" />
+                    </View>
+                    <Text style={styles.featureText}>{feature.label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Price cards */}
+              <View style={styles.priceCards}>
+                {/* Annual */}
+                <TouchableOpacity
+                  style={[styles.priceCard, selectedPlan === 'annual' && styles.priceCardSelected]}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedPlan('annual')}
+                >
+                  {paywallDismissCount === 0 && (
+                    <View style={styles.bestValueBadge}>
+                      <Text style={styles.bestValueText}>Best value</Text>
+                    </View>
+                  )}
+                  <View style={styles.priceCardContent}>
+                    <View style={styles.radioOuter}>
+                      {selectedPlan === 'annual' && <View style={styles.radioInner} />}
+                    </View>
+                    <View style={styles.priceInfo}>
+                      <View style={styles.priceRow}>
+                        {pricing.original !== '' && (
+                          <Text style={styles.originalPrice}>{pricing.original}</Text>
+                        )}
+                        <Text style={styles.currentPrice}>{pricing.current}</Text>
+                      </View>
+                      <Text style={styles.priceSubtext}>{pricing.monthly}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Weekly */}
+                {paywallDismissCount === 0 && (
+                  <TouchableOpacity
+                    style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedPlan('weekly')}
+                  >
+                    <View style={styles.priceCardContent}>
+                      <View style={styles.radioOuter}>
+                        {selectedPlan === 'weekly' && <View style={styles.radioInner} />}
+                      </View>
+                      <View style={styles.priceInfo}>
+                        <Text style={styles.currentPrice}>$4.99/week</Text>
+                        <Text style={styles.priceSubtext}>Billed weekly</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
           )}
-
-          {/* Feature list */}
-          <View style={styles.featureList}>
-            {FEATURES.map((feature) => (
-              <View key={feature.label} style={styles.featureRow}>
-                <View style={styles.featureIconCircle}>
-                  <Ionicons name={feature.icon} size={18} color="#22C55E" />
-                </View>
-                <Text style={styles.featureText}>{feature.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Price cards */}
-          <View style={styles.priceCards}>
-            {/* Annual */}
-            <TouchableOpacity
-              style={[styles.priceCard, selectedPlan === 'annual' && styles.priceCardSelected]}
-              activeOpacity={0.8}
-              onPress={() => setSelectedPlan('annual')}
-            >
-              {paywallDismissCount === 0 && (
-                <View style={styles.bestValueBadge}>
-                  <Text style={styles.bestValueText}>Best value</Text>
-                </View>
-              )}
-              <View style={styles.priceCardContent}>
-                <View style={styles.radioOuter}>
-                  {selectedPlan === 'annual' && <View style={styles.radioInner} />}
-                </View>
-                <View style={styles.priceInfo}>
-                  <View style={styles.priceRow}>
-                    {pricing.original !== '' && (
-                      <Text style={styles.originalPrice}>{pricing.original}</Text>
-                    )}
-                    <Text style={styles.currentPrice}>{pricing.current}</Text>
-                  </View>
-                  <Text style={styles.priceSubtext}>{pricing.monthly}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            {/* Weekly */}
-            {paywallDismissCount === 0 && (
-              <TouchableOpacity
-                style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
-                activeOpacity={0.8}
-                onPress={() => setSelectedPlan('weekly')}
-              >
-                <View style={styles.priceCardContent}>
-                  <View style={styles.radioOuter}>
-                    {selectedPlan === 'weekly' && <View style={styles.radioInner} />}
-                  </View>
-                  <View style={styles.priceInfo}>
-                    <Text style={styles.currentPrice}>$4.99/week</Text>
-                    <Text style={styles.priceSubtext}>Billed weekly</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
         </Animated.View>
       </ScrollView>
 
@@ -286,13 +372,29 @@ export default function PaywallScreen() {
                 <ActivityIndicator color="#000" />
               ) : (
                 <>
-                  <Text style={styles.ctaText}>Start your 7-day free trial</Text>
+                  <Text style={styles.ctaText}>
+                    {paywallDismissCount === 2 ? 'Unlock everything — $11.99/year' : 'Try Free for 7 Days'}
+                  </Text>
                   <Ionicons name="arrow-forward" size={18} color="#000" />
                 </>
               )}
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
+
+        {paywallDismissCount < 2 && (
+          <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
+        )}
+
+        {paywallDismissCount === 2 && (
+          <TouchableOpacity
+            onPress={() => saveAndNavigate()}
+            activeOpacity={0.7}
+            style={styles.continueFreeButton}
+          >
+            <Text style={styles.continueFreeText}>Continue with free plan</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={handleRestore} activeOpacity={0.7} style={styles.restoreButton}>
           <Text style={styles.restoreText}>Restore purchases</Text>
@@ -323,6 +425,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  lossOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  lossCard: {
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+  },
+  lossText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
   scrollView: {
     flex: 1,
   },
@@ -345,6 +474,45 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     textAlign: 'center',
     marginBottom: 8,
+  },
+
+  // Free tier
+  freeTierSubtext: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  upgradeNudge: {
+    backgroundColor: 'rgba(34, 197, 94, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.15)',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  upgradeNudgeText: {
+    fontSize: 15,
+    color: '#E5E7EB',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  continueFreeButton: {
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  continueFreeText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  reassuranceText: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
   },
 
   // Features

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
+  Animated,
   View,
   Text,
   TextInput,
@@ -60,6 +61,26 @@ export default function LoginScreen() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const { setTokens, setUser } = useAuthStore();
+
+  // Error shake animation
+  const errorShake = useRef(new Animated.Value(0)).current;
+  const errorOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (error) {
+      errorOpacity.setValue(0);
+      errorShake.setValue(0);
+      Animated.parallel([
+        Animated.timing(errorOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.sequence([
+          Animated.timing(errorShake, { toValue: 10, duration: 50, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: -10, duration: 50, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 6, duration: 50, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 0, duration: 50, useNativeDriver: true }),
+        ]),
+      ]).start();
+    }
+  }, [error]);
 
   // Google OAuth configuration
   const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
@@ -239,9 +260,18 @@ export default function LoginScreen() {
           </Text>
 
           {error ? (
-            <View style={[styles.errorBox, { backgroundColor: theme.errorMuted }]}>
+            <Animated.View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: theme.errorMuted,
+                  opacity: errorOpacity,
+                  transform: [{ translateX: errorShake }],
+                },
+              ]}
+            >
               <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-            </View>
+            </Animated.View>
           ) : null}
 
           {isRegister && (

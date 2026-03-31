@@ -39,8 +39,10 @@ function isRevenueCatEnabled(): boolean {
     return false;
   }
 
-  // Prevent production/TestFlight builds from bootstrapping RevenueCat with a
-  // test placeholder key. Internal QA can still use preview/internal builds.
+  // FAILSAFE: Prevent production/TestFlight builds from bootstrapping RevenueCat
+  // with a test placeholder key. The real production key must be set in eas.json
+  // (production.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY) before App Store release.
+  // Internal QA can still use preview/internal builds.
   if (APP_ENV === 'production' && isTestRevenueCatKey(REVENUECAT_IOS_API_KEY)) {
     return false;
   }

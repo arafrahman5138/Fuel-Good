@@ -1,41 +1,75 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingProgress } from '../../components/onboarding-v2/OnboardingProgress';
 import { useOnboardingAnalytics } from '../../hooks/onboarding-v2/useOnboardingAnalytics';
+import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState';
+
+function getGoalLabel(goal: string | null): string {
+  switch (goal) {
+    case 'weight': return 'Fat loss';
+    case 'muscle': return 'Muscle fuel';
+    case 'cleaner': return 'Clean eating';
+    case 'energy':
+    default: return 'More energy';
+  }
+}
+
+function getFlexCount(goal: string | null, activity: string | null): number {
+  if (goal === 'weight') return 3;
+  if (activity === 'active' || activity === 'very_active') return 5;
+  return 4;
+}
 
 export default function SocialProofScreen() {
   const router = useRouter();
   const analytics = useOnboardingAnalytics();
+  const { primaryGoal, activityLevel } = useOnboardingState();
+
+  const goalLabel = getGoalLabel(primaryGoal);
+  const flexCount = useMemo(
+    () => getFlexCount(primaryGoal, activityLevel),
+    [primaryGoal, activityLevel],
+  );
 
   const headlineFade = useRef(new Animated.Value(0)).current;
   const headlineSlide = useRef(new Animated.Value(15)).current;
-  const statFade = useRef(new Animated.Value(0)).current;
-  const statScale = useRef(new Animated.Value(0.95)).current;
-  const testimonialFade = useRef(new Animated.Value(0)).current;
-  const testimonialSlide = useRef(new Animated.Value(20)).current;
-  const ratingFade = useRef(new Animated.Value(0)).current;
+  const item1Fade = useRef(new Animated.Value(0)).current;
+  const item1Slide = useRef(new Animated.Value(16)).current;
+  const item2Fade = useRef(new Animated.Value(0)).current;
+  const item2Slide = useRef(new Animated.Value(16)).current;
+  const item3Fade = useRef(new Animated.Value(0)).current;
+  const item3Slide = useRef(new Animated.Value(16)).current;
+  const item4Fade = useRef(new Animated.Value(0)).current;
+  const item4Slide = useRef(new Animated.Value(16)).current;
   const buttonFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     analytics.trackScreenView(10, 'social_proof');
 
-    Animated.stagger(250, [
+    Animated.stagger(200, [
       Animated.parallel([
         Animated.timing(headlineFade, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.timing(headlineSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.timing(statFade, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.spring(statScale, { toValue: 1, friction: 8, useNativeDriver: true }),
+        Animated.timing(item1Fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(item1Slide, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.timing(testimonialFade, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(testimonialSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(item2Fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(item2Slide, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
-      Animated.timing(ratingFade, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(item3Fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(item3Slide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(item4Fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(item4Slide, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]),
       Animated.timing(buttonFade, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
 
@@ -47,6 +81,16 @@ export default function SocialProofScreen() {
     router.push('/onboarding-v2/commitment');
   };
 
+  const items = [
+    { icon: 'trophy-outline' as const, label: `Goal: ${goalLabel}`, color: '#22C55E' },
+    { icon: 'ticket-outline' as const, label: `${flexCount} guilt-free cheat meals per week`, color: '#F59E0B' },
+    { icon: 'restaurant-outline' as const, label: 'Personalized weekly meal plans', color: '#22C55E' },
+    { icon: 'scan-outline' as const, label: 'Unlimited food scanning', color: '#22C55E' },
+  ];
+
+  const fadeRefs = [item1Fade, item2Fade, item3Fade, item4Fade];
+  const slideRefs = [item1Slide, item2Slide, item3Slide, item4Slide];
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
@@ -57,45 +101,33 @@ export default function SocialProofScreen() {
             { opacity: headlineFade, transform: [{ translateY: headlineSlide }] },
           ]}
         >
-          Join thousands eating better
+          Here's what you're getting
         </Animated.Text>
 
-        {/* Key stat card */}
-        <Animated.View
-          style={[
-            styles.statCard,
-            { opacity: statFade, transform: [{ scale: statScale }] },
-          ]}
-        >
-          <View style={styles.statGlow} />
-          <Text style={styles.statNumber}>12,400+</Text>
-          <Text style={styles.statLabel}>
-            people improved their energy in the first week
-          </Text>
-        </Animated.View>
+        {/* Recap items */}
+        <View style={styles.itemsList}>
+          {items.map((item, i) => (
+            <Animated.View
+              key={item.label}
+              style={[
+                styles.itemCard,
+                { opacity: fadeRefs[i], transform: [{ translateY: slideRefs[i] }] },
+              ]}
+            >
+              <View style={[styles.itemIconCircle, { backgroundColor: `${item.color}12` }]}>
+                <Ionicons name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={styles.itemLabel}>{item.label}</Text>
+            </Animated.View>
+          ))}
+        </View>
 
-        {/* Testimonial card */}
-        <Animated.View
-          style={[
-            styles.testimonialCard,
-            { opacity: testimonialFade, transform: [{ translateY: testimonialSlide }] },
-          ]}
-        >
-          <Ionicons name="chatbubble-outline" size={20} color="#6B7280" style={styles.quoteIcon} />
-          <Text style={styles.quoteText}>
-            "I finally understand what to eat. The scanner changed how I shop."
-          </Text>
-          <Text style={styles.attribution}>
-            — Sarah K., using Fuel Good for 3 months
-          </Text>
-        </Animated.View>
-
-        {/* App Store rating badge */}
-        <Animated.View style={[styles.ratingBadge, { opacity: ratingFade }]}>
+        {/* App Store badge (keep real social proof if we have it) */}
+        <View style={styles.ratingBadge}>
           <Ionicons name="star" size={16} color="#F59E0B" />
           <Text style={styles.ratingText}>4.8</Text>
           <Text style={styles.ratingLabel}>on the App Store</Text>
-        </Animated.View>
+        </View>
       </View>
 
       <Animated.View style={[styles.bottomContainer, { opacity: buttonFade }]}>
@@ -121,69 +153,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headline: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 32,
   },
 
-  // Stat card
-  statCard: {
-    backgroundColor: '#151515',
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.15)',
-    borderRadius: 20,
-    padding: 28,
+  // Items
+  itemsList: {
+    gap: 12,
+    marginBottom: 28,
+  },
+  itemCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  statGlow: {
-    position: 'absolute',
-    top: -40,
-    width: 160,
-    height: 80,
-    borderRadius: 80,
-    backgroundColor: 'rgba(34, 197, 94, 0.06)',
-  },
-  statNumber: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#22C55E',
-    marginBottom: 8,
-    fontVariant: ['tabular-nums'],
-  },
-  statLabel: {
-    fontSize: 15,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  // Testimonial
-  testimonialCard: {
     backgroundColor: '#151515',
     borderWidth: 1,
     borderColor: '#252525',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    padding: 18,
+    gap: 14,
   },
-  quoteIcon: {
-    marginBottom: 10,
+  itemIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  quoteText: {
+  itemLabel: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#E5E7EB',
-    lineHeight: 24,
-    fontStyle: 'italic',
-    marginBottom: 12,
-  },
-  attribution: {
-    fontSize: 13,
-    color: '#6B7280',
+    lineHeight: 22,
   },
 
   // Rating badge

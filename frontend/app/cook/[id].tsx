@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import * as Haptics from 'expo-haptics';
 import { Card } from '../../components/GradientCard';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../hooks/useTheme';
@@ -72,6 +73,8 @@ export default function CookModeScreen() {
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const stepFadeAnim = useRef(new Animated.Value(1)).current;
+  const stepCheckScale = useRef(new Animated.Value(0)).current;
+  const [showStepCheck, setShowStepCheck] = useState(false);
 
   // AI assistant state
   const [showAssistant, setShowAssistant] = useState(false);
@@ -126,7 +129,31 @@ export default function CookModeScreen() {
   };
 
   const onStepChange = (newStep: number) => {
-    // Fade out, swap, fade in
+    const isAdvancing = newStep > currentStep;
+
+    // Show step completion check when advancing
+    if (isAdvancing) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowStepCheck(true);
+      stepCheckScale.setValue(0);
+      Animated.spring(stepCheckScale, {
+        toValue: 1,
+        tension: 120,
+        friction: 6,
+        useNativeDriver: true,
+      }).start();
+
+      // Hide after brief display, then transition
+      setTimeout(() => {
+        setShowStepCheck(false);
+        doTransition(newStep);
+      }, 400);
+    } else {
+      doTransition(newStep);
+    }
+  };
+
+  const doTransition = (newStep: number) => {
     Animated.timing(stepFadeAnim, {
       toValue: 0,
       duration: 120,
@@ -225,12 +252,21 @@ export default function CookModeScreen() {
             <Text style={[styles.stepCounter, { color: theme.textTertiary }]}>
               Step {currentStep + 1} of {recipe.steps.length}
             </Text>
-            <Animated.View style={{ opacity: stepFadeAnim, transform: [{ translateY: stepFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }] }}>
-              <LinearGradient colors={theme.gradient.primary} style={styles.stepCard}>
-                <Text style={styles.stepNumber}>Step {currentStep + 1}</Text>
-                <Text style={styles.stepText}>{recipe.steps[currentStep].replace(/^Step\s*\d+\s*:\s*/i, '')}</Text>
-              </LinearGradient>
-            </Animated.View>
+            <View style={{ position: 'relative' }}>
+              <Animated.View style={{ opacity: stepFadeAnim, transform: [{ translateY: stepFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }] }}>
+                <LinearGradient colors={theme.gradient.primary} style={styles.stepCard}>
+                  <Text style={styles.stepNumber}>Step {currentStep + 1}</Text>
+                  <Text style={styles.stepText}>{recipe.steps[currentStep].replace(/^Step\s*\d+\s*:\s*/i, '')}</Text>
+                </LinearGradient>
+              </Animated.View>
+              {showStepCheck && (
+                <Animated.View style={[styles.stepCheckOverlay, { transform: [{ scale: stepCheckScale }] }]}>
+                  <View style={styles.stepCheckCircle}>
+                    <Ionicons name="checkmark" size={32} color="#fff" />
+                  </View>
+                </Animated.View>
+              )}
+            </View>
 
             {/* AI Help Button */}
             <TouchableOpacity
@@ -539,6 +575,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCheckOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderRadius: BorderRadius.xl,
+  },
+  stepCheckCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -228,7 +228,10 @@ async def security_headers_middleware(request: Request, call_next):
     return response
 
 
-# Lightweight in-process rate limiter (IP + path window)
+# Lightweight in-process rate limiter (IP + path window).
+# TODO: State is lost on restart and doesn't sync across instances. Acceptable
+# for single-instance Render deployment. Migrate to Redis-backed rate limiting
+# (e.g. slowapi with redis) before horizontal scaling.
 _rate_buckets: dict[tuple[str, str], deque] = defaultdict(deque)
 WINDOW_SECONDS = 60
 
@@ -264,7 +267,8 @@ async def rate_limit_middleware(request: Request, call_next):
         response.headers["X-Request-Id"] = request_id
         return response
 
-    client_ip = request.client.host if request.client else "unknown"
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
     key = (client_ip, path)
     now = time.time()
 
@@ -373,11 +377,13 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "environment": settings.environment,
-        "version": "1.0.0",
-        "scheduler_enabled": settings.run_notification_scheduler,
-        "startup_seeding_enabled": settings.run_startup_seeding,
-        "llm_provider": settings.llm_provider,
-    }
+    if (settings.environment or "").lower() in ("dev", "development"):
+        return {
+            "status": "healthy",
+            "environment": settings.environment,
+            "version": "1.0.0",
+            "scheduler_enabled": settings.run_notification_scheduler,
+            "startup_seeding_enabled": settings.run_startup_seeding,
+            "llm_provider": settings.llm_provider,
+        }
+    return {"status": "healthy"}

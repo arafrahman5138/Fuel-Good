@@ -79,7 +79,7 @@ export function Button({
                   paddingVertical: currentSize.paddingVertical,
                   paddingHorizontal: currentSize.paddingHorizontal,
                   borderRadius: size === 'lg' ? BorderRadius.xl : BorderRadius.md,
-                  opacity: isDisabled ? 0.4 : 1,
+                  opacity: isDisabled ? 0.55 : 1,
                 },
               ]}
             >
@@ -136,7 +136,7 @@ export function Button({
             borderWidth: variant === 'outline' ? 1 : 0,
             paddingVertical: currentSize.paddingVertical,
             paddingHorizontal: currentSize.paddingHorizontal,
-            opacity: isDisabled ? 0.4 : 1,
+            opacity: isDisabled ? 0.55 : 1,
           },
           fullWidth && styles.fullWidth,
           style,

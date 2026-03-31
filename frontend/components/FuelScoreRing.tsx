@@ -121,8 +121,8 @@ export function FuelScoreRing({
     // Quick shrink then expand to signal the swap
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(toggleScale, { toValue: 0.78, duration: 160, useNativeDriver: true, easing: Easing.in(Easing.quad) }),
-        Animated.timing(toggleOpacity, { toValue: 0, duration: 130, useNativeDriver: true }),
+        Animated.timing(toggleScale, { toValue: 0.78, duration: 200, useNativeDriver: true, easing: Easing.in(Easing.quad) }),
+        Animated.timing(toggleOpacity, { toValue: 0, duration: 170, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.spring(toggleScale, { toValue: 1, tension: 180, friction: 10, useNativeDriver: true }),
@@ -223,7 +223,7 @@ export function FuelScoreRing({
                 styles.label,
                 {
                   color: theme.textSecondary,
-                  fontSize: Math.max(10, size * 0.095),
+                  fontSize: Math.max(11, size * 0.1),
                 },
               ]}
             >

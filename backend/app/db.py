@@ -163,6 +163,7 @@ def ensure_legacy_schema_columns() -> None:
         ("users", "subscription_last_synced_at", "ALTER TABLE users ADD COLUMN subscription_last_synced_at TIMESTAMP"),
         ("users", "password_reset_code_hash", "ALTER TABLE users ADD COLUMN password_reset_code_hash VARCHAR"),
         ("users", "password_reset_code_expires_at", "ALTER TABLE users ADD COLUMN password_reset_code_expires_at TIMESTAMP"),
+        ("users", "password_reset_attempts", "ALTER TABLE users ADD COLUMN password_reset_attempts INTEGER DEFAULT 0"),
         ("users", "access_override_level", "ALTER TABLE users ADD COLUMN access_override_level VARCHAR"),
         ("users", "access_override_reason", "ALTER TABLE users ADD COLUMN access_override_reason VARCHAR"),
         ("users", "access_override_expires_at", "ALTER TABLE users ADD COLUMN access_override_expires_at TIMESTAMP"),

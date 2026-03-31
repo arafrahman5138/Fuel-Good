@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-03-23T23:36:37.990029Z",
-  "meal_count": 86,
+  "meal_count": 90,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -12250,6 +12250,454 @@
       "component_composition": null,
       "is_mes_scoreable": true,
       "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "6bdc675e-19f5-42ec-8c6d-9074bbdc1542",
+      "title": "Southwest Seasoned Steak",
+      "description": "Cubed top sirloin steak tossed in avocado oil and southwest seasoning, seared in a hot skillet for a bold, slightly charred finish. A lean, high-protein component for bowls, plates, and tacos.",
+      "ingredients": [
+        {
+          "name": "top sirloin steak, cubed",
+          "quantity": "1.5",
+          "unit": "pounds",
+          "category": "protein"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "fats"
+        },
+        {
+          "name": "southwest seasoning of choice",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Cut the steak into bite-sized cubes and add to a large bowl. Drizzle with avocado oil and season generously with the southwest seasoning. Toss until well coated.",
+        "Heat a large greased skillet over medium-high heat. Cook the steak for 6 to 8 minutes, tossing every few minutes, until done to your liking."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 8,
+      "total_time_min": 18,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 310,
+        "protein": 40,
+        "carbs": 0,
+        "fat": 16,
+        "fiber": 0,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep",
+        "quick"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "savory",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "tex-mex",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "southwest_steak_bowl_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "ea15949b-0924-4ba5-88c2-e01e25d4e7bf",
+      "title": "Jasmine Rice",
+      "description": "Simple cooked jasmine rice. A light, fluffy carb base for bowls and plates.",
+      "ingredients": [
+        {
+          "name": "jasmine rice",
+          "quantity": "1",
+          "unit": "cup (dry)",
+          "category": "grains"
+        },
+        {
+          "name": "water",
+          "quantity": "per package ratio",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Cook jasmine rice according to package directions. Fluff with a fork when done."
+      ],
+      "prep_time_min": 2,
+      "cook_time_min": 18,
+      "total_time_min": 20,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 205,
+        "protein": 4,
+        "carbs": 45,
+        "fat": 1,
+        "fiber": 1,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep"
+      ],
+      "flavor_profile": [
+        "mild",
+        "neutral"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "asian",
+      "health_benefits": [],
+      "protein_type": [],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": "southwest_steak_bowl_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "73ffc26f-4570-4eaf-acd6-f84f2f26e9a1",
+      "title": "Sweet Creamy Chipotle Sauce",
+      "description": "A creamy, sweet-heat sauce made with Greek yogurt, sour cream, chipotle hot sauce, chamoy, and honey. The perfect drizzle for southwest bowls and plates.",
+      "ingredients": [
+        {
+          "name": "light sour cream",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "fat free plain Greek yogurt",
+          "quantity": "2/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "chipotle hot sauce",
+          "quantity": "3",
+          "unit": "tablespoons",
+          "category": "sauce"
+        },
+        {
+          "name": "chamoy sauce",
+          "quantity": "1.5",
+          "unit": "tablespoons",
+          "category": "sauce"
+        },
+        {
+          "name": "honey",
+          "quantity": "1.5",
+          "unit": "tablespoons",
+          "category": "sweetener"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "teaspoon",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Combine all ingredients in a bowl and mix until smooth. Cover and refrigerate until ready to serve."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 5,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 80,
+        "protein": 4,
+        "carbs": 12,
+        "fat": 2,
+        "fiber": 0,
+        "mes_score": null,
+        "mes_display_score": null,
+        "mes_tier": null,
+        "mes_display_tier": null,
+        "mes_sub_scores": null,
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": null,
+        "mes_default_pairing_delta": null,
+        "mes_default_pairing_synergy_bonus": null,
+        "mes_default_pairing_gis_bonus": null,
+        "mes_default_pairing_explanation": null,
+        "mes_default_pairing_id": null,
+        "mes_default_pairing_title": null,
+        "mes_default_pairing_role": null,
+        "glycemic_profile": null
+      },
+      "difficulty": "easy",
+      "tags": [
+        "sauce",
+        "meal-prep",
+        "no-cook"
+      ],
+      "flavor_profile": [
+        "sweet",
+        "smoky",
+        "creamy",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "tex-mex",
+      "health_benefits": [
+        "gut_health"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": null,
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": "southwest_steak_bowl_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-03-30T12:00:00.000000"
+    },
+    {
+      "id": "7b93c714-2d61-4079-8e94-61b4b394f0b9",
+      "title": "Southwest Steak and Rice Bowl",
+      "description": "Cubed top sirloin steak seasoned with southwest spices over jasmine rice, drizzled with a sweet creamy chipotle sauce, topped with sliced avocado and fresh cilantro. Pairs with a fresh corn and black bean salsa for a complete southwest spread.",
+      "ingredients": [
+        {
+          "name": "top sirloin steak, cubed",
+          "quantity": "1.5",
+          "unit": "pounds",
+          "category": "protein"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "1",
+          "unit": "tablespoon",
+          "category": "fats"
+        },
+        {
+          "name": "southwest seasoning of choice",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "jasmine rice",
+          "quantity": "1",
+          "unit": "cup (dry)",
+          "category": "grains"
+        },
+        {
+          "name": "light sour cream",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "fat free plain Greek yogurt",
+          "quantity": "2/3",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "chipotle hot sauce",
+          "quantity": "3",
+          "unit": "tablespoons",
+          "category": "sauce"
+        },
+        {
+          "name": "chamoy sauce",
+          "quantity": "1.5",
+          "unit": "tablespoons",
+          "category": "sauce"
+        },
+        {
+          "name": "honey",
+          "quantity": "1.5",
+          "unit": "tablespoons",
+          "category": "sweetener"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "teaspoon",
+          "category": "spices"
+        },
+        {
+          "name": "avocado, sliced",
+          "quantity": "1",
+          "unit": "medium",
+          "category": "fats"
+        },
+        {
+          "name": "fresh cilantro, chopped",
+          "quantity": "for garnish",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Make the sweet creamy chipotle sauce by combining the sour cream, Greek yogurt, chipotle hot sauce, chamoy sauce, honey, and garlic powder. Stir until smooth and refrigerate until serving.",
+        "Cook the jasmine rice according to package directions. Fluff with a fork when done.",
+        "Cut the steak into bite-sized cubes and toss with avocado oil and southwest seasoning until well coated.",
+        "Heat a large greased skillet over medium-high heat. Cook the steak for 6 to 8 minutes, tossing every few minutes, until done to your liking.",
+        "Assemble each bowl with a bed of jasmine rice, top with the seasoned steak, a drizzle of the sweet chipotle sauce, sliced avocado, and fresh cilantro. Serve alongside the corn and black bean salsa."
+      ],
+      "prep_time_min": 15,
+      "cook_time_min": 15,
+      "total_time_min": 30,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 655,
+        "protein": 49,
+        "carbs": 60,
+        "fat": 23,
+        "fiber": 3,
+        "mes_default_pairing_adjusted_score": 77.2,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side"
+        ],
+        "glycemic_profile": null,
+        "mes_score": 64.9,
+        "mes_display_score": 64.9,
+        "mes_tier": "moderate",
+        "mes_display_tier": "moderate",
+        "mes_sub_scores": {
+          "gis": 42.0,
+          "pas": 97.6,
+          "fs": 25.6,
+          "fas": 86.0
+        },
+        "ingredient_gis_adjustment": 0.0,
+        "ingredient_gis_reasons": [],
+        "mes_score_with_default_pairing": 77.2,
+        "mes_default_pairing_delta": 12.3,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_gis_bonus": 6.0,
+        "mes_default_pairing_explanation": [
+          "fiber-rich side",
+          "acidic element",
+          "vegetable-forward side"
+        ],
+        "mes_default_pairing_id": "77f0d138-ba1c-4258-a6e7-3cf61723d26c",
+        "mes_default_pairing_title": "Fresh Corn and Black Bean Salsa",
+        "mes_default_pairing_role": "veg_side"
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dinner",
+        "lunch",
+        "meal-prep",
+        "quick"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "sweet",
+        "spicy",
+        "fresh"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "tex-mex",
+      "health_benefits": [
+        "muscle_recovery"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/10e7ece63175.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "southwest_steak_bowl_v1",
+      "default_pairing_ids": [
+        "77f0d138-ba1c-4258-a6e7-3cf61723d26c"
+      ],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
       "pairing_synergy_profile": null,
       "glycemic_profile": null,
       "created_at": "2026-03-30T12:00:00.000000"

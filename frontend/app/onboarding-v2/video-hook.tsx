@@ -160,6 +160,14 @@ function FeaturePill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; la
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Main Screen
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Background gradient colors per scene
+const SCENE_GRADIENTS: [string, string][] = [
+  ['#0A0A0A', '#1A0505'], // Scene 1: warm/red tint (danger)
+  ['#0A0A0A', '#0A0F0A'], // Scene 2: neutral → green tint (swap)
+  ['#0A0A0A', '#0A0F14'], // Scene 3: cool blue tint (system)
+  ['#0A0A0A', '#051A0A'], // Scene 4: green tint (CTA)
+];
+
 export default function VideoHookScreen() {
   const insets = useSafeAreaInsets();
   const analytics = useOnboardingAnalytics();
@@ -174,6 +182,9 @@ export default function VideoHookScreen() {
     new Animated.Value(0),
   ]).current;
 
+  // Background gradient interpolation
+  const gradientProgress = useRef(new Animated.Value(0)).current;
+
   // Track analytics
   useEffect(() => {
     analytics.trackScreenView(1, 'video_hook');
@@ -187,25 +198,30 @@ export default function VideoHookScreen() {
     // Show skip after 8 seconds
     timers.push(setTimeout(() => setShowSkip(true), 8000));
 
-    // Transition scenes
+    // Transition scenes with cross-fade
     for (let i = 0; i < 3; i++) {
       timers.push(
         setTimeout(() => {
-          // Fade out current
-          Animated.timing(sceneOpacities[i], {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }).start();
-          // Fade in next
-          setTimeout(() => {
-            setCurrentScene(i + 1);
+          // Cross-fade: fade out current + fade in next simultaneously
+          setCurrentScene(i + 1);
+          Animated.parallel([
+            Animated.timing(sceneOpacities[i], {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
             Animated.timing(sceneOpacities[i + 1], {
               toValue: 1,
-              duration: 400,
+              duration: 500,
               useNativeDriver: true,
-            }).start();
-          }, 300);
+            }),
+            // Gradient shift
+            Animated.timing(gradientProgress, {
+              toValue: i + 1,
+              duration: 600,
+              useNativeDriver: false,
+            }),
+          ]).start();
         }, (i + 1) * SCENE_DURATION)
       );
     }
@@ -216,7 +232,7 @@ export default function VideoHookScreen() {
   const handleContinue = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     analytics.trackEvent('onboarding_video_hook_completed', { scene_reached: currentScene + 1 });
-    router.push('/onboarding-v2/problem-statement');
+    router.push('/onboarding-v2/energy-check');
   };
 
   // ── Scene 1: "You think this is healthy?" ──
@@ -306,7 +322,7 @@ export default function VideoHookScreen() {
     </Animated.View>
   );
 
-  // ── Scene 4: CTA ──
+  // ── Scene 4: Problem statement + CTA ──
   const renderScene4 = () => (
     <Animated.View style={[styles.sceneContainer, styles.ctaScene, { opacity: sceneOpacities[3] }]}>
       <View style={styles.logoContainer}>
@@ -314,8 +330,12 @@ export default function VideoHookScreen() {
         <Text style={styles.logoText}>Fuel Good</Text>
       </View>
 
+      <Text style={styles.problemHeadline}>
+        Healthy eating shouldn't feel like punishment.
+      </Text>
+
       <Text style={styles.ctaTagline}>
-        Eat clean. Earn your cheat meals.{'\n'}Feel the difference.
+        No calorie counting. No restriction.{'\n'}Just eat real food — and earn your cheat meals.
       </Text>
 
       <View style={styles.featurePillsRow}>
@@ -326,8 +346,13 @@ export default function VideoHookScreen() {
     </Animated.View>
   );
 
+  const bgColor = gradientProgress.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: ['#0A0A0A', '#0D0A0A', '#0A0D0A', '#0A0F0A'],
+  });
+
   return (
-    <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <Animated.View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: bgColor }]}>
       <StatusBar barStyle="light-content" hidden />
 
       <View style={styles.scenesWrapper}>
@@ -357,7 +382,7 @@ export default function VideoHookScreen() {
           <OnboardingProgress total={12} current={0} />
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -618,8 +643,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: -0.5,
   },
+  problemHeadline: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 30,
+    marginBottom: 12,
+  },
   ctaTagline: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 26,

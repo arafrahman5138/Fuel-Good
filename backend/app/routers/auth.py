@@ -46,12 +46,15 @@ APPLE_ISSUER = "https://appleid.apple.com"
 _apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
 
 
+_MAX_RESET_ATTEMPTS = 5
+
+
 def _generate_password_reset_code() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _hash_password_reset_code(email: str, code: str) -> str:
-    payload = f"{settings.secret_key}:{_normalize_email(email)}:{code.strip()}".encode("utf-8")
+    payload = f"{settings.secret_key}:{_normalize_email(email)}:{code.strip().upper()}".encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -241,6 +244,7 @@ async def forgot_password(
     user.password_reset_code_expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
         minutes=settings.password_reset_token_expire_minutes
     )
+    user.password_reset_attempts = 0
     db.commit()
     logger.info(
         json.dumps(
@@ -273,7 +277,7 @@ async def forgot_password(
 @router.post("/reset-password", response_model=PasswordResetConfirmResponse)
 async def reset_password(body: PasswordResetConfirm, db: Session = Depends(get_db)):
     email = _normalize_email(body.email)
-    code = (body.code or "").strip()
+    code = (body.code or "").strip().upper()
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid or expired reset code")
@@ -282,13 +286,23 @@ async def reset_password(body: PasswordResetConfirm, db: Session = Depends(get_d
     if not user.password_reset_code_hash or not expires_at or expires_at < datetime.now(UTC).replace(tzinfo=None):
         raise HTTPException(status_code=401, detail="Invalid or expired reset code")
 
+    if (user.password_reset_attempts or 0) >= _MAX_RESET_ATTEMPTS:
+        user.password_reset_code_hash = None
+        user.password_reset_code_expires_at = None
+        user.password_reset_attempts = 0
+        db.commit()
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Please request a new reset code.")
+
     expected_hash = _hash_password_reset_code(email, code)
     if not secrets.compare_digest(user.password_reset_code_hash, expected_hash):
+        user.password_reset_attempts = (user.password_reset_attempts or 0) + 1
+        db.commit()
         raise HTTPException(status_code=401, detail="Invalid or expired reset code")
 
     user.hashed_password = get_password_hash(body.new_password)
     user.password_reset_code_hash = None
     user.password_reset_code_expires_at = None
+    user.password_reset_attempts = 0
     db.commit()
     return PasswordResetConfirmResponse(message="Password updated successfully.")
 

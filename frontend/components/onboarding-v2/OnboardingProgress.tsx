@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 
 interface Props {
   total: number;
@@ -7,18 +7,35 @@ interface Props {
 }
 
 export function OnboardingProgress({ total, current }: Props) {
+  const fillWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fillWidth, {
+      toValue: total > 0 ? (current + 1) / total : 0,
+      duration: 300,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    }).start();
+  }, [current, total]);
+
   return (
     <View style={styles.container}>
-      {Array.from({ length: total }).map((_, i) => (
-        <View
-          key={i}
+      <View style={styles.barTrack}>
+        <Animated.View
           style={[
-            styles.dot,
-            i === current && styles.dotActive,
-            i < current && styles.dotCompleted,
+            styles.barFill,
+            {
+              width: fillWidth.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%'],
+              }),
+            },
           ]}
         />
-      ))}
+      </View>
+      <Text style={styles.stepText}>
+        {current + 1}/{total}
+      </Text>
     </View>
   );
 }
@@ -26,22 +43,26 @@ export function OnboardingProgress({ total, current }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 10,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#333',
+  barTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#252525',
+    overflow: 'hidden',
   },
-  dotActive: {
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
     backgroundColor: '#22C55E',
-    width: 24,
-    borderRadius: 4,
   },
-  dotCompleted: {
-    backgroundColor: '#22C55E50',
+  stepText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    minWidth: 30,
+    textAlign: 'right',
   },
 });

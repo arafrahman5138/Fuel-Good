@@ -19,27 +19,27 @@ After a thorough audit of every screen and component, the app has a solid founda
 
 ### Phase 1: Core Polish (Highest Visual Impact)
 
-- [ ] **1. Enhance Button.tsx** — Make primary gradient more vibrant (`#22C55E → #059669`), add `usePressScale` to all variants, increase disabled state contrast
-- [ ] **2. Add press-scale to all card components** — GradientCard, CompositeMealCard, EnergyHeroCard, TodayProgressCard menu items, meals.tsx action cards — anywhere with `activeOpacity` should also scale
-- [ ] **3. Improve empty states** — Home (no meals logged), TodayProgressCard, food search empty, chronometer empty — add animated icons, gradient containers, stronger CTAs
-- [ ] **4. Settings/Preferences visual grouping** — Add section cards with subtle surface backgrounds, visual separators, expand/collapse animations for budget editor
-- [ ] **5. Enhance FuelScoreRing** — Minimum opacity 0.3 at score 0, increase label font sizes, smoother toggle animation (200ms instead of 100ms)
+- [x] **1. Enhance Button.tsx** — Make primary gradient more vibrant (`#22C55E → #059669`), add `usePressScale` to all variants, increase disabled state contrast
+- [x] **2. Add press-scale to all card components** — GradientCard, CompositeMealCard, EnergyHeroCard, TodayProgressCard menu items, meals.tsx action cards — anywhere with `activeOpacity` should also scale
+- [x] **3. Improve empty states** — Home (no meals logged), TodayProgressCard, food search empty, chronometer empty — add animated icons, gradient containers, stronger CTAs
+- [x] **4. Settings/Preferences visual grouping** — Add section cards with subtle surface backgrounds, visual separators, expand/collapse animations for budget editor
+- [x] **5. Enhance FuelScoreRing** — Minimum opacity 0.3 at score 0, increase label font sizes, smoother toggle animation (200ms instead of 100ms)
 
 ### Phase 2: Micro-Interactions & Animations
 
-- [ ] **6. Staggered entrance animations** — Profile achievements, meal plan cards, search results, cook mode ingredients — items fade/slide in sequentially
-- [ ] **7. ChipSelector polish** — Add press scale, smooth background color transition on select, scroll fade hints for horizontal chips
-- [ ] **8. Progress bar animations** — EnergyHeroCard progress bar animate width on update, XPBar increase height to 8px and add gradient fill, macro ring counters
-- [ ] **9. Cook mode celebration** — Step completion gets bounce/check animation, recipe completion gets confetti moment
-- [ ] **10. Food detail color-coded macros** — Color dots for protein/carbs/fat, animated counter when quantity changes, log success celebration animation
+- [x] **6. Staggered entrance animations** — Profile achievements, meal plan cards, search results, cook mode ingredients — items fade/slide in sequentially
+- [x] **7. ChipSelector polish** — Add press scale, smooth background color transition on select, scroll fade hints for horizontal chips
+- [x] **8. Progress bar animations** — EnergyHeroCard progress bar animate width on update, XPBar increase height to 8px and add gradient fill, macro ring counters
+- [x] **9. Cook mode celebration** — Step completion gets bounce/check animation, recipe completion gets confetti moment
+- [x] **10. Food detail color-coded macros** — Color dots for protein/carbs/fat, animated counter when quantity changes, log success celebration animation
 
 ### Phase 3: Premium Feel
 
-- [ ] **11. Skeleton loaders** — Replace ActivityIndicator with shimmer/skeleton cards for async content (home dashboard, search results, recipe detail)
-- [ ] **12. Subscribe page hero** — Add subtle gradient animation/shift, elevate recommended plan card with glow shadow, animated feature checkmarks
-- [ ] **13. Login/Auth polish** — Input focus animations (accent underline), animated error entry, social button press feedback
-- [ ] **14. Onboarding progress** — Add animated progress bar showing step X/16, step transition animations (slide/fade), completion celebration
-- [ ] **15. Scan screen** — Add scanning animation overlay, result card entrance animations, haptic on scan complete
+- [x] **11. Skeleton loaders** — Replace ActivityIndicator with shimmer/skeleton cards for async content (home dashboard, search results, recipe detail)
+- [x] **12. Subscribe page hero** — Add subtle gradient animation/shift, elevate recommended plan card with glow shadow, animated feature checkmarks
+- [x] **13. Login/Auth polish** — Input focus animations (accent underline), animated error entry, social button press feedback
+- [x] **14. Onboarding progress** — Add animated progress bar showing step X/16, step transition animations (slide/fade), completion celebration
+- [x] **15. Scan screen** — Add scanning animation overlay, result card entrance animations, haptic on scan complete
 
 ## Design Principles for Implementation
 - Use `react-native-reanimated` for all new animations (spring physics, not linear)
@@ -65,8 +65,8 @@ Full structural audit of the Real-Food codebase (~72K lines): React Native/Expo 
 - [ ] Remove dead code
 
 ### 2. Folder Restructure
-- [ ] Propose feature-based folder structure (before/after tree)
-- [ ] Each feature gets its own folder with components, hooks, utils, types
+- [x] Propose feature-based folder structure (see structural-audit.md)
+- [ ] Migrate to feature-based folders (future)
 
 ### 3. Hardcoded Value Extraction
 - [ ] Find hardcoded strings, color hexes, API URLs
@@ -84,9 +84,9 @@ Full structural audit of the Real-Food codebase (~72K lines): React Native/Expo 
 - [ ] Provide specific fix with code examples
 
 ### 6. Worst File Rewrite
-- [ ] Identify the single messiest file in the project
-- [ ] Rewrite it completely with clean naming, proper error handling
-- [ ] Add inline comments explaining every decision
+- [x] Identify the single messiest file in the project (scan/index.tsx — 2,992 lines)
+- [x] Created useScanState.ts reducer hook to consolidate 32 useState calls
+- [ ] Complete rewrite of scan/index.tsx using new hooks (future)
 
 ### 7. Documentation
 - [ ] Write comprehensive README.md covering what the app does
@@ -94,3 +94,109 @@ Full structural audit of the Real-Food codebase (~72K lines): React Native/Expo 
 
 ## Review
 (To be filled after completion)
+
+---
+
+# Onboarding V2 Optimization Plan
+
+## Goal
+Maximize conversion rate and revenue without requiring external assets (video, food photography). All items are code-implementable.
+
+---
+
+## Phase 1: High-Impact Conversion Levers (Revenue-Direct)
+
+These directly affect whether someone pays at the paywall.
+
+- [x] **1.1 — Add "Generating Your Plan" loading screen**
+  Insert a new screen between `commitment.tsx` and `paywall.tsx`. Show 8-10 seconds of animated progress messages:
+  - "Analyzing your metabolism..."
+  - "Building your meal plan..."
+  - "Calculating your flex meals..."
+  - "Personalizing your scanner..."
+  - Final checkmark: "Your plan is ready"
+
+  **Why:** Adds sunk cost (10 more seconds invested), creates anticipation ("I need to see MY plan"), and makes the paywall feel like it's gating something custom-built. This is the #1 pattern in high-converting health apps.
+
+- [x] **1.2 — Add loss aversion copy on paywall dismiss**
+  When user taps X to dismiss paywall, show a brief "what you'll lose" message before showing the discount. Examples:
+  - "Without Fuel Good, you won't know what's really in your food."
+  - "You'll lose your personalized meal plan and scanner access."
+
+  **Why:** Loss aversion is 2x stronger than gain framing. Currently the dismiss just silently bumps a discount — pair it with emotional weight.
+
+- [x] **1.3 — Fix commitment screen objection timing**
+  Change auto-navigate from 2.5s to showing a "See my options →" CTA button instead. User taps when ready.
+
+  **Why:** 2.5s isn't enough to read and process the objection response. Forcing navigation before the response lands undermines the objection handling.
+
+- [x] **1.4 — Rethink the 80% discount on 3rd paywall**
+  Replace the 80% discount (3rd dismiss) with a limited free tier entry. Show: "Try Fuel Good free with limited features — 3 scans/week, no meal plans." Add a prominent "Or unlock everything for just $11.99/year" as the alternative.
+
+  **Why:** 80% discount trains users to always dismiss twice. A limited free tier gets them using the app (converts better long-term via in-app upgrade prompts) without devaluing the product.
+
+---
+
+## Phase 2: Engagement & Depth (Hook Users)
+
+These increase time-in-onboarding and emotional investment.
+
+- [x] **2.1 — Upgrade the video hook with richer animations**
+  Make the existing animated scenes more cinematic:
+  - Dramatic before/after comparison (red flags animating in → swap to clean alternative with green score pop)
+  - Particle/confetti effect when Fuel Score hits 100 on the swap
+  - Smooth cross-fade transitions instead of opacity toggles
+  - Subtle background gradient shift per scene (warm → cool → green)
+
+- [x] **2.2 — Merge problem statement into the video hook**
+  Remove `problem-statement.tsx` as a standalone screen. Add the problem statement text as the opening of Scene 1 in video-hook.
+
+  **Why:** Eliminates one tap/screen. Every unnecessary screen is a drop-off point.
+
+- [x] **2.3 — Personalize plan preview copy based on goal**
+  Change headline from generic "Your week with Fuel Good" to goal-specific:
+  - energy → "Your energy transformation week"
+  - weight → "Your fat loss week with Fuel Good"
+  - cleaner → "Your clean eating week"
+  - muscle → "Your muscle fuel week"
+
+- [x] **2.4 — Rethink social proof screen**
+  Replace hard-coded "12,400+" stat with a "What you'll get" recap that summarizes their personalized plan (goal, flex meals, meal types, scanner). Reinforces sunk cost and value simultaneously.
+
+---
+
+## Phase 3: Growth & Data (Revenue Indirect)
+
+- [x] **3.1 — Add notification permission request**
+  Custom "Enable Notifications" card after live scan (post-aha moment). Frame: "Get daily meal suggestions and flex meal reminders." Preview notification appearance.
+
+- [x] **3.2 — Add attribution question**
+  Single question early in onboarding (after energy-check): "How did you find Fuel Good?" Options: App Store, TikTok, Instagram, YouTube, Friend/Family, Other.
+
+- [x] **3.3 — Add "premium preview" label to scan result**
+  After scan result in `live-scan.tsx`, add badge: "Premium members see this for every product they scan."
+
+---
+
+## Phase 4: Polish & Micro-Interactions
+
+- [x] **4.1 — Add selection micro-interactions to question screens**
+  Card glow/pulse on select, subtle checkmark animation, 400ms delay before auto-advance.
+
+- [x] **4.2 — Improve paywall CTA framing**
+  "Start your 7-day free trial" → "Try Free for 7 Days" (shorter, punchier). Add: "Cancel anytime. No charge until day 8."
+
+---
+
+## Implementation Order
+
+**Sprint 1 (ship first):** 1.1, 1.2, 1.3
+**Sprint 2 (engagement):** 2.2, 2.3, 1.4
+**Sprint 3 (growth):** 3.1, 3.2, 3.3
+**Sprint 4 (polish):** 2.1, 2.4, 4.1, 4.2
+
+## Success Metrics
+- **Primary:** Paywall conversion rate (target: 10%+)
+- **Secondary:** Onboarding completion rate (hook → paywall)
+- **Tertiary:** Time in onboarding (target: 10-15 min)
+- **Per-screen:** Drop-off rate at each step

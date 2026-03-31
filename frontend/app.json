@@ -33,27 +33,18 @@
               "fuelgood",
               "com.fuelgood.ios"
             ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "fuelgood",
-              "com.fuelgood.ios"
-            ]
           }
         ]
       }
     },
     "android": {
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
       "package": "com.fuelgood.app",
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE",

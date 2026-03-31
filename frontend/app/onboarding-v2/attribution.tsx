@@ -4,23 +4,23 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '../../components/onboarding-v2/OnboardingProgress';
 import { OptionCard } from '../../components/onboarding-v2/OptionCard';
-import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState';
 import { useOnboardingAnalytics } from '../../hooks/onboarding-v2/useOnboardingAnalytics';
 
-type EnergyOption = 'energized' | 'fine' | 'tired' | 'depends';
+type AttributionOption = 'app_store' | 'tiktok' | 'instagram' | 'youtube' | 'friend' | 'other';
 
-const OPTIONS: { label: string; value: EnergyOption; icon: any }[] = [
-  { label: 'Energized and focused', value: 'energized', icon: 'flash' },
-  { label: 'Fine, nothing special', value: 'fine', icon: 'remove-circle-outline' },
-  { label: 'Tired or foggy', value: 'tired', icon: 'cloudy-night' },
-  { label: 'Depends on the day', value: 'depends', icon: 'swap-horizontal' },
+const OPTIONS: { label: string; value: AttributionOption; icon: any }[] = [
+  { label: 'App Store', value: 'app_store', icon: 'logo-apple' },
+  { label: 'TikTok', value: 'tiktok', icon: 'logo-tiktok' },
+  { label: 'Instagram', value: 'instagram', icon: 'logo-instagram' },
+  { label: 'YouTube', value: 'youtube', icon: 'logo-youtube' },
+  { label: 'Friend or Family', value: 'friend', icon: 'people' },
+  { label: 'Other', value: 'other', icon: 'ellipsis-horizontal' },
 ];
 
-export default function EnergyCheckScreen() {
+export default function AttributionScreen() {
   const insets = useSafeAreaInsets();
   const analytics = useOnboardingAnalytics();
-  const setEnergyFeeling = useOnboardingState((s) => s.setEnergyFeeling);
-  const [selected, setSelected] = useState<EnergyOption | null>(null);
+  const [selected, setSelected] = useState<AttributionOption | null>(null);
 
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleSlide = useRef(new Animated.Value(16)).current;
@@ -28,7 +28,7 @@ export default function EnergyCheckScreen() {
   const optionsSlide = useRef(new Animated.Value(16)).current;
 
   useEffect(() => {
-    analytics.trackScreenView(3, 'energy_check');
+    analytics.trackScreenView(3, 'attribution');
 
     Animated.sequence([
       Animated.delay(200),
@@ -49,14 +49,12 @@ export default function EnergyCheckScreen() {
     return () => analytics.trackScreenExit(3);
   }, []);
 
-  const handleSelect = (value: EnergyOption) => {
+  const handleSelect = (value: AttributionOption) => {
     setSelected(value);
-    setEnergyFeeling(value);
-    analytics.trackEvent('onboarding_energy_check_answered', { value });
+    analytics.trackEvent('onboarding_attribution', { source: value });
 
-    // Auto-advance after 500ms
     setTimeout(() => {
-      router.push('/onboarding-v2/attribution');
+      router.push('/onboarding-v2/diet-history');
     }, 500);
   };
 
@@ -68,7 +66,7 @@ export default function EnergyCheckScreen() {
         <Animated.View
           style={{ opacity: titleOpacity, transform: [{ translateY: titleSlide }] }}
         >
-          <Text style={styles.question}>How do you usually feel after meals?</Text>
+          <Text style={styles.question}>How did you find Fuel Good?</Text>
         </Animated.View>
 
         <Animated.View

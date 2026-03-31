@@ -245,6 +245,12 @@ export function TodayProgressCard({
       {/* ── Meals ── */}
       {mealCount === 0 ? (
         <View style={styles.emptyState}>
+          <LinearGradient
+            colors={[theme.primary + '15', theme.primary + '08'] as any}
+            style={styles.emptyIcon}
+          >
+            <Ionicons name="restaurant-outline" size={26} color={theme.primary} />
+          </LinearGradient>
           <Text style={[styles.emptyTitle, { color: theme.primary }]}>
             Ready to fuel up?
           </Text>

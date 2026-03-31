@@ -135,7 +135,7 @@ export default function LiveScanScreen() {
 
   const handleContinue = () => {
     analytics.trackEvent('live_scan_continue');
-    router.push('/onboarding-v2/social-proof');
+    router.push('/onboarding-v2/notification-permission');
   };
 
   // --- INTRO PHASE ---
@@ -267,6 +267,16 @@ export default function LiveScanScreen() {
                 <Text style={styles.swapScoreLabel}>Score</Text>
               </View>
             </View>
+          </Animated.View>
+        )}
+
+        {/* Premium preview label */}
+        {showSwap && (
+          <Animated.View style={[styles.premiumBadge, { opacity: swapFade }]}>
+            <Ionicons name="diamond-outline" size={14} color="#F59E0B" />
+            <Text style={styles.premiumBadgeText}>
+              Premium members see this for every product they scan.
+            </Text>
           </Animated.View>
         )}
       </View>
@@ -579,6 +589,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#22C55E',
     textTransform: 'uppercase',
+  },
+
+  // Premium badge
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+    backgroundColor: 'rgba(245, 158, 11, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.15)',
+    borderRadius: 12,
+    padding: 14,
+  },
+  premiumBadgeText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F59E0B',
+    lineHeight: 18,
   },
 
   // Bottom

@@ -60,6 +60,14 @@ class ScanDegradedFallbackTests(unittest.TestCase):
         finally:
             db.close()
 
+    @staticmethod
+    def _fake_jpeg_bytes() -> bytes:
+        return b"\xff\xd8\xff\xe0" + (b"0" * 64)
+
+    @staticmethod
+    def _fake_heic_bytes() -> bytes:
+        return (b"\x00\x00\x00\x18ftypheic" + (b"0" * 64))
+
     def test_meal_scan_returns_degraded_payload_when_ai_analysis_fails(self) -> None:
         user = self._create_user()
         tokens = create_token_pair(str(user.id))
@@ -71,7 +79,7 @@ class ScanDegradedFallbackTests(unittest.TestCase):
             response = self.client.post(
                 "/api/scan/meal",
                 headers={"Authorization": f"Bearer {tokens['access_token']}"},
-                files={"image": ("meal.jpg", b"fake-image-bytes", "image/jpeg")},
+                files={"image": ("meal.jpg", self._fake_jpeg_bytes(), "image/jpeg")},
                 data={"meal_type": "dinner", "portion_size": "large", "source_context": "restaurant"},
             )
 
@@ -85,6 +93,69 @@ class ScanDegradedFallbackTests(unittest.TestCase):
         self.assertEqual(body.get("whole_food_status"), "unknown")
         self.assertEqual(body.get("estimated_ingredients"), [])
         self.assertEqual(body.get("normalized_ingredients"), [])
+        self.assertIn("id", body)
+
+    def test_meal_scan_continues_when_storage_upload_fails(self) -> None:
+        user = self._create_user("storage@example.com")
+        tokens = create_token_pair(str(user.id))
+        ai_result = {
+            "meal_label": "Chicken Rice Bowl",
+            "meal_context": "full_meal",
+            "meal_type": "lunch",
+            "portion_size": "medium",
+            "source_context": "home",
+            "estimated_ingredients": ["Chicken", "Rice"],
+            "normalized_ingredients": ["chicken", "rice"],
+            "nutrition_estimate": {
+                "calories": 520,
+                "protein": 34,
+                "carbs": 48,
+                "fat": 14,
+                "fiber": 4,
+            },
+            "whole_food_status": "pass",
+            "whole_food_flags": [],
+            "suggested_swaps": {},
+            "upgrade_suggestions": [],
+            "recovery_plan": [],
+            "mes": None,
+            "confidence": 0.82,
+            "confidence_breakdown": {"extraction": 0.8, "portion": 0.8, "nutrition": 0.8, "grounding": 0.8},
+            "source_model": "gemini-2.5-flash",
+            "grounding_source": None,
+            "grounding_candidates": [],
+            "prompt_version": "test",
+            "matched_recipe_id": None,
+            "matched_recipe_confidence": None,
+            "whole_food_summary": "Looks solid.",
+            "pairing_opportunity": False,
+            "pairing_recommended_recipe_id": None,
+            "pairing_recommended_title": None,
+            "pairing_projected_mes": None,
+            "pairing_projected_delta": None,
+            "pairing_reasons": [],
+            "pairing_timing": None,
+        }
+
+        with patch("app.routers.scan.analyze_meal_scan", return_value=ai_result), patch(
+            "app.routers.scan.is_supabase_storage_configured",
+            return_value=True,
+        ), patch(
+            "app.routers.scan._store_scan_image",
+            side_effect=RuntimeError("storage failed"),
+        ):
+            response = self.client.post(
+                "/api/scan/meal",
+                headers={"Authorization": f"Bearer {tokens['access_token']}"},
+                files={"image": ("meal.heic", self._fake_heic_bytes(), "image/heic")},
+                data={"meal_type": "lunch", "portion_size": "medium", "source_context": "home"},
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        body = response.json()
+        self.assertEqual(body.get("meal_label"), "Chicken Rice Bowl")
+        self.assertIsNone((body.get("image") or {}).get("signed_url") if body.get("image") else None)
+        self.assertEqual(body.get("whole_food_status"), "pass")
         self.assertIn("id", body)
 
 
