@@ -1,3 +1,6 @@
+# NOTE: This file is DOCUMENTATION ONLY. No Blueprint instance exists in Render,
+# so this yaml is NOT applied on deploy. Manage env vars via the Render dashboard.
+# See: Dashboard → fuel-good-api-production → Environment
 services:
   - type: web
     name: fuel-good-api-production
