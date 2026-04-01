@@ -134,7 +134,7 @@ export default function PaywallScreen() {
     }
 
     state.setCompletedAt(new Date());
-    router.replace('/(tabs)');
+    router.replace('/(tabs)' as any);
   };
 
   const handlePurchase = async () => {

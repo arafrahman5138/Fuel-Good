@@ -20,4 +20,4 @@ To restore from a backup:
 
 1. Ensure the local container is running.
 2. Create a fresh schema if needed.
-3. Pipe the saved SQL file into `psql` inside `realfood-postgres`.
+3. Pipe the saved SQL file into `psql` inside `fuelgood-postgres`.

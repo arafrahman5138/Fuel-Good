@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -245,7 +246,11 @@ export default function LoginScreen() {
               end={{ x: 1, y: 1 }}
               style={[styles.heroGradient, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]}
             >
-              <Ionicons name="leaf" size={48} color="#FFFFFF" />
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={styles.heroLogo}
+                resizeMode="contain"
+              />
             </LinearGradient>
           </View>
           <Text style={[styles.appName, { color: theme.text }]}>{APP_NAME}</Text>
@@ -430,6 +435,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
+  },
+  heroLogo: {
+    width: 50,
+    height: 50,
   },
   appName: {
     fontSize: 36,

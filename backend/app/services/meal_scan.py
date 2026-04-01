@@ -1435,12 +1435,15 @@ async def analyze_meal_scan(
 
 
 def _apply_correction_heuristic(ingredients: list[str], correction_text: str) -> list[str]:
-    """Apply simple text corrections to the ingredient list.
+    """Apply text corrections to the ingredient list.
 
     Supports patterns like:
       - "the rice was actually brown rice" → swap "rice" for "brown rice"
       - "remove the bread" → drop "bread"
       - "add avocado" → append "avocado"
+      - "the dressing is homemade" → qualify the dressing ingredient
+      - "it's whole wheat pasta not regular" → swap pasta for whole wheat pasta
+      - "made with olive oil not vegetable oil" → swap oil type
     """
     import re
 
@@ -1455,18 +1458,42 @@ def _apply_correction_heuristic(ingredients: list[str], correction_text: str) ->
         result = [new_name if old_name in ing.lower() else ing for ing in result]
         return result
 
-    # Pattern: "remove X" / "no X"
-    remove_match = re.search(r"(?:remove|no|without|skip)\s+(?:the\s+)?(.+)", lower)
+    # Pattern: "it's X not Y" / "used X not Y" / "made with X not Y"
+    not_match = re.search(r"(?:it'?s|used|made with|cooked (?:in|with))\s+(.+?)\s+(?:not|instead of)\s+(.+)", lower)
+    if not_match:
+        new_name = not_match.group(1).strip().rstrip(".")
+        old_name = not_match.group(2).strip().rstrip(".")
+        result = [new_name if old_name in ing.lower() else ing for ing in result]
+        return result
+
+    # Pattern: "the X is homemade" / "X is whole food" / "X is fresh"
+    qualify_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:is|are|was)\s+(homemade|whole[- ]?food|fresh|organic|house[- ]?made|real|natural)", lower)
+    if qualify_match:
+        target = qualify_match.group(1).strip()
+        qualifier = qualify_match.group(2).strip()
+        result = [f"{qualifier} {ing}" if target in ing.lower() else ing for ing in result]
+        return result
+
+    # Pattern: "remove X" / "no X" / "without X"
+    remove_match = re.search(r"(?:remove|no|without|skip|didn't have)\s+(?:the\s+)?(.+)", lower)
     if remove_match:
         remove_name = remove_match.group(1).strip().rstrip(".")
         result = [ing for ing in result if remove_name not in ing.lower()]
         return result
 
-    # Pattern: "add X"
-    add_match = re.search(r"(?:add|include|plus)\s+(?:the\s+)?(.+)", lower)
+    # Pattern: "add X" / "also had X" / "there was also X"
+    add_match = re.search(r"(?:add|include|plus|also had|there was also|i also had)\s+(?:the\s+)?(.+)", lower)
     if add_match:
         add_name = add_match.group(1).strip().rstrip(".")
         result.append(add_name)
+        return result
+
+    # Pattern: "swap X for Y" / "replace X with Y"
+    replace_match = re.search(r"(?:swap|replace|change)\s+(?:the\s+)?(.+?)\s+(?:for|with|to)\s+(.+)", lower)
+    if replace_match:
+        old_name = replace_match.group(1).strip().rstrip(".")
+        new_name = replace_match.group(2).strip().rstrip(".")
+        result = [new_name if old_name in ing.lower() else ing for ing in result]
         return result
 
     return result
@@ -1575,6 +1602,7 @@ async def recompute_meal_scan(
         "normalized_ingredients": normalized_ingredients,
         "nutrition_estimate": nutrition,
         "whole_food_status": whole_food_status,
+        "whole_food_flags": flags,
         "suggested_swaps": product_result.get("processing_flags") or {},
         "mes": mes,
         "snack_profile": snack_profile,

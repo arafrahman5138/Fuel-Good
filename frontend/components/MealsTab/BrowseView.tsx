@@ -4,7 +4,6 @@ import {
   Text,
   Image,
   StyleSheet,
-  FlatList,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -356,7 +356,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
     <TouchableOpacity
       style={[styles.card, { width: CARD_WIDTH, backgroundColor: theme.surface, borderColor: theme.border }]}
       activeOpacity={0.7}
-      onPress={() => router.push(`/browse/${item.id}`)}
+      onPress={() => router.push(`/(tabs)/meals/recipe/${item.id}`)}
     >
       <MealImage
         imageUrl={item.image_url}
@@ -826,7 +826,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
           <View style={{ position: 'relative' }}>
           <ScrollView
             horizontal
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={true}
             style={styles.filterRow}
             contentContainerStyle={styles.filterRowContent}
             contentInset={{ right: Spacing.lg }}
@@ -930,20 +930,15 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
       )}
 
       {/* Recipe Grid */}
-      <FlatList
-        style={{ flex: 1 }}
+      <FlashList
         data={displayedItems}
         renderItem={renderRecipeCard}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        columnWrapperStyle={styles.gridRow}
         contentContainerStyle={styles.gridContent}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
-        initialNumToRender={8}
-        maxToRenderPerBatch={10}
-        windowSize={11}
         refreshing={refreshing}
         onRefresh={async () => {
           setRefreshing(true);

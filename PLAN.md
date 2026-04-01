@@ -1,4 +1,4 @@
-# Real Food — Product Plan
+# Fuel Good — Product Plan
 
 ## Vision
 

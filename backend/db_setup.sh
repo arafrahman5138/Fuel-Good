@@ -12,11 +12,11 @@ if ! command -v docker &>/dev/null; then
   export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 fi
 
-DB_CONTAINER="realfood-postgres"
-DB_USER="realfood"
-DB_PASSWORD="realfood_local"
+DB_CONTAINER="fuelgood-postgres"
+DB_USER="fuelgood"
+DB_PASSWORD="fuelgood_local"
 PRIMARY_DB="fuelgood"
-LEGACY_DB="realfood"
+LEGACY_DB="fuelgood"
 RESET_DB=false
 RUN_BACKUP=true
 RUN_SEED=true
@@ -48,10 +48,10 @@ docker compose -f ../docker-compose.yml up -d
 # Wait for DB to accept connections
 echo "⏳ Waiting for PostgreSQL to be ready..."
 for i in $(seq 1 30); do
-  docker exec "$DB_CONTAINER" pg_isready -U realfood > /dev/null 2>&1 && break
+  docker exec "$DB_CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1 && break
   sleep 1
 done
-docker exec "$DB_CONTAINER" pg_isready -U realfood > /dev/null 2>&1 || {
+docker exec "$DB_CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1 || {
   echo "❌ PostgreSQL did not start in time"; exit 1;
 }
 ensure_db "$PRIMARY_DB"
@@ -123,4 +123,4 @@ fi
 
 echo ""
 echo "🎉 Local database is ready!"
-echo "   Connection: postgresql://realfood:realfood_local@localhost:5432/fuelgood"
+echo "   Connection: postgresql://fuelgood:fuelgood_local@localhost:5432/fuelgood"

@@ -92,13 +92,10 @@ export async function maybePromptForPush(trigger: 'meal_plan' | 'save_recipe' | 
 
 const ALLOWED_ROUTE_PREFIXES = [
   '/(tabs)/',
-  '/food/',
   '/cook/',
-  '/browse/',
   '/scan/',
-  '/saved',
   '/subscribe',
-  '/settings',
+  '/meal-plan-builder',
 ];
 
 function routeFromNotification(data: Record<string, any>): string {

@@ -162,7 +162,7 @@ export function TodayProgressCard({
       {/* ── Header ── */}
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() => router.push('/food/meals' as any)}
+        onPress={() => router.push('/(tabs)/index/food-meals' as any)}
         style={styles.header}
       >
         <View style={styles.headerLeft}>

@@ -1,4 +1,4 @@
-# Structural Audit Report — Real-Food (Fuel Good)
+# Structural Audit Report — Fuel Good
 
 **Date:** 2026-03-18
 **Codebase:** ~72,700 lines across React Native/Expo frontend, FastAPI backend, Next.js website

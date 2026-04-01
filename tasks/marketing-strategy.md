@@ -49,7 +49,7 @@ Create dedicated content accounts (separate from the brand account):
 | Platform | Account Type | Purpose |
 |----------|-------------|---------|
 | TikTok | @fuelgoodapp (brand) | Polished demos, announcements |
-| TikTok | @eatrealfood_ (content) | Faceless food scanning content |
+| TikTok | @fuelgoodscan (content) | Faceless food scanning content |
 | TikTok | @fuelscorecheck (content) | "What's the Fuel Score?" reaction/scan videos |
 | Instagram | @fuelgoodapp (brand) | Reels, polished content, community |
 | Instagram | @fuelscorecheck (content) | Repurposed TikTok content |

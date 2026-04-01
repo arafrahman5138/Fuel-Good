@@ -1,8 +1,8 @@
 I went through the second-pass report and sanity-checked it against the repo. A few agent findings are stale, so the real remaining work is a bit smaller than it looks.
 
 The two stale items are:
-- the iOS bundle ID is already `com.fuelgood.ios` in [app.json](/Users/arafrahman/Desktop/Real-Food/frontend/app.json)
-- Render’s expected Apple bundle ID is already `com.fuelgood.ios` in [render.yaml](/Users/arafrahman/Desktop/Real-Food/render.yaml), [config.py](/Users/arafrahman/Desktop/Real-Food/backend/app/config.py), and [release-runbook.md](/Users/arafrahman/Desktop/Real-Food/docs/ops/release-runbook.md)
+- the iOS bundle ID is already `com.fuelgood.ios` in [app.json](/Users/arafrahman/Desktop/Fuel-Good/frontend/app.json)
+- Render’s expected Apple bundle ID is already `com.fuelgood.ios` in [render.yaml](/Users/arafrahman/Desktop/Fuel-Good/render.yaml), [config.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/config.py), and [release-runbook.md](/Users/arafrahman/Desktop/Fuel-Good/docs/ops/release-runbook.md)
 
 So here’s what’s actually left.
 
@@ -48,8 +48,8 @@ So here’s what’s actually left.
 7. Expo / EAS
 - The bundle ID issue is already fixed in code, so ignore that part of the agent report.
 - You still need to reconcile the two EAS configs:
-  - [eas.json](/Users/arafrahman/Desktop/Real-Food/eas.json)
-  - [eas.json](/Users/arafrahman/Desktop/Real-Food/frontend/eas.json)
+  - [eas.json](/Users/arafrahman/Desktop/Fuel-Good/eas.json)
+  - [eas.json](/Users/arafrahman/Desktop/Fuel-Good/frontend/eas.json)
 - Set the missing EAS env vars/secrets, especially:
   - `EXPO_PUBLIC_API_URL`
   - `EXPO_PUBLIC_SUPABASE_URL`
@@ -72,4 +72,4 @@ So here’s what’s actually left.
 **Bottom line**
 You are past the Apple ID / bundle ID problems. The real remaining blockers are now mostly operational: RevenueCat, EAS env/config, screenshots, first build upload, and the shared notification secret.
 
-If you want, I can turn this into a strict launch checklist in [Agent_results.md](/Users/arafrahman/Desktop/Real-Food/Agent_results.md) or a new `docs/ops/LAUNCH_REMAINING.md` so you can work through it cleanly.
+If you want, I can turn this into a strict launch checklist in [Agent_results.md](/Users/arafrahman/Desktop/Fuel-Good/Agent_results.md) or a new `docs/ops/LAUNCH_REMAINING.md` so you can work through it cleanly.

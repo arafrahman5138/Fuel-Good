@@ -91,6 +91,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const slotWidth = tabRowWidth > 0 ? tabRowWidth / tabCount : 0;
   const bubbleWidth = Math.max(0, slotWidth - BUBBLE_SLOT_INSET * 2);
   const compactTabs = slotWidth > 0 && slotWidth < 86;
+  const iconsOnly = slotWidth > 0 && slotWidth < 68;
 
   // Bubble slide + icon pop animation
   useEffect(() => {
@@ -275,21 +276,23 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                       color: iconColor,
                       size: compactTabs ? 22 : 24,
                     })}
-                    <Text
-                      style={[
-                        styles.tabLabel,
-                        {
-                          color: iconColor,
-                          fontWeight: '400',
-                          fontSize: compactTabs ? 10 : FontSize.xs,
-                        },
-                      ]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.82}
-                    >
-                      {displayLabel}
-                    </Text>
+                    {!iconsOnly && (
+                      <Text
+                        style={[
+                          styles.tabLabel,
+                          {
+                            color: iconColor,
+                            fontWeight: '400',
+                            fontSize: compactTabs ? 10 : FontSize.xs,
+                          },
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.82}
+                      >
+                        {displayLabel}
+                      </Text>
+                    )}
                   </Animated.View>
                 </TouchableOpacity>
               );
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm,
     width: '100%',
   },
   pillWrapper: {

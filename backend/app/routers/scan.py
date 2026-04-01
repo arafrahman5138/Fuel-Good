@@ -833,8 +833,10 @@ async def correct_meal_scan(
         raise HTTPException(status_code=404, detail="Meal scan not found.")
 
     # Build a corrected ingredient list by merging user feedback
+    raw_list = scan.normalized_ingredients or scan.estimated_ingredients or []
     original_ingredients = [
-        comp.get("name", "") for comp in (scan.normalized_ingredients or scan.estimated_ingredients or [])
+        comp.get("name", "") if isinstance(comp, dict) else str(comp)
+        for comp in raw_list
     ]
     corrected_ingredients = original_ingredients.copy()
 
@@ -872,10 +874,16 @@ async def correct_meal_scan(
 
         # Recompute Fuel Score with corrected data
         try:
+            # Normalize ingredients to dicts for compute_fuel_score (expects {name, role})
+            raw_ingredients = result.get("normalized_ingredients") or result.get("estimated_ingredients") or []
+            normalized_components = [
+                ing if isinstance(ing, dict) else {"name": str(ing), "role": "other"}
+                for ing in raw_ingredients
+            ]
             fuel_result = compute_fuel_score(
                 source_type="scan",
                 nutrition=result.get("nutrition_estimate"),
-                components=result.get("normalized_ingredients") or result.get("estimated_ingredients"),
+                components=normalized_components,
                 source_context=scan.source_context,
                 whole_food_status=result.get("whole_food_status"),
                 whole_food_flags=result.get("whole_food_flags"),
@@ -900,10 +908,13 @@ async def correct_meal_scan(
     serialized = _serialize_scan(scan)
     if recomputed_fuel_reasoning:
         serialized["fuel_reasoning"] = recomputed_fuel_reasoning
-    serialized["image"] = await _storage_reference_async(
-        bucket=scan.image_bucket,
-        path=scan.image_path,
-        mime_type=scan.image_mime_type,
-        fallback_url=scan.image_url,
-    )
+    try:
+        serialized["image"] = await _storage_reference_async(
+            bucket=scan.image_bucket,
+            path=scan.image_path,
+            mime_type=scan.image_mime_type,
+            fallback_url=scan.image_url,
+        )
+    except Exception:
+        serialized["image"] = None
     return serialized

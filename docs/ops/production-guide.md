@@ -15,7 +15,7 @@
 - Enable Postgres `pgvector`.
 - Create private Storage buckets `meal-scans` and `label-scans`.
 - Enable Realtime for `food_logs`, `daily_nutrition_summary`, and `users`.
-- Create the production Render API service from [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml).
+- Create the production Render API service from [`render.yaml`](/Users/arafrahman/Desktop/Fuel-Good/render.yaml).
 - Point `api.fuelgood.app` at the production API service.
 - Create a Supabase Cron job that calls `POST https://api.fuelgood.app/api/internal/notifications/run` every `5 minutes` with header `x-notification-runner-secret: <NOTIFICATION_RUNNER_SECRET>`.
 - Only create temporary staging services if you need migration rehearsal or scheduled notification QA before release.
@@ -63,7 +63,7 @@
 - Deploy the production API.
 - Verify production `GET /health`.
 - Trigger the Supabase Cron endpoint once manually and confirm the run summary looks sane.
-- Run the hosted smoke test against production with [`backend/scripts/smoke_test.sh`](/Users/arafrahman/Desktop/Real-Food/backend/scripts/smoke_test.sh).
+- Run the hosted smoke test against production with [`backend/scripts/smoke_test.sh`](/Users/arafrahman/Desktop/Fuel-Good/backend/scripts/smoke_test.sh).
 
 - Build the iOS preview app with EAS.
 - Install the preview/TestFlight build on at least 2 physical iPhones.

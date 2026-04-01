@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -87,7 +88,11 @@ export default function NotificationPermissionScreen() {
             ]}
           >
             <View style={styles.notifHeader}>
-              <Ionicons name="leaf" size={16} color="#22C55E" />
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={styles.notifLogo}
+                resizeMode="contain"
+              />
               <Text style={styles.notifApp}>Fuel Good</Text>
               <Text style={styles.notifTime}>now</Text>
             </View>
@@ -177,6 +182,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap: 6,
+  },
+  notifLogo: {
+    width: 16,
+    height: 16,
   },
   notifApp: {
     fontSize: 13,

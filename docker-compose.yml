@@ -1,11 +1,11 @@
 services:
   db:
     image: pgvector/pgvector:pg16
-    container_name: realfood-postgres
+    container_name: fuelgood-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: realfood
-      POSTGRES_PASSWORD: realfood_local
+      POSTGRES_USER: fuelgood
+      POSTGRES_PASSWORD: fuelgood_local
       POSTGRES_DB: fuelgood
     ports:
       - "5432:5432"

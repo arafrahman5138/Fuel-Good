@@ -1,13 +1,13 @@
 {
   "source": "live_database",
-  "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
+  "database_url": "postgresql://fuelgood:fuelgood_local@localhost:5432/fuelgood",
   "exported_at": "2026-03-23T23:36:37.990029Z",
   "meal_count": 90,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
       "title": "Air Fryer Gochujang Chicken Skewers",
-      "description": "If you\u2019re bored of plain chicken and rice, these Korean-inspired skewers are about to change the game. They\u2019re sweet, spicy, and so addicting with that gochujang marinade. Made in the air fryer, they cook up fast with the perfect charred, smoky flavor that takes them over the top. Whether you\u2019re grilling them, baking them in the oven, or air frying, they\u2019re an easy, bold dinner that\u2019s ready in 30 minutes. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "If you\u2019re bored of plain chicken and rice, these Korean-inspired skewers are about to change the game. They\u2019re sweet, spicy, and so addicting with that gochujang marinade. Made in the air fryer, they cook up fast with the perfect charred, smoky flavor that takes them over the top. Whether you\u2019re grilling them, baking them in the oven, or air frying, they\u2019re an easy, bold dinner that\u2019s ready in 30 minutes. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "chicken thighs, cut into bite-sized pieces",
@@ -174,7 +174,7 @@
     {
       "id": "8516ac4e-36a2-4724-8e30-f053cf9a3a93",
       "title": "Almond Raspberry Scones",
-      "description": "If you love that buttery, flaky almond croissant vibe but want something a little easier to make at home, these Almond Croissant Raspberry Scones are exactly the answer. They\u2019re tender and flaky with just the right amount of almond flavor, loaded with juicy bursts of raspberries that balance out the richness perfectly. Topped with sliced almonds and a dusting of powdered sugar, they look and taste like something straight from your favorite bakery. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 3 whole-food ingredient swap(s).",
+      "description": "If you love that buttery, flaky almond croissant vibe but want something a little easier to make at home, these Almond Croissant Raspberry Scones are exactly the answer. They\u2019re tender and flaky with just the right amount of almond flavor, loaded with juicy bursts of raspberries that balance out the richness perfectly. Topped with sliced almonds and a dusting of powdered sugar, they look and taste like something straight from your favorite bakery. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 3 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "\u00be cups cassava flour, additional for dusting surface",
@@ -319,7 +319,7 @@
     {
       "id": "c3e24871-9bd5-420f-85fb-8a39788e3724",
       "title": "Apple Cider Spice Loaf",
-      "description": "There\u2019s nothing that says fall quite like the smell of apple cider simmering on the stove. It fills the kitchen with that cozy mix of apples, cinnamon, and spice that makes you want to put on a sweater, light a candle, and bake something warm. Living here in Boston, one of my favorite New England weekend activities is going to different farms, trying every apple cider donut I can find, and deciding which one\u2019s the best \u2014 it\u2019s serious business at this point. There\u2019s just something about biting into a warm, sugar-dusted donut with crisp air and colorful leaves all around that makes you fall in love with the season all over again. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 5 whole-food ingredient swap(s).",
+      "description": "There\u2019s nothing that says fall quite like the smell of apple cider simmering on the stove. It fills the kitchen with that cozy mix of apples, cinnamon, and spice that makes you want to put on a sweater, light a candle, and bake something warm. Living here in Boston, one of my favorite New England weekend activities is going to different farms, trying every apple cider donut I can find, and deciding which one\u2019s the best \u2014 it\u2019s serious business at this point. There\u2019s just something about biting into a warm, sugar-dusted donut with crisp air and colorful leaves all around that makes you fall in love with the season all over again. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 5 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "1\u00be cups cassava flour",
@@ -598,7 +598,7 @@
     {
       "id": "5b3906f5-dcf4-4e0e-9346-592649762845",
       "title": "Avocado Quinoa Power Salad",
-      "description": "This Avocado Quinoa Salad is a spot-on copycat of my all-time favorite from Mendocino Farms, where I actually used to work for a summer back in 2015. It\u2019s loaded with crispy quinoa, fresh veggies, and a zesty chipotle vinaigrette that\u2019s just irresistible. I loved it so much, I had to recreate it at home \u2013 and now you can too! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "This Avocado Quinoa Salad is a spot-on copycat of my all-time favorite from Mendocino Farms, where I actually used to work for a summer back in 2015. It\u2019s loaded with crispy quinoa, fresh veggies, and a zesty chipotle vinaigrette that\u2019s just irresistible. I loved it so much, I had to recreate it at home \u2013 and now you can too! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "honey",
@@ -800,7 +800,7 @@
     {
       "id": "06ea19af-dd1a-48ff-b360-301fb5499cc9",
       "title": "Baked Ziti with Brown Rice Pasta",
-      "description": "Let\u2019s learn how to make BAKED ZITI, the perfect family dinner everyone will love! The creaminess of the ricotta, the crispy cheese layer on top, and the tangy but sweet pasta sauce turn this into the most memorable dish ever. It\u2019s super easy to make and even prep ahead of time for those busy days. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "Let\u2019s learn how to make BAKED ZITI, the perfect family dinner everyone will love! The creaminess of the ricotta, the crispy cheese layer on top, and the tangy but sweet pasta sauce turn this into the most memorable dish ever. It\u2019s super easy to make and even prep ahead of time for those busy days. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "ziti brown rice + quinoa pasta",
@@ -1005,7 +1005,7 @@
     {
       "id": "3416542c-c4a7-4e6e-8116-a61b27e867bb",
       "title": "Banana Cake with Brown Butter Frosting",
-      "description": "The most moist banana cake you\u2019ll ever have and because it has bananas in it, it can even be breakfast! It\u2019s finished off with a brown butter cream cheese frosting that makes this dessert irresistible! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "The most moist banana cake you\u2019ll ever have and because it has bananas in it, it can even be breakfast! It\u2019s finished off with a brown butter cream cheese frosting that makes this dessert irresistible! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "cassava flour",
@@ -1159,7 +1159,7 @@
     {
       "id": "dfc37c6b-0c6e-4d24-a7b7-e4cd72ec0ed7",
       "title": "Bang Bang Chicken Skewers",
-      "description": "Bang Bang Chicken Skewers in the air fryer and in under 30 minutes! This easy and healthy dinner packs so much flavor from the creamy bang bang sauce that\u2019s a bit spicy and a bit sweet. Serve it with rice and some steamed broccoli for the complete meal! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Bang Bang Chicken Skewers in the air fryer and in under 30 minutes! This easy and healthy dinner packs so much flavor from the creamy bang bang sauce that\u2019s a bit spicy and a bit sweet. Serve it with rice and some steamed broccoli for the complete meal! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "boneless skinless chicken thighs",
@@ -1377,7 +1377,7 @@
     {
       "id": "25e84e4f-a93f-4dc0-b3c6-b2493a9360e7",
       "title": "Beef and Broccoli Stir-Fry",
-      "description": "If you\u2019re craving classic Chinese takeout, this beef and broccoli stir fry is about to become your new favorite. It\u2019s everything you love about takeout \u2014 tender, melt-in-your-mouth steak paired with crisp broccoli \u2014 but made at home and even better. The sauce is perfectly balanced: savory with a touch of sweetness and just a hint of heat, clinging to every bite. Plus, it all comes together in one pan in under 30 minutes, making it a fantastic weeknight dinner when time is tight but you still want something special. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "If you\u2019re craving classic Chinese takeout, this beef and broccoli stir fry is about to become your new favorite. It\u2019s everything you love about takeout \u2014 tender, melt-in-your-mouth steak paired with crisp broccoli \u2014 but made at home and even better. The sauce is perfectly balanced: savory with a touch of sweetness and just a hint of heat, clinging to every bite. Plus, it all comes together in one pan in under 30 minutes, making it a fantastic weeknight dinner when time is tight but you still want something special. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "flank, NY strip, or ribeye steak, thinly sliced against the grain",
@@ -1580,7 +1580,7 @@
     {
       "id": "05c621b2-c567-41d9-b440-ad6b4fd6f35b",
       "title": "Beef and Cheese Borek Rolls",
-      "description": "Flavor-first recipe upgraded for clean whole-food eating. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "Flavor-first recipe upgraded for clean whole-food eating. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "ground beef 85/15 or 90/10",
@@ -1806,7 +1806,7 @@
     {
       "id": "8d5e91fc-7202-4dae-b4e2-0b19e6db2205",
       "title": "Beef and Lamb Sausage Rolls",
-      "description": "Sausage rolls are a staple in the UK \u2014 something you\u2019ll see in bakeries, caf\u00e9s, grocery stores, and even train stations \u2014 and they\u2019re popular for a reason. Flaky pastry wrapped around a savory filling is hard to beat, but I\u2019ve always wanted to make my own version at home. The meat filling in this recipe is inspired by Bosnian \u0107evapi, using a beef-and-lamb mixture that stays incredibly juicy and tender inside crisp, golden puff pastry. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "Sausage rolls are a staple in the UK \u2014 something you\u2019ll see in bakeries, caf\u00e9s, grocery stores, and even train stations \u2014 and they\u2019re popular for a reason. Flaky pastry wrapped around a savory filling is hard to beat, but I\u2019ve always wanted to make my own version at home. The meat filling in this recipe is inspired by Bosnian \u0107evapi, using a beef-and-lamb mixture that stays incredibly juicy and tender inside crisp, golden puff pastry. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "ground beef",
@@ -2171,7 +2171,7 @@
     {
       "id": "331d6f6b-1128-466d-9f6d-1de9081b3794",
       "title": "Beef Chorizo and Chicken Pasta",
-      "description": "Creamy pasta with beef chorizo AND chicken \u2013 double the protein, double the flavor! The best way to describe this pasta is flavorful. The beef chorizo adds so much spice to the sauce so you don\u2019t even need to add much to the pasta for it to be the best you\u2019ve ever had! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "Creamy pasta with beef chorizo AND chicken \u2013 double the protein, double the flavor! The best way to describe this pasta is flavorful. The beef chorizo adds so much spice to the sauce so you don\u2019t even need to add much to the pasta for it to be the best you\u2019ve ever had! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "chicken breast",
@@ -3476,7 +3476,7 @@
     {
       "id": "cb558ac2-8ddf-430f-9b9c-e458ccc7623c",
       "title": "Cassava Flour Beignets",
-      "description": "Transport yourself to the magical streets of New Orleans with these fluffy pillow-like Beignets! Inspired by The Princess and the Frog movie and my own trip to Cafe du Monde, these beignets packed with a mountain top of powdered sugar will leave you speechless with every bite. Not to mention, they\u2019re shockingly so easy to make from scratch! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "Transport yourself to the magical streets of New Orleans with these fluffy pillow-like Beignets! Inspired by The Princess and the Frog movie and my own trip to Cafe du Monde, these beignets packed with a mountain top of powdered sugar will leave you speechless with every bite. Not to mention, they\u2019re shockingly so easy to make from scratch! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "cassava flour",
@@ -4821,7 +4821,7 @@
     {
       "id": "509a0794-9599-4e2e-8993-b4f45a4c00a9",
       "title": "Classic Apple Hand Pies",
-      "description": "If you love the apple pie from McDonald\u2019s, you\u2019ll love this simple copycat recipe that you can make at home and even better! The pie is super flaky and crispy while the filling is so ooey and gooey with the most delicious apple spice flavor. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "If you love the apple pie from McDonald\u2019s, you\u2019ll love this simple copycat recipe that you can make at home and even better! The pie is super flaky and crispy while the filling is so ooey and gooey with the most delicious apple spice flavor. Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "pastry package (1 pound - 2 sheets)",
@@ -5083,7 +5083,7 @@
     {
       "id": "eea41680-b2c4-4d52-b683-60c8bbcebb57",
       "title": "Creamy Avocado Verde Salsa",
-      "description": "This copycat Avocado Verde Salsa from Taco Bell is a game-changer, blending the creamy goodness of ripe avocados with the zesty punch of green tomatillos, jalape\u00f1os, and a squeeze of fresh lime juice. It\u2019s perfect for topping your tacos, dipping chips, or spreading on your favorite sandwiches, bringing that authentic flavor home. Super quick and easy to whip up, it\u2019s the ultimate way to take your Mexican-inspired dishes to the next level! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "This copycat Avocado Verde Salsa from Taco Bell is a game-changer, blending the creamy goodness of ripe avocados with the zesty punch of green tomatillos, jalape\u00f1os, and a squeeze of fresh lime juice. It\u2019s perfect for topping your tacos, dipping chips, or spreading on your favorite sandwiches, bringing that authentic flavor home. Super quick and easy to whip up, it\u2019s the ultimate way to take your Mexican-inspired dishes to the next level! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "olive oil",
@@ -5203,7 +5203,7 @@
     {
       "id": "223c561e-d564-4fc7-a6ed-655b93e03d52",
       "title": "Creamy Banana Milk",
-      "description": "With just four ingredients and five minutes, you can make your own batch of banana milk at home! And if you haven\u2019t tried banana milk yet, you\u2019re seriously missing out on this super popular drink in South Korea. It\u2019s creamy, naturally sweet, and absolutely delicious on its own or as a dreamy addition to your coffee or matcha. Trust me, once you make it, you\u2019ll wonder how you ever lived without it! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "With just four ingredients and five minutes, you can make your own batch of banana milk at home! And if you haven\u2019t tried banana milk yet, you\u2019re seriously missing out on this super popular drink in South Korea. It\u2019s creamy, naturally sweet, and absolutely delicious on its own or as a dreamy addition to your coffee or matcha. Trust me, once you make it, you\u2019ll wonder how you ever lived without it! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "whole milk",
@@ -6318,7 +6318,7 @@
     {
       "id": "651c53a5-635a-4088-b226-5259046cf097",
       "title": "Homestyle Smash Burger",
-      "description": "Making a Big Mac at home and even better is easier than you think! Two patties sandwiched between THREE BUNS and layers of Big Mac sauce, lettuce, onions, pickles, and cheese \u2013 what could truly be better? It\u2019s juicy, saucy, comforting, and everything you want in the perfect burger! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Making a Big Mac at home and even better is easier than you think! Two patties sandwiched between THREE BUNS and layers of Big Mac sauce, lettuce, onions, pickles, and cheese \u2013 what could truly be better? It\u2019s juicy, saucy, comforting, and everything you want in the perfect burger! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "mayonnaise",
@@ -7275,7 +7275,7 @@
     {
       "id": "99eab198-a1ed-45e6-9819-7ab423c3c5a7",
       "title": "Pistachio Baklava Pastries",
-      "description": "Baklawa meet croissant! Croissant meet Baklawa! This might quite possibly be the best dessert fusion you\u2019ll ever have. Imagine a crispy flakey croissant filled with spiced pistachio filling and orange blossom syrup, and then finished off with crushed pistachios and rose petals! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Baklawa meet croissant! Croissant meet Baklawa! This might quite possibly be the best dessert fusion you\u2019ll ever have. Imagine a crispy flakey croissant filled with spiced pistachio filling and orange blossom syrup, and then finished off with crushed pistachios and rose petals! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "8 croissants, 1 to 3 days old",
@@ -8639,7 +8639,7 @@
     {
       "id": "c975e136-9360-44d5-b763-473b9713a2f0",
       "title": "Slow-Simmered Beef Bone Broth",
-      "description": "There\u2019s nothing like a cozy, warm bowl of beef bone broth, especially when the weather starts to cool down. This homemade version has all the flavor and goodness you\u2019ll ever need, and it\u2019s so much better than anything you\u2019ll find on store shelves! Roasting the bones and veggies before simmering them adds layers of deep, rich flavor, and with warming spices like cinnamon and turmeric, this broth is perfect for sipping straight or using as a base for soups, stews, or even sauces. Let\u2019s dive into how to make this cozy, nutrient-packed beef bone broth in the Instant Pot! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "There\u2019s nothing like a cozy, warm bowl of beef bone broth, especially when the weather starts to cool down. This homemade version has all the flavor and goodness you\u2019ll ever need, and it\u2019s so much better than anything you\u2019ll find on store shelves! Roasting the bones and veggies before simmering them adds layers of deep, rich flavor, and with warming spices like cinnamon and turmeric, this broth is perfect for sipping straight or using as a base for soups, stews, or even sauces. Let\u2019s dive into how to make this cozy, nutrient-packed beef bone broth in the Instant Pot! Crafted with Fuel Good standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "beef bones (marrow bones, knuckles, or oxtails)",

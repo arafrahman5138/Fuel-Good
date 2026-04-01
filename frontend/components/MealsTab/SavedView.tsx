@@ -30,7 +30,7 @@ export function SavedView() {
           <Text style={[styles.emptySub, { color: theme.textSecondary }]}>Browse meals and tap the bookmark icon to save your favorites.</Text>
           <TouchableOpacity
             style={[styles.emptyCta, { backgroundColor: theme.primary }]}
-            onPress={() => router.push('/browse/')}
+            onPress={() => router.push('/(tabs)/meals/browse')}
             activeOpacity={0.8}
           >
             <Ionicons name="search-outline" size={16} color="#FFFFFF" />
@@ -40,7 +40,7 @@ export function SavedView() {
       ) : (
         recipes.map((recipe) => (
           <Card key={recipe.id} style={styles.recipeCard} padding={Spacing.md}>
-            <TouchableOpacity onPress={() => router.push(`/saved/${encodeURIComponent(recipe.id)}`)} activeOpacity={0.75}>
+            <TouchableOpacity onPress={() => router.push(`/(tabs)/meals/saved-recipe/${encodeURIComponent(recipe.id)}`)} activeOpacity={0.75}>
               <Text style={[styles.title, { color: theme.text }]}>{recipe.title}</Text>
               {!!cleanRecipeDescription(recipe.description) && (
                 <Text style={[styles.desc, { color: theme.textSecondary }]} numberOfLines={2}>

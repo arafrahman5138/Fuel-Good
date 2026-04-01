@@ -7,9 +7,9 @@ if ! command -v docker >/dev/null 2>&1; then
   export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 fi
 
-DB_CONTAINER="${DB_CONTAINER:-realfood-postgres}"
+DB_CONTAINER="${DB_CONTAINER:-fuelgood-postgres}"
 DB_NAME="${DB_NAME:-fuelgood}"
-DB_USER="${DB_USER:-realfood}"
+DB_USER="${DB_USER:-fuelgood}"
 BACKUP_DIR="${BACKUP_DIR:-$(pwd)/backups}"
 
 mkdir -p "$BACKUP_DIR"

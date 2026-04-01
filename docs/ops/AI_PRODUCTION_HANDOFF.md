@@ -14,11 +14,11 @@ Take Fuel Good from the current repo state to a production-ready iOS/TestFlight 
 - Billing: RevenueCat + App Store subscriptions
 
 ## Repo References
-- Production checklist: [production-guide.md](/Users/arafrahman/Desktop/Real-Food/docs/ops/production-guide.md)
-- Release runbook: [release-runbook.md](/Users/arafrahman/Desktop/Real-Food/docs/ops/release-runbook.md)
-- Render blueprint/env defaults: [render.yaml](/Users/arafrahman/Desktop/Real-Food/render.yaml)
-- Backend production env template: [backend/.env.render.production.example](/Users/arafrahman/Desktop/Real-Food/backend/.env.render.production.example)
-- Expo app config: [app.json](/Users/arafrahman/Desktop/Real-Food/frontend/app.json)
+- Production checklist: [production-guide.md](/Users/arafrahman/Desktop/Fuel-Good/docs/ops/production-guide.md)
+- Release runbook: [release-runbook.md](/Users/arafrahman/Desktop/Fuel-Good/docs/ops/release-runbook.md)
+- Render blueprint/env defaults: [render.yaml](/Users/arafrahman/Desktop/Fuel-Good/render.yaml)
+- Backend production env template: [backend/.env.render.production.example](/Users/arafrahman/Desktop/Fuel-Good/backend/.env.render.production.example)
+- Expo app config: [app.json](/Users/arafrahman/Desktop/Fuel-Good/frontend/app.json)
 
 ## Non-Negotiables
 - Do not change the iOS bundle ID from `com.fuelgood.ios`
@@ -139,11 +139,11 @@ Create or confirm:
 - `fuel-good-api-production`
 
 Use config from:
-- [render.yaml](/Users/arafrahman/Desktop/Real-Food/render.yaml)
+- [render.yaml](/Users/arafrahman/Desktop/Fuel-Good/render.yaml)
 
 ### 14. Backend production env vars
 Set all required values from:
-- [backend/.env.render.production.example](/Users/arafrahman/Desktop/Real-Food/backend/.env.render.production.example)
+- [backend/.env.render.production.example](/Users/arafrahman/Desktop/Fuel-Good/backend/.env.render.production.example)
 
 Critical vars:
 - `DATABASE_URL`
@@ -201,7 +201,7 @@ Confirm current iOS bundle ID in repo:
 - `com.fuelgood.ios`
 
 File:
-- [app.json](/Users/arafrahman/Desktop/Real-Food/frontend/app.json)
+- [app.json](/Users/arafrahman/Desktop/Fuel-Good/frontend/app.json)
 
 ### 21. EAS secrets / env vars
 Set:

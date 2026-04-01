@@ -249,7 +249,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
         {/* Header — tappable to navigate to full coach */}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push('/food/metabolic-coach' as any)}
+          onPress={() => router.push('/(tabs)/index/metabolic-coach' as any)}
           style={styles.header}
         >
           <LinearGradient
@@ -322,7 +322,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
               return (
                 <TouchableOpacity
                   key={`${meal.recipe_id}-${idx}`}
-                  onPress={() => router.push(`/browse/${meal.recipe_id}` as any)}
+                  onPress={() => router.push(`/(tabs)/meals/recipe/${meal.recipe_id}` as any)}
                   activeOpacity={0.7}
                   style={[
                     styles.mealPreviewRow,
@@ -385,7 +385,7 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
         {/* ── See All CTA ── */}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push('/food/metabolic-coach' as any)}
+          onPress={() => router.push('/(tabs)/index/metabolic-coach' as any)}
           style={[styles.seeAllBtn, { backgroundColor: 'rgba(59, 130, 246, 0.10)' }]}
         >
           <Text style={styles.seeAllText}>See full coaching breakdown</Text>

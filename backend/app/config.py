@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "Fuel Good API"
     environment: str = "development"  # development | staging | production
-    database_url: str = "postgresql://realfood:realfood_local@localhost:5432/fuelgood"
+    database_url: str = "postgresql://fuelgood:fuelgood_local@localhost:5432/fuelgood"
     secret_key: str = "dev-secret-key-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30

@@ -73,12 +73,3 @@ export function initializeErrorReporting(): void {
   });
 }
 
-export function captureUiError(error: unknown, context?: Record<string, unknown>): void {
-  const serialized = serializeError(error);
-  void reportClientError({
-    source: 'ui',
-    message: serialized.message,
-    stack: serialized.stack,
-    context,
-  });
-}

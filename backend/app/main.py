@@ -234,6 +234,24 @@ async def security_headers_middleware(request: Request, call_next):
 # (e.g. slowapi with redis) before horizontal scaling.
 _rate_buckets: dict[tuple[str, str], deque] = defaultdict(deque)
 WINDOW_SECONDS = 60
+MAX_RATE_BUCKETS = 50_000
+CLEANUP_INTERVAL_SECONDS = 300
+_last_cleanup: float = 0.0
+
+
+def _cleanup_rate_buckets() -> None:
+    """Periodically evict stale rate-limit entries to prevent unbounded growth."""
+    global _last_cleanup
+    now = time.time()
+    if now - _last_cleanup < CLEANUP_INTERVAL_SECONDS:
+        return
+    _last_cleanup = now
+    stale_keys = [
+        key for key, q in _rate_buckets.items()
+        if not q or (now - q[-1]) > WINDOW_SECONDS
+    ]
+    for key in stale_keys:
+        del _rate_buckets[key]
 
 
 @app.middleware("http")
@@ -271,6 +289,11 @@ async def rate_limit_middleware(request: Request, call_next):
     client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
     key = (client_ip, path)
     now = time.time()
+
+    # Periodic cleanup to prevent unbounded memory growth.
+    _cleanup_rate_buckets()
+    if len(_rate_buckets) > MAX_RATE_BUCKETS:
+        _rate_buckets.clear()
 
     # Stricter budget for auth endpoints.
     auth_sensitive = (

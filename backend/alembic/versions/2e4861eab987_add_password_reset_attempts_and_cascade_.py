@@ -8,6 +8,7 @@ Create Date: 2026-03-30 19:35:04.548290
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 revision: str = '2e4861eab987'
@@ -45,7 +46,11 @@ _USER_FK_TABLES = [
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('password_reset_attempts', sa.Integer(), nullable=True))
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    user_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "password_reset_attempts" not in user_columns:
+        op.add_column('users', sa.Column('password_reset_attempts', sa.Integer(), nullable=True))
 
     for table in _USER_FK_TABLES:
         fk_name = f"{table}_user_id_fkey"
@@ -54,7 +59,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'password_reset_attempts')
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    user_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "password_reset_attempts" in user_columns:
+        op.drop_column('users', 'password_reset_attempts')
 
     for table in _USER_FK_TABLES:
         fk_name = f"{table}_user_id_fkey"

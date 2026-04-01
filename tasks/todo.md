@@ -1,4 +1,4 @@
-# Work Plans - Real-Food Project
+# Work Plans - Fuel Good Project
 
 ---
 
@@ -53,7 +53,7 @@ After a thorough audit of every screen and component, the app has a solid founda
 # Structural Audit Plan
 
 ## Overview
-Full structural audit of the Real-Food codebase (~72K lines): React Native/Expo frontend, FastAPI backend, Next.js website.
+Full structural audit of the Fuel Good codebase (~72K lines): React Native/Expo frontend, FastAPI backend, Next.js website.
 
 ## Tasks
 

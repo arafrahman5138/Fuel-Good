@@ -6,10 +6,10 @@ cd "$(dirname "$0")"
 # ── Ensure PostgreSQL is running via Docker ──
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 DOCKER_APP_BIN_DIR="/Applications/Docker.app/Contents/Resources/bin"
-LOCAL_DB_USER="realfood"
-LOCAL_DB_PASSWORD="realfood_local"
+LOCAL_DB_USER="fuelgood"
+LOCAL_DB_PASSWORD="fuelgood_local"
 PRIMARY_DB="fuelgood"
-LEGACY_DB="realfood"
+LEGACY_DB="fuelgood"
 if ! command -v "$DOCKER_BIN" &>/dev/null; then
   # Docker Desktop on macOS puts the binary here
   DOCKER_BIN="${DOCKER_APP_BIN_DIR}/docker"
@@ -20,7 +20,7 @@ if command -v "$DOCKER_BIN" &>/dev/null; then
     export PATH="${DOCKER_APP_BIN_DIR}:$PATH"
   fi
 
-  CONTAINER="realfood-postgres"
+  CONTAINER="fuelgood-postgres"
 
   ensure_db() {
     local db_name="$1"
@@ -40,10 +40,10 @@ if command -v "$DOCKER_BIN" &>/dev/null; then
     exit 1
   fi
   for i in $(seq 1 30); do
-    "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1 && break
+    "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1 && break
     sleep 1
   done
-  "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U realfood > /dev/null 2>&1
+  "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1
   ensure_db "$PRIMARY_DB"
   ensure_db "$LEGACY_DB"
   echo "✅ PostgreSQL is ready"

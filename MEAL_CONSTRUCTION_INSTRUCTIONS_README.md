@@ -7,13 +7,13 @@ Use this workflow whenever a user sends a meal via:
 - pasted recipe text
 - social media post
 
-The goal is to turn that source into a Real-Food meal draft that fits the app's meal model, includes MES details, and is **not written to the database until the user explicitly approves**.
+The goal is to turn that source into a Fuel Good meal draft that fits the app's meal model, includes MES details, and is **not written to the database until the user explicitly approves**.
 
 ---
 
 ## Non-Negotiables
 - Do **not** add anything to the DB until the user approves.
-- Always rename the meal into a clean, app-friendly Real-Food title.
+- Always rename the meal into a clean, app-friendly Fuel Good title.
 - Always rewrite the instructions in natural language so they feel easy to follow in-app.
 - Always send the MES score and the full draft details back to the user before asking for approval.
 - Always recalculate nutrition from the actual ingredient assumptions used in the draft. Do not reuse source macros after ingredient swaps.
@@ -202,7 +202,7 @@ Rewrite the steps in natural language.
 ### Instruction rules
 - Write like a helpful home cook, not like scraped recipe text
 - Keep steps clear and sequential
-- Add a slight Real-Food twist to improve clarity, flow, or flavor
+- Add a slight Fuel Good twist to improve clarity, flow, or flavor
 - Preserve the spirit of the source meal
 - If there is a default pairing, mention when it should be served
 - If there are components, write component steps separately and include assembly
@@ -267,7 +267,7 @@ Also provide:
 After the user approves the final meal draft, generate a realistic meal photo using the Gemini Flash API.
 
 ### Photo generation goal
-- create a realistic, appetizing hero image of the exact modeled Real-Food meal
+- create a realistic, appetizing hero image of the exact modeled Fuel Good meal
 - match the final ingredient choices, serving style, and side pairing if one is part of the approved meal
 - avoid generic stock-photo mismatches
 

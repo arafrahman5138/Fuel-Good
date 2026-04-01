@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -326,7 +327,11 @@ export default function VideoHookScreen() {
   const renderScene4 = () => (
     <Animated.View style={[styles.sceneContainer, styles.ctaScene, { opacity: sceneOpacities[3] }]}>
       <View style={styles.logoContainer}>
-        <Ionicons name="leaf" size={40} color="#22C55E" />
+        <Image
+          source={require('../../assets/images/icon.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text style={styles.logoText}>Fuel Good</Text>
       </View>
 
@@ -636,6 +641,10 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 20,
     alignSelf: 'center',
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
   },
   logoText: {
     fontSize: 34,

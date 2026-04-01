@@ -1,7 +1,7 @@
 import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_
+from sqlalchemy import or_, cast, func, String as SAString
 from sqlalchemy.orm import Session
 from app.db import get_db
 
@@ -296,55 +296,49 @@ async def browse_recipes(
     if difficulty:
         query = query.filter(Recipe.difficulty.ilike(difficulty))
 
-    all_recipes = query.all()
+    # Push JSON array filters to SQL using cast-to-text + ILIKE.
+    # Pattern: cast(Column, String).ilike('%"value"%') — quotes prevent substring false positives.
+    if meal_type:
+        query = query.filter(cast(Recipe.tags, SAString).ilike(f'%"{meal_type.lower()}"%'))
 
-    # Parse comma-separated multi-select values
-    protein_values = [v.strip().lower() for v in protein_type.split(",") if v.strip()] if protein_type else []
-    carb_values = [v.strip().lower() for v in carb_type.split(",") if v.strip()] if carb_type else []
-
-    # Resolve category filter to a set of matching tag values
-    category_matches: set[str] | None = None
     if category:
         category_matches = CATEGORY_ALIASES.get(category.lower(), {category.lower()})
+        cat_conditions = [cast(Recipe.tags, SAString).ilike(f'%"{c}"%') for c in category_matches]
+        query = query.filter(or_(*cat_conditions))
 
-    filtered = []
-    for r in all_recipes:
-        if meal_type and not _json_contains(r.tags, meal_type):
-            continue
-        if category_matches:
-            tags_lower = {str(t).lower() for t in (r.tags or [])}
-            if not category_matches & tags_lower:
-                continue
-        # ── Composition filters ──
-        if flavor and not _json_contains(r.flavor_profile, flavor):
-            continue
-        if dietary and not _json_contains(r.dietary_tags, dietary):
-            continue
-        if health_benefit and not _json_contains(r.health_benefits, health_benefit):
-            continue
-        if cook_time:
-            total = r.total_time_min or 0
-            if cook_time == "quick" and total > 30:
-                continue
-            elif cook_time == "medium" and (total <= 30 or total > 60):
-                continue
-            elif cook_time == "long" and total <= 60:
-                continue
+    if flavor:
+        query = query.filter(cast(Recipe.flavor_profile, SAString).ilike(f'%"{flavor.lower()}"%'))
+    if dietary:
+        query = query.filter(cast(Recipe.dietary_tags, SAString).ilike(f'%"{dietary.lower()}"%'))
+    if health_benefit:
+        query = query.filter(cast(Recipe.health_benefits, SAString).ilike(f'%"{health_benefit.lower()}"%'))
+
+    if cook_time:
+        total_time = func.coalesce(Recipe.total_time_min, 0)
+        if cook_time == "quick":
+            query = query.filter(total_time <= 30)
+        elif cook_time == "medium":
+            query = query.filter(total_time > 30, total_time <= 60)
+        elif cook_time == "long":
+            query = query.filter(total_time > 60)
+
+    # Parse comma-separated multi-select values
+    if protein_type:
+        protein_values = [v.strip().lower() for v in protein_type.split(",") if v.strip()]
         if protein_values:
-            recipe_proteins = [v.lower() for v in (r.protein_type or [])]
-            if not any(pv in recipe_proteins for pv in protein_values):
-                continue
+            pt_conditions = [cast(Recipe.protein_type, SAString).ilike(f'%"{pv}"%') for pv in protein_values]
+            query = query.filter(or_(*pt_conditions))
+
+    if carb_type:
+        carb_values = [v.strip().lower() for v in carb_type.split(",") if v.strip()]
         if carb_values:
-            recipe_carbs = [v.lower() for v in (r.carb_type or [])]
-            if not any(cv in recipe_carbs for cv in carb_values):
-                continue
+            ct_conditions = [cast(Recipe.carb_type, SAString).ilike(f'%"{cv}"%') for cv in carb_values]
+            query = query.filter(or_(*ct_conditions))
 
-        filtered.append(r)
-
-    total = len(filtered)
-    start = (page - 1) * page_size
-    end = start + page_size
-    page_items = filtered[start:end]
+    # Paginate at DB level
+    total = query.count()
+    offset = (page - 1) * page_size
+    page_items = query.offset(offset).limit(page_size).all()
 
     return {
         "items": [_serialize_recipe_card(r, db, current_user) for r in page_items],

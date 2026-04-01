@@ -116,16 +116,6 @@ export function isScoreable(context: MealContext): boolean {
   return context === MEAL_CONTEXT_FULL;
 }
 
-/** Whether the item is a combinable prep component (not full meal, not dessert). */
-export function isComponent(context: MealContext): boolean {
-  return (
-    context === MEAL_CONTEXT_COMPONENT_PROTEIN ||
-    context === MEAL_CONTEXT_COMPONENT_CARB ||
-    context === MEAL_CONTEXT_COMPONENT_VEG ||
-    context === MEAL_CONTEXT_SAUCE
-  );
-}
-
 /** Human-readable label for a non-full-meal context. */
 export function contextLabel(context: MealContext): string {
   switch (context) {

@@ -1108,7 +1108,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                     recipe_id: recipeId,
                     meal_type: meal.meal_type,
                   });
-                  router.push(`/browse/${recipeId}`);
+                  router.push(`/(tabs)/meals/recipe/${recipeId}`);
                 }}
               >
                 {recipe.image_url ? (

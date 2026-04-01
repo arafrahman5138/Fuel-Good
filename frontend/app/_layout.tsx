@@ -245,41 +245,8 @@ export default function RootLayout() {
         <Stack.Screen
           name="cook/[id]"
           options={{
-            headerShown: true,
-            headerTitle: 'Cook Mode',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
+            headerShown: false,
             presentation: 'modal',
-          }}
-        />
-        <Stack.Screen
-          name="food/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="food/meals"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="food/search"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="food/metabolic-coach"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="food/mes-breakdown"
-          options={{
-            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -288,69 +255,6 @@ export default function RootLayout() {
             headerShown: false,
             presentation: 'fullScreenModal',
             animation: 'slide_from_bottom',
-          }}
-        />
-        <Stack.Screen
-          name="browse/index"
-          options={{
-            headerShown: true,
-            headerTitle: 'Browse Recipes',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
-          }}
-        />
-        <Stack.Screen
-          name="browse/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="saved/index"
-          options={{
-            headerShown: true,
-            headerTitle: 'Saved Recipes',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
-          }}
-        />
-        <Stack.Screen
-          name="saved/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="chat-recipe"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings"
-          options={{
-            headerShown: true,
-            headerTitle: 'Settings',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
-          }}
-        />
-        <Stack.Screen
-          name="notification-settings"
-          options={{
-            headerShown: true,
-            headerTitle: 'Push Notifications',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
-          }}
-        />
-        <Stack.Screen
-          name="preferences"
-          options={{
-            headerShown: true,
-            headerTitle: 'Preferences',
-            headerStyle: { backgroundColor: theme.surface },
-            headerTintColor: theme.text,
           }}
         />
         <Stack.Screen

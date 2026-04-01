@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -649,7 +650,11 @@ export default function OnboardingScreen() {
           {step === 0 && (
             <View style={styles.welcomeHero}>
               <View style={[styles.heroIconWrap, { backgroundColor: theme.primaryMuted }]}>
-                <Ionicons name="leaf" size={48} color={theme.primary} />
+                <Image
+                  source={require('../../assets/images/icon.png')}
+                  style={styles.heroLogo}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={[styles.heroTagline, { color: theme.textSecondary }]}>
                 Real food. Real energy.{'\n'}Once you eat like this, you'll feel amazing.
@@ -1425,6 +1430,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
+  },
+  heroLogo: {
+    width: 58,
+    height: 58,
   },
   heroTagline: {
     fontSize: FontSize.lg,

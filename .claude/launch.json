@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "backend",
-      "runtimeExecutable": "/Users/arafrahman/Desktop/Real-Food/backend/venv/bin/python3",
+      "runtimeExecutable": "/Users/arafrahman/Desktop/Fuel-Good/backend/venv/bin/python3",
       "runtimeArgs": ["backend/launch_server.py"],
       "port": 8000
     },

@@ -23,6 +23,11 @@ from app.services.chat_limits import acquire_chat_slot, enforce_chat_quota, reco
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Global concurrency limit for LLM calls to prevent aggregate overload.
+# Per-user limits are handled by chat_limits.py; this caps total server load.
+MAX_CONCURRENT_LLM_CALLS = 5
+_llm_semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS)
+
 
 def _message_preview(message: str, limit: int = 120) -> str:
     compact = " ".join((message or "").split())
@@ -101,6 +106,13 @@ async def healthify_food(
         except Exception:
             pass  # Non-critical; don't block the chat request
         try:
+            await asyncio.wait_for(_llm_semaphore.acquire(), timeout=2.0)
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=503,
+                detail="Healthify AI is at capacity. Please try again in a moment.",
+            )
+        try:
             result = await asyncio.wait_for(
                 healthify_agent(
                     db,
@@ -151,6 +163,8 @@ async def healthify_food(
                 status_code=503,
                 detail="Healthify AI is temporarily unavailable. Please try again shortly.",
             )
+        finally:
+            _llm_semaphore.release()
 
         assistant_message = {
             "role": "assistant",
@@ -257,6 +271,11 @@ async def healthify_food_stream(
             chunk_count = 0
             final_payload = None
             try:
+                await asyncio.wait_for(_llm_semaphore.acquire(), timeout=2.0)
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'error': 'Healthify AI is at capacity. Please try again in a moment.'})}\n\n"
+                return
+            try:
                 async with asyncio.timeout(45):
                     stream_gen = await healthify_agent(
                         db,
@@ -308,6 +327,7 @@ async def healthify_food_stream(
                 yield f"data: {json.dumps({'error': 'Healthify AI is temporarily unavailable.', 'done': True})}\n\n"
                 return
             finally:
+                _llm_semaphore.release()
                 release_chat_slot(str(current_user.id))
 
             final_payload = parse_healthify_response(full_response)

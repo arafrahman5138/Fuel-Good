@@ -7,7 +7,7 @@ Build a production-ready meal scan system where a user can:
 3. Receive actionable "upgrade next time" and "recover today" guidance
 4. Log the meal into Chronometer with confidence metadata
 
-This plan is aligned with the current Real-Food architecture and MES direction.
+This plan is aligned with the current Fuel Good architecture and MES direction.
 
 ---
 

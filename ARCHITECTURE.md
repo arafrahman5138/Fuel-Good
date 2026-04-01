@@ -3,7 +3,7 @@
 ## 1. PROJECT STRUCTURE
 
 ```
-Real-Food/
+Fuel-Good/
 ├── backend/                          # Python/FastAPI API server
 │   ├── app/
 │   │   ├── main.py                   # FastAPI app entry, CORS, middleware
@@ -419,7 +419,7 @@ npx expo start                    # Start Expo dev server
 
 | Field | Value |
 |-------|-------|
-| **Project Name** | Fuel Good (Real-Food) |
+| **Project Name** | Fuel Good |
 | **Stack** | React Native (Expo) + FastAPI + PostgreSQL |
 | **Primary Contact** | Araf Rahman |
 | **Last Updated** | 2026-03-18 |

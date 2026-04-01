@@ -130,8 +130,8 @@ to:
 
 Relevant files:
 
-- [backend/app/config.py](/Users/arafrahman/Desktop/Real-Food/backend/app/config.py)
-- [backend/.env](/Users/arafrahman/Desktop/Real-Food/backend/.env)
+- [backend/app/config.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/config.py)
+- [backend/.env](/Users/arafrahman/Desktop/Fuel-Good/backend/.env)
 
 ## Current scan UX issues already discussed
 
@@ -192,9 +192,9 @@ Impact:
 
 Relevant files:
 
-- [backend/app/routers/nutrition.py](/Users/arafrahman/Desktop/Real-Food/backend/app/routers/nutrition.py)
-- [backend/app/routers/metabolic.py](/Users/arafrahman/Desktop/Real-Food/backend/app/routers/metabolic.py)
-- [backend/app/routers/scan.py](/Users/arafrahman/Desktop/Real-Food/backend/app/routers/scan.py)
+- [backend/app/routers/nutrition.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/routers/nutrition.py)
+- [backend/app/routers/metabolic.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/routers/metabolic.py)
+- [backend/app/routers/scan.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/routers/scan.py)
 
 Recommended fix:
 
@@ -204,13 +204,13 @@ Recommended fix:
 
 ## Files most actively changed in this branch
 
-- [frontend/app/scan/index.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/app/scan/index.tsx)
-- [frontend/app/(tabs)/index.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/app/(tabs)/index.tsx)
-- [frontend/app/(tabs)/chronometer.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/app/(tabs)/chronometer.tsx)
-- [frontend/components/EnergyBudgetCard.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/components/EnergyBudgetCard.tsx)
-- [frontend/components/GlassTabBar.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/components/GlassTabBar.tsx)
-- [frontend/app/_layout.tsx](/Users/arafrahman/Desktop/Real-Food/frontend/app/_layout.tsx)
-- [backend/app/config.py](/Users/arafrahman/Desktop/Real-Food/backend/app/config.py)
+- [frontend/app/scan/index.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/app/scan/index.tsx)
+- [frontend/app/(tabs)/index.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/app/(tabs)/index.tsx)
+- [frontend/app/(tabs)/chronometer.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/app/(tabs)/chronometer.tsx)
+- [frontend/components/EnergyBudgetCard.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/components/EnergyBudgetCard.tsx)
+- [frontend/components/GlassTabBar.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/components/GlassTabBar.tsx)
+- [frontend/app/_layout.tsx](/Users/arafrahman/Desktop/Fuel-Good/frontend/app/_layout.tsx)
+- [backend/app/config.py](/Users/arafrahman/Desktop/Fuel-Good/backend/app/config.py)
 
 ## Current validation status
 

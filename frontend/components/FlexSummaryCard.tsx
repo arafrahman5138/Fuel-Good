@@ -46,7 +46,7 @@ export function FlexSummaryCard({
   return (
     <TouchableOpacity
       activeOpacity={0.78}
-      onPress={() => router.push('/food/flex')}
+      onPress={() => router.push('/(tabs)/index/flex')}
       style={[
         styles.card,
         {

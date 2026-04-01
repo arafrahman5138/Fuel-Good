@@ -2,7 +2,7 @@
 
 ## Services
 
-Use the production API service defined in [`render.yaml`](/Users/arafrahman/Desktop/Real-Food/render.yaml):
+Use the production API service defined in [`render.yaml`](/Users/arafrahman/Desktop/Fuel-Good/render.yaml):
 
 - production API web service
 

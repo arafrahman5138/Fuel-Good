@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_, cast, String as SAString
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -11,17 +12,6 @@ from app.services.food_catalog import serialize_food_detail, serialize_food_sear
 router = APIRouter()
 
 
-def _matches_query(food: LocalFood, query: str) -> bool:
-    q = (query or "").strip().lower()
-    haystacks = [
-        food.name or "",
-        food.brand or "",
-        food.category or "",
-        " ".join(food.aliases or []),
-    ]
-    return any(q in value.lower() for value in haystacks)
-
-
 @router.get("/search")
 async def search_foods(
     q: str = Query(..., description="Search query"),
@@ -31,22 +21,32 @@ async def search_foods(
 ):
     del current_user
     page_size = 20
-    query = (q or "").strip()
-    if len(query) < 2:
+    query_str = (q or "").strip()
+    if len(query_str) < 2:
         return {"foods": [], "total": 0, "page": page}
 
-    foods = (
+    pattern = f"%{query_str}%"
+    base = (
         db.query(LocalFood)
-        .filter(LocalFood.is_active.is_(True))
+        .filter(
+            LocalFood.is_active.is_(True),
+            or_(
+                LocalFood.name.ilike(pattern),
+                LocalFood.brand.ilike(pattern),
+                LocalFood.category.ilike(pattern),
+                cast(LocalFood.aliases, SAString).ilike(pattern),
+            ),
+        )
         .order_by(LocalFood.name.asc())
-        .all()
     )
-    matches = [food for food in foods if _matches_query(food, query)]
-    start = (page - 1) * page_size
-    end = start + page_size
+
+    total = base.count()
+    offset = (page - 1) * page_size
+    foods = base.offset(offset).limit(page_size).all()
+
     return {
-        "foods": [serialize_food_search(food) for food in matches[start:end]],
-        "total": len(matches),
+        "foods": [serialize_food_search(food) for food in foods],
+        "total": total,
         "page": page,
     }
 

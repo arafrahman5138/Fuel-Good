@@ -61,7 +61,7 @@ export function Button({
     const glowStyle = !isDisabled ? Shadows.interactive(isDark) : {};
     return (
       <Animated.View style={[press.animatedStyle, fullWidth && styles.fullWidth, style]}>
-        <View style={glowStyle}>
+        <View style={[glowStyle, { borderRadius: size === 'lg' ? BorderRadius.xl : BorderRadius.md, overflow: 'hidden' }]}>
           <TouchableOpacity
             onPress={onPress}
             disabled={isDisabled}

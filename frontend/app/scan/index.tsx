@@ -167,12 +167,19 @@ const MEAL_STATUS_META: Record<MealResult['whole_food_status'], { color: string;
   fail: { color: '#DC2626', bg: '#FEE2E2', label: 'Not a Great Fit' },
 };
 
-const MACRO_ACCENTS = {
+const MACRO_ACCENTS_LIGHT = {
   calories: { color: '#111111', bg: '#F8F6F1' },
   protein: { color: '#22C55E', bg: '#ECFDF3' },
   carbs: { color: '#F59E0B', bg: '#FFF7E8' },
   fat: { color: '#8B5CF6', bg: '#F4ECFF' },
   fiber: { color: '#3B82F6', bg: '#ECF4FF' },
+};
+const MACRO_ACCENTS_DARK = {
+  calories: { color: '#E5E7EB', bg: '#1F1F1F' },
+  protein: { color: '#4ADE80', bg: '#052E16' },
+  carbs: { color: '#FBBF24', bg: '#271A00' },
+  fat: { color: '#A78BFA', bg: '#1E1235' },
+  fiber: { color: '#60A5FA', bg: '#0C1A2E' },
 };
 
 function confidenceBand(value: number): string {
@@ -311,6 +318,11 @@ export default function ScanScreen() {
   const [mealLabelDraft, setMealLabelDraft] = useState('');
   const [ingredientDrafts, setIngredientDrafts] = useState<string[]>([]);
   const [addIngredientText, setAddIngredientText] = useState('');
+  const [correctionText, setCorrectionText] = useState('');
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [correctionApplied, setCorrectionApplied] = useState(false);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editScanExpanded, setEditScanExpanded] = useState(false);
 
   const [productResult, setProductResult] = useState<ProductResult | null>(null);
   const [successModal, setSuccessModal] = useState<{ visible: boolean; message: string }>({
@@ -325,17 +337,20 @@ export default function ScanScreen() {
   const isAnalyzingMeal = scanStep === 'result' && scanMode === 'meal' && isLoading && !mealResult;
   const isAnalyzingProduct = scanStep === 'result' && scanMode === 'product' && isLoading && !productResult;
 
+  const macroAccents = isDark ? MACRO_ACCENTS_DARK : MACRO_ACCENTS_LIGHT;
+
   const nutritionRows = useMemo(() => {
     if (!mealResult) return [];
+    const accents = isDark ? MACRO_ACCENTS_DARK : MACRO_ACCENTS_LIGHT;
     const n = mealResult.nutrition_estimate || {};
     return [
-      { key: 'calories', label: 'Calories', value: `${Math.round(Number(n.calories || 0))}`, accent: MACRO_ACCENTS.calories },
-      { key: 'protein', label: 'Protein', value: `${Math.round(Number(n.protein || 0))}g`, accent: MACRO_ACCENTS.protein },
-      { key: 'carbs', label: 'Carbs', value: `${Math.round(Number(n.carbs || 0))}g`, accent: MACRO_ACCENTS.carbs },
-      { key: 'fat', label: 'Fat', value: `${Math.round(Number(n.fat || 0))}g`, accent: MACRO_ACCENTS.fat },
-      { key: 'fiber', label: 'Fiber', value: `${Math.round(Number(n.fiber || 0))}g`, accent: MACRO_ACCENTS.fiber },
+      { key: 'calories', label: 'Calories', value: `${Math.round(Number(n.calories || 0))}`, accent: accents.calories },
+      { key: 'protein', label: 'Protein', value: `${Math.round(Number(n.protein || 0))}g`, accent: accents.protein },
+      { key: 'carbs', label: 'Carbs', value: `${Math.round(Number(n.carbs || 0))}g`, accent: accents.carbs },
+      { key: 'fat', label: 'Fat', value: `${Math.round(Number(n.fat || 0))}g`, accent: accents.fat },
+      { key: 'fiber', label: 'Fiber', value: `${Math.round(Number(n.fiber || 0))}g`, accent: accents.fiber },
     ];
-  }, [mealResult]);
+  }, [mealResult, isDark]);
 
   // Animate result entrance when scan result arrives
   useEffect(() => {
@@ -485,7 +500,7 @@ export default function ScanScreen() {
 
   const handleBack = () => {
     if (scanStep === 'capture') {
-      router.back();
+      handleExitToHome();
       return;
     }
     if (scanStep === 'review') {
@@ -505,7 +520,15 @@ export default function ScanScreen() {
     resetProductState();
     setScanMode('meal');
     setScanStep('capture');
-    router.dismiss();
+    try {
+      if (router.canDismiss()) {
+        router.dismiss();
+      } else {
+        router.replace('/(tabs)' as any);
+      }
+    } catch {
+      router.replace('/(tabs)' as any);
+    }
   };
 
   const syncProductDrafts = (result: ProductResult) => {
@@ -837,6 +860,38 @@ export default function ScanScreen() {
     setAddIngredientText('');
   };
 
+  const submitCorrection = async () => {
+    if (!correctionText.trim() || !mealResult?.id || isCorrecting) return;
+    setIsCorrecting(true);
+    setCorrectionApplied(false);
+    try {
+      const updated = await wholeFoodScanApi.correctMeal(mealResult.id, correctionText.trim());
+      // Merge the corrected response into the current mealResult
+      setMealResult((prev) => prev ? { ...prev, ...updated } : prev);
+      if (updated.estimated_ingredients) {
+        setIngredientDrafts(updated.estimated_ingredients);
+      }
+      setCorrectionText('');
+      setCorrectionApplied(true);
+      setTimeout(() => setCorrectionApplied(false), 3000);
+    } catch (err: any) {
+      Alert.alert('Update failed', err?.message || 'Could not apply correction. Please try again.');
+    } finally {
+      setIsCorrecting(false);
+    }
+  };
+
+  const getCorrectionHint = (): string => {
+    if (!mealResult) return '';
+    if (mealResult.confidence < 0.7)
+      return 'Help us get this right — describe what\'s in this meal';
+    if (mealResult.fuel_score != null && mealResult.fuel_score < 70 && (mealResult.whole_food_flags || []).length > 0)
+      return 'Tell us if any flagged ingredients are actually whole-food (e.g., \'the sauce is homemade\')';
+    if (mealResult.whole_food_status === 'warn')
+      return 'Clarify cooking methods or ingredients the camera may have missed';
+    return 'Add details the camera couldn\'t see (e.g., \'brown rice, not white\')';
+  };
+
   const renderCaptureStep = () => {
     const modes: Array<{ key: ScanMode; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
       { key: 'meal', label: 'Scan Food', icon: 'scan-outline' },
@@ -871,11 +926,12 @@ export default function ScanScreen() {
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.captureOverlay}
+          pointerEvents="none"
         />
 
         {/* Top bar: close + branding pill */}
         <View style={styles.captureTopRow}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8} style={styles.captureCloseBtn}>
+          <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.8} style={styles.captureCloseBtn}>
             <Ionicons name="close" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.captureBrandPill}>
@@ -1263,21 +1319,30 @@ export default function ScanScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Score Summary Card — always above the fold ── */}
         <View style={[styles.resultHero, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.resultHeroTop}>
             <View style={{ flex: 1, paddingRight: Spacing.md }}>
-              <TextInput
-                value={mealLabelDraft}
-                onChangeText={setMealLabelDraft}
-                style={[styles.resultTitleInput, { color: theme.text }]}
-                placeholderTextColor={theme.textTertiary}
-              />
+              {isEditingLabel ? (
+                <TextInput
+                  value={mealLabelDraft}
+                  onChangeText={setMealLabelDraft}
+                  onBlur={() => setIsEditingLabel(false)}
+                  autoFocus
+                  style={[styles.resultTitleInput, { color: theme.text }]}
+                  placeholderTextColor={theme.textTertiary}
+                />
+              ) : (
+                <TouchableOpacity onPress={() => setIsEditingLabel(true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.resultTitleInput, { color: theme.text }]} numberOfLines={2}>{mealLabelDraft || mealResult.meal_label}</Text>
+                  <Ionicons name="pencil-outline" size={14} color={theme.textTertiary} />
+                </TouchableOpacity>
+              )}
               <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>{mealContextCopy}</Text>
               <View style={[styles.statusChip, { backgroundColor: displayBadgeBg }]}>
                 <Text style={[styles.statusChipText, { color: displayBadgeColor }]}>{displayBadgeText}</Text>
               </View>
             </View>
-            {/* Fuel Score is always the primary score ring */}
             <View style={styles.scoreColumn}>
               <FuelScoreRing
                 score={mealResult.fuel_score != null ? Math.round(mealResult.fuel_score) : 0}
@@ -1285,67 +1350,36 @@ export default function ScanScreen() {
                 showLabel
                 showIcon
               />
-              {/* MES shown only as a secondary pill for full meals */}
-              {mealResult.mes != null && mealResult.meal_context === 'full_meal' && (
-                <View style={[styles.mesSecondaryPill, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-                  <Text style={[styles.mesSecondaryValue, { color: theme.textSecondary }]}>
-                    {Math.round(mealResult.mes.score)} MES
-                  </Text>
-                </View>
-              )}
-              {/* Flex impact messaging */}
-              {mealResult.fuel_score != null && fuelSettings && (() => {
-                const score = mealResult.fuel_score!;
-                const target = fuelSettings.fuel_target;
-                const flexAvail = fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
-                const cleanLogged = fuelWeekly?.flex_budget?.clean_meals_logged ?? 0;
-                const cleanTarget = fuelWeekly?.flex_budget?.clean_meals_target ?? 17;
-                if (score >= target) {
-                  return (
-                    <View style={[styles.flexImpactPill, { backgroundColor: '#22C55E14', borderColor: '#22C55E30' }]}>
-                      <Ionicons name="trending-up" size={11} color="#22C55E" />
-                      <Text style={[styles.flexImpactText, { color: '#16A34A' }]}>
-                        Clean meal · {cleanLogged}/{cleanTarget}
-                      </Text>
-                    </View>
-                  );
-                } else {
-                  return (
-                    <View style={[styles.flexImpactPill, { backgroundColor: '#F59E0B14', borderColor: '#F59E0B30' }]}>
-                      <Ionicons name="ticket" size={11} color="#F59E0B" />
-                      <Text style={[styles.flexImpactText, { color: '#D97706' }]}>
-                        Flex meal · {flexAvail} left
-                      </Text>
-                    </View>
-                  );
-                }
-              })()}
             </View>
           </View>
           {mealResult.confidence < 0.6 && (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => { setMealResult(null); setScanStep('capture'); }}
-              style={[styles.lowConfidenceBanner, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}
+              style={[styles.lowConfidenceBanner, { backgroundColor: isDark ? '#271A00' : '#FEF3C7', borderColor: isDark ? '#5C4813' : '#FDE68A' }]}
             >
               <Ionicons name="warning-outline" size={16} color="#D97706" />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#92400E', fontSize: FontSize.sm, fontWeight: '600' }}>
+                <Text style={{ color: isDark ? '#FCD34D' : '#92400E', fontSize: FontSize.sm, fontWeight: '600' }}>
                   Low confidence result
                 </Text>
-                <Text style={{ color: '#B45309', fontSize: FontSize.xs, marginTop: 1 }}>
+                <Text style={{ color: isDark ? '#FBBF24' : '#B45309', fontSize: FontSize.xs, marginTop: 1 }}>
                   Try retaking with better lighting or a closer angle
                 </Text>
               </View>
               <Ionicons name="camera-outline" size={18} color="#D97706" />
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* ── Nutrition Detail — photo, macros, why this score ── */}
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {mealImageUri ? (
-            <View style={[styles.resultImageShell, { backgroundColor: theme.surfaceElevated }]}>
+            <View style={[styles.resultImageShell, { backgroundColor: theme.surfaceElevated, marginTop: 0 }]}>
               <Image source={{ uri: mealImageUri }} style={styles.resultImage} />
             </View>
           ) : null}
-          <View style={styles.macroGrid}>
+          <View style={[styles.macroGrid, { marginTop: mealImageUri ? Spacing.md : 0 }]}>
             {nutritionRows.map((row) => (
               <View key={row.key} style={[styles.macroCard, { backgroundColor: row.accent.bg }]}>
                 <Text style={[styles.macroCardValue, { color: row.accent.color }]}>{row.value}</Text>
@@ -1353,17 +1387,22 @@ export default function ScanScreen() {
               </View>
             ))}
           </View>
-          {/* Fuel Score Insight — explain low/processed scores */}
           {(mealResult.fuel_reasoning || []).length > 0 && mealResult.fuel_score != null && mealResult.fuel_score < 75 && (() => {
             const score = mealResult.fuel_score!;
             const isLow = score < 50;
-            const bgColor = isLow ? '#FEF2F2' : '#FFFBEB';
-            const borderColor = isLow ? '#FECACA' : '#FDE68A';
+            const bgColor = isLow
+              ? (isDark ? '#2A1215' : '#FEF2F2')
+              : (isDark ? '#271A00' : '#FFFBEB');
+            const borderColor = isLow
+              ? (isDark ? '#5C1D1D' : '#FECACA')
+              : (isDark ? '#5C4813' : '#FDE68A');
             const iconColor = isLow ? '#DC2626' : '#D97706';
-            const headingColor = isLow ? '#991B1B' : '#92400E';
-            const textColor = isLow ? '#B91C1C' : '#B45309';
-            // Skip the first item (starting score context) — show the meaningful adjustments
-            // Filter out the base-score context line — only show actionable insights
+            const headingColor = isLow
+              ? (isDark ? '#FCA5A5' : '#991B1B')
+              : (isDark ? '#FCD34D' : '#92400E');
+            const textColor = isLow
+              ? (isDark ? '#F87171' : '#B91C1C')
+              : (isDark ? '#FBBF24' : '#B45309');
             const reasons = (mealResult.fuel_reasoning || []).slice(1);
             if (reasons.length === 0) return null;
             return (
@@ -1383,65 +1422,103 @@ export default function ScanScreen() {
           })()}
         </View>
 
-        {/* ── Flex Mode Prompt (low-score scans) ── */}
-        {mealResult.fuel_score != null && fuelSettings && mealResult.fuel_score < fuelSettings.fuel_target && (() => {
-          const flexAvail = fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
-          const projAvg = fuelWeekly?.flex_budget?.projected_weekly_avg ?? 0;
-          const tierLabel = projAvg >= 90 ? 'Elite' : projAvg >= 75 ? 'Strong' : projAvg >= 60 ? 'Decent' : 'Mixed';
-          return (
-            <View style={[styles.flexPromptCard, { backgroundColor: '#F59E0B08', borderColor: '#F59E0B30' }]}>
-              <View style={styles.flexPromptHeader}>
-                <View style={[styles.flexPromptIcon, { backgroundColor: '#F59E0B18' }]}>
-                  <Ionicons name="ticket" size={18} color="#F59E0B" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.flexPromptTitle, { color: theme.text }]}>This is a flex meal</Text>
-                  <Text style={[styles.flexPromptSub, { color: theme.textSecondary }]}>
-                    {flexAvail > 0
-                      ? `Use 1 of your ${flexAvail} remaining`
-                      : 'No flex meals left this week'}
-                  </Text>
-                </View>
+        {/* ── Edit scan details — collapsed by default ── */}
+        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <TouchableOpacity
+            onPress={() => setEditScanExpanded(!editScanExpanded)}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="create-outline" size={16} color={theme.primary} />
+              <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Edit scan details</Text>
+            </View>
+            <Ionicons name={editScanExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+          {!editScanExpanded && (
+            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, marginTop: 4 }}>
+              {ingredientDrafts.length} ingredients detected · Tap to edit or refine
+            </Text>
+          )}
+          {editScanExpanded && (
+            <View style={{ marginTop: Spacing.md }}>
+              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm }}>Ingredients</Text>
+              <View style={styles.ingredientsWrap}>
+                {ingredientDrafts.map((item, index) => (
+                  <TouchableOpacity
+                    key={`${item}-${index}`}
+                    onPress={() => setIngredientDrafts((current) => current.filter((_, idx) => idx !== index))}
+                    activeOpacity={0.85}
+                    style={[styles.ingredientChip, { borderColor: theme.border, backgroundColor: theme.surface }]}
+                  >
+                    <Text style={[styles.ingredientChipText, { color: theme.text }]}>{item}</Text>
+                    <Ionicons name="close" size={14} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                ))}
               </View>
-              {flexAvail > 0 && projAvg > 0 && (
-                <View style={[styles.flexPromptProof, { backgroundColor: '#22C55E10' }]}>
-                  <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
-                  <Text style={[styles.flexPromptProofText, { color: '#16A34A' }]}>
-                    Weekly avg stays at {Math.round(projAvg)} — {tierLabel} tier
-                  </Text>
-                </View>
+              <View style={styles.ingredientInputRow}>
+                <TextInput
+                  value={addIngredientText}
+                  onChangeText={setAddIngredientText}
+                  placeholder="Add ingredient"
+                  placeholderTextColor={theme.textTertiary}
+                  style={[styles.formInput, styles.addIngredientInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
+                />
+                <TouchableOpacity onPress={addIngredient} activeOpacity={0.85} style={[styles.squareButton, { backgroundColor: theme.primaryMuted }]}>
+                  <Ionicons name="add" size={20} color={theme.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={[{ height: StyleSheet.hairlineWidth, backgroundColor: theme.border, marginVertical: Spacing.md }]} />
+
+              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs }}>Refine</Text>
+              <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, marginBottom: Spacing.sm }}>
+                {getCorrectionHint()}
+              </Text>
+              <View style={styles.ingredientInputRow}>
+                <TextInput
+                  value={correctionText}
+                  onChangeText={setCorrectionText}
+                  placeholder="e.g., the dressing is homemade olive oil and lemon"
+                  placeholderTextColor={theme.textTertiary}
+                  multiline
+                  numberOfLines={2}
+                  style={[
+                    styles.formInput,
+                    styles.addIngredientInput,
+                    { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated, minHeight: 48, textAlignVertical: 'top', flex: 1 },
+                  ]}
+                />
+                <TouchableOpacity
+                  onPress={submitCorrection}
+                  disabled={!correctionText.trim() || isCorrecting}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.squareButton,
+                    {
+                      backgroundColor: correctionApplied ? '#22C55E18' : theme.primaryMuted,
+                      opacity: !correctionText.trim() || isCorrecting ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  {isCorrecting ? (
+                    <Animated.View style={{ opacity: 0.7 }}>
+                      <Ionicons name="sync" size={18} color={theme.primary} />
+                    </Animated.View>
+                  ) : correctionApplied ? (
+                    <Ionicons name="checkmark" size={20} color="#22C55E" />
+                  ) : (
+                    <Ionicons name="arrow-up" size={18} color={theme.primary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {correctionApplied && (
+                <Text style={{ color: '#22C55E', fontSize: FontSize.xs, marginTop: 4 }}>
+                  Scan updated successfully
+                </Text>
               )}
             </View>
-          );
-        })()}
-
-        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.sectionHeading, { color: theme.text }]}>Detected ingredients</Text>
-          <View style={styles.ingredientsWrap}>
-            {ingredientDrafts.map((item, index) => (
-              <TouchableOpacity
-                key={`${item}-${index}`}
-                onPress={() => setIngredientDrafts((current) => current.filter((_, idx) => idx !== index))}
-                activeOpacity={0.85}
-                style={[styles.ingredientChip, { borderColor: theme.border, backgroundColor: theme.surface }]}
-              >
-                <Text style={[styles.ingredientChipText, { color: theme.text }]}>{item}</Text>
-                <Ionicons name="close" size={14} color={theme.textSecondary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.ingredientInputRow}>
-            <TextInput
-              value={addIngredientText}
-              onChangeText={setAddIngredientText}
-              placeholder="Add ingredient"
-              placeholderTextColor={theme.textTertiary}
-              style={[styles.formInput, styles.addIngredientInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
-            />
-            <TouchableOpacity onPress={addIngredient} activeOpacity={0.85} style={[styles.squareButton, { backgroundColor: theme.primaryMuted }]}>
-              <Ionicons name="add" size={20} color={theme.primary} />
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
 
         {mealResult.pairing_opportunity && mealResult.pairing_recommended_title && mealResult.pairing_projected_mes != null && (
@@ -1473,33 +1550,50 @@ export default function ScanScreen() {
           </View>
         )}
 
-        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.sectionHeading, { color: theme.text }]}>Upgrade next time</Text>
-          {(mealResult.upgrade_suggestions || []).length > 0 ? (
-            (mealResult.upgrade_suggestions || []).map((item) => (
+        {/* ── Tips — merged upgrade + recovery ── */}
+        {((mealResult.upgrade_suggestions || []).length > 0 || (mealResult.recovery_plan || []).length > 0) && (
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Tips</Text>
+            {(mealResult.upgrade_suggestions || []).map((item) => (
               <View key={item} style={styles.guidanceRow}>
                 <Ionicons name="sparkles-outline" size={16} color={theme.primary} />
                 <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={[styles.emptyCopy, { color: theme.textSecondary }]}>No upgrades needed for this scan.</Text>
-          )}
-        </View>
-
-        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.sectionHeading, { color: theme.text }]}>Recover today</Text>
-          {(mealResult.recovery_plan || []).length > 0 ? (
-            (mealResult.recovery_plan || []).map((item) => (
+            ))}
+            {(mealResult.recovery_plan || []).map((item) => (
               <View key={item} style={styles.guidanceRow}>
                 <Ionicons name="trending-up-outline" size={16} color={theme.primary} />
                 <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={[styles.emptyCopy, { color: theme.textSecondary }]}>No recovery guidance needed.</Text>
-          )}
-        </View>
+            ))}
+            {mealResult.fuel_score != null && mealResult.fuel_score < 75 && (
+              <TouchableOpacity
+                onPress={() => {
+                  const ctx = JSON.stringify({
+                    source: 'scan',
+                    scan_result: {
+                      meal_label: mealResult.meal_label,
+                      fuel_score: mealResult.fuel_score,
+                      whole_food_flags: (mealResult.whole_food_flags || []).slice(0, 6),
+                    },
+                  });
+                  const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
+                    ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
+                    : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
+                  router.dismiss();
+                  setTimeout(() => {
+                    router.navigate(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
+                  }, 100);
+                }}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm }}
+              >
+                <Ionicons name="chatbubble-outline" size={14} color={theme.primary} />
+                <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '600' }}>Ask Coach for more tips</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {(mealResult.whole_food_flags || []).length > 0 && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -1626,12 +1720,12 @@ export default function ScanScreen() {
           <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
           <View style={styles.macroGrid}>
             {[
-              { label: 'Calories', value: `${productResult.nutrition_snapshot.calories}`, accent: MACRO_ACCENTS.calories },
-              { label: 'Protein', value: `${productResult.nutrition_snapshot.protein_g}g`, accent: MACRO_ACCENTS.protein },
-              { label: 'Carbs', value: `${productResult.nutrition_snapshot.carbs_g}g`, accent: MACRO_ACCENTS.carbs },
-              { label: 'Fat', value: `${Math.round(productResult.nutrition_snapshot.fat_g)}g`, accent: MACRO_ACCENTS.fat },
-              { label: 'Fiber', value: `${productResult.nutrition_snapshot.fiber_g}g`, accent: MACRO_ACCENTS.fiber },
-              { label: 'Sugar', value: `${productResult.nutrition_snapshot.sugar_g}g`, accent: MACRO_ACCENTS.carbs },
+              { label: 'Calories', value: `${productResult.nutrition_snapshot.calories}`, accent: macroAccents.calories },
+              { label: 'Protein', value: `${productResult.nutrition_snapshot.protein_g}g`, accent: macroAccents.protein },
+              { label: 'Carbs', value: `${productResult.nutrition_snapshot.carbs_g}g`, accent: macroAccents.carbs },
+              { label: 'Fat', value: `${Math.round(productResult.nutrition_snapshot.fat_g)}g`, accent: macroAccents.fat },
+              { label: 'Fiber', value: `${productResult.nutrition_snapshot.fiber_g}g`, accent: macroAccents.fiber },
+              { label: 'Sugar', value: `${productResult.nutrition_snapshot.sugar_g}g`, accent: macroAccents.carbs },
             ].map((row) => (
               <View key={row.label} style={[styles.macroCard, { backgroundColor: row.accent.bg }]}>
                 <Text style={[styles.macroCardValue, { color: row.accent.color }]}>{row.value}</Text>
@@ -1720,40 +1814,6 @@ export default function ScanScreen() {
               )}
           {scanStep === 'result' && scanMode === 'meal' && mealResult && (
             <View style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.surface + 'F5', borderTopColor: theme.border, borderTopWidth: 1 }}>
-              {/* Ask Coach CTA — always shown, more prominent on low scores */}
-              {(mealResult.fuel_score == null || mealResult.fuel_score < 75) && (
-                <TouchableOpacity
-                  onPress={() => {
-                    const ctx = JSON.stringify({
-                      source: 'scan',
-                      scan_result: {
-                        meal_label: mealResult.meal_label,
-                        fuel_score: mealResult.fuel_score,
-                        whole_food_flags: (mealResult.whole_food_flags || []).slice(0, 6),
-                      },
-                    });
-                    const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
-                      ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
-                      : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
-                    // Dismiss the scan modal first, then navigate to chat tab
-                    // Using dismiss + setTimeout ensures the modal is gone before navigating
-                    router.dismiss();
-                    setTimeout(() => {
-                      router.navigate(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
-                    }, 100);
-                  }}
-                  activeOpacity={0.85}
-                  style={[styles.askCoachBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '40', marginHorizontal: 16, marginTop: 12, marginBottom: 4 }]}
-                >
-                  <Ionicons name="nutrition-outline" size={16} color={theme.primary} />
-                  <Text style={[styles.askCoachText, { color: theme.primary }]}>
-                    {mealResult.fuel_score != null && mealResult.fuel_score < 50
-                      ? 'Ask Coach for a better option'
-                      : 'Ask Coach for tips'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={14} color={theme.primary} />
-                </TouchableOpacity>
-              )}
               <View style={styles.resultFooterRow}>
                 <TouchableOpacity
                   onPress={recomputeMeal}
@@ -1974,7 +2034,7 @@ const styles = StyleSheet.create({
   captureControls: {
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.sm,
-    gap: Spacing.lg,
+    gap: Spacing.xl,
     zIndex: 2,
   },
   captureInfoDot: {
@@ -2592,7 +2652,7 @@ const styles = StyleSheet.create({
   },
   resultImage: {
     width: '100%',
-    height: 184,
+    height: 120,
     resizeMode: 'cover',
   },
   macroGrid: {
