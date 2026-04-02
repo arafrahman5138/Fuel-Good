@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -52,11 +52,10 @@ def has_active_access_override(user: User) -> bool:
     return not expires_at or expires_at >= _utcnow()
 
 
-def has_frontend_trial_access(user: User) -> bool:
-    created_at = _parse_dt(getattr(user, "created_at", None))
-    if not created_at:
+def has_non_production_open_access() -> bool:
+    if settings.environment.strip().lower() == "production":
         return False
-    return (_utcnow() - created_at).total_seconds() <= settings.revenuecat_trial_days * 24 * 60 * 60
+    return settings.allow_open_premium_in_non_production
 
 
 def build_entitlement_info(user: User) -> EntitlementInfo:
@@ -75,19 +74,17 @@ def build_entitlement_info(user: User) -> EntitlementInfo:
             requires_paywall=False,
         )
 
-    if has_frontend_trial_access(user):
-        trial_started_at = _parse_dt(getattr(user, "created_at", None))
-        trial_ends_at = trial_started_at + timedelta(days=settings.revenuecat_trial_days) if trial_started_at else None
+    if has_non_production_open_access():
         return EntitlementInfo(
             access_level="premium",
-            subscription_state="trialing",
-            trial_started_at=trial_started_at,
-            trial_ends_at=trial_ends_at,
-            current_period_ends_at=trial_ends_at,
-            product_id="frontend_free_trial",
-            store="promo",
+            subscription_state="active",
+            trial_started_at=None,
+            trial_ends_at=None,
+            current_period_ends_at=None,
+            product_id="non_production_open_access",
+            store="non_production",
             will_renew=False,
-            manage_url=settings.app_store_manage_subscriptions_url,
+            manage_url=None,
             requires_paywall=False,
         )
 

@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from app.models import (  # noqa: F401
     gamification,
@@ -21,6 +22,7 @@ from app.services.billing import build_entitlement_info, update_user_from_subscr
 
 
 class BillingServiceTests(unittest.TestCase):
+    @patch("app.services.billing.settings.environment", "production")
     def test_build_entitlement_marks_expired_periods(self) -> None:
         user = User(
             email="billing@example.com",
@@ -35,6 +37,7 @@ class BillingServiceTests(unittest.TestCase):
         self.assertTrue(entitlement.requires_paywall)
         self.assertEqual(entitlement.access_level, "none")
 
+    @patch("app.services.billing.settings.environment", "production")
     def test_sync_from_revenuecat_trial_entitlement(self) -> None:
         user = User(email="trial@example.com", name="Trial User")
         purchase_date = datetime.now() - timedelta(days=1)
@@ -69,6 +72,7 @@ class BillingServiceTests(unittest.TestCase):
         self.assertEqual(entitlement.access_level, "premium")
         self.assertFalse(entitlement.requires_paywall)
 
+    @patch("app.services.billing.settings.environment", "production")
     def test_manual_override_grants_premium_without_subscription(self) -> None:
         user = User(
             email="vip@example.com",
@@ -85,7 +89,9 @@ class BillingServiceTests(unittest.TestCase):
         self.assertEqual(entitlement.store, "manual_override")
         self.assertFalse(entitlement.requires_paywall)
 
-    def test_recent_signup_receives_trial_entitlement(self) -> None:
+    @patch("app.services.billing.settings.allow_open_premium_in_non_production", True)
+    @patch("app.services.billing.settings.environment", "staging")
+    def test_non_production_environment_receives_open_access(self) -> None:
         user = User(
             email="new@example.com",
             name="New User",
@@ -95,11 +101,25 @@ class BillingServiceTests(unittest.TestCase):
         entitlement = build_entitlement_info(user)
 
         self.assertEqual(entitlement.access_level, "premium")
-        self.assertEqual(entitlement.subscription_state, "trialing")
-        self.assertEqual(entitlement.product_id, "frontend_free_trial")
-        self.assertEqual(entitlement.store, "promo")
+        self.assertEqual(entitlement.subscription_state, "active")
+        self.assertEqual(entitlement.product_id, "non_production_open_access")
+        self.assertEqual(entitlement.store, "non_production")
         self.assertFalse(entitlement.requires_paywall)
-        self.assertIsNotNone(entitlement.trial_ends_at)
+        self.assertIsNone(entitlement.trial_ends_at)
+
+    @patch("app.services.billing.settings.allow_open_premium_in_non_production", False)
+    @patch("app.services.billing.settings.environment", "staging")
+    def test_non_production_open_access_can_be_disabled(self) -> None:
+        user = User(
+            email="free@example.com",
+            name="Free User",
+        )
+
+        entitlement = build_entitlement_info(user)
+
+        self.assertEqual(entitlement.access_level, "none")
+        self.assertEqual(entitlement.subscription_state, "inactive")
+        self.assertTrue(entitlement.requires_paywall)
 
 
 if __name__ == "__main__":

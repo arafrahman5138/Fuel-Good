@@ -7,6 +7,7 @@ Use this on a physical iPhone with an iOS dev build or TestFlight build. Do not 
 Verify that:
 - non-premium users cannot access premium features after onboarding
 - complimentary override users bypass the paywall
+- non-production backends can intentionally unlock premium for all local/preview users
 - monthly and annual subscriptions unlock the app correctly
 - restore, expiration, cancellation, and relaunch behavior are correct
 - there is no practical navigation or deep-link bypass on device
@@ -23,6 +24,7 @@ Verify that:
 - RevenueCat entitlement `premium` and offering `default` are configured.
 - RevenueCat webhook is pointed at `/api/billing/webhook/revenuecat`.
 - Test on a real iPhone signed into a Sandbox Apple ID or installed through TestFlight.
+- For release-candidate paywall enforcement, ensure the backend is running with `ENVIRONMENT=production`.
 
 ## Test Accounts
 
@@ -30,7 +32,7 @@ Prepare these accounts before testing:
 
 - `Comp account`
   - example: `rahmanaraf99@gmail.com`
-  - has backend complimentary override
+  - has backend complimentary override or is on `COMPLIMENTARY_ACCESS_ALLOWLIST_EMAILS`
 - `Fresh free account`
   - brand new email with no purchase and no override
 - `Monthly subscriber`
@@ -216,6 +218,7 @@ Expected:
 - subscriber in trial: `access_level = premium`, `subscription_state = trialing`
 - active subscriber: `access_level = premium`, `subscription_state = active`
 - complimentary override: `access_level = premium`, `store = manual_override`, `requires_paywall = false`
+- local/preview backend open access: `access_level = premium`, `store = non_production`, `requires_paywall = false`
 
 ## High-Risk Regressions To Watch
 

@@ -180,12 +180,6 @@ export default function PaywallScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     analytics.trackEvent('onboarding_paywall_dismissed', { dismiss_count: paywallDismissCount });
 
-    if (paywallDismissCount >= 2) {
-      // Free tier entry
-      saveAndNavigate();
-      return;
-    }
-
     // Show loss aversion message briefly before escalating discount
     const lossMessage = LOSS_AVERSION_MESSAGES[paywallDismissCount];
     if (lossMessage && !showLossMessage) {

@@ -37,6 +37,8 @@
   `EXPO_PUBLIC_API_URL`, Google OAuth client IDs, legal/support URLs, `EXPO_PUBLIC_EXPO_PROJECT_ID`, `EXPO_PUBLIC_SUPABASE_URL`, and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 - Set RevenueCat secrets and identifiers:
   `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_IOS_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, `REVENUECAT_ENTITLEMENT_ID`, `REVENUECAT_OFFERING_ID`, `REVENUECAT_MONTHLY_PRODUCT_ID`, `REVENUECAT_ANNUAL_PRODUCT_ID`, and `REVENUECAT_TRIAL_DAYS`.
+- Set paywall enforcement envs:
+  `ENVIRONMENT=production`, `ALLOW_OPEN_PREMIUM_IN_NON_PRODUCTION=false`, and optionally `COMPLIMENTARY_ACCESS_ALLOWLIST_EMAILS=<comma-separated emails>` on the production API.
 - Set frontend RevenueCat env values in EAS:
   `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID`, and optionally `EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL`.
 
@@ -66,6 +68,8 @@
 - Run the hosted smoke test against production with [`backend/scripts/smoke_test.sh`](/Users/arafrahman/Desktop/Fuel-Good/backend/scripts/smoke_test.sh).
 
 - Build the iOS preview app with EAS.
+- Point preview/TestFlight QA at a non-production backend if you want all testers to have full premium access automatically.
+- If preview/TestFlight must hit production, grant access with the complimentary override flow instead of a broad signup bypass.
 - Install the preview/TestFlight build on at least 2 physical iPhones.
 - Verify email sign-in, Apple sign-in, Google sign-in, meal plans, scan flows, and Gemini-backed AI flows.
 - Verify the paywall loads current RevenueCat offerings on iOS.
@@ -87,6 +91,7 @@
 - Finalize App Store icon, screenshots, subtitle, keywords, promotional text, and description.
 - Keep iOS launch free unless Apple IAP is fully implemented for digital access.
 - Build the iOS production app with EAS.
+- Before shipping to the App Store, replace the placeholder/test RevenueCat iOS public SDK key in the EAS production profile with the real live key.
 - Submit to TestFlight or the App Store.
 
 - Monitor API health, cron-triggered notification runs, push delivery, email delivery, and support inbox for the first 24 hours.

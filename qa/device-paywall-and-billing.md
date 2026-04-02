@@ -7,6 +7,7 @@ This app uses RevenueCat plus StoreKit on iOS. These flows are not valid to sign
 - Real iPhone build
 - RevenueCat iOS API key configured in build
 - Backend billing config and sync endpoints healthy
+- Release-candidate paywall testing must run against a backend with `ENVIRONMENT=production`
 - App Store Connect subscriptions live:
   - `premium_monthly_999`
   - `premium_annual_4999`
@@ -27,6 +28,7 @@ Expected:
 - User lands on paywall.
 - Paywall persists after relaunch.
 - Premium tabs and screens are not reachable.
+- `GET /api/billing/status` shows `requires_paywall = true`.
 
 ## B2. Complimentary Override Bypasses Paywall
 
@@ -40,6 +42,7 @@ Expected:
 
 - User enters the premium app shell with no purchase.
 - Foreground billing sync does not kick user back to paywall.
+- `GET /api/billing/status` shows `store = manual_override`.
 
 ## B3. Monthly Trial Purchase
 

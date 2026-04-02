@@ -35,6 +35,7 @@ from app.schemas.auth import (
     UserRegister,
 )
 from app.services.billing import build_entitlement_info
+from app.services.access_overrides import ensure_allowlisted_user_has_override
 from app.services.email import is_transactional_email_configured, send_password_reset_email, send_welcome_email
 from app.services.notifications import record_notification_event
 from app.utils import normalize_email as _normalize_email
@@ -202,6 +203,7 @@ async def register(
     db.add(user)
     db.commit()
     db.refresh(user)
+    ensure_allowlisted_user_has_override(db, user)
 
     if is_transactional_email_configured():
         background_tasks.add_task(
@@ -221,6 +223,7 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not verify_password(user_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    ensure_allowlisted_user_has_override(db, user)
 
     token = create_token_pair(str(user.id))
     return token
@@ -353,6 +356,7 @@ async def social_auth(auth_data: SocialAuthRequest, db: Session = Depends(get_db
         db.add(user)
         db.commit()
         db.refresh(user)
+        ensure_allowlisted_user_has_override(db, user)
     else:
         updated = False
         if not user.provider_subject:
@@ -367,6 +371,7 @@ async def social_auth(auth_data: SocialAuthRequest, db: Session = Depends(get_db
         if updated:
             db.commit()
             db.refresh(user)
+        ensure_allowlisted_user_has_override(db, user)
 
     token = create_token_pair(str(user.id))
     return token
