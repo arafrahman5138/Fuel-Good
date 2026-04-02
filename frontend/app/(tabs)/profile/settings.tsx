@@ -189,13 +189,13 @@ export default function SettingsScreen() {
             {
               icon: 'restaurant' as const,
               label: 'Liked Proteins',
-              desc: user?.protein_preferences?.liked?.join(', ') || 'Not set',
+              desc: (user?.protein_preferences?.likes?.length ? user.protein_preferences.likes.join(', ') : null) || 'Not set',
               section: 'liked_proteins',
             },
             {
               icon: 'remove-circle' as const,
               label: 'Proteins to Avoid',
-              desc: user?.protein_preferences?.disliked?.join(', ') || 'None',
+              desc: (user?.protein_preferences?.dislikes?.length ? user.protein_preferences.dislikes.join(', ') : null) || 'None',
               section: 'disliked_proteins',
             },
             {

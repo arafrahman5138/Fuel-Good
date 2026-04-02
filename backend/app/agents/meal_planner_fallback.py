@@ -242,6 +242,42 @@ def _infer_dietary_compatibility(recipe: Recipe, diet: str) -> bool:
         dairy_kw = {"milk", "cheese", "butter", "cream", "yogurt", "whey", "ghee", "sour cream"}
         return not any(kw in ingredient_text for kw in dairy_kw)
 
+    if diet == "vegan":
+        animal_kw = {
+            "chicken", "beef", "pork", "turkey", "lamb", "fish", "salmon", "shrimp",
+            "prawn", "tuna", "cod", "tilapia", "egg", "eggs", "dairy", "milk",
+            "cheese", "cream", "butter", "yogurt", "honey", "bacon", "sausage",
+            "steak", "meatball", "whey", "ghee", "anchov", "oxtail", "bison",
+            "venison", "duck", "goose", "mackerel", "sardine", "herring", "trout",
+            "crab", "lobster", "scallop", "mussel", "oyster", "squid", "octopus",
+            "clam",
+        }
+        return not any(kw in ingredient_text for kw in animal_kw)
+
+    if diet == "vegetarian":
+        meat_kw = {
+            "chicken", "beef", "pork", "turkey", "lamb", "fish", "salmon", "shrimp",
+            "prawn", "tuna", "cod", "tilapia", "bacon", "sausage", "steak",
+            "meatball", "anchov", "oxtail", "bison", "venison", "duck", "goose",
+            "mackerel", "sardine", "herring", "trout", "crab", "lobster",
+            "scallop", "mussel", "oyster", "squid", "octopus", "clam",
+        }
+        return not any(kw in ingredient_text for kw in meat_kw)
+
+    if diet in ("nut-free", "tree-nut-free", "tree nut-free", "tree nuts"):
+        nut_kw = {
+            "almond", "walnut", "cashew", "pecan", "pistachio", "hazelnut",
+            "macadamia", "brazil nut", "pine nut", "nut butter", "peanut",
+        }
+        return not any(kw in ingredient_text for kw in nut_kw)
+
+    if diet in ("soy-free", "soy free"):
+        soy_kw = {"soy", "tofu", "tempeh", "edamame", "miso", "soy sauce", "tamari"}
+        return not any(kw in ingredient_text for kw in soy_kw)
+
+    if diet in ("low-carb", "low carb"):
+        return nutrition.get("carbs", 999) <= 40
+
     # Unknown diet — can't infer, so fail safe (don't include)
     return False
 

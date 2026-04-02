@@ -42,7 +42,8 @@ const CameraModule: {
 })();
 
 const CameraView = CameraModule?.CameraView;
-const SCAN_IMAGE_QUALITY = 0.65;
+const MEAL_IMAGE_QUALITY = 0.50;
+const PRODUCT_IMAGE_QUALITY = 0.65;
 
 type ScanMode = 'meal' | 'product';
 type ScanStep = 'capture' | 'review' | 'result';
@@ -99,6 +100,12 @@ interface ProductResult {
     carbs_g: number;
     sodium_mg: number;
   };
+  flag_explanations?: Array<{
+    title: string;
+    explanation: string;
+    look_for: string;
+    detected: string[];
+  }>;
 }
 
 interface MealResult {
@@ -152,6 +159,14 @@ interface MealResult {
   pairing_projected_delta?: number | null;
   pairing_reasons?: string[];
   pairing_timing?: 'with_meal' | 'before_meal' | string | null;
+  multi_dish?: boolean;
+  dishes?: Array<{
+    meal_label: string;
+    ingredients: string[];
+    nutrition_estimate: { calories?: number; protein?: number; carbs?: number; fat?: number; fiber?: number };
+    score?: number;
+    whole_food_status?: string;
+  }>;
 }
 
 const PRODUCT_TIER_META: Record<ProductResult['tier'], { color: string; bg: string; label: string }> = {
@@ -323,6 +338,9 @@ export default function ScanScreen() {
   const [correctionApplied, setCorrectionApplied] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editScanExpanded, setEditScanExpanded] = useState(false);
+  const [whyScoreExpanded, setWhyScoreExpanded] = useState(false);
+  const [tipsExpanded, setTipsExpanded] = useState(false);
+  const [flagsExpanded, setFlagsExpanded] = useState(false);
 
   const [productResult, setProductResult] = useState<ProductResult | null>(null);
   const [successModal, setSuccessModal] = useState<{ visible: boolean; message: string }>({
@@ -331,6 +349,25 @@ export default function ScanScreen() {
   });
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null);
   const [showModesInfo, setShowModesInfo] = useState(false);
+  const [showDescribeMealSheet, setShowDescribeMealSheet] = useState(false);
+  const [describeMealText, setDescribeMealText] = useState('');
+
+  // ── Grocery Store Mode State ──
+  const [shoppingMode, setShoppingMode] = useState(false);
+  const [compareList, setCompareList] = useState<Array<{ name: string; score: number; tier: string; brand?: string | null }>>([]);
+  const [showCompareSheet, setShowCompareSheet] = useState(false);
+
+  // ── Scan History & Favorites State ──
+  const [recentMealScans, setRecentMealScans] = useState<any[]>([]);
+  const [recentProductScans, setRecentProductScans] = useState<any[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [relogLoadingId, setRelogLoadingId] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [currentFavoriteId, setCurrentFavoriteId] = useState<string | null>(null);
+  const [favToggleLoading, setFavToggleLoading] = useState(false);
+  const [favLogLoadingId, setFavLogLoadingId] = useState<string | null>(null);
 
   const mealStatusMeta = mealResult ? MEAL_STATUS_META[mealResult.whole_food_status] : null;
   const productTierMeta = productResult ? PRODUCT_TIER_META[productResult.tier] : null;
@@ -352,9 +389,13 @@ export default function ScanScreen() {
     ];
   }, [mealResult, isDark]);
 
-  // Animate result entrance when scan result arrives
+  // Animate result entrance when scan result arrives + reset collapsibles
   useEffect(() => {
     if (mealResult || productResult) {
+      setWhyScoreExpanded(false);
+      setTipsExpanded(false);
+      setFlagsExpanded(false);
+      setEditScanExpanded(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       resultScale.setValue(0.88);
       resultOpacity.setValue(0);
@@ -400,6 +441,125 @@ export default function ScanScreen() {
       cancelled = true;
     };
   }, [scanStep]);
+
+  // ── Fetch recent scan history + favorites when entering capture step ──
+  useEffect(() => {
+    if (scanStep !== 'capture') return;
+    let cancelled = false;
+    const fetchHistory = async () => {
+      try {
+        const [mealRes, productRes, favRes] = await Promise.all([
+          wholeFoodScanApi.getMealHistory(5),
+          wholeFoodScanApi.getProductHistory(5),
+          wholeFoodScanApi.getFavorites(),
+        ]);
+        if (cancelled) return;
+        setRecentMealScans(mealRes?.items || []);
+        setRecentProductScans(productRes?.items || []);
+        setFavorites(favRes?.items || []);
+        setHistoryLoaded(true);
+        setFavoritesLoaded(true);
+      } catch {
+        if (!cancelled) {
+          setHistoryLoaded(true);
+          setFavoritesLoaded(true);
+        }
+      }
+    };
+    fetchHistory();
+    return () => { cancelled = true; };
+  }, [scanStep]);
+
+  // ── Check favorite status when result arrives ──
+  useEffect(() => {
+    if (!mealResult?.id && !productResult) return;
+    const scanId = mealResult?.id;
+    if (!scanId) return;
+    let cancelled = false;
+    wholeFoodScanApi.checkIsFavorite(scanId).then((res: any) => {
+      if (cancelled) return;
+      setIsFavorited(res?.is_favorite || false);
+      setCurrentFavoriteId(res?.favorite_id || null);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [mealResult, productResult]);
+
+  const handleRelogMeal = async (scanId: string, mealLabel: string) => {
+    setRelogLoadingId(scanId);
+    try {
+      await wholeFoodScanApi.relogMeal(scanId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSuccessModal({ visible: true, message: `${mealLabel} logged!` });
+    } catch {
+      Alert.alert('Error', 'Failed to log this meal. Please try again.');
+    } finally {
+      setRelogLoadingId(null);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (favToggleLoading) return;
+    setFavToggleLoading(true);
+    try {
+      if (isFavorited && currentFavoriteId) {
+        await wholeFoodScanApi.removeFavorite(currentFavoriteId);
+        setIsFavorited(false);
+        setCurrentFavoriteId(null);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        const scanId = mealResult?.id;
+        if (!scanId) return;
+        const scanType = scanMode;
+        const res = await wholeFoodScanApi.addFavorite(scanType, scanId);
+        setIsFavorited(true);
+        setCurrentFavoriteId(res?.id || null);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      Alert.alert('Error', 'Could not update favorite.');
+    } finally {
+      setFavToggleLoading(false);
+    }
+  };
+
+  const handleDescribeMeal = async () => {
+    if (!describeMealText.trim()) return;
+    setIsLoading(true);
+    setProductResult(null);
+    setMealResult(null);
+    setScanMode('product');
+    setScanStep('result');
+    setShowDescribeMealSheet(false);
+    try {
+      const next = normalizeProductResult(
+        await wholeFoodScanApi.analyzeLabel({
+          product_name: describeMealText.trim(),
+          ingredients_text: describeMealText.trim(),
+          source: 'text_description',
+        }),
+      );
+      setProductResult(next);
+      syncProductDrafts(next);
+    } catch (err: any) {
+      Alert.alert('Analysis failed', err?.message || 'Could not analyze your meal description.');
+      setScanStep('capture');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogFavorite = async (favoriteId: string, label: string) => {
+    setFavLogLoadingId(favoriteId);
+    try {
+      await wholeFoodScanApi.logFavorite(favoriteId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSuccessModal({ visible: true, message: `${label} logged!` });
+    } catch {
+      Alert.alert('Error', 'Failed to log this meal. Please try again.');
+    } finally {
+      setFavLogLoadingId(null);
+    }
+  };
 
   const handleGrantCamera = () => {
     setPermUndetermined(false);
@@ -562,8 +722,8 @@ export default function ScanScreen() {
 
       const result =
         source === 'camera'
-          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
-          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
+          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: MEAL_IMAGE_QUALITY, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: MEAL_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       const asset = result.assets[0];
       const uri = asset.uri;
@@ -586,7 +746,7 @@ export default function ScanScreen() {
     try {
       setIsLoading(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: SCAN_IMAGE_QUALITY,
+        quality: MEAL_IMAGE_QUALITY,
         skipProcessing: false,
       });
 
@@ -659,8 +819,8 @@ export default function ScanScreen() {
 
       const result =
         source === 'camera'
-          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] })
-          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: SCAN_IMAGE_QUALITY, mediaTypes: ['images'] });
+          ? await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: PRODUCT_IMAGE_QUALITY, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: PRODUCT_IMAGE_QUALITY, mediaTypes: ['images'] });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       const asset = result.assets[0];
       const uri = asset.uri;
@@ -683,7 +843,7 @@ export default function ScanScreen() {
     try {
       setIsLoading(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: SCAN_IMAGE_QUALITY,
+        quality: PRODUCT_IMAGE_QUALITY,
         skipProcessing: false,
       });
 
@@ -807,7 +967,20 @@ export default function ScanScreen() {
       syncProductDrafts(next);
       setShowBarcodeSheet(false);
     } catch (err: any) {
-      Alert.alert('Scan failed', err?.message || 'Unable to analyze that barcode right now.');
+      const message = err?.message || '';
+      const is404 = message.includes('not found') || message.includes('404');
+      if (is404) {
+        Alert.alert(
+          'Product Not Found',
+          'This barcode isn\'t in our database yet. Try scanning the ingredient label on the package instead — that works for any product.',
+          [
+            { text: 'Scan Label', onPress: () => { setScanStep('capture'); setShowBarcodeSheet(false); } },
+            { text: 'Try Again', style: 'cancel', onPress: () => setScanStep('capture') },
+          ],
+        );
+      } else {
+        Alert.alert('Scan failed', message || 'Unable to analyze that barcode right now.');
+      }
       setScanStep('capture');
     } finally {
       setIsLoading(false);
@@ -944,6 +1117,96 @@ export default function ScanScreen() {
         {/* Spacer — camera area fills the middle naturally */}
         <View style={{ flex: 1 }} />
 
+        {/* Favorites — quick re-log strip */}
+        {favoritesLoaded && favorites.filter((f: any) => f.scan_type === scanMode).length > 0 && (
+          <View style={styles.recentScansContainer}>
+            <Text style={styles.recentScansTitle}>Favorites</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4 }}>
+              {favorites.filter((f: any) => f.scan_type === scanMode).map((item: any) => {
+                const score = item.fuel_score;
+                const scoreColor = score != null
+                  ? score >= 85 ? '#16A34A' : score >= 70 ? '#22C55E' : score >= 50 ? '#D97706' : '#DC2626'
+                  : '#9CA3AF';
+                return (
+                  <View key={item.id} style={styles.recentScanCard}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <Ionicons name="heart" size={12} color="#EF4444" />
+                      {score != null && (
+                        <View style={[styles.recentScoreBadge, { backgroundColor: scoreColor }]}>
+                          <Text style={styles.recentScoreText}>{Math.round(score)}</Text>
+                        </View>
+                      )}
+                      <Text style={styles.recentScanLabel} numberOfLines={1}>{item.label || 'Saved item'}</Text>
+                    </View>
+                    {item.scan_type === 'meal' && (
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleLogFavorite(item.id, item.label || 'Meal')}
+                        style={styles.recentRelogBtn}
+                        disabled={favLogLoadingId === item.id}
+                      >
+                        {favLogLoadingId === item.id ? (
+                          <ActivityIndicator size="small" color="#16A34A" />
+                        ) : (
+                          <>
+                            <Ionicons name="add-circle-outline" size={14} color="#16A34A" />
+                            <Text style={styles.recentRelogText}>Log</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Recent Scans — quick re-log strip */}
+        {historyLoaded && (scanMode === 'meal' ? recentMealScans : recentProductScans).length > 0 && (
+          <View style={styles.recentScansContainer}>
+            <Text style={styles.recentScansTitle}>Recent</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4 }}>
+              {(scanMode === 'meal' ? recentMealScans : recentProductScans).map((item: any) => {
+                const label = scanMode === 'meal' ? item.meal_label : item.product_name;
+                const score = scanMode === 'meal' ? item.fuel_score : item.score;
+                const scoreColor = score != null
+                  ? score >= 85 ? '#16A34A' : score >= 70 ? '#22C55E' : score >= 50 ? '#D97706' : '#DC2626'
+                  : '#9CA3AF';
+                return (
+                  <View key={item.id} style={styles.recentScanCard}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      {score != null && (
+                        <View style={[styles.recentScoreBadge, { backgroundColor: scoreColor }]}>
+                          <Text style={styles.recentScoreText}>{Math.round(score)}</Text>
+                        </View>
+                      )}
+                      <Text style={styles.recentScanLabel} numberOfLines={1}>{label || 'Scanned item'}</Text>
+                    </View>
+                    {scanMode === 'meal' && (
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleRelogMeal(item.id, label || 'Meal')}
+                        style={styles.recentRelogBtn}
+                        disabled={relogLoadingId === item.id}
+                      >
+                        {relogLoadingId === item.id ? (
+                          <ActivityIndicator size="small" color="#16A34A" />
+                        ) : (
+                          <>
+                            <Ionicons name="add-circle-outline" size={14} color="#16A34A" />
+                            <Text style={styles.recentRelogText}>Log</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
           {/* Bottom controls */}
         <View style={styles.captureControls}>
           {/* Mode switcher */}
@@ -969,12 +1232,26 @@ export default function ScanScreen() {
 
           {scanMode === 'product' && (
             <View style={styles.captureHintCard}>
-              <View style={styles.captureHintHeader}>
-                <Ionicons name="sparkles-outline" size={16} color="#34D399" />
-                <Text style={styles.captureHintTitle}>Packaged food</Text>
+              <View style={[styles.captureHintHeader, { justifyContent: 'space-between' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name={shoppingMode ? 'cart-outline' : 'sparkles-outline'} size={16} color="#34D399" />
+                  <Text style={styles.captureHintTitle}>{shoppingMode ? 'Shopping mode' : 'Packaged food'}</Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setShoppingMode(!shoppingMode)}
+                  style={[styles.shoppingToggle, shoppingMode && styles.shoppingToggleActive]}
+                >
+                  <Ionicons name="cart-outline" size={12} color={shoppingMode ? '#FFFFFF' : 'rgba(255,255,255,0.6)'} />
+                  <Text style={[styles.shoppingToggleText, shoppingMode && styles.shoppingToggleTextActive]}>
+                    {shoppingMode ? 'ON' : 'Shop'}
+                  </Text>
+                </TouchableOpacity>
               </View>
               <Text style={styles.captureHintCopy}>
-                Snap the ingredients label for an instant verdict, or use barcode if the package is easy to scan.
+                {shoppingMode
+                  ? 'Scan products to compare. Get a quick buy/skip verdict and build your comparison list.'
+                  : 'Snap the ingredients label for an instant verdict, or use barcode if the package is easy to scan.'}
               </Text>
               <View style={styles.captureHintActions}>
                 <TouchableOpacity
@@ -985,6 +1262,16 @@ export default function ScanScreen() {
                   <Ionicons name="barcode-outline" size={16} color="#FFFFFF" />
                   <Text style={styles.captureHintButtonText}>Use barcode</Text>
                 </TouchableOpacity>
+                {shoppingMode && compareList.length > 0 && (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setShowCompareSheet(true)}
+                    style={[styles.captureHintButton, { backgroundColor: 'rgba(34,197,94,0.25)' }]}
+                  >
+                    <Ionicons name="git-compare-outline" size={16} color="#34D399" />
+                    <Text style={[styles.captureHintButtonText, { color: '#34D399' }]}>Compare ({compareList.length})</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
@@ -1026,7 +1313,9 @@ export default function ScanScreen() {
                 <Ionicons name="barcode-outline" size={20} color="rgba(255,255,255,0.8)" />
               </TouchableOpacity>
             ) : (
-              <View style={{ width: 44 }} />
+              <TouchableOpacity activeOpacity={0.8} onPress={() => setShowDescribeMealSheet(true)} style={styles.shutterSideBtn}>
+                <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -1350,6 +1639,18 @@ export default function ScanScreen() {
                 showLabel
                 showIcon
               />
+              <TouchableOpacity
+                onPress={handleToggleFavorite}
+                activeOpacity={0.7}
+                disabled={favToggleLoading}
+                style={{ alignItems: 'center', marginTop: 6 }}
+              >
+                <Ionicons
+                  name={isFavorited ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={isFavorited ? '#EF4444' : theme.textTertiary}
+                />
+              </TouchableOpacity>
             </View>
           </View>
           {mealResult.confidence < 0.6 && (
@@ -1406,21 +1707,60 @@ export default function ScanScreen() {
             const reasons = (mealResult.fuel_reasoning || []).slice(1);
             if (reasons.length === 0) return null;
             return (
-              <View style={[styles.fuelInsightCard, { backgroundColor: bgColor, borderColor }]}>
-                <View style={styles.fuelInsightHeader}>
-                  <Ionicons name="flash" size={15} color={iconColor} />
-                  <Text style={[styles.fuelInsightHeading, { color: headingColor }]}>Why this score</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setWhyScoreExpanded(!whyScoreExpanded)}
+                style={[styles.fuelInsightCard, { backgroundColor: bgColor, borderColor }]}
+              >
+                <View style={[styles.fuelInsightHeader, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="flash" size={15} color={iconColor} />
+                    <Text style={[styles.fuelInsightHeading, { color: headingColor }]}>Why this score</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ color: headingColor, fontSize: FontSize.xs }}>{reasons.length} reason{reasons.length !== 1 ? 's' : ''}</Text>
+                    <Ionicons name={whyScoreExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={headingColor} />
+                  </View>
                 </View>
-                {reasons.map((reason, idx) => (
+                {whyScoreExpanded && reasons.map((reason, idx) => (
                   <View key={idx} style={styles.fuelInsightRow}>
                     <Ionicons name="remove-circle-outline" size={14} color={textColor} style={{ marginTop: 1 }} />
                     <Text style={[styles.fuelInsightText, { color: textColor }]}>{reason}</Text>
                   </View>
                 ))}
-              </View>
+              </TouchableOpacity>
             );
           })()}
         </View>
+
+        {/* ── Multi-dish breakdown — shown when multiple distinct dishes detected ── */}
+        {mealResult.multi_dish && (mealResult.dishes || []).length > 1 && (
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm }}>
+              <Ionicons name="layers-outline" size={16} color={theme.primary} />
+              <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>
+                {(mealResult.dishes || []).length} dishes detected
+              </Text>
+            </View>
+            {(mealResult.dishes || []).map((dish, idx) => {
+              const dishScore = dish.score ?? 0;
+              const dishColor = dishScore >= 85 ? '#16A34A' : dishScore >= 70 ? '#22C55E' : dishScore >= 50 ? '#D97706' : '#DC2626';
+              return (
+                <View key={`dish-${idx}`} style={[styles.compareRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }}>{dish.meal_label}</Text>
+                    <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, marginTop: 2 }}>
+                      {Math.round(dish.nutrition_estimate?.calories || 0)} cal · {Math.round(dish.nutrition_estimate?.protein || 0)}g protein
+                    </Text>
+                  </View>
+                  <View style={[styles.recentScoreBadge, { backgroundColor: dishColor, width: 32, height: 32 }]}>
+                    <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>{Math.round(dishScore)}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* ── Edit scan details — collapsed by default ── */}
         <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -1550,63 +1890,101 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {/* ── Tips — merged upgrade + recovery ── */}
+        {/* ── Tips — collapsible, merged upgrade + recovery ── */}
         {((mealResult.upgrade_suggestions || []).length > 0 || (mealResult.recovery_plan || []).length > 0) && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>Tips</Text>
-            {(mealResult.upgrade_suggestions || []).map((item) => (
-              <View key={item} style={styles.guidanceRow}>
+            <TouchableOpacity
+              onPress={() => setTipsExpanded(!tipsExpanded)}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="sparkles-outline" size={16} color={theme.primary} />
-                <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Tips & Improvements</Text>
               </View>
-            ))}
-            {(mealResult.recovery_plan || []).map((item) => (
-              <View key={item} style={styles.guidanceRow}>
-                <Ionicons name="trending-up-outline" size={16} color={theme.primary} />
-                <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
+                  {(mealResult.upgrade_suggestions || []).length + (mealResult.recovery_plan || []).length}
+                </Text>
+                <Ionicons name={tipsExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textTertiary} />
               </View>
-            ))}
-            {mealResult.fuel_score != null && mealResult.fuel_score < 75 && (
-              <TouchableOpacity
-                onPress={() => {
-                  const ctx = JSON.stringify({
-                    source: 'scan',
-                    scan_result: {
-                      meal_label: mealResult.meal_label,
-                      fuel_score: mealResult.fuel_score,
-                      whole_food_flags: (mealResult.whole_food_flags || []).slice(0, 6),
-                    },
-                  });
-                  const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
-                    ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
-                    : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
-                  router.dismiss();
-                  setTimeout(() => {
-                    router.navigate(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
-                  }, 100);
-                }}
-                activeOpacity={0.7}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm }}
-              >
-                <Ionicons name="chatbubble-outline" size={14} color={theme.primary} />
-                <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '600' }}>Ask Coach for more tips</Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
+            {tipsExpanded && (
+              <View style={{ marginTop: Spacing.sm }}>
+                {(mealResult.upgrade_suggestions || []).map((item) => (
+                  <View key={item} style={styles.guidanceRow}>
+                    <Ionicons name="sparkles-outline" size={16} color={theme.primary} />
+                    <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+                  </View>
+                ))}
+                {(mealResult.recovery_plan || []).map((item) => (
+                  <View key={item} style={styles.guidanceRow}>
+                    <Ionicons name="trending-up-outline" size={16} color={theme.primary} />
+                    <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+                  </View>
+                ))}
+                {mealResult.fuel_score != null && mealResult.fuel_score < 75 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      const ctx = JSON.stringify({
+                        source: 'scan',
+                        scan_result: {
+                          meal_label: mealResult.meal_label,
+                          fuel_score: mealResult.fuel_score,
+                          whole_food_flags: (mealResult.whole_food_flags || []).slice(0, 6),
+                        },
+                      });
+                      const msg = mealResult.fuel_score != null && mealResult.fuel_score < 50
+                        ? `My ${mealResult.meal_label} scored ${Math.round(mealResult.fuel_score ?? 0)} — what's dragging it down and what's a better option?`
+                        : `I scanned ${mealResult.meal_label} — any tips to make it cleaner?`;
+                      router.dismiss();
+                      setTimeout(() => {
+                        router.navigate(`/(tabs)/chat?prefill=${encodeURIComponent(msg)}&autoSend=1&chatContext=${encodeURIComponent(ctx)}` as any);
+                      }, 100);
+                    }}
+                    activeOpacity={0.7}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm }}
+                  >
+                    <Ionicons name="chatbubble-outline" size={14} color={theme.primary} />
+                    <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '600' }}>Ask Coach for more tips</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
         )}
 
         {(mealResult.whole_food_flags || []).length > 0 && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>Why this was flagged</Text>
-            {(mealResult.whole_food_flags || []).slice(0, 4).map((flag, index) => (
-              <View key={`${flag.ingredient}-${index}`} style={styles.guidanceRow}>
+            <TouchableOpacity
+              onPress={() => setFlagsExpanded(!flagsExpanded)}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="alert-circle-outline" size={16} color={mealStatusMeta.color} />
-                <Text style={[styles.guidanceText, { color: theme.text }]}>
-                  {flag.ingredient} · {flag.reason}
-                  {flag.inferred ? ' (inferred)' : ''}
-                </Text>
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Flagged Ingredients</Text>
               </View>
-            ))}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={[styles.recentScoreBadge, { backgroundColor: mealStatusMeta.bg, width: 22, height: 22 }]}>
+                  <Text style={{ color: mealStatusMeta.color, fontSize: 11, fontWeight: '700' }}>{(mealResult.whole_food_flags || []).length}</Text>
+                </View>
+                <Ionicons name={flagsExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textTertiary} />
+              </View>
+            </TouchableOpacity>
+            {flagsExpanded && (
+              <View style={{ marginTop: Spacing.sm }}>
+                {(mealResult.whole_food_flags || []).slice(0, 6).map((flag, index) => (
+                  <View key={`${flag.ingredient}-${index}`} style={styles.guidanceRow}>
+                    <Ionicons name="alert-circle-outline" size={16} color={mealStatusMeta.color} />
+                    <Text style={[styles.guidanceText, { color: theme.text }]}>
+                      {flag.ingredient} · {flag.reason}
+                      {flag.inferred ? ' (inferred)' : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -1737,15 +2115,52 @@ export default function ScanScreen() {
 
         {flaggedRows.length > 0 && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>Flagged ingredients</Text>
-            {flaggedRows.map((row) => (
-              <View key={row.label} style={styles.guidanceRow}>
+            <TouchableOpacity
+              onPress={() => setFlagsExpanded(!flagsExpanded)}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="warning-outline" size={16} color={productTierMeta.color} />
-                <Text style={[styles.guidanceText, { color: theme.text }]}>
-                  {row.label}: {row.values.slice(0, 3).join(', ')}
-                </Text>
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Flagged Ingredients</Text>
               </View>
-            ))}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>{flaggedRows.length}</Text>
+                <Ionicons name={flagsExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textTertiary} />
+              </View>
+            </TouchableOpacity>
+            {flagsExpanded && (
+              <View style={{ marginTop: Spacing.sm }}>
+                {(productResult.flag_explanations || []).length > 0
+                  ? (productResult.flag_explanations || []).map((edu) => (
+                    <View key={edu.title} style={[styles.educationCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <Ionicons name="warning-outline" size={14} color={productTierMeta.color} />
+                        <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }}>{edu.title}</Text>
+                      </View>
+                      <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, lineHeight: 18, marginBottom: 6 }}>
+                        {edu.explanation}
+                      </Text>
+                      <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
+                        Found: {edu.detected.join(', ')}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <Ionicons name="swap-horizontal-outline" size={12} color={theme.primary} />
+                        <Text style={{ color: theme.primary, fontSize: FontSize.xs }}>{edu.look_for}</Text>
+                      </View>
+                    </View>
+                  ))
+                  : flaggedRows.map((row) => (
+                    <View key={row.label} style={styles.guidanceRow}>
+                      <Ionicons name="warning-outline" size={16} color={productTierMeta.color} />
+                      <Text style={[styles.guidanceText, { color: theme.text }]}>
+                        {row.label}: {row.values.slice(0, 3).join(', ')}
+                      </Text>
+                    </View>
+                  ))
+                }
+              </View>
+            )}
           </View>
         )}
 
@@ -1767,9 +2182,43 @@ export default function ScanScreen() {
         </View>
 
         <View style={styles.productResultActions}>
-          <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
-            <Text style={styles.primaryButtonText}>Looks good</Text>
-          </TouchableOpacity>
+          {shoppingMode ? (
+            <>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setCompareList((prev) => {
+                      if (prev.find((p) => p.name === productResult.product_name)) return prev;
+                      return [...prev, { name: productResult.product_name, score: productResult.score, tier: productResult.tier, brand: productResult.brand }];
+                    });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    scanAnotherProduct();
+                  }}
+                  activeOpacity={0.9}
+                  style={[styles.primaryButton, { backgroundColor: theme.primary, flex: 1 }]}
+                >
+                  <Ionicons name="git-compare-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryButtonText}>Compare & Scan Next</Text>
+                </TouchableOpacity>
+              </View>
+              {compareList.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setShowCompareSheet(true)}
+                  activeOpacity={0.85}
+                  style={[styles.footerButtonSecondary, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 8 }]}
+                >
+                  <Ionicons name="list-outline" size={18} color={theme.primary} />
+                  <Text style={[styles.footerButtonSecondaryText, { color: theme.primary }]}>
+                    View Comparison ({compareList.length} items)
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.9} style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+              <Text style={styles.primaryButtonText}>Looks good</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.productSecondaryActions}>
             <TouchableOpacity
               onPress={() => setShowProductEditSheet(true)}
@@ -1831,6 +2280,110 @@ export default function ScanScreen() {
           )}
         </View>
       )}
+
+      {/* Describe Meal Sheet */}
+      <Modal visible={showDescribeMealSheet} transparent animationType="slide" onRequestClose={() => setShowDescribeMealSheet(false)}>
+        <View style={styles.sheetModalBackdrop}>
+          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowDescribeMealSheet(false)} />
+          <View style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Describe your meal</Text>
+            <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
+              No photo? Describe what you ate and we'll score it.
+            </Text>
+            <TextInput
+              value={describeMealText}
+              onChangeText={setDescribeMealText}
+              placeholder="e.g., grilled chicken breast with brown rice and steamed broccoli"
+              placeholderTextColor={theme.textTertiary}
+              multiline
+              numberOfLines={3}
+              style={[
+                styles.formInput,
+                {
+                  color: theme.text,
+                  borderColor: theme.border,
+                  backgroundColor: theme.surfaceElevated,
+                  minHeight: 80,
+                  textAlignVertical: 'top',
+                  marginTop: Spacing.md,
+                },
+              ]}
+            />
+            <TouchableOpacity
+              onPress={handleDescribeMeal}
+              activeOpacity={0.9}
+              style={[styles.primaryButton, { backgroundColor: theme.primary, marginTop: Spacing.lg }]}
+              disabled={!describeMealText.trim()}
+            >
+              <Text style={styles.primaryButtonText}>Analyze</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Compare Products Sheet */}
+      <Modal visible={showCompareSheet} transparent animationType="slide" onRequestClose={() => setShowCompareSheet(false)}>
+        <View style={styles.sheetModalBackdrop}>
+          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowCompareSheet(false)} />
+          <View style={[styles.sheetModalCard, { backgroundColor: theme.surface, maxHeight: '70%' }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>Compare Products</Text>
+            <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
+              {compareList.length} product{compareList.length !== 1 ? 's' : ''} scanned. Higher score = better choice.
+            </Text>
+            <ScrollView style={{ marginTop: Spacing.md }}>
+              {[...compareList].sort((a, b) => b.score - a.score).map((item, idx) => {
+                const tierMeta = PRODUCT_TIER_META[item.tier as keyof typeof PRODUCT_TIER_META] || PRODUCT_TIER_META.mixed;
+                const isBest = idx === 0 && compareList.length > 1;
+                return (
+                  <View
+                    key={`${item.name}-${idx}`}
+                    style={[
+                      styles.compareRow,
+                      { backgroundColor: isBest ? tierMeta.bg : theme.surfaceElevated, borderColor: isBest ? tierMeta.color + '40' : theme.border },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {isBest && <Ionicons name="trophy-outline" size={14} color={tierMeta.color} />}
+                        <Text style={{ color: theme.text, fontSize: FontSize.sm, fontWeight: '600' }} numberOfLines={1}>{item.name}</Text>
+                      </View>
+                      {!!item.brand && <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>{item.brand}</Text>}
+                    </View>
+                    <View style={[styles.recentScoreBadge, { backgroundColor: tierMeta.color, width: 36, height: 36 }]}>
+                      <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '700' }}>{Math.round(item.score)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setCompareList((prev) => prev.filter((_, i) => i !== compareList.indexOf(item)))}
+                      activeOpacity={0.7}
+                      style={{ padding: 4 }}
+                    >
+                      <Ionicons name="close-circle-outline" size={18} color={theme.textTertiary} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: Spacing.lg }}>
+              <TouchableOpacity
+                onPress={() => { setCompareList([]); setShowCompareSheet(false); }}
+                activeOpacity={0.85}
+                style={[styles.footerButtonSecondary, { flex: 1, backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+              >
+                <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Clear All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowCompareSheet(false)}
+                activeOpacity={0.9}
+                style={[styles.primaryButton, { flex: 1 }]}
+              >
+                <Text style={styles.primaryButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <ChronometerSuccessModal
         visible={successModal.visible}
@@ -2030,6 +2583,64 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: '600',
     letterSpacing: 0.3,
+  },
+  recentScansContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 10,
+    zIndex: 2,
+  },
+  recentScansTitle: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  recentScanCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginRight: 8,
+    minWidth: 140,
+    maxWidth: 220,
+    gap: 8,
+  },
+  recentScoreBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  recentScoreText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  recentScanLabel: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: FontSize.xs,
+    fontWeight: '500' as const,
+    flex: 1,
+  },
+  recentRelogBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 3,
+    backgroundColor: 'rgba(22,163,74,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.md,
+  },
+  recentRelogText: {
+    color: '#16A34A',
+    fontSize: 11,
+    fontWeight: '600' as const,
   },
   captureControls: {
     paddingHorizontal: Spacing.xl,
@@ -2799,6 +3410,41 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FontSize.sm,
     lineHeight: 20,
+  },
+  compareRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: 8,
+  },
+  shoppingToggle: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  shoppingToggleActive: {
+    backgroundColor: '#16A34A',
+  },
+  shoppingToggleText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  shoppingToggleTextActive: {
+    color: '#FFFFFF',
+  },
+  educationCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
   },
   emptyCopy: {
     marginTop: Spacing.sm,

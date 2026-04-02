@@ -55,9 +55,9 @@ export const EXPO_PROJECT_ID =
   || (Constants.expoConfig?.extra as any)?.eas?.projectId
   || '';
 export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@fuelgood.app';
-export const PRIVACY_POLICY_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
-export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL);
-export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL);
+export const PRIVACY_POLICY_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL) || 'https://fuelgood.app/privacy';
+export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL) || 'https://fuelgood.app/terms';
+export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL) || 'https://fuelgood.app/support';
 export const CLIENT_ERROR_REPORTING_ENABLED = (process.env.EXPO_PUBLIC_ENABLE_ERROR_REPORTING?.trim() || 'true') !== 'false';
 export const ENABLE_ANALYTICS = (process.env.EXPO_PUBLIC_ENABLE_ANALYTICS?.trim() || 'false') === 'true';
 export const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() || '';

@@ -75,7 +75,18 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
     try {
       const plan = await mealPlanApi.getCurrent();
       if (plan?.items?.length) {
-        set({ currentPlan: plan, hasLoaded: true });
+        // Check if plan is stale (week_start is more than 2 weeks old)
+        const weekStart = plan.week_start ? new Date(plan.week_start + 'T12:00:00') : null;
+        const now = new Date();
+        const twoWeeksAgo = new Date(now);
+        twoWeeksAgo.setDate(now.getDate() - 14);
+
+        if (weekStart && weekStart < twoWeeksAgo) {
+          // Plan is stale — don't display it, let user generate a new one
+          set({ currentPlan: null, hasLoaded: true });
+        } else {
+          set({ currentPlan: plan, hasLoaded: true });
+        }
       } else {
         set({ hasLoaded: true });
       }

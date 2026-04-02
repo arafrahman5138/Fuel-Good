@@ -276,7 +276,7 @@ async def healthify_food_stream(
                 yield f"data: {json.dumps({'error': 'Healthify AI is at capacity. Please try again in a moment.'})}\n\n"
                 return
             try:
-                async with asyncio.timeout(45):
+                async with asyncio.timeout(120):
                     stream_gen = await healthify_agent(
                         db,
                         request.message,
@@ -289,7 +289,7 @@ async def healthify_food_stream(
                         full_response += chunk
                         chunk_count += 1
                         yield f"data: {json.dumps({'content': chunk})}\n\n"
-            except TimeoutError:
+            except (TimeoutError, asyncio.TimeoutError):
                 elapsed_ms = int((time.perf_counter() - started_at) * 1000)
                 logger.warning(
                     "healthify.stream.timeout request_id=%s user_id=%s session_id=%s elapsed_ms=%s chunks=%s",

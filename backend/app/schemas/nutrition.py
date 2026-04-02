@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any, List
+from datetime import date as date_type, timedelta
 
 
 class NutritionTargetsResponse(BaseModel):
@@ -34,6 +35,29 @@ class FoodLogCreate(BaseModel):
     servings: float = 1.0
     quantity: float = 1.0
     nutrition: Optional[Dict[str, Any]] = None
+
+    @field_validator("date")
+    @classmethod
+    def validate_date_range(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        try:
+            parsed = date_type.fromisoformat(v)
+        except ValueError:
+            raise ValueError("Invalid date format. Use YYYY-MM-DD.")
+        today = date_type.today()
+        if parsed > today:
+            raise ValueError("Cannot log meals for future dates.")
+        if parsed < today - timedelta(days=90):
+            raise ValueError("Cannot log meals more than 90 days in the past.")
+        return v
+
+    @field_validator("servings", "quantity")
+    @classmethod
+    def validate_positive_amounts(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("Must be greater than 0.")
+        return v
 
 
 class FoodLogUpdate(BaseModel):

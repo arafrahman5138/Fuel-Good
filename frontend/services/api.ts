@@ -544,6 +544,43 @@ export const wholeFoodScanApi = {
   },
   correctMeal: (scanId: string, correctionText: string) =>
     api.patch<any>(`/scan/meal/${scanId}/correct`, { correction_text: correctionText }),
+  getMealHistory: (limit = 20, cursor?: string) =>
+    api.get<any>(`/scan/meal/history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+  getProductHistory: (limit = 20, cursor?: string) =>
+    api.get<any>(`/scan/product/history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+  getMealScan: (scanId: string) =>
+    api.get<any>(`/scan/meal/${scanId}`),
+  relogMeal: (scanId: string, data?: {
+    date?: string;
+    meal_type?: string;
+    servings?: number;
+    quantity?: number;
+    portion_size?: string;
+  }) => {
+    const d = new Date();
+    const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return api.post<any>(`/scan/meal/${scanId}/relog`, { date: localDate, ...(data || {}) });
+  },
+  // Favorites
+  getFavorites: (scanType?: 'meal' | 'product') =>
+    api.get<any>(`/scan/favorites${scanType ? `?scan_type=${scanType}` : ''}`),
+  addFavorite: (scanType: 'meal' | 'product', scanId: string) =>
+    api.post<any>('/scan/favorites', { scan_type: scanType, scan_id: scanId }),
+  removeFavorite: (favoriteId: string) =>
+    api.delete<any>(`/scan/favorites/${favoriteId}`),
+  logFavorite: (favoriteId: string, data?: {
+    date?: string;
+    meal_type?: string;
+    servings?: number;
+    quantity?: number;
+    portion_size?: string;
+  }) => {
+    const d = new Date();
+    const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return api.post<any>(`/scan/favorites/${favoriteId}/log`, { date: localDate, ...(data || {}) });
+  },
+  checkIsFavorite: (scanId: string) =>
+    api.get<any>(`/scan/favorites/${scanId}/is_favorite`),
 };
 
 // ── Fuel Score API ──

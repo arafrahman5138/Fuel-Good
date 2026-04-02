@@ -458,12 +458,34 @@ ALIASES = {
     "vermicelli": "rice noodles",
 }
 
-MEAL_SCAN_PROMPT = """You analyze one meal photo for a nutrition app.
+MEAL_SCAN_PROMPT = """You analyze a meal photo for a nutrition app.
 Return strict JSON only with this exact shape:
 {
   "not_food": false,
   "not_food_reason": "",
-  "meal_label": "short dish name",
+  "multi_dish": false,
+  "dishes": [
+    {
+      "meal_label": "short dish name",
+      "components": [
+        {
+          "name": "component or ingredient",
+          "role": "protein|carb|veg|fat|sauce|dessert|other|fruit",
+          "portion_factor": 1.0,
+          "visible": true,
+          "confidence": 0.0
+        }
+      ],
+      "possible_hidden_ingredients": [
+        {
+          "name": "ingredient",
+          "reason": "short reason",
+          "confidence": 0.0
+        }
+      ]
+    }
+  ],
+  "meal_label": "short dish name (main or combined)",
   "meal_type_guess": "breakfast|lunch|dinner|snack",
   "source_context_guess": "home|restaurant",
   "portion_size": "small|medium|large",
@@ -493,6 +515,8 @@ Return strict JSON only with this exact shape:
 
 Rules:
 - If the image clearly does not contain food (e.g. keys, phone, hands, objects, scenery), set not_food to true and not_food_reason to a short description of what you see. Leave all other fields as defaults.
+- If multiple DISTINCT dishes are visible (e.g. a plate of pasta AND a separate bowl of salad, or meal prep containers with different items), set multi_dish to true and populate the dishes array with one entry per dish. Still fill the top-level components with ALL components combined.
+- If it's a single dish (even with multiple components like rice + chicken + veggies), set multi_dish to false and leave dishes as an empty array.
 - prefer concrete food names over vague labels
 - use 0.25 to 1.5 for portion_factor
 - if uncertain, choose medium confidence and say unknown less often than inventing ingredients
@@ -1107,6 +1131,115 @@ def _calibrated_guidance(
     return upgrade_suggestions[:3], recovery_plan[:3]
 
 
+def _check_ingredient_cache(
+    db: Session,
+    user_id: str,
+    normalized_ingredients: list[str],
+    meal_label: str,
+    portion_size: str,
+    source_context: str,
+    meal_type: str,
+) -> dict[str, Any] | None:
+    """Check if a recent scan from this user has >80% ingredient overlap.
+
+    Returns a full result dict if cache hit, else None.
+    Only matches scans from the last 30 days with at least 3 ingredients.
+    """
+    from datetime import timedelta
+    from app.models.scanned_meal import ScannedMealLog
+
+    if len(normalized_ingredients) < 3:
+        return None
+
+    ingredient_set = set(normalized_ingredients)
+    cutoff = datetime.now(UTC) - timedelta(days=30)
+
+    recent_scans = (
+        db.query(ScannedMealLog)
+        .filter(
+            ScannedMealLog.user_id == user_id,
+            ScannedMealLog.created_at >= cutoff,
+            ScannedMealLog.fuel_score.isnot(None),
+        )
+        .order_by(ScannedMealLog.created_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    for scan in recent_scans:
+        cached_ingredients = set(scan.normalized_ingredients or [])
+        if not cached_ingredients:
+            continue
+
+        # Jaccard-like overlap: intersection / union
+        intersection = ingredient_set & cached_ingredients
+        union = ingredient_set | cached_ingredients
+        overlap = len(intersection) / max(len(union), 1)
+
+        if overlap >= 0.80:
+            # Rebuild result from stored scan data, applying current portion/context
+            nutrition = dict(scan.nutrition_estimate or {})
+
+            # Apply portion size adjustment if different
+            cached_portion = scan.portion_size or "medium"
+            requested_portion = portion_size or "medium"
+            if cached_portion != requested_portion:
+                cached_mult = PORTION_MULTIPLIERS.get(cached_portion, 1.0)
+                requested_mult = PORTION_MULTIPLIERS.get(requested_portion, 1.0)
+                ratio = requested_mult / cached_mult
+                for key in ["calories", "protein", "carbs", "fat", "fiber", "sugar", "sugar_g"]:
+                    if key in nutrition and nutrition[key]:
+                        nutrition[key] = round(float(nutrition[key]) * ratio, 1)
+
+            mes_data = None
+            if scan.mes_score is not None:
+                mes_data = {
+                    "score": float(scan.mes_score),
+                    "tier": scan.mes_tier,
+                    "sub_scores": scan.mes_sub_scores or {},
+                }
+
+            return {
+                "meal_label": meal_label or scan.meal_label,
+                "meal_context": scan.meal_context,
+                "meal_type": meal_type or scan.meal_type,
+                "portion_size": requested_portion,
+                "source_context": source_context or scan.source_context,
+                "estimated_ingredients": scan.estimated_ingredients or [],
+                "normalized_ingredients": scan.normalized_ingredients or [],
+                "nutrition_estimate": nutrition,
+                "whole_food_status": scan.whole_food_status,
+                "whole_food_flags": scan.whole_food_flags or [],
+                "suggested_swaps": scan.suggested_swaps or {},
+                "upgrade_suggestions": scan.upgrade_suggestions or [],
+                "recovery_plan": scan.recovery_plan or [],
+                "mes": mes_data,
+                "confidence": min(float(scan.confidence or 0) + 0.05, 1.0),
+                "confidence_breakdown": {
+                    **(scan.confidence_breakdown or {}),
+                    "estimate_mode": "cached",
+                    "cache_source_id": str(scan.id),
+                },
+                "source_model": (scan.source_model or "") + "+cached",
+                "grounding_source": scan.grounding_source,
+                "grounding_candidates": scan.grounding_candidates or [],
+                "prompt_version": scan.prompt_version,
+                "matched_recipe_id": scan.matched_recipe_id,
+                "matched_recipe_confidence": scan.matched_recipe_confidence,
+                "whole_food_summary": nutrition.get("whole_food_summary"),
+                "pairing_opportunity": bool(scan.pairing_opportunity),
+                "pairing_recommended_recipe_id": scan.pairing_recommended_recipe_id,
+                "pairing_recommended_title": scan.pairing_recommended_title,
+                "pairing_projected_mes": float(scan.pairing_projected_mes) if scan.pairing_projected_mes is not None else None,
+                "pairing_projected_delta": float(scan.pairing_projected_delta) if scan.pairing_projected_delta is not None else None,
+                "pairing_reasons": scan.pairing_reasons or [],
+                "pairing_timing": scan.pairing_timing,
+                "components": [],
+            }
+
+    return None
+
+
 async def analyze_meal_scan(
     db: Session,
     user_id: str,
@@ -1160,6 +1293,17 @@ async def analyze_meal_scan(
         or "medium"
     ).strip().lower()
     preparation_style = str(extracted.get("preparation_style") or "unknown").strip().lower()
+
+    # ------------------------------------------------------------------
+    # Stage 1.5: Ingredient-hash cache — skip expensive pipeline if
+    # a recent scan from this user has >80% ingredient overlap
+    # ------------------------------------------------------------------
+    cached_result = _check_ingredient_cache(
+        db, user_id, normalized_ingredients, raw_meal_label, portion_size, source_context, meal_type,
+    )
+    if cached_result is not None:
+        logger.info("Meal scan cache hit for user %s — reusing prior analysis", user_id)
+        return cached_result
 
     # ------------------------------------------------------------------
     # Stage 2: USDA grounding + Claude ensemble reasoning (parallel)
@@ -1422,6 +1566,30 @@ async def analyze_meal_scan(
         "usda_grounded_count": usda_grounded_count,
         "usda_grounded_total": len(components),
     }
+
+    # ── Multi-dish support ──
+    # If Gemini detected multiple distinct dishes, include per-dish breakdowns
+    raw_dishes = extracted.get("dishes") or []
+    if extracted.get("multi_dish") and len(raw_dishes) > 1:
+        dish_breakdowns = []
+        for dish in raw_dishes:
+            dish_components = _stable_visible_components(dish.get("components") or [])
+            dish_ingredients = [_titleize_name(str(c.get("name", "")).strip()) for c in dish_components if c.get("name")]
+            dish_nutrition = _aggregate_nutrition(dish_components, {}, portion_multiplier=1.0)
+            dish_wf = analyze_whole_food_product({"ingredients_text": ", ".join(dish_ingredients)})
+            dish_breakdowns.append({
+                "meal_label": dish.get("meal_label", "Dish"),
+                "ingredients": dish_ingredients,
+                "nutrition_estimate": dish_nutrition,
+                "score": dish_wf.get("score"),
+                "whole_food_status": "pass" if dish_wf.get("score", 0) >= 70 else "warn" if dish_wf.get("score", 0) >= 50 else "fail",
+            })
+        result["multi_dish"] = True
+        result["dishes"] = dish_breakdowns
+    else:
+        result["multi_dish"] = False
+        result["dishes"] = []
+
     logger.info(
         "meal_scan.completed bytes=%s models=%s usda=%s/%s ensemble=%s ms=%s",
         len(image_bytes),

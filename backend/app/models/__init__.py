@@ -13,6 +13,7 @@ from app.models import (
     recipe,
     recipe_embedding,
     saved_recipe,
+    scan_favorite,
     scanned_meal,
     user,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "recipe",
     "recipe_embedding",
     "saved_recipe",
+    "scan_favorite",
     "scanned_meal",
     "user",
 ]

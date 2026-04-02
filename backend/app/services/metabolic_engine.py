@@ -136,6 +136,7 @@ BASE_WEIGHT_FAT = 0.18
 # ── Carb ceiling defaults (g/day) ──
 CARB_CEILING_DEFAULT_G = 130
 CARB_CEILING_IR_G = 90
+CARB_CEILING_T2D_G = 75  # Strictest: Type 2 Diabetes needs lowest carb ceiling
 CARB_CEILING_ATHLETIC_G = 175
 
 # ── Protein targets (g per lb per day — U.S. units) ──
@@ -799,7 +800,9 @@ def calc_protein_target_g(profile: MetabolicProfileInput) -> float:
 
 def calc_carb_ceiling_g(profile: MetabolicProfileInput) -> float:
     """Daily net carb ceiling in grams."""
-    if profile.type_2_diabetes or profile.insulin_resistant:
+    if profile.type_2_diabetes:
+        base = CARB_CEILING_T2D_G  # Strictest tier for T2D
+    elif profile.insulin_resistant:
         base = CARB_CEILING_IR_G
     elif profile.activity_level == ActivityLevel.ATHLETIC:
         base = CARB_CEILING_ATHLETIC_G
@@ -995,8 +998,18 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
     fiber_g = max(FIBER_FLOOR_MINIMUM_G, profile.weight_lb * FIBER_TARGET_G_PER_LB)
     fat_g = calc_fat_target_g(tdee, carb_g, protein_g, profile)
     calorie_target_kcal = calc_macro_calorie_target_kcal(protein_g, carb_g, fat_g)
+
+    # Apply goal-based calorie adjustment relative to TDEE
     if tdee > 0:
-        calorie_target_kcal = min(calorie_target_kcal, round(tdee, 1))
+        if profile.goal == Goal.MUSCLE_GAIN:
+            calorie_target_kcal = round(tdee * 1.10)    # +10% surplus for muscle gain
+        elif profile.goal == Goal.FAT_LOSS:
+            calorie_target_kcal = round(tdee * 0.80)    # -20% deficit for fat loss
+        elif profile.goal == Goal.METABOLIC_RESET:
+            calorie_target_kcal = round(tdee * 0.90)    # -10% mild deficit
+        else:  # MAINTENANCE
+            calorie_target_kcal = round(tdee)            # Match TDEE
+
     ism = calc_ism(profile)
 
     weights = calc_score_weights(profile)
@@ -1810,6 +1823,7 @@ def remaining_budget(
     return {
         "protein_remaining_g": round(protein_remaining, 1),
         "fiber_remaining_g": round(fiber_remaining, 1),
+        "sugar_remaining_g": round(carb_headroom, 1),
         "sugar_headroom_g": round(carb_headroom, 1),  # compat
         "carb_headroom_g": round(carb_headroom, 1),
         "fat_remaining_g": round(fat_remaining, 1),
@@ -1870,7 +1884,9 @@ def derive_sugar_ceiling(profile: dict[str, Any]) -> float:
     prediabetes = bool(profile.get("prediabetes"))
     triglycerides = profile.get("triglycerides_mgdl")
 
-    if type_2_diabetes or insulin_resistant:
+    if type_2_diabetes:
+        base = float(CARB_CEILING_T2D_G)  # Strictest tier for T2D
+    elif insulin_resistant:
         base = float(CARB_CEILING_IR_G)
     elif activity in ("athletic", "high"):
         base = float(CARB_CEILING_ATHLETIC_G)

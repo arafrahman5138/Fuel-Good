@@ -241,8 +241,7 @@ def _score_scan(
             score += 3
             reasoning.append(f"Strong protein ({protein:.0f}g) supports satiety and recovery.")
 
-    # Scanned meals never hit 100 (no full ingredient list)
-    score = max(0.0, min(95.0, round(score, 1)))
+    score = max(0.0, min(100.0, round(score, 1)))
     tier, tier_label = _tier_for_score(score)
 
     return FuelScoreResult(
@@ -637,15 +636,22 @@ def compute_fuel_streak(
     if ref_date is None:
         ref_date = datetime.now(UTC).date()
 
-    # Collect weekly pass/fail for up to 52 weeks back
-    check_date = ref_date - timedelta(days=ref_date.weekday() + 7)
+    # Start from current week's Monday (not 2 weeks back)
+    check_date = ref_date - timedelta(days=ref_date.weekday())
     weekly_results: list[bool] = []
+    consecutive_empty = 0
 
     for _ in range(52):
         week_start, _ = get_week_bounds(check_date)
         scores = get_weekly_meal_scores(db, user_id, week_start)
         if not scores:
-            break
+            # Allow up to 1 gap week (vacation etc), only stop on 2+ consecutive empty weeks
+            consecutive_empty += 1
+            if consecutive_empty >= 2:
+                break
+            check_date -= timedelta(days=7)
+            continue
+        consecutive_empty = 0
         avg = sum(scores) / len(scores)
         weekly_results.append(avg >= fuel_target)
         check_date -= timedelta(days=7)
@@ -668,4 +674,4 @@ def compute_fuel_streak(
         else:
             run = 0
 
-    return {"current_streak": current, "longest_streak": longest}
+    return {"current_streak": current, "longest_streak": max(longest, current)}

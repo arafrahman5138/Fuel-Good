@@ -201,6 +201,66 @@ def _get_float(payload: dict[str, Any], *keys: str) -> float:
     return 0.0
 
 
+FLAG_EXPLANATIONS = {
+    "seed_oils": {
+        "title": "Seed Oils",
+        "explanation": "Industrial seed oils like canola, soybean, and sunflower oil are high in omega-6 fatty acids. Excess omega-6 can promote inflammation when not balanced with omega-3s. Look for olive oil, avocado oil, coconut oil, or butter instead.",
+        "look_for": "Olive oil, avocado oil, coconut oil, butter, ghee",
+    },
+    "added_sugars": {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names — corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+    },
+    "refined_flours": {
+        "title": "Refined Flours",
+        "explanation": "Refined flour has been stripped of the bran and germ — the parts with fiber, vitamins, and minerals. It digests quickly like sugar. Whole grain or sprouted grain versions retain the nutrition.",
+        "look_for": "Whole wheat flour, almond flour, oat flour, sprouted grain flour",
+    },
+    "artificial_additives": {
+        "title": "Artificial Additives",
+        "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+        "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+    },
+    "gums_or_emulsifiers": {
+        "title": "Gums & Emulsifiers",
+        "explanation": "Gums and emulsifiers (xanthan gum, carrageenan, lecithin) improve texture and shelf life. While most are safe in small amounts, some people experience digestive sensitivity. They signal a more processed product.",
+        "look_for": "Products that use whole-food thickeners or don't need stabilizers",
+    },
+    "protein_isolates": {
+        "title": "Protein Isolates",
+        "explanation": "Protein isolates are heavily processed extractions — the protein is stripped from the whole food. While not harmful, they indicate a highly engineered product rather than real food. Whole-food protein sources are preferable.",
+        "look_for": "Whole eggs, Greek yogurt, nuts, legumes, real meat for protein",
+    },
+}
+
+
+def _build_flag_explanations(
+    *,
+    seed_oils: list[str],
+    added_sugars: list[str],
+    refined_flours: list[str],
+    additives: list[str],
+    gums: list[str],
+    isolates: list[str],
+) -> list[dict[str, str]]:
+    """Return education explanations only for detected flag categories."""
+    explanations = []
+    if seed_oils:
+        explanations.append({**FLAG_EXPLANATIONS["seed_oils"], "detected": seed_oils[:3]})
+    if added_sugars:
+        explanations.append({**FLAG_EXPLANATIONS["added_sugars"], "detected": added_sugars[:3]})
+    if refined_flours:
+        explanations.append({**FLAG_EXPLANATIONS["refined_flours"], "detected": refined_flours[:3]})
+    if additives:
+        explanations.append({**FLAG_EXPLANATIONS["artificial_additives"], "detected": additives[:3]})
+    if gums:
+        explanations.append({**FLAG_EXPLANATIONS["gums_or_emulsifiers"], "detected": gums[:3]})
+    if isolates:
+        explanations.append({**FLAG_EXPLANATIONS["protein_isolates"], "detected": isolates[:3]})
+    return explanations
+
+
 def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     ingredients = _split_ingredients(payload.get("ingredients_text"))
     ingredient_count = len(ingredients)
@@ -365,4 +425,12 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
             "gums_or_emulsifiers": gums,
             "protein_isolates": isolates,
         },
+        "flag_explanations": _build_flag_explanations(
+            seed_oils=seed_oils,
+            added_sugars=added_sugars,
+            refined_flours=refined_flours,
+            additives=additives,
+            gums=gums,
+            isolates=isolates,
+        ),
     }

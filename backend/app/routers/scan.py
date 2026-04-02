@@ -19,6 +19,7 @@ from app.db import get_db
 from app.models.nutrition import FoodLog
 from app.models.product_label_scan import ProductLabelScan
 from app.models.recipe import Recipe
+from app.models.scan_favorite import ScanFavorite
 from app.models.scanned_meal import ScannedMealLog
 from app.models.user import User
 from app.routers.nutrition import _compute_daily
@@ -349,10 +350,33 @@ async def analyze_product(
 async def analyze_product_barcode(
     barcode: str,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    del current_user
     if not barcode.strip():
         raise HTTPException(status_code=400, detail="Barcode is required.")
+
+    # ── Check cache: reuse recent scan of same barcode (< 7 days old) ──
+    from datetime import timedelta
+    cache_cutoff = datetime.now(UTC) - timedelta(days=7)
+    cached = (
+        db.query(ProductLabelScan)
+        .filter(
+            ProductLabelScan.barcode == barcode.strip(),
+            ProductLabelScan.created_at >= cache_cutoff,
+        )
+        .order_by(ProductLabelScan.created_at.desc())
+        .first()
+    )
+    if cached and cached.analysis:
+        return {
+            **cached.analysis,
+            "scan_id": str(cached.id),
+            "product_name": cached.product_name,
+            "brand": cached.brand,
+            "barcode": barcode,
+            "source": "barcode",
+            "cached": True,
+        }
 
     url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
     params = {
@@ -380,7 +404,8 @@ async def analyze_product_barcode(
 
     payload = _extract_product_payload(data["product"], barcode)
     result = analyze_whole_food_product(payload)
-    return {
+
+    full_result = {
         "product_name": payload["product_name"],
         "brand": payload.get("brand"),
         "barcode": barcode,
@@ -398,6 +423,24 @@ async def analyze_product_barcode(
         "notes": [],
         **result,
     }
+
+    # ── Persist barcode scan for caching ──
+    record = ProductLabelScan(
+        user_id=current_user.id,
+        capture_type="barcode",
+        barcode=barcode.strip(),
+        product_name=payload["product_name"],
+        brand=payload.get("brand"),
+        ingredients_text=payload.get("ingredients_text"),
+        confidence=0.98,
+        analysis=full_result,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    full_result["scan_id"] = str(record.id)
+    return full_result
 
 
 @router.post("/product/image")
@@ -918,3 +961,462 @@ async def correct_meal_scan(
     except Exception:
         serialized["image"] = None
     return serialized
+
+
+# ── Scan History Endpoints ─────────────────────────────────────────
+
+
+class MealScanRelogRequest(BaseModel):
+    date: Optional[str] = None
+    meal_type: Optional[str] = None
+    servings: float = 1.0
+    quantity: float = 1.0
+    portion_size: Optional[str] = None
+
+
+@router.get("/meal/history")
+async def get_meal_scan_history(
+    limit: int = 20,
+    cursor: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return paginated list of past meal scans for the current user."""
+    from sqlalchemy import desc
+
+    query = db.query(ScannedMealLog).filter(
+        ScannedMealLog.user_id == current_user.id,
+    ).order_by(desc(ScannedMealLog.created_at), desc(ScannedMealLog.id))
+
+    if cursor:
+        # cursor is "created_at|id" composite
+        try:
+            cursor_date_str, cursor_id = cursor.rsplit("|", 1)
+            cursor_date = datetime.fromisoformat(cursor_date_str)
+            query = query.filter(
+                (ScannedMealLog.created_at < cursor_date)
+                | (
+                    (ScannedMealLog.created_at == cursor_date)
+                    & (ScannedMealLog.id < cursor_id)
+                )
+            )
+        except (ValueError, TypeError):
+            pass
+
+    limit = min(limit, 50)
+    scans = query.limit(limit + 1).all()
+
+    has_more = len(scans) > limit
+    scans = scans[:limit]
+
+    items = []
+    for scan in scans:
+        items.append({
+            "id": str(scan.id),
+            "meal_label": scan.meal_label,
+            "fuel_score": float(scan.fuel_score) if scan.fuel_score is not None else None,
+            "meal_type": scan.meal_type,
+            "whole_food_status": scan.whole_food_status,
+            "logged_to_chronometer": bool(scan.logged_to_chronometer),
+            "created_at": scan.created_at.isoformat() if scan.created_at else None,
+            "image": _serialize_storage_reference(
+                bucket=scan.image_bucket,
+                path=scan.image_path,
+                mime_type=scan.image_mime_type,
+                fallback_url=scan.image_url,
+            ),
+        })
+
+    next_cursor = None
+    if has_more and scans:
+        last = scans[-1]
+        next_cursor = f"{last.created_at.isoformat()}|{last.id}"
+
+    return {"items": items, "next_cursor": next_cursor, "has_more": has_more}
+
+
+@router.get("/product/history")
+async def get_product_scan_history(
+    limit: int = 20,
+    cursor: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return paginated list of past product scans for the current user."""
+    from sqlalchemy import desc
+
+    query = db.query(ProductLabelScan).filter(
+        ProductLabelScan.user_id == current_user.id,
+    ).order_by(desc(ProductLabelScan.created_at), desc(ProductLabelScan.id))
+
+    if cursor:
+        try:
+            cursor_date_str, cursor_id = cursor.rsplit("|", 1)
+            cursor_date = datetime.fromisoformat(cursor_date_str)
+            query = query.filter(
+                (ProductLabelScan.created_at < cursor_date)
+                | (
+                    (ProductLabelScan.created_at == cursor_date)
+                    & (ProductLabelScan.id < cursor_id)
+                )
+            )
+        except (ValueError, TypeError):
+            pass
+
+    limit = min(limit, 50)
+    scans = query.limit(limit + 1).all()
+
+    has_more = len(scans) > limit
+    scans = scans[:limit]
+
+    items = []
+    for scan in scans:
+        analysis = scan.analysis or {}
+        items.append({
+            "id": str(scan.id),
+            "product_name": scan.product_name,
+            "brand": scan.brand,
+            "barcode": scan.barcode,
+            "score": analysis.get("score"),
+            "tier": analysis.get("tier"),
+            "verdict": analysis.get("verdict"),
+            "created_at": scan.created_at.isoformat() if scan.created_at else None,
+            "image": _serialize_storage_reference(
+                bucket=scan.image_bucket,
+                path=scan.image_path,
+                mime_type=scan.image_mime_type,
+                fallback_url=scan.image_url,
+            ),
+        })
+
+    next_cursor = None
+    if has_more and scans:
+        last = scans[-1]
+        next_cursor = f"{last.created_at.isoformat()}|{last.id}"
+
+    return {"items": items, "next_cursor": next_cursor, "has_more": has_more}
+
+
+@router.get("/meal/{scan_id}")
+async def get_meal_scan(
+    scan_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return the full details of a single meal scan."""
+    scan = db.query(ScannedMealLog).filter(
+        ScannedMealLog.id == scan_id,
+        ScannedMealLog.user_id == current_user.id,
+    ).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Meal scan not found.")
+
+    serialized = _serialize_scan(scan)
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    return serialized
+
+
+@router.post("/meal/{scan_id}/relog")
+async def relog_meal_scan(
+    scan_id: str,
+    body: MealScanRelogRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Re-log a previously scanned meal without re-scanning.
+
+    Unlike /log, this always creates a new FoodLog entry even if the scan
+    was already logged. Designed for the "same breakfast" use case.
+    """
+    scan = db.query(ScannedMealLog).filter(
+        ScannedMealLog.id == scan_id,
+        ScannedMealLog.user_id == current_user.id,
+    ).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Meal scan not found.")
+
+    log_date = datetime.now(UTC).date()
+    if body.date:
+        try:
+            log_date = datetime.fromisoformat(body.date).date()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    nutrition_snapshot = {
+        **(scan.nutrition_estimate or {}),
+        "estimated": True,
+        "meal_context": scan.meal_context,
+        "scan_confidence": float(scan.confidence or 0),
+        "whole_food_status": scan.whole_food_status,
+        "whole_food_flags": scan.whole_food_flags or [],
+        "scan_snapshot_id": str(scan.id),
+        "scan_mes_score": scan.mes_score,
+        "scan_mes_tier": scan.mes_tier,
+    }
+
+    log = FoodLog(
+        user_id=current_user.id,
+        date=log_date,
+        meal_type=body.meal_type or scan.meal_type or "meal",
+        source_type="scan",
+        source_id=str(scan.id),
+        title=scan.meal_label,
+        servings=body.servings,
+        quantity=body.quantity,
+        nutrition_snapshot=nutrition_snapshot,
+        fuel_score=float(scan.fuel_score) if scan.fuel_score is not None else None,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+
+    try:
+        on_food_log_created(db, current_user.id, log)
+    except Exception:
+        logger.warning("MES scoring failed for relog %s", log.id, exc_info=True)
+
+    _compute_daily(db, current_user.id, log_date)
+
+    return {
+        "ok": True,
+        "food_log_id": str(log.id),
+        "meal_label": scan.meal_label,
+        "fuel_score": float(scan.fuel_score) if scan.fuel_score is not None else None,
+    }
+
+
+# ── Favorites Endpoints ────────────────────────────────────────────
+
+
+class FavoriteCreateRequest(BaseModel):
+    scan_type: str  # "meal" or "product"
+    scan_id: str
+
+
+def _serialize_favorite(fav: ScanFavorite) -> dict[str, Any]:
+    return {
+        "id": str(fav.id),
+        "scan_type": fav.scan_type,
+        "source_scan_id": str(fav.source_scan_id),
+        "label": fav.label,
+        "fuel_score": float(fav.fuel_score) if fav.fuel_score is not None else None,
+        "whole_food_status": fav.whole_food_status,
+        "meal_type": fav.meal_type,
+        "portion_size": fav.portion_size,
+        "source_context": fav.source_context,
+        "barcode": fav.barcode,
+        "brand": fav.brand,
+        "product_tier": fav.product_tier,
+        "nutrition_snapshot": fav.nutrition_snapshot or {},
+        "use_count": fav.use_count or 0,
+        "last_used_at": fav.last_used_at.isoformat() if fav.last_used_at else None,
+        "created_at": fav.created_at.isoformat() if fav.created_at else None,
+        "image": _serialize_storage_reference(
+            bucket=fav.image_bucket,
+            path=fav.image_path,
+            mime_type=fav.image_mime_type,
+            fallback_url=fav.image_url,
+        ),
+    }
+
+
+@router.post("/favorites")
+async def create_favorite(
+    body: FavoriteCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Favorite a meal or product scan for quick re-logging."""
+    # Check for existing favorite from same source scan
+    existing = db.query(ScanFavorite).filter(
+        ScanFavorite.user_id == current_user.id,
+        ScanFavorite.source_scan_id == body.scan_id,
+    ).first()
+    if existing:
+        return _serialize_favorite(existing)
+
+    if body.scan_type == "meal":
+        scan = db.query(ScannedMealLog).filter(
+            ScannedMealLog.id == body.scan_id,
+            ScannedMealLog.user_id == current_user.id,
+        ).first()
+        if not scan:
+            raise HTTPException(status_code=404, detail="Meal scan not found.")
+        fav = ScanFavorite(
+            user_id=current_user.id,
+            scan_type="meal",
+            source_scan_id=str(scan.id),
+            label=scan.meal_label,
+            ingredients=scan.estimated_ingredients or [],
+            nutrition_snapshot=scan.nutrition_estimate or {},
+            fuel_score=scan.fuel_score,
+            whole_food_status=scan.whole_food_status,
+            image_bucket=scan.image_bucket,
+            image_path=scan.image_path,
+            image_mime_type=scan.image_mime_type,
+            image_url=scan.image_url,
+            meal_type=scan.meal_type,
+            portion_size=scan.portion_size,
+            source_context=scan.source_context,
+        )
+    elif body.scan_type == "product":
+        scan = db.query(ProductLabelScan).filter(
+            ProductLabelScan.id == body.scan_id,
+            ProductLabelScan.user_id == current_user.id,
+        ).first()
+        if not scan:
+            raise HTTPException(status_code=404, detail="Product scan not found.")
+        analysis = scan.analysis or {}
+        fav = ScanFavorite(
+            user_id=current_user.id,
+            scan_type="product",
+            source_scan_id=str(scan.id),
+            label=scan.product_name or "Product",
+            ingredients=[],
+            nutrition_snapshot=analysis.get("nutrition_snapshot") or {},
+            fuel_score=analysis.get("score"),
+            whole_food_status=None,
+            image_bucket=scan.image_bucket,
+            image_path=scan.image_path,
+            image_mime_type=scan.image_mime_type,
+            image_url=scan.image_url,
+            barcode=scan.barcode,
+            brand=scan.brand,
+            product_tier=analysis.get("tier"),
+            product_analysis=analysis,
+        )
+    else:
+        raise HTTPException(status_code=400, detail="scan_type must be 'meal' or 'product'.")
+
+    db.add(fav)
+    db.commit()
+    db.refresh(fav)
+    return _serialize_favorite(fav)
+
+
+@router.get("/favorites")
+async def list_favorites(
+    scan_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List favorites ordered by most used."""
+    from sqlalchemy import desc
+
+    query = db.query(ScanFavorite).filter(
+        ScanFavorite.user_id == current_user.id,
+    )
+    if scan_type:
+        query = query.filter(ScanFavorite.scan_type == scan_type)
+    query = query.order_by(desc(ScanFavorite.use_count), desc(ScanFavorite.created_at))
+    favorites = query.limit(50).all()
+    return {"items": [_serialize_favorite(f) for f in favorites]}
+
+
+@router.delete("/favorites/{favorite_id}")
+async def delete_favorite(
+    favorite_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a favorite."""
+    fav = db.query(ScanFavorite).filter(
+        ScanFavorite.id == favorite_id,
+        ScanFavorite.user_id == current_user.id,
+    ).first()
+    if not fav:
+        raise HTTPException(status_code=404, detail="Favorite not found.")
+    db.delete(fav)
+    db.commit()
+    return {"ok": True}
+
+
+class FavoriteLogRequest(BaseModel):
+    date: Optional[str] = None
+    meal_type: Optional[str] = None
+    servings: float = 1.0
+    quantity: float = 1.0
+    portion_size: Optional[str] = None
+
+
+@router.post("/favorites/{favorite_id}/log")
+async def log_favorite(
+    favorite_id: str,
+    body: FavoriteLogRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Log a favorite to the food log and increment use_count."""
+    fav = db.query(ScanFavorite).filter(
+        ScanFavorite.id == favorite_id,
+        ScanFavorite.user_id == current_user.id,
+    ).first()
+    if not fav:
+        raise HTTPException(status_code=404, detail="Favorite not found.")
+
+    log_date = datetime.now(UTC).date()
+    if body.date:
+        try:
+            log_date = datetime.fromisoformat(body.date).date()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    nutrition_snapshot = {
+        **(fav.nutrition_snapshot or {}),
+        "estimated": True,
+        "from_favorite": True,
+        "favorite_id": str(fav.id),
+        "whole_food_status": fav.whole_food_status,
+    }
+
+    log = FoodLog(
+        user_id=current_user.id,
+        date=log_date,
+        meal_type=body.meal_type or fav.meal_type or "meal",
+        source_type="scan",
+        source_id=str(fav.source_scan_id),
+        title=fav.label,
+        servings=body.servings,
+        quantity=body.quantity,
+        nutrition_snapshot=nutrition_snapshot,
+        fuel_score=float(fav.fuel_score) if fav.fuel_score is not None else None,
+    )
+    db.add(log)
+
+    fav.use_count = (fav.use_count or 0) + 1
+    fav.last_used_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(log)
+
+    try:
+        on_food_log_created(db, current_user.id, log)
+    except Exception:
+        logger.warning("MES scoring failed for favorite log %s", log.id, exc_info=True)
+
+    _compute_daily(db, current_user.id, log_date)
+
+    return {
+        "ok": True,
+        "food_log_id": str(log.id),
+        "label": fav.label,
+        "fuel_score": float(fav.fuel_score) if fav.fuel_score is not None else None,
+    }
+
+
+@router.get("/favorites/{favorite_id}/is_favorite")
+async def check_is_favorite(
+    favorite_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Check if a scan is already favorited (by source_scan_id)."""
+    fav = db.query(ScanFavorite).filter(
+        ScanFavorite.user_id == current_user.id,
+        ScanFavorite.source_scan_id == favorite_id,
+    ).first()
+    return {"is_favorite": fav is not None, "favorite_id": str(fav.id) if fav else None}

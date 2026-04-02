@@ -686,7 +686,9 @@ export default function HomeScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak ?? 0}</Text>
+                {(fuelStreak?.current_streak ?? 0) > 0 && (
+                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak.current_streak}</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -743,7 +745,9 @@ export default function HomeScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak ?? 0}</Text>
+                {(fuelStreak?.current_streak ?? 0) > 0 && (
+                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak.current_streak}</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.7}

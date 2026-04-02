@@ -170,6 +170,59 @@ def _build_prep_timeline(items: list[MealPlanItemResponse]) -> list[MealPlanPrep
     return timeline
 
 
+def _refilter_plan_items(plan: MealPlan, user: User) -> list[str]:
+    """Remove plan items that violate user's current dietary preferences,
+    allergies, or disliked ingredients. Returns a list of warning strings
+    for any items removed."""
+    warnings = []
+    dietary = {d.lower() for d in (user.dietary_preferences or [])}
+    allergies = {a.lower() for a in (user.allergies or [])}
+    disliked = {d.lower() for d in (user.disliked_ingredients or [])}
+    protein_dislikes = set()
+    if isinstance(user.protein_preferences, dict):
+        protein_dislikes = {p.lower() for p in (user.protein_preferences.get("dislikes") or [])}
+
+    # Define animal products for vegan check
+    _animal_keywords = {
+        "chicken", "beef", "pork", "turkey", "lamb", "fish", "salmon", "shrimp",
+        "egg", "eggs", "dairy", "milk", "cheese", "cream", "butter", "yogurt",
+        "honey", "bacon", "sausage", "steak", "meatball", "prawn",
+    }
+
+    items_to_remove = []
+    for item in plan.items:
+        recipe_data = item.recipe_data or {}
+        title = (recipe_data.get("title") or "").lower()
+        ingredients_text = " ".join(
+            (ing.get("name") or "") for ing in (recipe_data.get("ingredients") or [])
+        ).lower()
+        combined_text = f"{title} {ingredients_text}"
+
+        # Check vegan compliance
+        if "vegan" in dietary:
+            if any(kw in combined_text for kw in _animal_keywords):
+                items_to_remove.append(item)
+                warnings.append(f"Removed '{recipe_data.get('title', 'Unknown')}' — contains animal products (vegan diet)")
+                continue
+
+        # Check allergies
+        if any(allergen in combined_text for allergen in allergies):
+            items_to_remove.append(item)
+            warnings.append(f"Removed '{recipe_data.get('title', 'Unknown')}' — contains allergen")
+            continue
+
+        # Check disliked ingredients and proteins
+        if any(d in combined_text for d in disliked) or any(d in combined_text for d in protein_dislikes):
+            items_to_remove.append(item)
+            warnings.append(f"Removed '{recipe_data.get('title', 'Unknown')}' — contains disliked ingredient")
+            continue
+
+    for item in items_to_remove:
+        plan.items.remove(item)
+
+    return warnings
+
+
 def _serialize_plan(plan: MealPlan, budget, extra_warnings: list[str] | None = None) -> MealPlanResponse:
     items = [_meal_item_response(item, budget) for item in plan.items]
     quality_summary, warnings = _build_quality_summary(items)
@@ -424,6 +477,11 @@ async def get_current_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="No meal plan found")
 
+    # Re-filter plan items against user's CURRENT dietary preferences,
+    # allergies, and disliked ingredients to prevent stale meals showing
+    # (e.g., vegan user seeing chicken meals from an old plan).
+    extra_warnings = _refilter_plan_items(plan, current_user)
+
     record_notification_event(
         db,
         current_user.id,
@@ -433,7 +491,7 @@ async def get_current_plan(
     )
     db.commit()
     budget = load_budget_for_user(db, current_user.id)
-    return _serialize_plan(plan, budget)
+    return _serialize_plan(plan, budget, extra_warnings=extra_warnings or None)
 
 
 @router.get("/history", response_model=List[MealPlanResponse])

@@ -186,6 +186,7 @@ class MESPreviewResponse(BaseModel):
 class RemainingBudgetResponse(BaseModel):
     protein_remaining_g: float
     fiber_remaining_g: float
+    sugar_remaining_g: float = 0  # Alias for sugar_headroom_g for frontend clarity
     sugar_headroom_g: float
     carb_headroom_g: float = 0
     fat_remaining_g: float = 0
