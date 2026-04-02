@@ -247,7 +247,7 @@ export default function LoginScreen() {
               style={[styles.heroGradient, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]}
             >
               <Image
-                source={require('../../assets/images/icon.png')}
+                source={require('../../assets/images/icon-white-transparent.png')}
                 style={styles.heroLogo}
                 resizeMode="contain"
               />

@@ -232,7 +232,7 @@ export default function TodaysMealsScreen() {
   const handleAddSearchResult = async (item: SearchResult) => {
     const foodId = item.fdc_id || item.id;
     if (foodId) {
-      router.push(`/(tabs)/index/food-detail/${foodId}` as any);
+      router.push(`/(tabs)/(home)/food-detail/${foodId}` as any);
     }
   };
 
@@ -538,7 +538,7 @@ export default function TodaysMealsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[st.quickAction, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            onPress={() => router.push('/(tabs)/index/food-search' as any)}
+            onPress={() => router.push('/(tabs)/(home)/food-search' as any)}
           >
             <View style={[st.quickActionIcon, { backgroundColor: theme.accentMuted }]}>
               <Ionicons name="search-outline" size={16} color={theme.accent} />

@@ -747,7 +747,7 @@ export default function ChronometerScreen() {
                 weeklyMesTierColor={chronoWeeklyMes.color}
                 prevWeekScore={prevWeekFuelScore}
                 onOpenSettings={() => setFuelSettingsVisible(true)}
-                onPress={() => router.push('/(tabs)/index/fuel-weekly' as any)}
+                onPress={() => router.push('/(tabs)/(home)/fuel-weekly' as any)}
               />
             )}
 
@@ -993,7 +993,7 @@ export default function ChronometerScreen() {
               return (
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => router.push('/(tabs)/index/food-meals' as any)}
+                  onPress={() => router.push('/(tabs)/(home)/food-meals' as any)}
                 >
                   <Card
                     style={{
@@ -1350,7 +1350,7 @@ export default function ChronometerScreen() {
           >
             {[
               { icon: 'restaurant-outline' as const, label: 'Log Meal', sub: 'From recipes', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/meals?tab=browse' as any); } },
-              { icon: 'nutrition-outline' as const, label: 'Log Food', sub: 'Search database', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/index/food-search' as any); } },
+              { icon: 'nutrition-outline' as const, label: 'Log Food', sub: 'Search database', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/(home)/food-search' as any); } },
               { icon: 'camera-outline' as const, label: 'Scan Photo', sub: 'Coming soon', onPress: () => { setShowAddMenu(false); Alert.alert('Coming Soon', 'Photo scanning will be available in a future update.'); } },
             ].map((item, idx) => (
               <TouchableOpacity

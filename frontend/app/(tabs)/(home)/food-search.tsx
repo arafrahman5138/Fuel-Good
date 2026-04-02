@@ -168,7 +168,7 @@ export default function FoodSearchScreen() {
             return (
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => id && router.push(`/(tabs)/index/food-detail/${id}`)}
+                onPress={() => id && router.push(`/(tabs)/(home)/food-detail/${id}`)}
                 style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>

@@ -355,7 +355,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
       {score.sub_scores && score.weights_used && (
         <TouchableOpacity
           activeOpacity={0.72}
-          onPress={() => router.push('/(tabs)/index/mes-breakdown' as any)}
+          onPress={() => router.push('/(tabs)/(home)/mes-breakdown' as any)}
           style={[styles.breakdownLink, { borderTopColor: theme.surfaceHighlight }]}
         >
           <View style={styles.breakdownLinkLeft}>

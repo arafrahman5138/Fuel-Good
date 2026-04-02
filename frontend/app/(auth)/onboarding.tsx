@@ -11,6 +11,7 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -153,6 +154,8 @@ const FALLBACK_MEALS: MealSuggestion[] = [
 
 export default function OnboardingScreen() {
   const theme = useTheme();
+  const isDark = theme.background === '#0A0A0F';
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const saveMetabolicProfile = useMetabolicBudgetStore((s) => s.saveProfile);
@@ -503,16 +506,16 @@ export default function OnboardingScreen() {
     } catch {
       // Haptics not available
     }
-    // Trigger review prompt at peak excitement (leaving aha meals step)
-    if (step === 12) {
-      try {
-        if (await StoreReview.isAvailableAsync()) {
-          await StoreReview.requestReview();
-        }
-      } catch {
-        // Review request is non-critical
-      }
-    }
+    // NOTE: StoreReview during onboarding is disabled — users haven't used the
+    // app yet and the modal blocks the flow (especially in Expo Go / simulator).
+    // Move to a post-first-week milestone instead.
+    // if (step === 12) {
+    //   try {
+    //     if (await StoreReview.isAvailableAsync()) {
+    //       await StoreReview.requestReview();
+    //     }
+    //   } catch {}
+    // }
     animateTransition(Math.min(step + 1, 13) as Step);
   };
 
@@ -605,7 +608,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -651,7 +654,7 @@ export default function OnboardingScreen() {
             <View style={styles.welcomeHero}>
               <View style={[styles.heroIconWrap, { backgroundColor: theme.primaryMuted }]}>
                 <Image
-                  source={require('../../assets/images/icon.png')}
+                  source={require('../../assets/images/icon-white-transparent.png')}
                   style={styles.heroLogo}
                   resizeMode="contain"
                 />
@@ -1271,7 +1274,7 @@ export default function OnboardingScreen() {
 
       {/* ── Footer ── */}
       {showFooter && (
-        <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
+        <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.surface, paddingBottom: Math.max(insets.bottom, Spacing.xxxl) }]}>
           {showBackButton ? (
             <Button
               title="Back"

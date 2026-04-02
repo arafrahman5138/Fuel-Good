@@ -15,6 +15,8 @@ if ! command -v "$DOCKER_BIN" &>/dev/null; then
   DOCKER_BIN="${DOCKER_APP_BIN_DIR}/docker"
 fi
 
+started_local_container=0
+
 if command -v "$DOCKER_BIN" &>/dev/null; then
   if [ -d "$DOCKER_APP_BIN_DIR" ] && [[ ":$PATH:" != *":${DOCKER_APP_BIN_DIR}:"* ]]; then
     export PATH="${DOCKER_APP_BIN_DIR}:$PATH"
@@ -33,20 +35,20 @@ if command -v "$DOCKER_BIN" &>/dev/null; then
   }
 
   echo "🐘 Starting PostgreSQL container..."
-  if ! "$DOCKER_BIN" compose -f ../docker-compose.yml up -d; then
-    echo "❌ Failed to start PostgreSQL via Docker."
-    echo "   If you're on macOS, make sure Docker Desktop is running and responsive."
-    echo "   This shell also needs access to Docker Desktop helpers from ${DOCKER_APP_BIN_DIR}."
-    exit 1
+  if "$DOCKER_BIN" compose -f ../docker-compose.yml up -d; then
+    started_local_container=1
+    for i in $(seq 1 30); do
+      "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1 && break
+      sleep 1
+    done
+    "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1
+    ensure_db "$PRIMARY_DB"
+    ensure_db "$LEGACY_DB"
+    echo "✅ PostgreSQL is ready"
+  else
+    echo "⚠️  Could not start local PostgreSQL container. Falling back to DATABASE_URL from .env."
+    echo "   If another local Postgres is already running on port 5432, that's OK."
   fi
-  for i in $(seq 1 30); do
-    "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1 && break
-    sleep 1
-  done
-  "$DOCKER_BIN" exec "$CONTAINER" pg_isready -U fuelgood > /dev/null 2>&1
-  ensure_db "$PRIMARY_DB"
-  ensure_db "$LEGACY_DB"
-  echo "✅ PostgreSQL is ready"
 else
   echo "⚠️  Docker not found — skipping PostgreSQL auto-start (using DATABASE_URL from .env)"
 fi
@@ -81,10 +83,6 @@ echo "Docs: http://localhost:8000/docs"
 echo ""
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
 "$VENV_PYTHON" -m alembic upgrade heads
-LEGACY_DATABASE_URL="postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@localhost:5432/${LEGACY_DB}"
-if [ "${DATABASE_URL:-}" != "$LEGACY_DATABASE_URL" ]; then
-  DATABASE_URL="$LEGACY_DATABASE_URL" "$VENV_PYTHON" -m alembic upgrade heads
-fi
 "$VENV_PYTHON" - <<'PY'
 from sqlalchemy import create_engine, text
 from app.config import get_settings

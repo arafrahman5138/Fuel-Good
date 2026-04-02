@@ -9,8 +9,9 @@
     },
     {
       "name": "frontend",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "/usr/local/bin/npx",
       "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "env": { "PATH": "/usr/local/bin:/usr/bin:/bin" },
       "port": 8081,
       "autoPort": false,
       "cwd": "frontend"

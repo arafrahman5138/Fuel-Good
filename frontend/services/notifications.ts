@@ -100,9 +100,9 @@ const ALLOWED_ROUTE_PREFIXES = [
 
 function routeFromNotification(data: Record<string, any>): string {
   const route = typeof data?.route === 'string' ? data.route.trim() : '';
-  if (!route) return '/(tabs)/index';
+  if (!route) return '/(tabs)/(home)';
   const isAllowed = ALLOWED_ROUTE_PREFIXES.some((prefix) => route.startsWith(prefix));
-  return isAllowed ? route : '/(tabs)/index';
+  return isAllowed ? route : '/(tabs)/(home)';
 }
 
 export function registerNotificationListeners(): () => void {

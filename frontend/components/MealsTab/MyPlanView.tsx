@@ -945,6 +945,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
         </View>
 
         {/* Day Selector */}
+        <View style={{ position: 'relative' }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
           <View style={styles.dayRow}>
             {DAYS.map((day, index) => {
@@ -983,6 +984,14 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             })}
           </View>
         </ScrollView>
+        <LinearGradient
+          colors={['transparent', theme.background]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          pointerEvents="none"
+          style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 40 }}
+        />
+        </View>
 
         {currentPlan?.warnings && currentPlan.warnings.length > 0 && (
           <View style={{ backgroundColor: (theme as any).warningMuted || 'rgba(245,158,11,0.1)', borderRadius: BorderRadius.md, padding: Spacing.sm, marginBottom: Spacing.md }}>

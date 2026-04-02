@@ -877,7 +877,7 @@ export default function HomeScreen() {
             if (pointsRemaining >= avgCheatCost) return 0;
             return Math.ceil((avgCheatCost - pointsRemaining) / (100 - target));
           })()}
-          onPress={() => router.push('/(tabs)/index/fuel-weekly' as any)}
+          onPress={() => router.push('/(tabs)/(home)/fuel-weekly' as any)}
         />
 
         {/* ── Flex Budget Summary ──────────────────────────────────────── */}
@@ -982,6 +982,8 @@ export default function HomeScreen() {
                           disabled={isLogging}
                           style={[s.logBtn, { backgroundColor: theme.primary + '14' }]}
                           activeOpacity={0.7}
+                          accessibilityLabel="Log meal"
+                          accessibilityRole="button"
                         >
                           <Ionicons
                             name={isLogging ? 'hourglass-outline' : 'add'}
@@ -990,7 +992,7 @@ export default function HomeScreen() {
                           />
                         </TouchableOpacity>
                       ) : (
-                        <View style={[s.logBtn, { backgroundColor: '#22C55E18' }]}>
+                        <View style={[s.logBtn, { backgroundColor: '#22C55E18' }]} accessibilityLabel="Meal logged">
                           <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
                         </View>
                       )}
@@ -1122,8 +1124,8 @@ export default function HomeScreen() {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => {
-            trackBehaviorEvent('home_quick_action_used', { label: 'Scan Food', route: '/scan/camera' });
-            router.push('/scan/camera' as any);
+            trackBehaviorEvent('home_quick_action_used', { label: 'Scan Food', route: '/scan' });
+            router.push('/scan' as any);
           }}
           style={{ marginBottom: Spacing.sm }}
         >

@@ -1132,6 +1132,9 @@ export default function RecipeDetailScreen() {
               {checkedIngredients.size}/{displayedIngredients.length}
             </Text>
           </View>
+          <Text style={{ color: theme.textTertiary, fontSize: 12, fontStyle: 'italic', marginBottom: 8, marginTop: -4 }}>
+            Check off as you prep
+          </Text>
 
           {ingredientGroups.map(({ catKey, catInfo, items }) => {
             const groupIndices = items.map((i) => i.idx);
@@ -1694,16 +1697,18 @@ const styles = StyleSheet.create({
   pageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   pageHeaderTitle: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
+    pointerEvents: 'none',
   },
   headerActionCapsule: {
     flexDirection: 'row',
@@ -2168,7 +2173,7 @@ const styles = StyleSheet.create({
   },
   stickyBottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 68,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -2176,7 +2181,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxl + 8,
+    paddingBottom: Spacing.md,
     borderTopWidth: 1,
   },
   cookModeBottomBtn: {

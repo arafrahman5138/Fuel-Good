@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { APP_NAME } from '../constants/Config';
 
+const iconDark = require('../assets/images/icon.png');
+const iconLight = require('../assets/images/icon-light.png');
+
 export default function LogoHeader() {
   const theme = useTheme();
+  const isDark = theme.background === '#0A0A0F';
   return (
     <View style={styles.container}>
-      <View style={styles.iconWrap}>
-        <Ionicons name="leaf" size={20} color="#22C55E" />
-      </View>
+      <Image
+        source={isDark ? iconDark : iconLight}
+        style={styles.iconImage}
+        resizeMode="contain"
+      />
       <Text style={[styles.text, { color: theme.text }]}>{APP_NAME}</Text>
     </View>
   );
@@ -22,13 +27,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  iconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
+  iconImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
   },
   text: {
     fontSize: 17,

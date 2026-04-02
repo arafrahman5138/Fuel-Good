@@ -116,6 +116,22 @@ interface BrowseViewProps {
   initialSubTab?: MealsSubTab;
 }
 
+function budgetBadgeColor(
+  recipeCals: number,
+  recipeProtein: number,
+  budget: any,
+): { bg: string; text: string } {
+  if (!budget || !budget.protein_target_g) return { bg: '#22C55E14', text: '#22C55E' };
+  const calTarget = (budget.tdee || 2000) / 3;
+  const proteinTarget = budget.protein_target_g / 3;
+  const calOff = calTarget > 0 ? Math.abs(recipeCals - calTarget) / calTarget : 0;
+  const proOff = proteinTarget > 0 ? Math.abs(recipeProtein - proteinTarget) / proteinTarget : 0;
+  const worst = Math.max(calOff, proOff);
+  if (worst <= 0.3) return { bg: '#22C55E14', text: '#22C55E' };
+  if (worst <= 0.6) return { bg: '#F59E0B14', text: '#F59E0B' };
+  return { bg: '#EF444414', text: '#EF4444' };
+}
+
 export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) {
   const { width } = useWindowDimensions();
   const CARD_WIDTH = useMemo(
@@ -392,13 +408,22 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         </View>
       </View>
 
-      {item.nutrition_info?.calories && (
-        <View style={{ backgroundColor: theme.primary + '14', paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full, alignSelf: 'flex-start' }}>
-          <Text style={[styles.cardCalories, { color: theme.primary }]}>
-            {Math.round(item.nutrition_info.calories)} cal{item.nutrition_info.protein ? ` · ${Math.round(item.nutrition_info.protein)}g protein` : ''}
-          </Text>
-        </View>
-      )}
+      {item.nutrition_info?.calories && (() => {
+        const badge = budgetBadgeColor(item.nutrition_info.calories || 0, item.nutrition_info.protein || 0, mesBudget);
+        return (
+          <View style={{
+            backgroundColor: badge.bg,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 999,
+            alignSelf: 'flex-start',
+          }}>
+            <Text style={[styles.cardCalories, { color: badge.text }]}>
+              {Math.round(item.nutrition_info.calories)} cal{item.nutrition_info.protein ? ` · ${Math.round(item.nutrition_info.protein)}g protein` : ''}
+            </Text>
+          </View>
+        );
+      })()}
     </TouchableOpacity>
   );
   };

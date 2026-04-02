@@ -61,6 +61,29 @@ def _combine_nutrition(*items: dict[str, float]) -> dict[str, float]:
     return combined
 
 
+def _scaled_nutrition(recipe: Recipe, servings: int) -> dict[str, float]:
+    """Multiply per-serving nutrition by the effective servings count."""
+    base = _recipe_nutrition(recipe)
+    if servings <= 1:
+        return base
+    return {k: round(v * servings, 1) for k, v in base.items()}
+
+
+def _calorie_serving_multiplier(recipe: Recipe, budget: Any, meals_per_day: int) -> int:
+    """Compute how many servings are needed to approach the per-meal calorie target."""
+    if not budget:
+        return 1
+    cal_target = getattr(budget, "calorie_target_kcal", 0) or 0
+    if cal_target <= 0:
+        return 1
+    per_meal_target = cal_target / max(meals_per_day, 1)
+    recipe_cals = _recipe_nutrition(recipe)["calories"]
+    if recipe_cals <= 0:
+        return 1
+    multiplier = round(per_meal_target / recipe_cals)
+    return max(1, min(multiplier, 4))  # clamp [1, 4]
+
+
 def _pick_default_pairing(recipe: Recipe, recipe_index: dict[str, Recipe]) -> Recipe | None:
     default_ids = getattr(recipe, "default_pairing_ids", None) or []
     if getattr(recipe, "needs_default_pairing", None) is not True or not default_ids:
@@ -294,12 +317,12 @@ def _preference_alignment_score(
     return score
 
 
-def _budget_alignment_score(recipe: Recipe, budget: Any) -> float:
+def _budget_alignment_score(recipe: Recipe, budget: Any, meals_per_day: int = MEALS_PER_DAY) -> float:
     """Score 0‑1 for how well a recipe's macros align with per‑meal budget targets."""
     if not budget:
         return 0.5
     nutrition = _recipe_nutrition(recipe)
-    per_meal = MEALS_PER_DAY
+    per_meal = max(meals_per_day, 1)
     score, checks = 0.0, 0
 
     protein_target = (getattr(budget, "protein_floor_g", 0) or 0) / per_meal
@@ -354,6 +377,7 @@ def _candidate_pool(
     avoided_recipe_ids: set[str],
     budget: Any,
     cooking_time_budget: dict[str, int] | None = None,
+    meals_per_day: int = MEALS_PER_DAY,
 ) -> list[dict[str, Any]]:
     allergy_lower = _expand_allergies(allergies)
     disliked_ingredients_lower = {d.lower() for d in disliked_ingredients}
@@ -392,7 +416,7 @@ def _candidate_pool(
             preferred_recipe_ids=preferred_recipe_ids,
         )
         display_score = float(mes.get("display_score", 0) or 0)
-        budget_score = _budget_alignment_score(recipe, budget)
+        budget_score = _budget_alignment_score(recipe, budget, meals_per_day)
 
         # Cooking time preference (soft signal, not a hard filter)
         ctb = cooking_time_budget or {}
@@ -510,6 +534,8 @@ def _recipe_to_meal_data(
     servings: int,
     mes: dict[str, Any],
     prep_meta: dict[str, Any] | None = None,
+    budget: Any = None,
+    meals_per_day: int = MEALS_PER_DAY,
 ) -> dict[str, Any]:
     display_score = float(mes.get("display_score", 0) or 0)
     effective_display_score = float(mes.get("composite_display_score") or display_score or 0)
@@ -517,11 +543,14 @@ def _recipe_to_meal_data(
     prep_meta = prep_meta or {}
     prep_group_id = prep_meta.get("prep_group_id")
     repeat_index = int(prep_meta.get("repeat_index", 0) or 0)
+    # Compute effective servings: max of household size and calorie-based multiplier
+    cal_mult = _calorie_serving_multiplier(recipe, budget, meals_per_day)
+    effective_servings = max(servings, cal_mult)
     return {
         "meal_type": meal_type,
         "category": category,
         "is_bulk_cook": category == "bulk_cook",
-        "servings": servings if category == "bulk_cook" else recipe.servings or 1,
+        "servings": effective_servings,
         "recipe": {
             "id": str(recipe.id),
             "title": recipe.title,
@@ -534,7 +563,7 @@ def _recipe_to_meal_data(
             "difficulty": recipe.difficulty or "easy",
             "flavor_profile": recipe.flavor_profile or [],
             "dietary_tags": recipe.dietary_tags or [],
-            "nutrition_estimate": _recipe_nutrition(recipe),
+            "nutrition_estimate": _scaled_nutrition(recipe, effective_servings),
             "image_url": recipe.image_url,
             "mes_display_score": effective_display_score,
             "mes_display_tier": effective_display_tier,
@@ -594,6 +623,7 @@ def _preferences_context(preferences: dict[str, Any], db: Session, user_id: str 
         "preferred_recipe_ids": {str(item) for item in (preferences.get("preferred_recipe_ids", []) or [])},
         "avoided_recipe_ids": {str(item) for item in (preferences.get("avoided_recipe_ids", []) or [])},
         "household": int(preferences.get("household_size", 1) or 1),
+        "meals_per_day": int(preferences.get("meals_per_day", 3) or 3),
         "variety_mode": preferences.get("variety_mode", "balanced") or "balanced",
         "budget": load_budget_for_user(db, user_id) if user_id else None,
         "cooking_time_budget": preferences.get("cooking_time_budget") or {},
@@ -622,6 +652,7 @@ def get_shortlist_candidates(db: Session, preferences: dict, user_id: str | None
             avoided_recipe_ids=context["avoided_recipe_ids"],
             budget=context["budget"],
             cooking_time_budget=context["cooking_time_budget"],
+            meals_per_day=context.get("meals_per_day", MEALS_PER_DAY),
         )
         items = [
             _shortlist_recipe(candidate["recipe"], candidate["mes"], slot)
@@ -794,8 +825,17 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
     dietary_lower = {d.lower() for d in context["dietary"] if d}
     needs_composition = bool(dietary_lower & (_KETO_DIETS | _PALEO_DIETS))
 
+    # Support meals_per_day: 2 meals skips breakfast
+    mpd = context.get("meals_per_day", MEALS_PER_DAY)
+    if mpd == 2:
+        active_slots = ["lunch", "dinner"]
+    elif mpd == 1:
+        active_slots = ["dinner"]
+    else:
+        active_slots = list(MEAL_SLOTS)
+
     slot_pools: dict[str, list[dict[str, Any]]] = {}
-    for slot in MEAL_SLOTS:
+    for slot in active_slots:
         pool = _candidate_pool(
             all_recipes=all_recipes,
             recipe_index=recipe_index,
@@ -811,6 +851,7 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             avoided_recipe_ids=context["avoided_recipe_ids"],
             budget=context["budget"],
             cooking_time_budget=context["cooking_time_budget"],
+            meals_per_day=context.get("meals_per_day", MEALS_PER_DAY),
         )
 
         # If pool is too small and user needs keto/paleo, supplement with composed meals
@@ -833,7 +874,7 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
     prep_timeline: list[dict[str, Any]] = []
     warnings: list[str] = []
 
-    for slot in MEAL_SLOTS:
+    for slot in active_slots:
         unique_limit = VARIETY_LIMITS.get(context["variety_mode"], VARIETY_LIMITS["balanced"]).get(slot, 3)
         selected_candidates = _top_unique_candidates(slot_pools[slot], unique_limit)
         if not selected_candidates:
@@ -899,6 +940,8 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
                     servings=context["household"],
                     mes=mes,
                     prep_meta=prep_meta,
+                    budget=context["budget"],
+                    meals_per_day=context["meals_per_day"],
                 )
                 meal_data["is_bulk_cook"] = is_bulk
 

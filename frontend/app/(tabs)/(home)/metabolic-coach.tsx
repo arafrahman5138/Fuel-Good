@@ -288,7 +288,7 @@ function FoodCategory({
           <Text style={[catStyles.sublabel, { color: theme.textTertiary }]}>{subtitle}</Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/(tabs)/index/food-search', params: { q: searchQuery } } as any)}
+          onPress={() => router.push({ pathname: '/(tabs)/(home)/food-search', params: { q: searchQuery } } as any)}
           activeOpacity={0.7}
           style={[catStyles.browseBtn, { backgroundColor: color + '14' }]}
         >
@@ -306,7 +306,7 @@ function FoodCategory({
         {foods.map((food, idx) => (
           <TouchableOpacity
             key={`${label}-${idx}`}
-            onPress={() => router.push({ pathname: '/(tabs)/index/food-search', params: { q: food.name } } as any)}
+            onPress={() => router.push({ pathname: '/(tabs)/(home)/food-search', params: { q: food.name } } as any)}
             activeOpacity={0.7}
             style={[
               catStyles.card,

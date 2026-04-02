@@ -248,16 +248,11 @@ export default function MealsScreen() {
                 ]}
               >
                 {/* Glassmorphic background */}
-                <BlurView
-                  intensity={blurIntensity}
-                  tint={blurTint}
+                <LinearGradient
+                  colors={[item.accentSoft, isDark ? 'rgba(20,20,30,0.95)' : 'rgba(255,255,255,0.95)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFill}
-                />
-                <View
-                  style={[
-                    StyleSheet.absoluteFill,
-                    { backgroundColor: cardBg },
-                  ]}
                 />
                 {/* Icon circle */}
                 <View

@@ -395,7 +395,7 @@ export default function FlexScreen() {
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/index/flex-onboarding' as any)}
+            onPress={() => router.push('/(tabs)/(home)/flex-onboarding' as any)}
             style={styles.changeGoalBtn}
           >
             <Ionicons name="settings-outline" size={14} color={GOLD} />
