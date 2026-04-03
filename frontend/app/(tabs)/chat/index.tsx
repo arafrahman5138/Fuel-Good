@@ -18,6 +18,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Image } from 'react-native';
@@ -93,6 +94,9 @@ export default function ChatScreen() {
   const lastUserInputRef = useRef<string>('');
   const floatAnim = useRef(new Animated.Value(0)).current;
   const [showHistory, setShowHistory] = useState(false);
+  const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({});
+  const [expandedSwaps, setExpandedSwaps] = useState<Record<string, boolean>>({});
+  const [expandedNutrition, setExpandedNutrition] = useState<Record<string, boolean>>({});
   const pendingContextRef = useRef<ChatContext | null>(null);
   const {
     messages,
@@ -108,6 +112,20 @@ export default function ChatScreen() {
   const clearChat = useChatStore((s) => s.clearChat);
   const loadLastSession = useChatStore((s) => s.loadLastSession);
   const loadSessions = useChatStore((s) => s.loadSessions);
+
+  const handleNewChat = () => {
+    clearChat();
+    setInput('');
+    setEditingKey(null);
+    setRecipeDraft(null);
+    setRecipeOverrides({});
+    setCheckedIngredients({});
+    // Scroll to top after state clears
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
   const sessions = useChatStore((s) => s.sessions);
   const savedRecipes = useSavedRecipesStore((s) => s.recipes);
   const awardXP = useGamificationStore((s) => s.awardXP);
@@ -510,29 +528,6 @@ export default function ChatScreen() {
       <View
         style={{ flex: 1, paddingBottom: keyboardVisible ? Math.max(0, keyboardHeight - insets.bottom) : 0 }}
       >
-        <View
-          pointerEvents="none"
-          style={[
-            styles.backgroundGlow,
-            {
-              backgroundColor: theme.primaryMuted,
-              top: -40,
-              left: -80,
-            },
-          ]}
-        />
-        <View
-          pointerEvents="none"
-          style={[
-            styles.backgroundGlow,
-            styles.backgroundGlowSecondary,
-            {
-              backgroundColor: theme.infoMuted,
-              bottom: composerLift + 32,
-              right: -100,
-            },
-          ]}
-        />
         {/* Header */}
         <View style={[styles.headerShell, { borderBottomColor: theme.border + '99' }]}>
           <View style={[styles.header, { maxWidth: maxContentWidth }]}>
@@ -591,7 +586,7 @@ export default function ChatScreen() {
                   isCompact && styles.savedPillCompact,
                   { backgroundColor: theme.surfaceElevated, borderColor: theme.border, marginLeft: Spacing.xs },
                 ]}
-                onPress={clearChat}
+                onPress={handleNewChat}
                 activeOpacity={0.75}
               >
                 <Ionicons name="add" size={16} color={theme.primary} />
@@ -901,6 +896,8 @@ export default function ChatScreen() {
                       <View style={styles.mesBadgeRow}>
                         {(() => {
                           const tc = getTierConfig(msg.mes_score.meal_tier);
+                          const isLowMes = msg.mes_score.meal_score < 50;
+                          const isSnackOrDessert = recipe && /brownie|cookie|cake|muffin|bar|treat|snack|dessert|sweet|chocolate/i.test(recipe.title || '');
                           return (
                             <>
                               <MesBadgePopIn delay={shouldAnimate ? 400 : 0}>
@@ -911,7 +908,12 @@ export default function ChatScreen() {
                                 </Text>
                               </View>
                               </MesBadgePopIn>
-                              {msg.mes_score.projected_daily_score != null && (() => {
+                              {isLowMes && isSnackOrDessert && (
+                                <Text style={{ color: theme.textTertiary, fontSize: 11, marginTop: 2, fontStyle: 'italic' }}>
+                                  Desserts naturally score lower — your main meals balance it out.
+                                </Text>
+                              )}
+                              {msg.mes_score.projected_daily_score != null && !isSnackOrDessert && (() => {
                                 const dtc = getTierConfig(msg.mes_score.projected_daily_tier || msg.mes_score.meal_tier);
                                 return (
                                   <MesBadgePopIn delay={shouldAnimate ? 550 : 0}>
@@ -1048,10 +1050,20 @@ export default function ChatScreen() {
                     )}
                     {recipe.steps.length > 0 && (
                       <View style={styles.recipeSection}>
-                        <Text style={[styles.recipeSectionTitle, { color: theme.textSecondary }]}>
-                          Steps
-                        </Text>
-                        {recipe.steps.map((step: string, i: number) => (
+                        <TouchableOpacity
+                          onPress={() => setExpandedSteps((prev) => ({ ...prev, [key]: !prev[key] }))}
+                          activeOpacity={0.7}
+                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                          <Text style={[styles.recipeSectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+                            Steps
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>{recipe.steps.length} steps</Text>
+                            <Ionicons name={expandedSteps[key] ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textTertiary} />
+                          </View>
+                        </TouchableOpacity>
+                        {expandedSteps[key] && recipe.steps.map((step: string, i: number) => (
                           <Text key={i} style={[styles.stepItem, { color: theme.textSecondary }]}>
                             {i + 1}. {step}
                           </Text>
@@ -1066,13 +1078,23 @@ export default function ChatScreen() {
                 {/* Swaps */}
                 {payload?.swaps && payload.swaps.length > 0 && (
                   <Card style={styles.swapsCard} padding={Spacing.md}>
-                    <View style={styles.swapsHeader}>
-                      <Ionicons name="swap-horizontal" size={16} color={theme.accent} />
-                      <Text style={[styles.recipeName, { color: theme.text }]}>
-                        Ingredient Swaps
-                      </Text>
-                    </View>
-                    {payload.swaps.map((swap: any, i: number) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedSwaps((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      activeOpacity={0.7}
+                      style={styles.swapsHeader}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <Ionicons name="swap-horizontal" size={16} color={theme.accent} />
+                        <Text style={[styles.recipeName, { color: theme.text }]}>
+                          Ingredient Swaps
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>{payload.swaps.length}</Text>
+                        <Ionicons name={expandedSwaps[key] ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textTertiary} />
+                      </View>
+                    </TouchableOpacity>
+                    {expandedSwaps[key] && payload.swaps.map((swap: any, i: number) => (
                       <View key={i} style={[styles.swapItem, { borderBottomColor: theme.border }]}>
                         <View style={styles.swapNames}>
                           <Text style={[styles.swapLabel, { color: theme.textTertiary }]}>Instead of</Text>
@@ -1107,7 +1129,7 @@ export default function ChatScreen() {
                     ].map((chip, i) => (
                       <TouchableOpacity
                         key={i}
-                        style={[styles.contextChip, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                        style={[styles.contextChip, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '30' }]}
                         onPress={chip.onPress ?? (() => {
                           setInput(chip.query || '');
                           setTimeout(() => {
@@ -1118,7 +1140,7 @@ export default function ChatScreen() {
                         activeOpacity={0.75}
                       >
                         <Ionicons name={chip.icon} size={12} color={theme.primary} />
-                        <Text style={[styles.contextChipText, { color: theme.textSecondary }]}>{chip.label}</Text>
+                        <Text style={[styles.contextChipText, { color: theme.primary }]}>{chip.label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1127,42 +1149,64 @@ export default function ChatScreen() {
                 {/* Nutrition Comparison */}
                 {payload?.nutrition?.original_estimate && payload?.nutrition?.healthified_estimate && (
                   <Card style={styles.swapsCard} padding={Spacing.md}>
-                    <View style={styles.swapsHeader}>
-                      <Ionicons name="analytics-outline" size={16} color={theme.primary} />
-                      <Text style={[styles.recipeName, { color: theme.text }]}>
-                        Nutrition Impact
-                      </Text>
-                    </View>
-                    <View style={styles.nutritionCompareRow}>
-                      <View style={{ flex: 1 }} />
-                      <Text style={[styles.nutritionColumnLabel, { color: theme.textTertiary }]}>Original</Text>
-                      <Text style={[styles.nutritionColumnLabel, { color: theme.primary }]}>Healthified</Text>
-                    </View>
-                    {(['calories', 'protein', 'carbs', 'fat', 'fiber'] as const).map((key) => {
-                      const orig = Number(payload.nutrition.original_estimate[key] || 0);
-                      const healthified = Number(payload.nutrition.healthified_estimate[key] || 0);
-                      const diff = healthified - orig;
-                      const unit = key === 'calories' ? '' : 'g';
-                      const improved = key === 'protein' || key === 'fiber' ? diff > 0 : diff < 0;
-                      return (
-                        <View key={key} style={[styles.nutritionCompareRow, { borderTopWidth: 1, borderTopColor: theme.surfaceHighlight, paddingVertical: Spacing.xs + 2 }]}>
-                          <Text style={[styles.nutritionMacroLabel, { color: theme.textSecondary }]}>
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                          </Text>
-                          <Text style={[styles.nutritionValue, { color: theme.textTertiary }]}>
-                            {Math.round(orig)}{unit}
-                          </Text>
-                          <Text style={[styles.nutritionValue, { color: theme.text, fontWeight: '700' }]}>
-                            {Math.round(healthified)}{unit}
-                            {diff !== 0 && (
-                              <Text style={{ color: improved ? theme.primary : theme.error, fontSize: 11 }}>
-                                {' '}{diff > 0 ? '+' : ''}{Math.round(diff)}
-                              </Text>
-                            )}
-                          </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedNutrition((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      activeOpacity={0.7}
+                      style={styles.swapsHeader}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <Ionicons name="analytics-outline" size={16} color={theme.primary} />
+                        <Text style={[styles.recipeName, { color: theme.text }]}>
+                          Nutrition Impact
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        {(() => {
+                          const calDiff = Number(payload.nutrition.healthified_estimate.calories || 0) - Number(payload.nutrition.original_estimate.calories || 0);
+                          const protDiff = Number(payload.nutrition.healthified_estimate.protein || 0) - Number(payload.nutrition.original_estimate.protein || 0);
+                          return (
+                            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
+                              {calDiff <= 0 ? calDiff : `+${calDiff}`} cal, {protDiff >= 0 ? `+${protDiff}` : protDiff}g protein
+                            </Text>
+                          );
+                        })()}
+                        <Ionicons name={expandedNutrition[key] ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textTertiary} />
+                      </View>
+                    </TouchableOpacity>
+                    {expandedNutrition[key] && (
+                      <>
+                        <View style={styles.nutritionCompareRow}>
+                          <View style={{ flex: 1 }} />
+                          <Text style={[styles.nutritionColumnLabel, { color: theme.textTertiary }]}>Original</Text>
+                          <Text style={[styles.nutritionColumnLabel, { color: theme.primary }]}>Healthified</Text>
                         </View>
-                      );
-                    })}
+                        {(['calories', 'protein', 'carbs', 'fat', 'fiber'] as const).map((macroKey) => {
+                          const orig = Number((payload.nutrition.original_estimate as any)[macroKey] || 0);
+                          const healthified = Number((payload.nutrition.healthified_estimate as any)[macroKey] || 0);
+                          const diff = healthified - orig;
+                          const unit = macroKey === 'calories' ? '' : 'g';
+                          const improved = macroKey === 'protein' || macroKey === 'fiber' ? diff > 0 : diff < 0;
+                          return (
+                            <View key={macroKey} style={[styles.nutritionCompareRow, { borderTopWidth: 1, borderTopColor: theme.surfaceHighlight, paddingVertical: Spacing.xs + 2 }]}>
+                              <Text style={[styles.nutritionMacroLabel, { color: theme.textSecondary }]}>
+                                {macroKey.charAt(0).toUpperCase() + macroKey.slice(1)}
+                              </Text>
+                              <Text style={[styles.nutritionValue, { color: theme.textTertiary }]}>
+                                {Math.round(orig)}{unit}
+                              </Text>
+                              <Text style={[styles.nutritionValue, { color: theme.text, fontWeight: '700' }]}>
+                                {Math.round(healthified)}{unit}
+                                {diff !== 0 && (
+                                  <Text style={{ color: improved ? theme.primary : theme.error, fontSize: 11 }}>
+                                    {' '}{diff > 0 ? '+' : ''}{Math.round(diff)}
+                                  </Text>
+                                )}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </>
+                    )}
                   </Card>
                 )}
               </ChatBubbleEntrance>
@@ -1310,8 +1354,8 @@ export default function ChatScreen() {
         onClose={() => setShowHistory(false)}
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
-        onNewChat={clearChat}
-        onSelectPrompt={(prompt) => { clearChat(); setInput(prompt); }}
+        onNewChat={handleNewChat}
+        onSelectPrompt={(prompt) => { handleNewChat(); setInput(prompt); }}
       />
     </ScreenContainer>
   );

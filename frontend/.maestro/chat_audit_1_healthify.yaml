@@ -1,0 +1,54 @@
+appId: host.exp.Exponent
+---
+# Chat Audit 1: Healthify a meal (core use case)
+
+# Start fresh chat
+- tapOn:
+    point: "270,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: chat_fresh_empty_state
+
+# Type a healthify request
+- tapOn: "Ask about any food..."
+- inputText: "healthify mac and cheese"
+- takeScreenshot: chat_input_typed
+
+# Send the message
+- tapOn:
+    point: "355,780"
+- waitForAnimationToEnd:
+    timeout: 30000
+- takeScreenshot: chat_healthify_loading
+
+# Wait for full response
+- waitForAnimationToEnd:
+    timeout: 30000
+- takeScreenshot: chat_healthify_response_1
+
+# Scroll down to see recipe
+- swipe:
+    start: "50%, 70%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_healthify_response_2
+
+# Scroll more
+- swipe:
+    start: "50%, 70%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_healthify_response_3
+
+# Scroll more for nutrition comparison
+- swipe:
+    start: "50%, 70%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_healthify_response_4

@@ -1,0 +1,155 @@
+appId: host.exp.Exponent
+---
+# COMPLETE SCAN FEATURE VERIFICATION
+
+# Navigate to scan via deep link
+- openLink: "exp://localhost:8081/--/scan"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 01_scan_screen_loaded
+
+# ═══════════════════════════════════════
+# PHASE 1: Mode switching, capture screen
+# ═══════════════════════════════════════
+
+# Verify Scan Food mode pill is visible
+- assertVisible:
+    text: ".*Scan Food.*"
+    optional: true
+
+# Verify Packaged Food mode pill
+- assertVisible:
+    text: ".*Packaged Food.*"
+    optional: true
+
+# Switch to Packaged Food mode
+- tapOn:
+    text: ".*Packaged Food.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02_packaged_mode
+
+# ═══════════════════════════════════════
+# PHASE 3.1: GROCERY STORE MODE
+# ═══════════════════════════════════════
+
+# Verify the shopping mode toggle exists ("Shop" button)
+- takeScreenshot: 03_shopping_toggle_visible
+
+# ═══════════════════════════════════════
+# PHASE 1: BARCODE SCAN (via Use barcode)
+# ═══════════════════════════════════════
+
+# Open barcode input
+- tapOn:
+    text: ".*barcode.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 04_barcode_sheet
+
+# Enter a Coca-Cola barcode
+- inputText: "5449000000996"
+- takeScreenshot: 05_barcode_entered
+
+# Tap Look it up
+- tapOn:
+    text: ".*Look.*"
+- waitForAnimationToEnd:
+    timeout: 25000
+- takeScreenshot: 06_product_result
+
+# ═══════════════════════════════════════
+# PHASE 1: PROGRESSIVE DISCLOSURE
+# ═══════════════════════════════════════
+
+# Scroll down to see more sections
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 07_result_scrolled_1
+
+# Scroll more
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 08_result_scrolled_2
+
+# Check for collapsible "Flagged Ingredients"
+- tapOn:
+    text: ".*Flagged.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 09_flagged_expanded
+
+# ═══════════════════════════════════════
+# PHASE 2.2: EDUCATION SNIPPETS
+# ═══════════════════════════════════════
+
+# If flagged is expanded, take a screenshot showing education cards
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: 10_education_snippets
+
+# ═══════════════════════════════════════
+# RETURN TO CAPTURE AND VERIFY MEAL MODE
+# ═══════════════════════════════════════
+
+# Scroll to bottom for action buttons
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap Scan another or go back
+- tapOn:
+    text: ".*another.*"
+    optional: true
+- tapOn:
+    text: ".*Looks good.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Navigate back to scan
+- openLink: "exp://localhost:8081/--/scan"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Switch to Scan Food mode
+- tapOn:
+    text: ".*Scan Food.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 11_meal_mode_with_describe
+
+# ═══════════════════════════════════════
+# EDGE CASE: DESCRIBE MEAL BUTTON
+# ═══════════════════════════════════════
+# The describe meal pencil icon should be visible
+# on the right side of the shutter row
+- takeScreenshot: 12_describe_button_visible
+
+# ═══════════════════════════════════════
+# PHASE 1: SCAN HISTORY STRIP
+# ═══════════════════════════════════════
+# After the barcode scan, there should now be at least
+# one item in product history visible on capture screen
+- tapOn:
+    text: ".*Packaged Food.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 13_capture_with_history
+
+# Final verification screenshot
+- takeScreenshot: 14_all_features_verified

@@ -1,0 +1,52 @@
+appId: host.exp.Exponent
+---
+# Chat Audit 2: Send the message properly
+
+# The input already has "healthify mac and cheese" typed
+# Clear and retype to be safe
+- tapOn: "healthify mac and cheese"
+- eraseText: 30
+
+# Type fresh message
+- inputText: "make me a healthy version of mac and cheese"
+
+# Try tapping the green send arrow button - it should be right of the input
+# With keyboard up, the input bar is at approximately y=360
+- tapOn:
+    point: "365,361"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: chat_after_send_1
+
+# If still not sent, try pressing Return key
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: chat_after_send_2
+
+# Scroll to see response
+- swipe:
+    start: "50%, 50%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_response_scroll_1
+
+# Scroll more
+- swipe:
+    start: "50%, 50%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_response_scroll_2
+
+# Scroll more
+- swipe:
+    start: "50%, 50%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_response_scroll_3

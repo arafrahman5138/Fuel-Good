@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+# Swipe up to fully reveal Continue, then tap
+
+# First scroll down to reveal Continue fully
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: after_swipe
+
+# Now tap Continue
+- tapOn:
+    text: "Continue"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: after_continue_swipe

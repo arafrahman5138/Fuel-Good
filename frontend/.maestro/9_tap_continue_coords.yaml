@@ -1,0 +1,19 @@
+appId: host.exp.Exponent
+---
+# Tap Continue button by approximate coordinates (bottom right area)
+# iPhone 17 Pro resolution: 393 x 852 points
+# Continue button appears at roughly x=310, y=810
+
+- tapOn:
+    point: "310,810"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: after_continue_1
+
+# If there's another screen, keep tapping Continue area
+- tapOn:
+    point: "310,810"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: after_continue_2

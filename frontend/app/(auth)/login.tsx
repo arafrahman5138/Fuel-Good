@@ -239,12 +239,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.heroSection}>
-          <View style={Shadows.interactive(isDark)}>
+          <View style={[styles.heroGradientWrapper, Shadows.interactive(isDark)]}>
             <LinearGradient
               colors={['#22C55E', '#059669', '#0891B2'] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[styles.heroGradient, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]}
+              style={styles.heroGradient}
             >
               <Image
                 source={require('../../assets/images/icon-white-transparent.png')}
@@ -428,13 +428,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.huge,
   },
-  heroGradient: {
+  heroGradientWrapper: {
     width: 88,
     height: 88,
-    borderRadius: 28,
+    borderRadius: 22,
+    overflow: 'hidden',
+    marginBottom: Spacing.lg,
+  },
+  heroGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.lg,
   },
   heroLogo: {
     width: 50,

@@ -1,0 +1,57 @@
+appId: host.exp.Exponent
+---
+# Clear existing input, type new message, and send
+
+# Tap on the existing text in the input field
+- tapOn:
+    point: "180,752"
+- eraseText: 50
+
+# Type new message
+- inputText: "make me a healthy brownie"
+
+# Now tap the send button (with keyboard up, it shifts up)
+# Looking at prior screenshots with keyboard, the send button is at around y=362
+- tapOn:
+    point: "363,362"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: brownie_sending
+
+# Wait for AI response
+- waitForAnimationToEnd:
+    timeout: 50000
+- takeScreenshot: brownie_response
+
+# Scroll to see recipe
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: brownie_recipe_1
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: brownie_recipe_2
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: brownie_recipe_3
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: brownie_recipe_4

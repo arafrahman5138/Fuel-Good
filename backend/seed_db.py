@@ -1,10 +1,20 @@
 """
-Seed the database with whole-food recipes.
-Combines original 150 meals + global cuisine meals.
-Auto-computes health benefits from ingredients.
-Run:  python seed_db.py
+Seed the database with official Fuel Good meals by default.
+
+Default:
+  python seed_db.py
+    Seeds from backend/official_meals.json
+
+Optional:
+  SEED_SOURCE=library python seed_db.py
+    Seeds from the broader Python meal library (SEED_MEALS + GLOBAL_MEALS)
 """
+
+import json
+import os
 import uuid
+from pathlib import Path
+
 from app.db import SessionLocal, init_db
 from app.models import gamification as _gamification_models  # noqa: F401
 from app.models import grocery as _grocery_models  # noqa: F401
@@ -18,39 +28,40 @@ from app.models import user as _user_models  # noqa: F401
 from app.seed_meals import SEED_MEALS
 from app.seed_meals_global import GLOBAL_MEALS
 from app.nutrition_tags import compute_health_benefits
-from app.services.metabolic_engine import compute_meal_mes, passes_import_gate, DEFAULT_BUDGET_DICT
+from app.services.metabolic_engine import passes_import_gate
 
-# ── protein / carb classification maps ─────────────────────────
+BACKEND_DIR = Path(__file__).resolve().parent
+OFFICIAL_MEALS_PATH = BACKEND_DIR / "official_meals.json"
+SEED_SOURCE = (os.getenv("SEED_SOURCE") or "official").strip().lower()
+
 PROTEIN_KEYWORDS: dict[str, list[str]] = {
-    "chicken":    ["chicken", "cornish game hen"],
-    "beef":       ["beef", "ribeye", "flank steak", "short ribs", "stew meat", "bison", "oxtail", "liver"],
-    "lamb":       ["lamb", "goat"],
-    "pork":       ["pork", "bacon", "pancetta", "prosciutto", "sausage", "duck"],
-    "salmon":     ["salmon"],
-    "shrimp":     ["shrimp", "scallop"],
+    "chicken": ["chicken", "cornish game hen"],
+    "beef": ["beef", "ribeye", "flank steak", "short ribs", "stew meat", "bison", "oxtail", "liver"],
+    "lamb": ["lamb", "goat"],
+    "pork": ["pork", "bacon", "pancetta", "prosciutto", "sausage", "duck"],
+    "salmon": ["salmon"],
+    "shrimp": ["shrimp", "scallop"],
     "other_fish": ["tuna", "cod", "tilapia", "sole", "sardine", "mackerel", "trout", "fish"],
-    "eggs":       ["egg"],
+    "eggs": ["egg"],
     "vegetarian": ["chickpea", "lentil", "bean", "tofu", "edamame"],
 }
 
 CARB_KEYWORDS: dict[str, list[str]] = {
-    "rice":            ["rice"],
-    "sweet_potato":    ["sweet potato"],
-    "potato":          ["potato", "russet"],
+    "rice": ["rice"],
+    "sweet_potato": ["sweet potato"],
+    "potato": ["potato", "russet"],
     "sourdough_bread": ["sourdough", "bread", "rye bread"],
-    "oats":            ["oats", "steel-cut", "rolled oats"],
-    "quinoa":          ["quinoa"],
-    "tortillas":       ["tortilla", "pita"],
-    "noodles":         ["noodle", "soba", "vermicelli", "glass noodle", "pasta"],
-    "plantain":        ["plantain"],
+    "oats": ["oats", "steel-cut", "rolled oats"],
+    "quinoa": ["quinoa"],
+    "tortillas": ["tortilla", "pita"],
+    "noodles": ["noodle", "soba", "vermicelli", "glass noodle", "pasta"],
+    "plantain": ["plantain"],
 }
 
-# Carb terms that override the "rice" keyword inside noodle/wrapper names
 _NOODLE_HINTS = {"noodle", "vermicelli", "paper", "wrapper"}
 
 
 def _classify_proteins(ingredients: list[dict]) -> list[str]:
-    """Return sorted, deduplicated protein_type tags for a recipe."""
     tags: set[str] = set()
     for ing in ingredients:
         if (ing.get("category") or "").lower() != "protein":
@@ -63,16 +74,13 @@ def _classify_proteins(ingredients: list[dict]) -> list[str]:
 
 
 def _classify_carbs(ingredients: list[dict]) -> list[str]:
-    """Return sorted, deduplicated carb_type tags for a recipe."""
     tags: set[str] = set()
     for ing in ingredients:
         cat = (ing.get("category") or "").lower()
         name = (ing.get("name") or "").lower()
-        # Only consider grains + starchy produce
         if cat not in ("grains", "produce"):
             continue
         if cat == "produce":
-            # Only match explicit starchy produce
             if "sweet potato" in name:
                 tags.add("sweet_potato")
             elif "potato" in name or "russet" in name:
@@ -80,168 +88,112 @@ def _classify_carbs(ingredients: list[dict]) -> list[str]:
             elif "plantain" in name:
                 tags.add("plantain")
             continue
-        # cat == "grains"
-        # Check noodle-like items first to avoid false "rice" match
-        if any(h in name for h in _NOODLE_HINTS):
+        if any(hint in name for hint in _NOODLE_HINTS):
             tags.add("noodles")
             continue
         for tag, keywords in CARB_KEYWORDS.items():
             if any(kw in name for kw in keywords):
                 tags.add(tag)
-                break  # one tag per ingredient
+                break
     return sorted(tags)
 
-CUISINE_DEFAULTS = {
-    "american": [
-        "Avocado Toast", "Greek Yogurt", "Banana Almond Butter", "Overnight Oats",
-        "Scrambled Eggs", "Sweet Potato and Egg Hash", "Coconut Flour Pancakes",
-        "Tropical Fruit Bowl", "Egg and Veggie Muffin Cups", "Egg Muffins",
-        "Overnight Steel-Cut Oats", "Tuna Salad Lettuce Wraps",
-        "Turkey and Avocado Collard Wrap", "Caprese Stuffed Avocado",
-        "Grilled Chicken Caesar Salad", "Chicken and Vegetable Stir-Fry",
-        "Grilled Salmon with Asparagus", "Grass-Fed Beef Burgers",
-        "Garlic Butter Shrimp", "One-Pan Chicken Thighs",
-        "Cauliflower Fried Rice", "Turkey Meatballs", "Stuffed Bell Peppers",
-        "Chicken and Sweet Potato Meal Prep", "Beef and Vegetable Chili",
-        "Chicken Bone Broth", "Turkey Bolognese", "Pulled Pork",
-        "Baked Salmon Cakes", "Apple Slices", "Hard-Boiled Eggs",
-        "Trail Mix", "Guacamole", "Energy Balls", "Celery with Sunflower",
-        "Mixed Nuts", "Frozen Banana", "Edamame", "Stuffed Sweet Potatoes",
-        "Zucchini Noodles with Pesto", "Egg Drop Soup", "Coconut Chia Pudding",
-        "Roasted Brussels Sprouts", "Chicken Salad with Grapes",
-        "Baked Chicken Drumsticks", "Veggie-Packed Frittata",
-        "Taco Seasoned", "Banana Oat Muffins", "Bone Broth Ramen",
-        "Stuffed Portobello", "Loaded Baked Potato", "Veggie Fritters",
-        "Almond Crusted Chicken", "Crispy Baked Chicken Wings",
-        "Sweet Potato Brownies", "Mixed Berry Crumble",
-        "Beef and Broccoli Stir-Fry", "Breakfast Sausage Patties",
-        "Turkey and Zucchini Meatloaf", "Baked Eggs in Avocado",
-        "Coconut Chicken Strips", "Coconut Shrimp",
-    ],
-    "mediterranean": [
-        "Mediterranean Quinoa", "Roasted Beet and Goat Cheese",
-        "Smoked Salmon and Cream Cheese", "Baked Cod with Tomatoes",
-        "Herb-Crusted Roast Chicken", "Eggplant Parmesan",
-        "Grilled Steak with Chimichurri", "Spaghetti Squash Carbonara",
-        "Baked Falafel", "Watermelon and Feta", "Sardines on Sourdough",
-        "Pan-Fried Sole", "Mediterranean Stuffed Tomatoes",
-        "Pesto Chicken", "Roasted Red Pepper Soup", "Cauliflower Steaks",
-        "Minestrone Soup", "Roasted Vegetable and Quinoa Salad",
-        "Grilled Vegetable Platter", "Grilled Peach and Arugula",
-        "Balsamic Glazed Pork", "Pan-Seared Scallops",
-    ],
-    "indian": [
-        "Coconut Lentil Dal", "Chicken Tikka Masala",
-        "Coconut Curry with Vegetables", "Lentil Soup",
-    ],
-    "japanese": [
-        "Miso Soup with Tofu", "Salmon Poke Bowl",
-        "Teriyaki Salmon Bowls",
-    ],
-    "korean": [
-        "Kimchi Fried Cauliflower Rice",
-    ],
-    "mexican": [
-        "Black Bean and Sweet Potato Tacos", "Ceviche",
-        "Black Bean and Quinoa Freezer Burritos",
-    ],
-    "thai": [
-        "Thai Chicken Lettuce Cups", "Thai Green Curry with Chicken",
-    ],
-    "chinese": [
-        "Asian Sesame Chicken Salad",
-    ],
-    "middle_eastern": [
-        "Chicken Shawarma Bowl", "Hummus with Cucumber", "Roasted Beet Hummus",
-        "Roasted Chickpeas", "Stuffed Dates", "Curried Egg Salad",
-        "Lamb Kofta with Tzatziki",
-    ],
-    "moroccan": [
-        "Lamb Tagine with Apricots", "Moroccan Chicken with Apricots",
-        "Shakshuka",
-    ],
-    "vietnamese": [
-        "Fresh Spring Rolls", "Cucumber Avocado Sushi Rolls",
-    ],
-    "peruvian": [
-        "Ceviche",
-    ],
-}
+
+def _load_official_meals() -> list[dict]:
+    payload = json.loads(OFFICIAL_MEALS_PATH.read_text())
+    meals = payload.get("meals", []) if isinstance(payload, dict) else payload
+    if not isinstance(meals, list):
+        raise RuntimeError("official_meals.json does not contain a meals list")
+    return meals
 
 
-def _guess_cuisine(title: str) -> str:
-    """Match an existing meal title to a cuisine using substring lookup."""
-    title_lower = title.lower()
-    for cuisine, keywords in CUISINE_DEFAULTS.items():
-        for kw in keywords:
-            if kw.lower() in title_lower:
-                return cuisine
-    return "american"
+def _load_seed_meals() -> list[dict]:
+    if SEED_SOURCE == "official":
+        return _load_official_meals()
+    if SEED_SOURCE == "library":
+        return SEED_MEALS + GLOBAL_MEALS
+    raise RuntimeError(f"Unsupported SEED_SOURCE={SEED_SOURCE!r}. Use official or library.")
 
 
 def _build_recipe(meal: dict) -> Recipe:
     health = meal.get("health_benefits") or compute_health_benefits(meal.get("ingredients", []))
-    cuisine = meal.get("cuisine") or _guess_cuisine(meal.get("title", ""))
     return Recipe(
-        id=str(uuid.uuid4()),
+        id=meal.get("id") or str(uuid.uuid4()),
         title=meal["title"],
         description=meal.get("description", ""),
         ingredients=meal.get("ingredients", []),
         steps=meal.get("steps", []),
         prep_time_min=meal.get("prep_time_min", 0),
         cook_time_min=meal.get("cook_time_min", 0),
-        total_time_min=(meal.get("prep_time_min", 0) + meal.get("cook_time_min", 0)),
+        total_time_min=meal.get("total_time_min", meal.get("prep_time_min", 0) + meal.get("cook_time_min", 0)),
         servings=meal.get("servings", 1),
-        nutrition_info=meal.get("nutrition_estimate", {}),
+        nutrition_info=meal.get("nutrition_info", meal.get("nutrition_estimate", {})),
         difficulty=meal.get("difficulty", "easy"),
-        tags=[meal.get("meal_type", ""), meal.get("category", "")],
+        tags=meal.get("tags", [meal.get("meal_type", ""), meal.get("category", "")]),
         flavor_profile=meal.get("flavor_profile", []),
         dietary_tags=meal.get("dietary_tags", []),
-        cuisine=cuisine,
+        cuisine=meal.get("cuisine", "american"),
         health_benefits=health,
-        is_ai_generated=False,
-        protein_type=_classify_proteins(meal.get("ingredients", [])),
-        carb_type=_classify_carbs(meal.get("ingredients", [])),
+        is_ai_generated=meal.get("is_ai_generated", False),
+        image_url=meal.get("image_url"),
+        protein_type=meal.get("protein_type") or _classify_proteins(meal.get("ingredients", [])),
+        carb_type=meal.get("carb_type") or _classify_carbs(meal.get("ingredients", [])),
+        recipe_role=meal.get("recipe_role", "full_meal"),
+        is_component=meal.get("is_component", False),
+        meal_group_id=meal.get("meal_group_id"),
+        default_pairing_ids=meal.get("default_pairing_ids", []),
         needs_default_pairing=meal.get("needs_default_pairing"),
+        component_composition=meal.get("component_composition"),
+        is_mes_scoreable=meal.get("is_mes_scoreable", True),
+        pairing_synergy_profile=meal.get("pairing_synergy_profile"),
+        glycemic_profile=meal.get("glycemic_profile"),
+        created_at=meal.get("created_at"),
+        fuel_score=meal.get("fuel_score", 100.0),
     )
 
 
-ALL_MEALS = SEED_MEALS + GLOBAL_MEALS
-
-
-def seed_recipes():
+def seed_recipes() -> None:
     init_db()
     db = SessionLocal()
+    meals = _load_seed_meals()
     try:
         added = 0
         updated = 0
         skipped_mes = 0
-        for meal in ALL_MEALS:
+        for meal in meals:
             existing = db.query(Recipe).filter(Recipe.title == meal["title"]).first()
             if existing:
-                needs_update = (
-                    not existing.cuisine
-                    or existing.cuisine == "american"
-                    or not existing.health_benefits
-                )
-                if needs_update:
-                    cuisine = meal.get("cuisine") or _guess_cuisine(meal["title"])
-                    benefits = meal.get("health_benefits") or compute_health_benefits(
-                        meal.get("ingredients", [])
-                    )
-                    existing.cuisine = cuisine
-                    existing.health_benefits = benefits
-                    if meal.get("nutrition_estimate"):
-                        existing.nutrition_info = meal["nutrition_estimate"]
-                    updated += 1
-                # Always refresh protein / carb tags
-                existing.protein_type = _classify_proteins(meal.get("ingredients", []))
-                existing.carb_type = _classify_carbs(meal.get("ingredients", []))
+                existing.description = meal.get("description", existing.description)
+                existing.ingredients = meal.get("ingredients", existing.ingredients)
+                existing.steps = meal.get("steps", existing.steps)
+                existing.prep_time_min = meal.get("prep_time_min", existing.prep_time_min)
+                existing.cook_time_min = meal.get("cook_time_min", existing.cook_time_min)
+                existing.total_time_min = meal.get("total_time_min", existing.total_time_min)
+                existing.servings = meal.get("servings", existing.servings)
+                existing.nutrition_info = meal.get("nutrition_info", meal.get("nutrition_estimate", existing.nutrition_info))
+                existing.difficulty = meal.get("difficulty", existing.difficulty)
+                existing.tags = meal.get("tags", existing.tags)
+                existing.flavor_profile = meal.get("flavor_profile", existing.flavor_profile)
+                existing.dietary_tags = meal.get("dietary_tags", existing.dietary_tags)
+                existing.cuisine = meal.get("cuisine", existing.cuisine)
+                existing.health_benefits = meal.get("health_benefits", existing.health_benefits)
+                existing.is_ai_generated = meal.get("is_ai_generated", existing.is_ai_generated)
+                existing.image_url = meal.get("image_url", existing.image_url)
+                existing.protein_type = meal.get("protein_type") or _classify_proteins(meal.get("ingredients", []))
+                existing.carb_type = meal.get("carb_type") or _classify_carbs(meal.get("ingredients", []))
+                existing.recipe_role = meal.get("recipe_role", existing.recipe_role)
+                existing.is_component = meal.get("is_component", existing.is_component)
+                existing.meal_group_id = meal.get("meal_group_id", existing.meal_group_id)
+                existing.default_pairing_ids = meal.get("default_pairing_ids", existing.default_pairing_ids)
+                existing.needs_default_pairing = meal.get("needs_default_pairing", existing.needs_default_pairing)
+                existing.component_composition = meal.get("component_composition", existing.component_composition)
+                existing.is_mes_scoreable = meal.get("is_mes_scoreable", existing.is_mes_scoreable)
+                existing.pairing_synergy_profile = meal.get("pairing_synergy_profile", existing.pairing_synergy_profile)
+                existing.glycemic_profile = meal.get("glycemic_profile", existing.glycemic_profile)
+                updated += 1
                 continue
 
-            # MES import gate: skip meals below quality threshold
-            nutrition = meal.get("nutrition_estimate", {})
-            if nutrition and not passes_import_gate(nutrition):
+            nutrition = meal.get("nutrition_info", meal.get("nutrition_estimate", {}))
+            if SEED_SOURCE == "library" and nutrition and not passes_import_gate(nutrition):
                 skipped_mes += 1
                 continue
 
@@ -249,7 +201,10 @@ def seed_recipes():
             added += 1
 
         db.commit()
-        print(f"Seeded {added} new + updated {updated} existing, skipped {skipped_mes} (MES < 75) ({len(ALL_MEALS)} total definitions).")
+        print(
+            f"Seeded {added} new + updated {updated} existing, skipped {skipped_mes} "
+            f"({len(meals)} total definitions, source={SEED_SOURCE})."
+        )
     finally:
         db.close()
 

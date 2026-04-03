@@ -1,0 +1,26 @@
+appId: host.exp.Exponent
+---
+# Try opening barcode sheet via the bottom icon button (right of shutter)
+
+- openLink: "exp://localhost:8081/--/scan"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Switch to Packaged Food
+- tapOn:
+    text: ".*Packaged Food.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap the barcode icon button at bottom right of shutter row
+# On iPhone 17 Pro, shutter is center-bottom, barcode icon is right
+- tapOn:
+    point: "330,760"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: barcode_via_icon_1
+
+# Check if modal is showing
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: barcode_via_icon_2

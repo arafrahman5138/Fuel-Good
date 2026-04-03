@@ -1,0 +1,37 @@
+appId: host.exp.Exponent
+---
+# Flow 3: Test barcode scanning and caching
+
+# Switch to Packaged Food mode
+- tapOn: "Packaged Food"
+- waitForAnimationToEnd
+
+# Open barcode sheet
+- tapOn: "Use barcode"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Verify barcode sheet opened
+- assertVisible: "Use barcode"
+
+# Enter a known barcode (Cheerios)
+- tapOn:
+    id: "barcode-input"
+    optional: true
+- inputText: "016000275263"
+
+# Take screenshot
+- takeScreenshot: barcode_entered
+
+# Tap analyze
+- tapOn: "Look it up"
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Take screenshot of result
+- takeScreenshot: barcode_result
+
+# Verify we got a product result
+- assertVisible:
+    text: "Score"
+    optional: true

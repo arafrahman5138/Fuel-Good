@@ -1,0 +1,14 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    text: ".*Coach.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: qv_chat_open
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: qv_scrolled

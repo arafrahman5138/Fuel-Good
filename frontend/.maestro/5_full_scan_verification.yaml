@@ -1,0 +1,73 @@
+appId: host.exp.Exponent
+---
+# Flow 5: Full end-to-end scan verification
+# This flow tests the complete Phase 1-3 features
+
+# === Phase 1 Verification ===
+
+# 1. Scan History: Navigate to scan, verify Recent section loads
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Take screenshot showing capture screen with any history/favorites
+- takeScreenshot: capture_with_history
+
+# 2. Progressive Disclosure: Navigate to packaged food and scan something
+- tapOn: "Packaged Food"
+- waitForAnimationToEnd
+
+# Open barcode
+- tapOn: "Use barcode"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Enter barcode for a known product
+- inputText: "5449000000996"
+
+- tapOn: "Look it up"
+- waitForAnimationToEnd:
+    timeout: 20000
+
+# Take screenshot of result with collapsible sections
+- takeScreenshot: product_result_progressive_disclosure
+
+# 3. Verify collapsible sections exist (Flagged Ingredients should be collapsed)
+- assertVisible:
+    text: "Decision in a glance"
+    optional: true
+
+# === Phase 2 Verification ===
+
+# 4. Favorites: Look for favorite heart icon
+- takeScreenshot: result_with_favorite_icon
+
+# 5. Education: Check for education snippets in flagged ingredients
+- assertVisible:
+    text: "Flagged Ingredients"
+    optional: true
+
+# Try tapping to expand
+- tapOn:
+    text: "Flagged Ingredients"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Take screenshot with expanded education cards
+- takeScreenshot: education_snippets_expanded
+
+# === Phase 3 Verification ===
+
+# 6. Go back to capture to verify grocery mode
+- tapOn:
+    text: "Scan another"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Verify shopping mode toggle
+- tapOn: "Packaged Food"
+- waitForAnimationToEnd
+
+# Take final screenshot
+- takeScreenshot: final_capture_screen

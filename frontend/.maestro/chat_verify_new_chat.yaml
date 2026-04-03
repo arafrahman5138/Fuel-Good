@@ -1,0 +1,27 @@
+appId: host.exp.Exponent
+---
+# Test new chat button at correct position
+
+# The + button is at far right of header, approximately x=390, y=63
+- tapOn:
+    point: "392,68"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: new_chat_attempt_1
+
+# If that didn't work, try scrolling up first
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: new_chat_scrolled_up

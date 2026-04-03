@@ -415,8 +415,14 @@ async def create_log(
     title, base_nutrition = _resolve_source_nutrition(db, payload)
 
     # ── Auto-upgrade manual logs that match a curated recipe ──
+    # Only upgrade when the user did NOT provide custom nutrition data.
+    # If they sent their own nutrition, they're manually logging — respect that
+    # and compute fuel_score from their data instead of giving a flat 100.
     normalized_source_type = (payload.source_type or "manual").lower()
-    if normalized_source_type == "manual" and not payload.source_id and payload.title:
+    has_custom_nutrition = payload.nutrition and any(
+        payload.nutrition.get(k) for k in ("calories", "protein_g", "carbs_g", "fat_g")
+    )
+    if normalized_source_type == "manual" and not payload.source_id and payload.title and not has_custom_nutrition:
         matched_recipe = db.query(Recipe).filter(
             Recipe.title.ilike(payload.title.strip())
         ).first()

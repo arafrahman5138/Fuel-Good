@@ -8,6 +8,7 @@ Create Date: 2026-04-02 13:00:00.000000
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -18,6 +19,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    table_names = set(inspector.get_table_names())
+    if "scan_favorites" in table_names:
+        return
+
     op.create_table(
         "scan_favorites",
         sa.Column("id", sa.String(36), primary_key=True),
@@ -47,4 +54,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("scan_favorites")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    table_names = set(inspector.get_table_names())
+    if "scan_favorites" in table_names:
+        op.drop_table("scan_favorites")

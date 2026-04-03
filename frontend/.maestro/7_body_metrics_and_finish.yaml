@@ -1,0 +1,81 @@
+appId: host.exp.Exponent
+---
+# Flow 7: Fill in body metrics and finish onboarding
+
+# Fill weight
+- tapOn: "e.g. 165"
+- inputText: "170"
+- tapOn: "Weight"
+
+# Fill height ft
+- tapOn: "e.g. 5"
+- inputText: "5"
+- tapOn: "Height"
+
+# Fill height in
+- tapOn: "e.g. 7"
+- inputText: "10"
+- tapOn: "Height"
+
+# Fill age
+- tapOn: "e.g. 30"
+- inputText: "28"
+- tapOn: "Age"
+
+# Select sex
+- tapOn:
+    text: ".*Male.*"
+    optional: true
+
+# Scroll down to see Continue
+- swipe:
+    direction: UP
+    duration: 500
+
+# Activity level should be pre-selected, tap Continue
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: after_body_metrics
+
+# Continue through remaining screens
+- repeat:
+    times: 15
+    commands:
+      - tapOn:
+          text: ".*No.*"
+          optional: true
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          text: "Skip"
+          optional: true
+      - tapOn:
+          text: "Get Started"
+          optional: true
+      - tapOn:
+          text: ".*Start.*"
+          optional: true
+      - tapOn:
+          text: "Finish"
+          optional: true
+      - tapOn:
+          text: ".*Done.*"
+          optional: true
+      - tapOn:
+          text: ".*go.*"
+          optional: true
+      - tapOn:
+          text: "Not Now"
+          optional: true
+      - tapOn:
+          text: "Allow"
+          optional: true
+      - tapOn:
+          text: "Explore"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- takeScreenshot: onboarding_done

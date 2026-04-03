@@ -1,0 +1,42 @@
+appId: host.exp.Exponent
+---
+# Flow 2: Verify scan mode switching and UI elements
+
+# Ensure we're on the scan screen
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Verify meal scan mode is default
+- assertVisible: "Scan Food"
+
+# Switch to Packaged Food mode
+- tapOn: "Packaged Food"
+- waitForAnimationToEnd
+
+# Verify packaged food mode UI
+- assertVisible: "Packaged food"
+- assertVisible: "Use barcode"
+
+# Take screenshot of packaged food mode
+- takeScreenshot: packaged_food_mode
+
+# Verify shopping mode toggle exists
+- assertVisible: "Shop"
+
+# Toggle shopping mode on
+- tapOn: "Shop"
+- waitForAnimationToEnd
+
+# Take screenshot of shopping mode
+- takeScreenshot: shopping_mode_active
+
+# Toggle shopping mode off
+- tapOn: "ON"
+- waitForAnimationToEnd
+
+# Switch back to meal mode
+- tapOn: "Scan Food"
+- waitForAnimationToEnd
+
+# Take screenshot of meal mode
+- takeScreenshot: meal_scan_mode

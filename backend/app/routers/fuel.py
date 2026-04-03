@@ -297,6 +297,23 @@ async def get_health_pulse(
         .filter(FoodLog.user_id == current_user.id, FoodLog.date == day)
         .all()
     )
+    # If no date was explicitly provided and today (UTC) has no data,
+    # fall back to the most recent date with logged meals so the health
+    # pulse doesn't show a misleading 0 for timezone differences.
+    if not date_str and not fuel_logs:
+        from sqlalchemy import func as sa_func
+        latest_date = (
+            db.query(sa_func.max(FoodLog.date))
+            .filter(FoodLog.user_id == current_user.id)
+            .scalar()
+        )
+        if latest_date:
+            day = latest_date
+            fuel_logs = (
+                db.query(FoodLog)
+                .filter(FoodLog.user_id == current_user.id, FoodLog.date == day)
+                .all()
+            )
     fuel_scores = _group_scores(fuel_logs)
     fuel_avg = round(sum(fuel_scores) / len(fuel_scores), 1) if fuel_scores else 0.0
     fuel_tier_key, fuel_tier_label = _pulse_tier(fuel_avg)

@@ -1,0 +1,68 @@
+appId: host.exp.Exponent
+---
+# Chat Audit 6: Dessert healthify + general question
+
+# Start fresh - open new chat via + button at top right
+# First clear existing input
+- tapOn:
+    point: "196,300"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Type a dessert request
+- tapOn: "Ask about any food..."
+- inputText: "make me a healthy brownie"
+
+# Tap the send button (when keyboard is up, it's at approximately y=365)
+- tapOn:
+    point: "363,365"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: dessert_sent
+
+# Wait for response
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: dessert_response_1
+
+# Scroll down
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: dessert_response_2
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: dessert_response_3
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: dessert_response_4
+
+# === Now test a general question in the same session ===
+- tapOn: "Ask about any food..."
+- inputText: "what makes this healthier than regular brownies"
+- tapOn:
+    point: "363,365"
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: followup_response_1
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: followup_response_2

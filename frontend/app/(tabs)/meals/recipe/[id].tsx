@@ -1387,11 +1387,13 @@ export default function RecipeDetailScreen() {
           </View>
         )}
 
-        <View style={{ height: 120 }} />
+        <View style={{ height: 80 }} />
       </ScrollView>
 
       {/* ── Sticky Bottom CTA ── */}
-      <View style={[styles.stickyBottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+      {/* Background fill between bottom bar and tab bar */}
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90, backgroundColor: theme.surface }} />
+      <View style={[styles.stickyBottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border, bottom: 90 }]}>
         {/* Cook Mode button (secondary) */}
         <TouchableOpacity
           onPress={() => router.push(`/cook/${recipe.id}`)}
@@ -1674,7 +1676,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Layout.scrollBottomPadding + 60,
+    paddingBottom: Layout.scrollBottomPadding,
   },
   centered: {
     flex: 1,
@@ -1706,8 +1708,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    alignItems: 'center',
+    bottom: Spacing.sm + 5,
+    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: 16,
     pointerEvents: 'none',
   },
   headerActionCapsule: {
@@ -2173,15 +2178,13 @@ const styles = StyleSheet.create({
   },
   stickyBottomBar: {
     position: 'absolute',
-    bottom: 68,
     left: 0,
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
+    paddingVertical: Spacing.md,
     borderTopWidth: 1,
   },
   cookModeBottomBtn: {

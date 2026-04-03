@@ -1,0 +1,46 @@
+appId: host.exp.Exponent
+---
+# Tap "Yes, I'm all in"
+- tapOn:
+    text: ".*all in.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: after_commit
+
+# Now try to start
+- tapOn:
+    text: ".*Start.*"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: home_maybe
+
+# Handle any paywall or dialog
+- tapOn:
+    text: ".*Not Now.*"
+    optional: true
+- tapOn:
+    text: ".*Later.*"
+    optional: true
+- tapOn:
+    text: ".*Skip.*"
+    optional: true
+- tapOn:
+    text: ".*close.*"
+    optional: true
+- tapOn:
+    text: ".*dismiss.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Try navigating to scan tab
+- tapOn:
+    text: ".*Scan.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: final_destination

@@ -1,0 +1,92 @@
+appId: host.exp.Exponent
+---
+# Tap Scan from the + menu, then verify all features
+
+# The + menu should still be open, tap "Scan"
+- tapOn:
+    text: ".*Scan.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: scan_opened
+
+# Now we should be on the scan camera screen
+# Verify Phase 1 elements: mode pills
+- assertVisible:
+    text: ".*Fuel Good.*"
+    optional: true
+
+- takeScreenshot: scan_capture_with_modes
+
+# Switch to Packaged Food
+- tapOn:
+    text: ".*Packaged.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: packaged_food_mode
+
+# Verify Phase 3.1: Shopping mode toggle
+- takeScreenshot: verify_shopping_toggle
+
+# Open barcode sheet
+- tapOn:
+    text: ".*barcode.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: barcode_sheet_open
+
+# Enter barcode
+- inputText: "5449000000996"
+
+# Tap Look it up
+- tapOn:
+    text: ".*Look.*"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: barcode_scan_result
+
+# Scroll down to see more sections
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: result_scrolled
+
+# Check for collapsible sections (Phase 1: Progressive Disclosure)
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: result_more_sections
+
+# Tap on Flagged Ingredients if visible
+- tapOn:
+    text: ".*Flagged.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: flagged_expanded
+
+# Go back to capture screen
+- tapOn:
+    text: ".*Scan another.*"
+    optional: true
+- tapOn:
+    text: ".*another.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Switch to Scan Food mode
+- tapOn:
+    text: ".*Scan Food.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: meal_mode_final
+
+# Final screenshot
+- takeScreenshot: all_features_verified

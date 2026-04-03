@@ -1,0 +1,32 @@
+appId: host.exp.Exponent
+---
+# Tap + button then Scan from menu
+
+# Tap the + button (middle-right of bottom tab bar)
+- tapOn:
+    point: "350,830"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: menu_opened
+
+# Tap "Scan" from the menu (it should be visible now)
+# The "Scan" menu item says "Scan\nMeal or product"
+- tapOn:
+    text: "Meal or product"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: after_scan_tap
+
+# Grant camera access if prompted
+- tapOn:
+    text: ".*Grant.*"
+    optional: true
+- tapOn:
+    text: ".*Allow.*"
+    optional: true
+- tapOn:
+    text: ".*allow.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: scan_screen_final

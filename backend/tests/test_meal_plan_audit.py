@@ -52,7 +52,9 @@ from app.services.metabolic_engine import (
 )
 
 # ── seed helpers ────────────────────────────────────────────────
-from seed_db import _build_recipe, ALL_MEALS
+from seed_db import _build_recipe, _load_seed_meals
+
+ALL_MEALS = _load_seed_meals()
 
 
 # ═══════════════════════════════════════════════════════════════

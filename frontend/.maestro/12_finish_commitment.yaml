@@ -1,0 +1,26 @@
+appId: host.exp.Exponent
+---
+# Tap "Let me explore first" to skip trial/commitment
+
+- tapOn:
+    text: ".*explore.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: after_explore
+
+# Handle any remaining dialogs
+- tapOn:
+    text: "Not Now"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: ".*close.*"
+    optional: true
+- tapOn:
+    text: ".*Skip.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: main_app_home

@@ -1,0 +1,39 @@
+appId: host.exp.Exponent
+---
+# Navigate to Coach tab and verify changes
+
+# Tap Coach tab (4th tab in tab bar)
+- tapOn:
+    text: "Coach"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: final_chat_loaded
+
+# Scroll through the brownie recipe to verify progressive disclosure
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: final_recipe_1
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: final_recipe_2
+
+# Test new chat - tap the "+" at far right of header
+# First verify the header - zoom into it
+- takeScreenshot: final_header_view
+
+# Tap "New" button (+ icon at header right)
+- tapOn:
+    text: ".*New.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: final_new_chat

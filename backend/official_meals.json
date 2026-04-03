@@ -7,7 +7,7 @@
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
       "title": "Air Fryer Gochujang Chicken Skewers",
-      "description": "If you\u2019re bored of plain chicken and rice, these Korean-inspired skewers are about to change the game. They\u2019re sweet, spicy, and so addicting with that gochujang marinade. Made in the air fryer, they cook up fast with the perfect charred, smoky flavor that takes them over the top. Whether you\u2019re grilling them, baking them in the oven, or air frying, they\u2019re an easy, bold dinner that\u2019s ready in 30 minutes. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "If you’re bored of plain chicken and rice, these Korean-inspired skewers are about to change the game. They’re sweet, spicy, and so addicting with that gochujang marinade. Made in the air fryer, they cook up fast with the perfect charred, smoky flavor that takes them over the top. Whether you’re grilling them, baking them in the oven, or air frying, they’re an easy, bold dinner that’s ready in 30 minutes. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "chicken thighs, cut into bite-sized pieces",
@@ -22,7 +22,7 @@
           "category": "sweetener"
         },
         {
-          "name": "gochujang paste",
+          "name": "gluten-free gochujang paste",
           "quantity": "1/4",
           "unit": "cup",
           "category": "spices"
@@ -77,10 +77,10 @@
         }
       ],
       "steps": [
-        "Step 1: In a large bowl, whisk together the gochujang, brown sugar, sesame oil, rice vinegar, garlic, ginger paste, smoked paprika, gochugaru, soy sauce, and salt until smooth and well combined.",
-        "Step 2: Add the chicken thigh pieces and mix well until fully coated in the marinade. If you have time, let it sit for 1 hour in the fridge\u2014but you can also cook it right away.",
+        "Step 1: In a large bowl, whisk together the gochujang, coconut sugar, sesame oil, rice vinegar, garlic, ginger paste, smoked paprika, gochugaru, coconut aminos, and salt until smooth and well combined.",
+        "Step 2: Add the chicken thigh pieces and mix well until fully coated in the marinade. If you have time, let it sit for 1 hour in the fridge—but you can also cook it right away.",
         "Step 3: Thread the chicken onto skewers, packing the pieces snugly but not too tightly.",
-        "Step 4: Preheat the air fryer to 400\u00b0F. Lightly grease the basket or tray, then arrange the skewers in a single layer, working in batches if needed.",
+        "Step 4: Preheat the air fryer to 400°F. Lightly grease the basket or tray, then arrange the skewers in a single layer, working in batches if needed.",
         "Step 5: Air fry for 12 to 15 minutes, flipping halfway through, until the chicken is cooked through and caramelized on the edges.",
         "Step 6: Serve warm with steamed rice, a sprinkle of sesame seeds, and sliced green onions if desired."
       ],
@@ -174,17 +174,17 @@
     {
       "id": "8516ac4e-36a2-4724-8e30-f053cf9a3a93",
       "title": "Almond Raspberry Scones",
-      "description": "If you love that buttery, flaky almond croissant vibe but want something a little easier to make at home, these Almond Croissant Raspberry Scones are exactly the answer. They\u2019re tender and flaky with just the right amount of almond flavor, loaded with juicy bursts of raspberries that balance out the richness perfectly. Topped with sliced almonds and a dusting of powdered sugar, they look and taste like something straight from your favorite bakery. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 3 whole-food ingredient swap(s).",
+      "description": "If you love that buttery, flaky almond croissant vibe but want something a little easier to make at home, these Almond Croissant Raspberry Scones are exactly the answer. They’re tender and flaky with just the right amount of almond flavor, loaded with juicy bursts of raspberries that balance out the richness perfectly. Topped with sliced almonds and a dusting of powdered sugar, they look and taste like something straight from your favorite bakery. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 3 whole-food ingredient swap(s).",
       "ingredients": [
         {
-          "name": "\u00be cups cassava flour, additional for dusting surface",
+          "name": "¾ cups cassava flour, additional for dusting surface",
           "quantity": "1",
           "unit": "",
           "category": "produce"
         },
         {
           "name": "almond flour",
-          "quantity": "\u2153",
+          "quantity": "⅓",
           "unit": "cup",
           "category": "produce"
         },
@@ -196,25 +196,25 @@
         },
         {
           "name": "salt",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "teaspoon",
           "category": "spices"
         },
         {
           "name": "monk fruit sweetener",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "cup",
           "category": "sweetener"
         },
         {
           "name": "unsalted butter, chilled",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "cup",
           "category": "fats"
         },
         {
           "name": "heavy cream",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "cup",
           "category": "dairy"
         },
@@ -226,7 +226,7 @@
         },
         {
           "name": "almond extract",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "teaspoon",
           "category": "other"
         },
@@ -244,7 +244,7 @@
         },
         {
           "name": "sliced almonds",
-          "quantity": "\u00bc",
+          "quantity": "¼",
           "unit": "cup",
           "category": "produce"
         },
@@ -262,7 +262,7 @@
         }
       ],
       "steps": [
-        "Step 1: In a large bowl, whisk together the all-purpose flour, almond flour, baking powder, salt, and sugar.",
+        "Step 1: In a large bowl, whisk together the cassava flour, almond flour, baking powder, salt, and monk fruit sweetener.",
         "Step 2: Grate the chilled butter into the dry ingredients using a box grater. Massage gently with your hands to coat the butter in the flour mixture.",
         "Step 3: In a separate bowl, whisk together the heavy cream, vanilla extract, almond extract, and egg until smooth and combined.",
         "Step 4: Pour the wet ingredients into the dry mixture and stir just until a dough begins to form. Be careful not to overmix.",
@@ -270,8 +270,8 @@
         "Step 6: Turn the dough out onto a lightly floured surface and pat it into a circle about 1 inch thick.",
         "Step 7: Cut the circle into 8 wedges and place them on a parchment-lined baking sheet. Brush the tops of the chilled scones with the egg wash. Press the sliced almonds on top, gently pressing them in so they stick.",
         "Step 8: Chill the scones in the fridge for 20 minutes while you preheat the oven to help the butter in the dough get colder again.",
-        "Step 9: Preheat the oven to 400\u00b0F (200\u00b0C). Bake for 18 to 20 minutes, until golden brown and set.",
-        "Step 10: Let the scones cool for 5 to 10 minutes on the pan. Dust the tops with powdered sugar and enjoy warm!."
+        "Step 9: Preheat the oven to 400°F (200°C). Bake for 18 to 20 minutes, until golden brown and set.",
+        "Step 10: Let the scones cool for 5 to 10 minutes on the pan. Dust the tops with powdered monk fruit sweetener and enjoy warm!."
       ],
       "prep_time_min": 35,
       "cook_time_min": 25,
@@ -319,29 +319,29 @@
     {
       "id": "c3e24871-9bd5-420f-85fb-8a39788e3724",
       "title": "Apple Cider Spice Loaf",
-      "description": "There\u2019s nothing that says fall quite like the smell of apple cider simmering on the stove. It fills the kitchen with that cozy mix of apples, cinnamon, and spice that makes you want to put on a sweater, light a candle, and bake something warm. Living here in Boston, one of my favorite New England weekend activities is going to different farms, trying every apple cider donut I can find, and deciding which one\u2019s the best \u2014 it\u2019s serious business at this point. There\u2019s just something about biting into a warm, sugar-dusted donut with crisp air and colorful leaves all around that makes you fall in love with the season all over again. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 5 whole-food ingredient swap(s).",
+      "description": "There’s nothing that says fall quite like the smell of apple cider simmering on the stove. It fills the kitchen with that cozy mix of apples, cinnamon, and spice that makes you want to put on a sweater, light a candle, and bake something warm. Living here in Boston, one of my favorite New England weekend activities is going to different farms, trying every apple cider donut I can find, and deciding which one’s the best — it’s serious business at this point. There’s just something about biting into a warm, sugar-dusted donut with crisp air and colorful leaves all around that makes you fall in love with the season all over again. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 5 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "cassava flour",
-          "quantity": "1\u00be",
+          "quantity": "1¾",
           "unit": "cups",
           "category": "produce"
         },
         {
           "name": "ground cinnamon",
-          "quantity": "1\u00bd",
+          "quantity": "1½",
           "unit": "teaspoons",
           "category": "spices"
         },
         {
           "name": "nutmeg",
-          "quantity": "\u00bc",
+          "quantity": "¼",
           "unit": "teaspoon",
           "category": "produce"
         },
         {
           "name": "cardamom",
-          "quantity": "\u00bc",
+          "quantity": "¼",
           "unit": "teaspoon",
           "category": "produce"
         },
@@ -353,25 +353,25 @@
         },
         {
           "name": "baking powder",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "teaspoon",
           "category": "other"
         },
         {
           "name": "salt",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "teaspoon",
           "category": "spices"
         },
         {
           "name": "white monk fruit sweetener",
-          "quantity": "\u00bc",
+          "quantity": "¼",
           "unit": "cup",
           "category": "sweetener"
         },
         {
           "name": "light coconut sugar",
-          "quantity": "\u00be",
+          "quantity": "¾",
           "unit": "cup",
           "category": "sweetener"
         },
@@ -383,37 +383,37 @@
         },
         {
           "name": "extra virgin olive oil",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "cup",
           "category": "fats"
         },
         {
-          "name": "reduced apple cider (start with 1\u00bd cups and simmer 15\u201320 minutes until it reduces to \u00be cup)",
-          "quantity": "\u00be",
+          "name": "reduced apple cider (start with 1½ cups and simmer 15–20 minutes until it reduces to ¾ cup)",
+          "quantity": "¾",
           "unit": "cup",
           "category": "produce"
         },
         {
           "name": "unsweetened applesauce",
-          "quantity": "\u00be",
+          "quantity": "¾",
           "unit": "cup",
           "category": "produce"
         },
         {
           "name": "vanilla extract",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "tablespoon",
           "category": "other"
         },
         {
           "name": "monk fruit sweetener",
-          "quantity": "\u00bc",
+          "quantity": "¼",
           "unit": "cup",
           "category": "sweetener"
         },
         {
           "name": "cinnamon",
-          "quantity": "\u00bd",
+          "quantity": "½",
           "unit": "teaspoon",
           "category": "spices"
         },
@@ -425,15 +425,15 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat the oven: Set the oven to 350\u00b0F (175\u00b0C) and line a loaf pan with parchment paper, leaving some overhang on the sides for easy removal later.",
-        "Step 2: Reduce the apple cider: In a small saucepan, simmer 1\u00bd cups apple cider over medium heat for 15\u201320 minutes until it reduces to about \u00be cup and slightly thickens. Let it cool slightly before using.",
-        "Step 3: Make the cinnamon sugar: In a small bowl, mix together the \u00bc cup white sugar and \u00bd teaspoon cinnamon until evenly combined. Set aside.",
+        "Step 1: Preheat the oven: Set the oven to 350°F (175°C) and line a loaf pan with parchment paper, leaving some overhang on the sides for easy removal later.",
+        "Step 2: Reduce the apple cider: In a small saucepan, simmer 1½ cups apple cider over medium heat for 15–20 minutes until it reduces to about ¾ cup and slightly thickens. Let it cool slightly before using.",
+        "Step 3: Make the cinnamon monk fruit sweetener: In a small bowl, mix together the ¼ cup monk fruit sweetener and ½ teaspoon cinnamon until evenly combined. Set aside.",
         "Step 4: Mix the dry ingredients: In a large bowl, whisk together the flour, cinnamon, nutmeg, cardamom, baking soda, baking powder, and salt until evenly combined.",
-        "Step 5: Mix the wet ingredients: In a separate bowl, whisk together both sugars, eggs, oil, reduced apple cider, applesauce, and vanilla extract until smooth.",
-        "Step 6: Combine the batter: Pour the wet ingredients into the dry ingredients and whisk until just combined \u2014 stop as soon as you no longer see streaks of flour.",
-        "Step 7: Pour and top: Pour the batter into the lined loaf pan, spreading it evenly. Sprinkle half of the cinnamon sugar mixture evenly over the top.",
+        "Step 5: Mix the wet ingredients: In a separate bowl, whisk together both monk fruit sweeteners, eggs, oil, reduced apple cider, applesauce, and vanilla extract until smooth.",
+        "Step 6: Combine the batter: Pour the wet ingredients into the dry ingredients and whisk until just combined — stop as soon as you no longer see streaks of flour.",
+        "Step 7: Pour and top: Pour the batter into the lined loaf pan, spreading it evenly. Sprinkle half of the cinnamon monk fruit sweetener mixture evenly over the top.",
         "Step 8: Bake: Transfer the loaf pan to the oven and bake for 45 to 55 minutes, or until a toothpick inserted in the center comes out clean.",
-        "Step 9: Finish with cinnamon sugar: Let the loaf cool for about 10 minutes, then lift it out of the pan and place it on a wire rack. Brush the top with melted butter and sprinkle the remaining cinnamon sugar evenly so it sticks beautifully.",
+        "Step 9: Finish with cinnamon monk fruit sweetener: Let the loaf cool for about 10 minutes, then lift it out of the pan and place it on a wire rack. Brush the top with melted butter and sprinkle the remaining cinnamon monk fruit sweetener evenly so it sticks beautifully.",
         "Step 10: Slice and serve: Once fully cooled, cut into thick slices and enjoy!."
       ],
       "prep_time_min": 20,
@@ -599,7 +599,7 @@
     {
       "id": "5b3906f5-dcf4-4e0e-9346-592649762845",
       "title": "Avocado Quinoa Power Salad",
-      "description": "This Avocado Quinoa Salad is a spot-on copycat of my all-time favorite from Mendocino Farms, where I actually used to work for a summer back in 2015. It\u2019s loaded with crispy quinoa, fresh veggies, and a zesty chipotle vinaigrette that\u2019s just irresistible. I loved it so much, I had to recreate it at home \u2013 and now you can too! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "This Avocado Quinoa Salad is a spot-on copycat of my all-time favorite from Mendocino Farms, where I actually used to work for a summer back in 2015. It’s loaded with crispy quinoa, fresh veggies, and a zesty chipotle vinaigrette that’s just irresistible. I loved it so much, I had to recreate it at home – and now you can too! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "honey",
@@ -644,7 +644,7 @@
           "category": "produce"
         },
         {
-          "name": "neutral oil",
+          "name": "avocado oil",
           "quantity": "1/2",
           "unit": "cup",
           "category": "fats"
@@ -723,10 +723,10 @@
         }
       ],
       "steps": [
-        "Step 1: In a blender or food processor, combine honey, distilled white vinegar, Dijon mustard, a pinch of salt, paprika, adobo chipotle paste, chili powder, neutral oil, and water.",
+        "Step 1: In a blender or food processor, combine honey, distilled white vinegar, Dijon mustard, a pinch of salt, paprika, adobo chipotle paste, chili powder, avocado oil, and water.",
         "Step 2: Blend until the dressing is well emulsified.",
         "Step 3: Set the dressing aside.",
-        "Step 4: Preheat your oven to 400\u00b0F (205\u00b0C).",
+        "Step 4: Preheat your oven to 400°F (205°C).",
         "Step 5: Spread cooked quinoa on a baking sheet lined with parchment paper.",
         "Step 6: Drizzle avocado oil over the quinoa and toss to coat evenly.",
         "Step 7: Bake in the oven for 20-25 minutes, stirring halfway through, until the quinoa becomes golden and crispy. Keep an eye on it to prevent burning.",
@@ -751,10 +751,10 @@
       },
       "difficulty": "easy",
       "tags": [
-        "quick",
         "meal-prep",
         "veg_side",
-        "salad"
+        "salad",
+        "sit-down"
       ],
       "flavor_profile": [
         "savory",
@@ -801,7 +801,7 @@
     {
       "id": "06ea19af-dd1a-48ff-b360-301fb5499cc9",
       "title": "Baked Ziti with Brown Rice Pasta",
-      "description": "Let\u2019s learn how to make BAKED ZITI, the perfect family dinner everyone will love! The creaminess of the ricotta, the crispy cheese layer on top, and the tangy but sweet pasta sauce turn this into the most memorable dish ever. It\u2019s super easy to make and even prep ahead of time for those busy days. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "Let’s learn how to make BAKED ZITI, the perfect family dinner everyone will love! The creaminess of the ricotta, the crispy cheese layer on top, and the tangy but sweet pasta sauce turn this into the most memorable dish ever. It’s super easy to make and even prep ahead of time for those busy days. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "ziti brown rice + quinoa pasta",
@@ -889,7 +889,7 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 375\u00b0F.",
+        "Step 1: Preheat oven to 375°F.",
         "Step 2: To a large saucepan over medium-high heat, add the olive oil, ground beef, salt, black pepper, minced garlic, Italian seasoning, and red pepper flakes. As the meat browns, break it up with a wooden spoon, making sure to leave some big chunks too.",
         "Step 3: Once the meat is browned, add in the marinara sauce. Cover and let it simmer on low heat.",
         "Step 4: While the sauce simmers, bring a large pot of salted water to a boil. Add the pasta and make sure to cook about 2 minutes shy of al dente as the pasta will continue baking in the oven. Drain the pasta.",
@@ -1000,7 +1000,7 @@
     {
       "id": "3416542c-c4a7-4e6e-8116-a61b27e867bb",
       "title": "Banana Cake with Brown Butter Frosting",
-      "description": "The most moist banana cake you\u2019ll ever have and because it has bananas in it, it can even be breakfast! It\u2019s finished off with a brown butter cream cheese frosting that makes this dessert irresistible! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "The most moist banana cake you’ll ever have and because it has bananas in it, it can even be breakfast! It’s finished off with a brown butter cream cheese frosting that makes this dessert irresistible! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "cassava flour",
@@ -1088,17 +1088,17 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 350\u00b0F.",
-        "Step 2: To a large mixing bowl, add the butter, light brown sugar, and white sugar. Use a mixer to beat the sugar and butter together until light and fluffy.",
-        "Step 3: To the same bowl with the butter and sugar, add the eggs, smashed banana, vanilla, and milk. Whisk together again until smooth.",
-        "Step 4: Now add all the dry ingredients to the wet. This includes all-purpose flour, baking soda, baking powder, and salt.",
+        "Step 1: Preheat oven to 350°F.",
+        "Step 2: To a large mixing bowl, add the butter, light coconut monk fruit sweetener, and monk fruit sweetener. Use a mixer to beat the monk fruit sweetener and butter together until light and fluffy.",
+        "Step 3: To the same bowl with the butter and monk fruit sweetener, add the eggs, smashed banana, vanilla, and milk. Whisk together again until smooth.",
+        "Step 4: Now add all the dry ingredients to the wet. This includes cassava flour, baking soda, baking powder, and salt.",
         "Step 5: Combine together until you have a batter.",
         "Step 6: Line an 8 x 8 pan with parchment paper and transfer the batter.",
         "Step 7: Transfer to the oven and bake for 25 to 28 minutes until a toothpick comes out clean in the center.",
         "Step 8: Remove from the oven and allow to cool for about an hour before frosting.",
         "Step 9: Start by browning the butter.",
         "Step 10: To a pan over medium heat, add the butter. Cook for 5 to 6 minutes until it starts to bubble and then brown. Make sure not to cook it any further or it can burn. Transfer it to a bowl and allow it to cool so it's not hot. You can transfer it to the fridge for a few minutes until it sets solid at room temperature.",
-        "Step 11: To a mixing bowl, add the browned butter, cream cheese, powdered sugar, and vanilla extract.",
+        "Step 11: To a mixing bowl, add the browned butter, cream cheese, powdered monk fruit sweetener, and vanilla extract.",
         "Step 12: Beat for 1 to 2 minutes until fluffy and smooth.",
         "Step 13: Once the cake is cooled, add the frosting on top, adding as little or as much as you'd like.",
         "Step 14: Slice and enjoy!."
@@ -1148,7 +1148,7 @@
     {
       "id": "dfc37c6b-0c6e-4d24-a7b7-e4cd72ec0ed7",
       "title": "Bang Bang Chicken Skewers",
-      "description": "Bang Bang Chicken Skewers in the air fryer and in under 30 minutes! This easy and healthy dinner packs so much flavor from the creamy bang bang sauce that\u2019s a bit spicy and a bit sweet. Serve it with rice and some steamed broccoli for the complete meal! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Bang Bang Chicken Skewers in the air fryer and in under 30 minutes! This easy and healthy dinner packs so much flavor from the creamy bang bang sauce that’s a bit spicy and a bit sweet. Serve it with rice and some steamed broccoli for the complete meal! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "boneless skinless chicken thighs",
@@ -1266,11 +1266,11 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat the air fryer or oven to 450\u00b0F.",
+        "Step 1: Preheat the air fryer or oven to 450°F.",
         "Step 2: In a small bowl, make the bang bang sauce. Combine mayonnaise, sweet chili sauce, garlic, rice vinegar, sriracha, and parsley until smooth. Set aside.",
-        "Step 3: To a bowl, add the chopped chicken along with soy sauce, olive oil, oyster sauce, garlic, ginger, chili powder, smoked paprika, onion powder, salt, black pepper, and light brown sugar. Mix together and if you have the time, let it marinate for 30 minutes.",
+        "Step 3: To a bowl, add the chopped chicken along with coconut aminos, olive oil, oyster sauce, garlic, ginger, chili powder, smoked paprika, onion powder, salt, black pepper, and light coconut sugar. Mix together and if you have the time, let it marinate for 30 minutes.",
         "Step 4: After marinating, thread the chicken pieces onto skewers. If using wooden skewers, make sure they have soaked in water for 30 minutes to prevent them from burning. I like to add about 6 to 7 pieces onto each skewer.",
-        "Step 5: Add the skewers to the air fryer and air fry for about 13 to 15 minutes at 450\u00b0F until fully cooked and charred.",
+        "Step 5: Add the skewers to the air fryer and air fry for about 13 to 15 minutes at 450°F until fully cooked and charred.",
         "Step 6: Drizzle bang bang sauce on top and add green onions to enjoy."
       ],
       "prep_time_min": 15,
@@ -1366,7 +1366,7 @@
     {
       "id": "25e84e4f-a93f-4dc0-b3c6-b2493a9360e7",
       "title": "Beef and Broccoli Stir-Fry",
-      "description": "If you\u2019re craving classic Chinese takeout, this beef and broccoli stir fry is about to become your new favorite. It\u2019s everything you love about takeout \u2014 tender, melt-in-your-mouth steak paired with crisp broccoli \u2014 but made at home and even better. The sauce is perfectly balanced: savory with a touch of sweetness and just a hint of heat, clinging to every bite. Plus, it all comes together in one pan in under 30 minutes, making it a fantastic weeknight dinner when time is tight but you still want something special. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "If you’re craving classic Chinese takeout, this beef and broccoli stir fry is about to become your new favorite. It’s everything you love about takeout — tender, melt-in-your-mouth steak paired with crisp broccoli — but made at home and even better. The sauce is perfectly balanced: savory with a touch of sweetness and just a hint of heat, clinging to every bite. Plus, it all comes together in one pan in under 30 minutes, making it a fantastic weeknight dinner when time is tight but you still want something special. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "flank, NY strip, or ribeye steak, thinly sliced against the grain",
@@ -1411,7 +1411,7 @@
           "category": "produce"
         },
         {
-          "name": "4 tablespoons neutral oil, as needed",
+          "name": "4 tablespoons avocado oil, as needed",
           "quantity": "3",
           "unit": "to",
           "category": "fats"
@@ -1484,11 +1484,11 @@
         }
       ],
       "steps": [
-        "Step 1: Marinate the steak: In a medium bowl, toss the sliced steak with cornstarch, dark soy sauce, baking soda, white pepper, and salt. Set aside.",
-        "Step 2: Prepare the sauce: In another bowl or measuring cup, whisk beef broth, low sodium soy sauce, brown sugar, oyster sauce, rice vinegar, dark soy sauce, cornstarch, white pepper, and cayenne powder together until smooth. Set aside.",
-        "Step 3: Cook the broccoli: Heat 1 tablespoon neutral oil in a large pan or wok over medium heat. Add broccoli and stir-fry briefly. Add a splash of water, cover, and steam for 2-3 minutes until broccoli is tender-crisp. Remove broccoli and set aside.",
-        "Step 4: Cook the steak: Over medium-high heat, heat the wok or pan until it\u2019s very hot, then add 1 1/2 to 2 tablespoons neutral oil. Add the marinated steak and stir-fry until just cooked through and seared, about 2-3 minutes. Remove and set aside.",
-        "Step 5: Saut\u00e9 aromatics: Lower the heat to medium-low. Add sesame oil and 1/2 tablespoon neutral oil to the pan. Add garlic and ginger, saut\u00e9 gently until fragrant, about 30 seconds.",
+        "Step 1: Marinate the steak: In a medium bowl, toss the sliced steak with cornstarch, dark coconut aminos, baking soda, white pepper, and salt. Set aside.",
+        "Step 2: Prepare the sauce: In another bowl or measuring cup, whisk beef broth, low sodium coconut aminos, coconut sugar, oyster sauce, rice vinegar, dark coconut aminos, cornstarch, white pepper, and cayenne powder together until smooth. Set aside.",
+        "Step 3: Cook the broccoli: Heat 1 tablespoon avocado oil in a large pan or wok over medium heat. Add broccoli and stir-fry briefly. Add a splash of water, cover, and steam for 2-3 minutes until broccoli is tender-crisp. Remove broccoli and set aside.",
+        "Step 4: Cook the steak: Over medium-high heat, heat the wok or pan until it’s very hot, then add 1 1/2 to 2 tablespoons avocado oil. Add the marinated steak and stir-fry until just cooked through and seared, about 2-3 minutes. Remove and set aside.",
+        "Step 5: Sauté aromatics: Lower the heat to medium-low. Add sesame oil and 1/2 tablespoon avocado oil to the pan. Add garlic and ginger, sauté gently until fragrant, about 30 seconds.",
         "Step 6: Combine: Return broccoli and steak to the pan. Pour in the sauce and toss everything together until the sauce thickens and coats evenly, about 1-2 minutes.",
         "Step 7: Serve hot with rice or noodles."
       ],
@@ -1563,7 +1563,7 @@
     {
       "id": "05c621b2-c567-41d9-b440-ad6b4fd6f35b",
       "title": "Beef and Cheese Borek Rolls",
-      "description": "Golden, crispy phyllo rolls stuffed with seasoned ground beef, warm spices, and melted cheese. Inspired by Turkish borek, each roll is pan-fried in olive oil until perfectly flaky and served with a cool yogurt dip. They're savory, satisfying, and disappear fast \u2014 make extra.",
+      "description": "Golden, crispy phyllo rolls stuffed with seasoned ground beef, warm spices, and melted cheese. Inspired by Turkish borek, each roll is pan-fried in olive oil until perfectly flaky and served with a cool yogurt dip. They're savory, satisfying, and disappear fast — make extra.",
       "ingredients": [
         {
           "name": "ground beef 85/15 or 90/10",
@@ -1683,12 +1683,12 @@
         "Step 6: Grab an egg roll wrapper. Add about 2 tablespoons of filling along one edge.",
         "Step 7: Fold the left and right side in toward the center first and then roll until you get almost to the end. Brush the end with water and finish the last roll to seal tightly.",
         "Step 8: TO PAN FRY: Heat oil for frying in a pan. Drop the egg rolls in and don't overcrowd. Once golden brown on one side, about 2 to 3 minutes, flip over and allow the other side to get golden brown. Transfer to a plate lined with a paper towel to drain any excess oil.",
-        "Step 9: TO AIR FRY: Set the air fryer to 375\u00b0F. Spray the basket and egg rolls with avocado oil or vegetable oil spray. Cook for 5 to 6 minutes, then flip over and cook another 5 to 6 minutes or until golden and crispy all around.",
+        "Step 9: TO AIR FRY: Set the air fryer to 375°F. Spray the basket and egg rolls with avocado oil or vegetable oil spray. Cook for 5 to 6 minutes, then flip over and cook another 5 to 6 minutes or until golden and crispy all around.",
         "Step 10: Enjoy warm with your favorite dipping sauce!."
       ],
-      "prep_time_min": 1,
+      "prep_time_min": 25,
       "cook_time_min": 25,
-      "total_time_min": 26,
+      "total_time_min": 50,
       "servings": 2,
       "nutrition_info": {
         "calories": 420,
@@ -1789,7 +1789,7 @@
     {
       "id": "8d5e91fc-7202-4dae-b4e2-0b19e6db2205",
       "title": "Beef and Lamb Sausage Rolls",
-      "description": "Sausage rolls are a staple in the UK \u2014 something you\u2019ll see in bakeries, caf\u00e9s, grocery stores, and even train stations \u2014 and they\u2019re popular for a reason. Flaky pastry wrapped around a savory filling is hard to beat, but I\u2019ve always wanted to make my own version at home. The meat filling in this recipe is inspired by Bosnian \u0107evapi, using a beef-and-lamb mixture that stays incredibly juicy and tender inside crisp, golden puff pastry. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "Sausage rolls are a staple in the UK — something you’ll see in bakeries, cafés, grocery stores, and even train stations — and they’re popular for a reason. Flaky pastry wrapped around a savory filling is hard to beat, but I’ve always wanted to make my own version at home. The meat filling in this recipe is inspired by Bosnian ćevapi, using a beef-and-lamb mixture that stays incredibly juicy and tender inside crisp, golden puff pastry. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "ground beef",
@@ -1810,8 +1810,8 @@
           "category": "produce"
         },
         {
-          "name": "yellow onion, pur\u00e9ed",
-          "quantity": "\u00bd",
+          "name": "yellow onion, puréed",
+          "quantity": "½",
           "unit": "",
           "category": "produce"
         },
@@ -1871,13 +1871,13 @@
         }
       ],
       "steps": [
-        "Step 1: Make the filling: In a large bowl, combine the ground beef, ground lamb, garlic, pur\u00e9ed onion, smoked paprika, salt, baking soda, black pepper, cayenne, and egg. Mix until fully combined and smooth, without overmixing.",
+        "Step 1: Make the filling: In a large bowl, combine the ground beef, ground lamb, garlic, puréed onion, smoked paprika, salt, baking soda, black pepper, cayenne, and egg. Mix until fully combined and smooth, without overmixing.",
         "Step 2: Prep the pastry: Lightly flour a work surface and roll out each puff pastry sheet just enough to smooth it out. Cut each sheet in half lengthwise to create four long rectangles.",
         "Step 3: Egg wash the pastry: Whisk together the egg and heavy cream. Brush egg wash along both long sides of each puff pastry rectangle.",
         "Step 4: Pipe the filling: Transfer the sausage mixture to a piping bag (or zip-top bag with the corner cut). Pipe a thick strip of filling slightly off-center, closer to one long edge, leaving enough pastry to fold over.",
-        "Step 5: Fold, trim, and seal: Fold the pastry over the filling and press down right where the meat ends. A little excess pastry is fine, but if there\u2019s too much overlap, trim some off so it doesn\u2019t get doughy. Use a fork to press and seal the edge tightly.",
-        "Step 6: Slice and finish: Cut each long strip into 1\u00bd- to 2-inch pieces. Arrange on a parchment-lined baking sheet. Brush the tops with more egg wash and make 2 slits on the top of each one, not cutting all the way down but just to let some steam out as they cook. Then sprinkle the tops with sesame seeds.",
-        "Step 7: Bake: Bake at 375\u00b0F for 25 to 30 minutes, until the pastry is deeply golden and puffed and the filling is cooked through.",
+        "Step 5: Fold, trim, and seal: Fold the pastry over the filling and press down right where the meat ends. A little excess pastry is fine, but if there’s too much overlap, trim some off so it doesn’t get doughy. Use a fork to press and seal the edge tightly.",
+        "Step 6: Slice and finish: Cut each long strip into 1½- to 2-inch pieces. Arrange on a parchment-lined baking sheet. Brush the tops with more egg wash and make 2 slits on the top of each one, not cutting all the way down but just to let some steam out as they cook. Then sprinkle the tops with sesame seeds.",
+        "Step 7: Bake: Bake at 375°F for 25 to 30 minutes, until the pastry is deeply golden and puffed and the filling is cooked through.",
         "Step 8: Cool and serve: Let cool slightly before serving."
       ],
       "prep_time_min": 35,
@@ -2154,7 +2154,7 @@
     {
       "id": "331d6f6b-1128-466d-9f6d-1de9081b3794",
       "title": "Beef Chorizo and Chicken Pasta",
-      "description": "Creamy pasta with beef chorizo AND chicken \u2013 double the protein, double the flavor! The best way to describe this pasta is flavorful. The beef chorizo adds so much spice to the sauce so you don\u2019t even need to add much to the pasta for it to be the best you\u2019ve ever had! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "Creamy pasta with beef chorizo AND chicken – double the protein, double the flavor! The best way to describe this pasta is flavorful. The beef chorizo adds so much spice to the sauce so you don’t even need to add much to the pasta for it to be the best you’ve ever had! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "chicken breast",
@@ -2280,7 +2280,7 @@
       "steps": [
         "Step 1: In a bowl, add the chicken, olive oil, salt, paprika, garlic powder, black pepper, cumin, coriander, and oregano. Mix to marinade evenly.",
         "Step 2: Heat an oiled skillet or pan over medium-high heat.",
-        "Step 3: Add the marinated chicken to the pan and cook on each side until golden brown, about 3 minutes on each side. Then drop the heat to low and allow the chicken to cook through to the center or the temperature registers 165\u00b0F. Remove the chicken from the pan.",
+        "Step 3: Add the marinated chicken to the pan and cook on each side until golden brown, about 3 minutes on each side. Then drop the heat to low and allow the chicken to cook through to the center or the temperature registers 165°F. Remove the chicken from the pan.",
         "Step 4: Allow the chicken to cool for 5 to 10 minutes and then chop into small pieces. Set aside.",
         "Step 5: Cook pasta according to package directions in salted water.",
         "Step 6: Drain the pasta after cooked.",
@@ -2591,7 +2591,7 @@
     {
       "id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
       "title": "Black Bean and Corn Salad",
-      "description": "Protein-packed black beans with sweet corn, cilantro, and lime \u2014 a fiber-rich Tex-Mex side.",
+      "description": "Protein-packed black beans with sweet corn, cilantro, and lime — a fiber-rich Tex-Mex side.",
       "ingredients": [
         {
           "name": "black beans",
@@ -2668,7 +2668,8 @@
       "dietary_tags": [
         "vegetarian",
         "dairy-free",
-        "gluten-free"
+        "gluten-free",
+        "vegan"
       ],
       "cuisine": "mexican",
       "health_benefits": [
@@ -3461,7 +3462,7 @@
     {
       "id": "cb558ac2-8ddf-430f-9b9c-e458ccc7623c",
       "title": "Cassava Flour Beignets",
-      "description": "Transport yourself to the magical streets of New Orleans with these fluffy pillow-like Beignets! Inspired by The Princess and the Frog movie and my own trip to Cafe du Monde, these beignets packed with a mountain top of powdered sugar will leave you speechless with every bite. Not to mention, they\u2019re shockingly so easy to make from scratch! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
+      "description": "Transport yourself to the magical streets of New Orleans with these fluffy pillow-like Beignets! Inspired by The Princess and the Frog movie and my own trip to Cafe du Monde, these beignets packed with a mountain top of powdered sugar will leave you speechless with every bite. Not to mention, they’re shockingly so easy to make from scratch! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 4 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "cassava flour",
@@ -3526,18 +3527,18 @@
       ],
       "steps": [
         "Step 1: In a large mixing bowl, combine the warm milk and active dry yeast. Whisk together until the yeast is dissolved. Allow it to sit for about 5-10 minutes until it becomes frothy.",
-        "Step 2: To the yeast mixture, add the granulated white sugar, salt, eggs, softened unsalted butter, and vanilla extract. Mix well until all the ingredients are combined.",
-        "Step 3: Gradually add the all-purpose flour to the mixture, stirring continuously until a dough forms. It will be very soft and a bit sticky.",
+        "Step 2: To the yeast mixture, add the granulated monk fruit sweetener, salt, eggs, softened unsalted butter, and vanilla extract. Mix well until all the ingredients are combined.",
+        "Step 3: Gradually add the cassava flour to the mixture, stirring continuously until a dough forms. It will be very soft and a bit sticky.",
         "Step 4: Knead the dough for about 3 to 4 minutes until it becomes smooth and elastic. You can use your hand, a wooden spatula, or a stand mixer with the hook attachment.",
         "Step 5: Place the kneaded dough into a lightly greased bowl, cover it with plastic wrap and a clean kitchen towel, and let it rise in a warm place for about 1 to 1 1/2 hours, or until it doubles in size.",
         "Step 6: Once the dough has risen, punch it down to release the air. Transfer it to a clean and floured surface.",
         "Step 7: Roll out the dough to about 1/2 inch thickness into a large square. Use a pizza cutter to cut squares about the size of 2.5 by 2.5 inches.",
         "Step 8: Cover them with a clean kitchen towel and let them rise again but this time only for about 15 to 20 minutes, just while the oil heats up.",
-        "Step 9: In a deep pot or fryer pan, heat vegetable oil to 350\u00b0F (175\u00b0C).",
+        "Step 9: In a deep pot or fryer pan, heat vegetable oil to 350°F (175°C).",
         "Step 10: Carefully add a few donuts to the hot oil, making sure not to overcrowd the pot. Fry for about 1-2 minutes on each side, or until they turn golden brown.",
         "Step 11: Once fried, remove the donuts from the oil using a slotted spoon and place them on a wire rack to drain any excess oil.",
         "Step 12: Repeat the frying process with the remaining donuts.",
-        "Step 13: Once all the donuts are fried and cooled slightly, dust them very generously with powdered sugar to enjoy warm."
+        "Step 13: Once all the donuts are fried and cooled slightly, dust them very generously with powdered monk fruit sweetener to enjoy warm."
       ],
       "prep_time_min": 100,
       "cook_time_min": 20,
@@ -3584,7 +3585,7 @@
     {
       "id": "881a6ebb-d48f-4839-86bd-163a52e43677",
       "title": "Charred Zucchini with Herbs",
-      "description": "Pan-charred zucchini with fresh herbs and a splash of balsamic \u2014 summer in a side dish.",
+      "description": "Pan-charred zucchini with fresh herbs and a splash of balsamic — summer in a side dish.",
       "ingredients": [
         {
           "name": "zucchini",
@@ -3650,7 +3651,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "mediterranean",
       "health_benefits": [
@@ -4278,7 +4280,7 @@
       "steps": [
         "In a pot, add rice and water (or broth). Bring to a boil, then add salt and turmeric. Cover and simmer on low heat for 25 minutes or until liquid is absorbed.",
         "Meanwhile, cut chicken breast into 2-inch chunks. Add to a bowl with onions, olive oil, salt, pepper, cumin, paprika, and a touch of cinnamon. Mix well.",
-        "In a hot pan, add chicken and onions. Cook 3\u20134 minutes per side or until chicken is fully cooked and onions are soft and lightly charred.",
+        "In a hot pan, add chicken and onions. Cook 3–4 minutes per side or until chicken is fully cooked and onions are soft and lightly charred.",
         "In a bowl, combine all garlic yogurt sauce ingredients. Serve over rice and chicken shawarma."
       ],
       "prep_time_min": 10,
@@ -4522,7 +4524,7 @@
         "dinner",
         "stovetop",
         "high_protein",
-        "quick"
+        "sit-down"
       ],
       "flavor_profile": [
         "savory",
@@ -4676,7 +4678,7 @@
         }
       ],
       "steps": [
-        "Soak the rice noodles in a bowl of hot water for 8-10 minutes until pliable but still slightly firm. Drain and set aside \u2014 they'll finish cooking in the pan.",
+        "Soak the rice noodles in a bowl of hot water for 8-10 minutes until pliable but still slightly firm. Drain and set aside — they'll finish cooking in the pan.",
         "Slice the chicken thighs into thin strips. Toss with salt, black pepper, cayenne, garlic powder, a drizzle of avocado oil, and a splash of coconut aminos.",
         "Heat a large skillet or wok over medium-high heat with avocado oil. Sear the chicken in a single layer for 2-3 minutes per side until golden. Remove and set aside.",
         "In the same pan, add the shrimp with a pinch of salt and pepper. Sear 1-2 minutes per side until pink. Set aside with the chicken.",
@@ -4733,8 +4735,7 @@
         "aromatic"
       ],
       "dietary_tags": [
-        "gluten-free",
-        "dairy-free"
+        "gluten-free"
       ],
       "cuisine": "asian-fusion",
       "health_benefits": [
@@ -4954,7 +4955,7 @@
     {
       "id": "0b0ad124-6d44-4936-b2eb-921f57e9b939",
       "title": "Chocolate Chip Cookies",
-      "description": "These brown butter chocolate chip cookies are dangerously good \u2014 crispy edges, chewy centers, and that deep, nutty brown butter flavor running through every bite. Made with coconut sugar and monk fruit for sweetness without the crash. If you love bakery-style cookies but want to skip the refined sugar and seed oils, these are your new go-to.",
+      "description": "These brown butter chocolate chip cookies are dangerously good — crispy edges, chewy centers, and that deep, nutty brown butter flavor running through every bite. Made with coconut sugar and monk fruit for sweetness without the crash. If you love bakery-style cookies but want to skip the refined sugar and seed oils, these are your new go-to.",
       "ingredients": [
         {
           "name": "unsalted butter",
@@ -5018,11 +5019,11 @@
         }
       ],
       "steps": [
-        "Preheat oven to 350\u00b0F and line a sheet pan with parchment paper.",
+        "Preheat oven to 350°F and line a sheet pan with parchment paper.",
         "Brown the butter: add butter to a pan over medium heat and cook for 5-6 minutes, stirring occasionally, until it turns golden amber with a nutty aroma. Remove from heat and let cool for 5 minutes.",
         "In a large mixing bowl, combine coconut sugar and monk fruit sweetener. Pour in the browned butter and whisk until smooth and slightly thickened, about 1 minute.",
         "Add the egg, egg yolks, and vanilla extract. Whisk until well combined and slightly glossy.",
-        "In a separate bowl, whisk together the flour, baking soda, and salt. Add the dry ingredients to the wet and fold with a rubber spatula until a thick cookie dough forms \u2014 don't overmix.",
+        "In a separate bowl, whisk together the flour, baking soda, and salt. Add the dry ingredients to the wet and fold with a rubber spatula until a thick cookie dough forms — don't overmix.",
         "Fold in the milk chocolate chips and dark chocolate chunks. Let the dough rest for 15-20 minutes at room temperature.",
         "Scoop dough into balls about 1/4 cup each and place on the lined sheet pan, spacing them 2 inches apart.",
         "Bake for 10-12 minutes until the edges are golden brown but the centers still look slightly underdone.",
@@ -5030,7 +5031,7 @@
       ],
       "prep_time_min": 15,
       "cook_time_min": 12,
-      "total_time_min": 30,
+      "total_time_min": 27,
       "servings": 2,
       "nutrition_info": {
         "calories": 460,
@@ -5189,7 +5190,7 @@
     {
       "id": "509a0794-9599-4e2e-8993-b4f45a4c00a9",
       "title": "Classic Apple Hand Pies",
-      "description": "If you love the apple pie from McDonald\u2019s, you\u2019ll love this simple copycat recipe that you can make at home and even better! The pie is super flaky and crispy while the filling is so ooey and gooey with the most delicious apple spice flavor. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "If you love the apple pie from McDonald’s, you’ll love this simple copycat recipe that you can make at home and even better! The pie is super flaky and crispy while the filling is so ooey and gooey with the most delicious apple spice flavor. Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "pastry package (1 pound - 2 sheets)",
@@ -5278,15 +5279,15 @@
       ],
       "steps": [
         "Step 1: Whisk together the egg and milk in a small bowl. Set aside.",
-        "Step 2: To a small bowl, combine sugar and cinnamon and set aside.",
-        "Step 3: To a pan over medium heat, add the butter, apples, light brown sugar, cinnamon, salt, vanilla extract, and lemon juice.",
+        "Step 2: To a small bowl, combine monk fruit sweetener and cinnamon and set aside.",
+        "Step 3: To a pan over medium heat, add the butter, apples, light coconut monk fruit sweetener, cinnamon, salt, vanilla extract, and lemon juice.",
         "Step 4: Mix together and allow to simmer on low heat for 6 to 8 minutes until the apples are soft when poked with a fork.",
         "Step 5: Combine the water and cornstarch in a small bowl to make the cornstarch slurry and add this to the pan. Mix together to thicken the filling and then take off the heat and transfer to a bowl.",
-        "Step 6: Preheat oven to 400\u00b0F.",
+        "Step 6: Preheat oven to 400°F.",
         "Step 7: Spread the puff pastry on a baking sheet. Cut each sheet into four equal pieces.",
         "Step 8: Brush the edges of each piece with just a bit of egg wash.",
         "Step 9: Add the apple filling along one side and fold over. Press down on the edges to help seal it. Take a fork and press around to seal shut. Repeat with the reset.",
-        "Step 10: Brush the tops with egg wash and sprinkle with cinnamon sugar.",
+        "Step 10: Brush the tops with egg wash and sprinkle with cinnamon monk fruit sweetener.",
         "Step 11: Transfer to the oven and bake for 20 to 25 minutes or until golden brown.",
         "Step 12: Enjoy warm!."
       ],
@@ -5433,7 +5434,8 @@
         "skin_health"
       ],
       "protein_type": [
-        "chicken"
+        "turkey",
+        "eggs"
       ],
       "carb_type": [],
       "is_ai_generated": false,
@@ -5452,7 +5454,7 @@
     {
       "id": "eea41680-b2c4-4d52-b683-60c8bbcebb57",
       "title": "Creamy Avocado Verde Salsa",
-      "description": "This copycat Avocado Verde Salsa from Taco Bell is a game-changer, blending the creamy goodness of ripe avocados with the zesty punch of green tomatillos, jalape\u00f1os, and a squeeze of fresh lime juice. It\u2019s perfect for topping your tacos, dipping chips, or spreading on your favorite sandwiches, bringing that authentic flavor home. Super quick and easy to whip up, it\u2019s the ultimate way to take your Mexican-inspired dishes to the next level! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "This copycat Avocado Verde Salsa from Taco Bell is a game-changer, blending the creamy goodness of ripe avocados with the zesty punch of green tomatillos, jalapeños, and a squeeze of fresh lime juice. It’s perfect for topping your tacos, dipping chips, or spreading on your favorite sandwiches, bringing that authentic flavor home. Super quick and easy to whip up, it’s the ultimate way to take your Mexican-inspired dishes to the next level! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "olive oil",
@@ -5497,7 +5499,7 @@
           "category": "produce"
         },
         {
-          "name": "\u00f1os, seeds and stem removed",
+          "name": "ños, seeds and stem removed",
           "quantity": "2",
           "unit": "jalape",
           "category": "produce"
@@ -5516,8 +5518,8 @@
         }
       ],
       "steps": [
-        "Step 1: To a hot pan over medium heat, add the olive oil, tomatillos, jalape\u00f1os, and onion. Sear for 4 to 5 minutes and then take off the heat.",
-        "Step 2: Add the seared tomatillos, jalape\u00f1os, and onions to a food processor along with the garlic cloves, cilantro, avocado, lime juice, water, and salt.",
+        "Step 1: To a hot pan over medium heat, add the olive oil, tomatillos, jalapeños, and onion. Sear for 4 to 5 minutes and then take off the heat.",
+        "Step 2: Add the seared tomatillos, jalapeños, and onions to a food processor along with the garlic cloves, cilantro, avocado, lime juice, water, and salt.",
         "Step 3: Blend until completely smooth.",
         "Step 4: Enjoy on tacos, in a burrito, or with a rice bowl. Transfer to a jar or air-tight container and store in the fridge for 3 to 4 days."
       ],
@@ -5546,7 +5548,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "mexican",
       "health_benefits": [
@@ -5574,7 +5577,7 @@
     {
       "id": "223c561e-d564-4fc7-a6ed-655b93e03d52",
       "title": "Creamy Banana Milk",
-      "description": "With just four ingredients and five minutes, you can make your own batch of banana milk at home! And if you haven\u2019t tried banana milk yet, you\u2019re seriously missing out on this super popular drink in South Korea. It\u2019s creamy, naturally sweet, and absolutely delicious on its own or as a dreamy addition to your coffee or matcha. Trust me, once you make it, you\u2019ll wonder how you ever lived without it! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
+      "description": "With just four ingredients and five minutes, you can make your own batch of banana milk at home! And if you haven’t tried banana milk yet, you’re seriously missing out on this super popular drink in South Korea. It’s creamy, naturally sweet, and absolutely delicious on its own or as a dreamy addition to your coffee or matcha. Trust me, once you make it, you’ll wonder how you ever lived without it! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 1 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "whole milk",
@@ -5648,7 +5651,7 @@
       "recipe_role": "dessert",
       "is_component": false,
       "meal_group_id": null,
-      "default_pairing_ids": null,
+      "default_pairing_ids": [],
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
@@ -6468,7 +6471,7 @@
       "recipe_role": "sauce",
       "is_component": true,
       "meal_group_id": null,
-      "default_pairing_ids": null,
+      "default_pairing_ids": [],
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
@@ -6555,7 +6558,8 @@
       ],
       "dietary_tags": [
         "dairy-free",
-        "gluten-free"
+        "gluten-free",
+        "vegan"
       ],
       "cuisine": "asian-inspired",
       "health_benefits": [
@@ -6694,7 +6698,7 @@
     {
       "id": "651c53a5-635a-4088-b226-5259046cf097",
       "title": "Homestyle Smash Burger",
-      "description": "Making a Big Mac at home and even better is easier than you think! Two patties sandwiched between THREE BUNS and layers of Big Mac sauce, lettuce, onions, pickles, and cheese \u2013 what could truly be better? It\u2019s juicy, saucy, comforting, and everything you want in the perfect burger! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Making a Big Mac at home and even better is easier than you think! Two patties sandwiched between THREE BUNS and layers of Big Mac sauce, lettuce, onions, pickles, and cheese – what could truly be better? It’s juicy, saucy, comforting, and everything you want in the perfect burger! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "mayonnaise",
@@ -6861,7 +6865,7 @@
       "difficulty": "easy",
       "tags": [
         "lunch",
-        "quick"
+        "sit-down"
       ],
       "flavor_profile": [
         "savory",
@@ -7018,7 +7022,7 @@
     {
       "id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
       "title": "Kale and White Bean Salad",
-      "description": "Hearty massaged kale with cannellini beans, lemon, and olive oil \u2014 a protein and fiber powerhouse side.",
+      "description": "Hearty massaged kale with cannellini beans, lemon, and olive oil — a protein and fiber powerhouse side.",
       "ingredients": [
         {
           "name": "lacinato kale",
@@ -7089,7 +7093,8 @@
       "dietary_tags": [
         "vegetarian",
         "dairy-free",
-        "gluten-free"
+        "gluten-free",
+        "vegan"
       ],
       "cuisine": "mediterranean",
       "health_benefits": [
@@ -7124,7 +7129,7 @@
     {
       "id": "c3d7dabb-22b1-488c-bd0c-728a70953abb",
       "title": "Korean Sesame Cucumber Salad",
-      "description": "Crunchy cucumbers in a gochugaru-sesame dressing \u2014 perfect alongside any Asian-inspired meal.",
+      "description": "Crunchy cucumbers in a gochugaru-sesame dressing — perfect alongside any Asian-inspired meal.",
       "ingredients": [
         {
           "name": "cucumber",
@@ -7195,7 +7200,8 @@
       "dietary_tags": [
         "vegetarian",
         "dairy-free",
-        "gluten-free"
+        "gluten-free",
+        "vegan"
       ],
       "cuisine": "korean",
       "health_benefits": [
@@ -7299,7 +7305,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "american",
       "health_benefits": [
@@ -7414,7 +7421,8 @@
       "dietary_tags": [
         "vegetarian",
         "dairy-free",
-        "gluten-free"
+        "gluten-free",
+        "vegan"
       ],
       "cuisine": "middle_eastern",
       "health_benefits": [
@@ -7528,7 +7536,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "mediterranean",
       "health_benefits": [
@@ -7633,7 +7642,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "global",
       "health_benefits": [
@@ -7728,7 +7738,8 @@
       ],
       "dietary_tags": [
         "gluten-free",
-        "dairy-free"
+        "dairy-free",
+        "vegan"
       ],
       "cuisine": "mexican-inspired",
       "health_benefits": [
@@ -7740,7 +7751,7 @@
         "nonstarchy_veg"
       ],
       "is_ai_generated": false,
-      "image_url": null,
+      "image_url": "",
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
@@ -7761,7 +7772,7 @@
     {
       "id": "99eab198-a1ed-45e6-9819-7ab423c3c5a7",
       "title": "Pistachio Baklava Pastries",
-      "description": "Baklawa meet croissant! Croissant meet Baklawa! This might quite possibly be the best dessert fusion you\u2019ll ever have. Imagine a crispy flakey croissant filled with spiced pistachio filling and orange blossom syrup, and then finished off with crushed pistachios and rose petals! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
+      "description": "Baklawa meet croissant! Croissant meet Baklawa! This might quite possibly be the best dessert fusion you’ll ever have. Imagine a crispy flakey croissant filled with spiced pistachio filling and orange blossom syrup, and then finished off with crushed pistachios and rose petals! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps. Includes 2 whole-food ingredient swap(s).",
       "ingredients": [
         {
           "name": "8 croissants, 1 to 3 days old",
@@ -7858,7 +7869,7 @@
         "Step 1: To a pot over medium heat, add the water, sugar, and orange blossom water. Bring to a boil so all the sugar is dissolved and then reduce the heat to low and simmer for 10 minutes. Transfer to a bowl and allow to cool to room temperature so it thickens up.",
         "Step 2: To a bowl, add the pistachio flour, sugar, cornstarch, salt, unsalted butter, vanilla extract, eggs, and heavy cream.",
         "Step 3: Beat together until light and fluffy using a stand or hand mixer.",
-        "Step 4: Preheat oven to 350\u00b0F.",
+        "Step 4: Preheat oven to 350°F.",
         "Step 5: Slice the croissants in half to open them up like a book.",
         "Step 6: Soak both sides in the simple syrup. Be generous with it. You can brush the syrup on or just dunk it for a more efficient method.",
         "Step 7: Add the pistachio filling across the whole inside. Close the croissant. Add a line of pistachio filling across the top and sprinkle on chopped pistachios. Repeat with the rest of the croissants.",
@@ -8056,7 +8067,7 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 400\u00b0F. Trim asparagus and toss with olive oil, garlic, salt, and pepper.",
+        "Step 1: Preheat oven to 400°F. Trim asparagus and toss with olive oil, garlic, salt, and pepper.",
         "Step 2: Roast 12-15 minutes until tender with crisp edges."
       ],
       "prep_time_min": 5,
@@ -8087,7 +8098,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "mediterranean",
       "health_benefits": [
@@ -8113,7 +8125,7 @@
     {
       "id": "9b571f3e-63a9-4a15-92a5-57ac52c8cbcc",
       "title": "Roasted Brussels Sprouts with Balsamic",
-      "description": "Caramelized Brussels sprouts with a balsamic glaze \u2014 crispy edges, tender centers.",
+      "description": "Caramelized Brussels sprouts with a balsamic glaze — crispy edges, tender centers.",
       "ingredients": [
         {
           "name": "Brussels sprouts",
@@ -8147,7 +8159,7 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 400\u00b0F. Halve Brussels sprouts and toss with olive oil, salt, and pepper.",
+        "Step 1: Preheat oven to 400°F. Halve Brussels sprouts and toss with olive oil, salt, and pepper.",
         "Step 2: Roast 25 minutes until golden. Drizzle with balsamic vinegar and serve."
       ],
       "prep_time_min": 5,
@@ -8179,7 +8191,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "american",
       "health_benefits": [
@@ -8245,7 +8258,7 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 425\u00b0F. Toss cauliflower with olive oil, turmeric, cumin, salt, and pepper.",
+        "Step 1: Preheat oven to 425°F. Toss cauliflower with olive oil, turmeric, cumin, salt, and pepper.",
         "Step 2: Spread on a baking sheet and roast 25 minutes until golden and tender."
       ],
       "prep_time_min": 5,
@@ -8277,7 +8290,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "indian",
       "health_benefits": [
@@ -8303,7 +8317,7 @@
     {
       "id": "790ebf9b-4a2a-4587-81ac-8612a7e5c6d6",
       "title": "Roasted Sweet Potato Wedges",
-      "description": "Crispy-edged sweet potato wedges with smoked paprika \u2014 fiber-rich and naturally sweet.",
+      "description": "Crispy-edged sweet potato wedges with smoked paprika — fiber-rich and naturally sweet.",
       "ingredients": [
         {
           "name": "sweet potatoes",
@@ -8337,7 +8351,7 @@
         }
       ],
       "steps": [
-        "Step 1: Preheat oven to 425\u00b0F. Cut sweet potatoes into wedges and toss with oil and spices.",
+        "Step 1: Preheat oven to 425°F. Cut sweet potatoes into wedges and toss with oil and spices.",
         "Step 2: Spread on baking sheet and roast 30 minutes, flipping halfway, until crispy."
       ],
       "prep_time_min": 5,
@@ -8356,9 +8370,9 @@
       "difficulty": "easy",
       "tags": [
         "side",
-        "quick",
         "veg_side",
-        "whole-food"
+        "whole-food",
+        "sit-down"
       ],
       "flavor_profile": [
         "sweet",
@@ -8368,7 +8382,8 @@
         "vegetarian",
         "dairy-free",
         "gluten-free",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "american",
       "health_benefits": [
@@ -8522,7 +8537,7 @@
     },
     {
       "id": "c04ace8d-f816-4434-8274-4069b37cf56d",
-      "title": "Saut\u00e9ed Spinach with Garlic",
+      "title": "Sautéed Spinach with Garlic",
       "description": "Quick-wilted baby spinach with aromatic garlic in extra virgin olive oil.",
       "ingredients": [
         {
@@ -8557,7 +8572,7 @@
         }
       ],
       "steps": [
-        "Step 1: Heat olive oil in a pan over medium heat. Saut\u00e9 garlic 30 seconds.",
+        "Step 1: Heat olive oil in a pan over medium heat. Sauté garlic 30 seconds.",
         "Step 2: Add spinach and cook 2-3 minutes until wilted. Season with salt and lemon juice."
       ],
       "prep_time_min": 2,
@@ -8588,7 +8603,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "mediterranean",
       "health_benefits": [
@@ -8689,7 +8705,7 @@
       "recipe_role": "carb_base",
       "is_component": true,
       "meal_group_id": null,
-      "default_pairing_ids": null,
+      "default_pairing_ids": [],
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
@@ -8802,7 +8818,7 @@
       "recipe_role": "protein_base",
       "is_component": true,
       "meal_group_id": null,
-      "default_pairing_ids": null,
+      "default_pairing_ids": [],
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
@@ -9142,7 +9158,7 @@
     {
       "id": "c975e136-9360-44d5-b763-473b9713a2f0",
       "title": "Slow-Simmered Beef Bone Broth",
-      "description": "There\u2019s nothing like a cozy, warm bowl of beef bone broth, especially when the weather starts to cool down. This homemade version has all the flavor and goodness you\u2019ll ever need, and it\u2019s so much better than anything you\u2019ll find on store shelves! Roasting the bones and veggies before simmering them adds layers of deep, rich flavor, and with warming spices like cinnamon and turmeric, this broth is perfect for sipping straight or using as a base for soups, stews, or even sauces. Let\u2019s dive into how to make this cozy, nutrient-packed beef bone broth in the Instant Pot! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
+      "description": "There’s nothing like a cozy, warm bowl of beef bone broth, especially when the weather starts to cool down. This homemade version has all the flavor and goodness you’ll ever need, and it’s so much better than anything you’ll find on store shelves! Roasting the bones and veggies before simmering them adds layers of deep, rich flavor, and with warming spices like cinnamon and turmeric, this broth is perfect for sipping straight or using as a base for soups, stews, or even sauces. Let’s dive into how to make this cozy, nutrient-packed beef bone broth in the Instant Pot! Crafted with Real-Food standards: no seed oils, no refined sugar, gluten-smart swaps.",
       "ingredients": [
         {
           "name": "beef bones (marrow bones, knuckles, or oxtails)",
@@ -9187,7 +9203,7 @@
           "category": "produce"
         },
         {
-          "name": "\u00bd tablespoons apple cider vinegar",
+          "name": "½ tablespoons apple cider vinegar",
           "quantity": "1",
           "unit": "",
           "category": "produce"
@@ -9237,7 +9253,7 @@
       ],
       "steps": [
         "Step 1: Pre-Boil the Bones (Optional but Recommended): Place the beef bones in a large pot and cover them with water. Bring the water to a boil over high heat, and let the bones boil for 10-15 minutes. Drain and rinse the bones under cold water to remove impurities.",
-        "Step 2: Roast the Bones and Vegetables: Preheat your oven to 425\u00b0F (220\u00b0C). On a large baking sheet, arrange the pre-boiled bones along with the chopped celery, carrots, and quartered onions. Roast everything for 45 to 55 minutes, until the bones and vegetables are deeply browned. This step enhances the flavor of your broth.",
+        "Step 2: Roast the Bones and Vegetables: Preheat your oven to 425°F (220°C). On a large baking sheet, arrange the pre-boiled bones along with the chopped celery, carrots, and quartered onions. Roast everything for 45 to 55 minutes, until the bones and vegetables are deeply browned. This step enhances the flavor of your broth.",
         "Step 3: Prepare the Instant Pot: Transfer the roasted bones and vegetables to the Instant Pot. Add the garlic, thyme sprigs, bay leaves, peppercorns, cinnamon sticks, turmeric, salt, white pepper, and cayenne powder. Pour in the apple cider vinegar.",
         "Step 4: Add Water: Pour enough water into the Instant Pot to fully cover the bones and vegetables, making sure not to exceed the \"Max Fill\" line (about 10-12 cups of water).",
         "Step 5: Pressure Cook: Secure the Instant Pot lid and set the valve to \"Sealing.\" Cook on High Pressure for 2 hours (or up to 4 hours for a more intense broth).",
@@ -9608,7 +9624,7 @@
         }
       ],
       "steps": [
-        "Start by preheating your oven to 450\u00b0F so it is fully hot before the potatoes go in.",
+        "Start by preheating your oven to 450°F so it is fully hot before the potatoes go in.",
         "Cut the potatoes into bite-size cubes, toss with olive oil, salt, pepper, garlic powder, paprika, and chili powder, then spread them on a tray and roast until golden and crisp on the edges, about 30 to 35 minutes.",
         "While the potatoes roast, cube the chicken and season it with olive oil, salt, pepper, paprika, and chili powder so every piece is evenly coated.",
         "Heat a large skillet, cook the chicken for a few minutes, then add onion and corn and keep cooking until the chicken is cooked through and the onion softens.",
@@ -10144,7 +10160,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "global",
       "health_benefits": [
@@ -10324,7 +10341,8 @@
         "dairy-free",
         "gluten-free",
         "keto",
-        "paleo"
+        "paleo",
+        "vegan"
       ],
       "cuisine": "chinese",
       "health_benefits": [
@@ -10914,7 +10932,7 @@
       "recipe_role": "veg_side",
       "is_component": true,
       "meal_group_id": null,
-      "default_pairing_ids": null,
+      "default_pairing_ids": [],
       "component_composition": null,
       "is_mes_scoreable": false,
       "needs_default_pairing": null,

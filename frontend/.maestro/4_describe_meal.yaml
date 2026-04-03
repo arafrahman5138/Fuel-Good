@@ -1,0 +1,26 @@
+appId: host.exp.Exponent
+---
+# Flow 4: Test the "Describe your meal" text input flow
+
+# Make sure we're on the scan screen capture step
+- tapOn: "Scan Food"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# The describe button should be on the right side of the shutter row (pencil icon)
+# Tap the pencil/describe button
+- tapOn:
+    id: "describe-meal-button"
+    optional: true
+
+# Wait for the describe sheet
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Take screenshot to verify sheet
+- takeScreenshot: describe_meal_sheet
+
+# Check if the describe meal sheet elements are visible
+- assertVisible:
+    text: "Describe your meal"
+    optional: true

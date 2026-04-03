@@ -41,9 +41,9 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
         <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ transform: [{ translateX: -1 }] }} />
       </TouchableOpacity>
 
-      <View style={styles.center}>
+      <View style={styles.center} pointerEvents="none">
         {centerContent || (
-          <View style={[styles.titleCapsule, { borderColor: theme.border, overflow: 'hidden' }]}>
+          <View style={[styles.titleCapsule, { borderColor: theme.border, overflow: 'hidden' }]} pointerEvents="auto">
             <BlurView
               intensity={Platform.OS === 'ios' ? 40 : 80}
               tint={isDark ? 'dark' : 'light'}
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
@@ -85,7 +85,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   center: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

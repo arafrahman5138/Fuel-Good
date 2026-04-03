@@ -1,0 +1,84 @@
+appId: host.exp.Exponent
+---
+# Flow 5: Finish flavor profile + remaining onboarding
+
+# Select 2 flavors
+- tapOn:
+    text: "Savory"
+    optional: true
+- tapOn:
+    text: "Spicy"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: after_flavor
+
+# Keep clicking through any remaining screens
+- repeat:
+    times: 10
+    commands:
+      # Try selecting common onboarding options
+      - tapOn:
+          text: "Breakfast"
+          optional: true
+      - tapOn:
+          text: "Lunch"
+          optional: true
+      - tapOn:
+          text: "Dinner"
+          optional: true
+      - tapOn:
+          text: "3 meals"
+          optional: true
+      - tapOn:
+          text: "Medium"
+          optional: true
+      - tapOn:
+          text: "30 minutes"
+          optional: true
+      - tapOn:
+          text: "No restrictions"
+          optional: true
+      - tapOn:
+          text: "None"
+          optional: true
+      - tapOn:
+          text: "No"
+          optional: true
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          text: "Skip"
+          optional: true
+      - tapOn:
+          text: "Get Started"
+          optional: true
+      - tapOn:
+          text: "Start"
+          optional: true
+      - tapOn:
+          text: "Finish"
+          optional: true
+      - tapOn:
+          text: "Done"
+          optional: true
+      - tapOn:
+          text: "Let's go"
+          optional: true
+      - tapOn:
+          text: "Explore"
+          optional: true
+      - tapOn:
+          text: "Not Now"
+          optional: true
+      - tapOn:
+          text: "Allow"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- takeScreenshot: onboarding_complete

@@ -1,0 +1,52 @@
+appId: host.exp.Exponent
+---
+# Flow 1: Login and navigate to scan screen
+
+# Open Expo app with our project
+- openLink: "exp://localhost:8081"
+
+# Wait for the login screen to load
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Tap on email field and type
+- tapOn:
+    text: "you@example.com"
+    optional: true
+- eraseText: 30
+- inputText: "test@fuelgood.dev"
+
+# Dismiss keyboard
+- hideKeyboard
+
+# Tap on password field and type
+- tapOn:
+    text: "Enter password"
+    optional: true
+- eraseText: 30
+- inputText: "Test12345"
+
+# Dismiss keyboard
+- hideKeyboard
+
+# Wait a moment for keyboard to dismiss
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Scroll down to make sure Sign In is visible
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+
+# Take screenshot before signing in
+- takeScreenshot: before_signin
+
+# Tap Sign In
+- tapOn: "Sign In"
+
+# Wait for home screen to load (longer timeout for auth + data fetch)
+- waitForAnimationToEnd:
+    timeout: 25000
+
+# Take screenshot of home screen
+- takeScreenshot: after_signin

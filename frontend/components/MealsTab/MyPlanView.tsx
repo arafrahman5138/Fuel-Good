@@ -1045,9 +1045,11 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
 
         {/* Projected flex earnings */}
         {currentPlan?.items && currentPlan.items.length > 0 && (() => {
-          const fuelTarget = useFuelStore.getState().settings?.fuel_target ?? 80;
-          const avgCheatCost = Math.max(1, fuelTarget - 35);
-          const projectedFlex = Math.floor(currentPlan.items.length * (100 - fuelTarget) / avgCheatCost);
+          const settings = useFuelStore.getState().settings;
+          const expectedMeals = settings?.expected_meals_per_week ?? 21;
+          const cleanPct = settings?.clean_eating_pct ?? 80;
+          const cleanMealsTarget = Math.ceil(expectedMeals * cleanPct / 100);
+          const projectedFlex = expectedMeals - cleanMealsTarget;
           return projectedFlex > 0 ? (
             <View style={[styles.projectedFlexRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="ticket" size={14} color="#F59E0B" />
@@ -1918,9 +1920,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     marginTop: Spacing.md,
-    padding: Spacing.sm + 2,
+    padding: Spacing.sm,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
@@ -1928,11 +1930,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs + 1,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.sm - 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    flexShrink: 0,
   },
   logBtnText: {
     fontSize: FontSize.xs,
@@ -1954,11 +1955,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs + 1,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.sm - 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    flexShrink: 0,
   },
   replaceBtnText: {
     fontSize: FontSize.xs,

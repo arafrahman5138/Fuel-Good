@@ -1,0 +1,27 @@
+appId: host.exp.Exponent
+---
+# Tap send button precisely
+
+# First, let's see the full screen with keyboard visible
+- takeScreenshot: chat_before_send
+
+# The send button (green circle with arrow) is to the right of the text input
+# With keyboard up, it's approximately at the input bar level
+# Looking at screenshot: input bar is around y=361, send button at x=363
+- tapOn:
+    point: "363,360"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: chat_send_attempt_1
+
+# Wait longer for AI response
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: chat_send_attempt_2
+
+# Dismiss keyboard by tapping on message area
+- tapOn:
+    point: "196,200"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: chat_after_keyboard_dismiss

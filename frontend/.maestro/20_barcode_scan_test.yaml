@@ -1,0 +1,25 @@
+appId: host.exp.Exponent
+---
+# Test barcode scanning specifically
+
+# Navigate to scan
+- openLink: "exp://localhost:8081/--/scan"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Switch to packaged food
+- tapOn:
+    text: ".*Packaged Food.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap Use barcode button
+- tapOn: "Use barcode"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: barcode_modal_1
+
+# Wait more for the modal animation
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: barcode_modal_2

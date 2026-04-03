@@ -1,0 +1,43 @@
+appId: host.exp.Exponent
+---
+# Verify all chat changes
+
+# Scroll down to see recipe sections
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: verify_1_ingredients
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: verify_2_steps_collapsed
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: verify_3_swaps_nutrition
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 10%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: verify_4_action_chips
+
+# Test new chat button
+- tapOn:
+    point: "270,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: verify_5_new_chat_cleared

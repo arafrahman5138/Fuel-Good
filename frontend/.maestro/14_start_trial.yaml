@@ -1,0 +1,31 @@
+appId: host.exp.Exponent
+---
+# Tap "Start my free trial" button
+- tapOn:
+    text: ".*free trial.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: after_trial_tap
+
+# Dismiss any paywall/error
+- tapOn:
+    text: ".*Not Now.*"
+    optional: true
+- tapOn:
+    text: ".*Later.*"
+    optional: true
+- tapOn:
+    text: ".*Close.*"
+    optional: true
+- tapOn:
+    text: ".*Cancel.*"
+    optional: true
+- tapOn:
+    text: ".*Dismiss.*"
+    optional: true
+- tapOn:
+    text: ".*OK.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: after_paywall

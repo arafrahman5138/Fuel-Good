@@ -1,0 +1,153 @@
+appId: host.exp.Exponent
+---
+# Flow 4: Complete the interactive onboarding by selecting options
+
+# "How often do you eat ultra-processed food?"
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: onb_step_a
+
+# Next question - pick first visible option
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Sometimes"
+    optional: true
+- tapOn:
+    text: "Yes"
+    optional: true
+- tapOn:
+    text: "No"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: onb_step_b
+
+# Keep going
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Sometimes"
+    optional: true
+- tapOn:
+    text: "Moderate"
+    optional: true
+- tapOn:
+    text: "Moderately active"
+    optional: true
+- tapOn:
+    text: "Light"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: onb_step_c
+
+# More questions
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Sometimes"
+    optional: true
+- tapOn:
+    text: "Moderate"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Sometimes"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Rarely"
+    optional: true
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Get Started"
+    optional: true
+- tapOn:
+    text: "Finish"
+    optional: true
+- tapOn:
+    text: "Done"
+    optional: true
+- tapOn:
+    text: "Let's Go"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- takeScreenshot: onb_final

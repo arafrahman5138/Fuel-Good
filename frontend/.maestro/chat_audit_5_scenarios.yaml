@@ -1,0 +1,97 @@
+appId: host.exp.Exponent
+---
+# Chat Audit 5: Test multiple user scenarios
+
+# Start a new chat
+- tapOn:
+    point: "270,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: scenario_new_chat
+
+# === SCENARIO 1: Dessert healthify ===
+- tapOn: "Ask about any food..."
+- inputText: "healthy brownie recipe"
+- tapOn:
+    point: "365,750"
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: scenario_dessert_1
+
+# Scroll to see response
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: scenario_dessert_2
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: scenario_dessert_3
+
+# === SCENARIO 2: General question ===
+# Start new chat
+- tapOn:
+    point: "270,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn: "Ask about any food..."
+- inputText: "is oatmeal good for me?"
+- tapOn:
+    point: "365,750"
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: scenario_question_1
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: scenario_question_2
+
+# === SCENARIO 3: Meal recommendation ===
+- tapOn:
+    point: "270,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn: "Ask about any food..."
+- inputText: "suggest a high protein dinner"
+- tapOn:
+    point: "365,750"
+- waitForAnimationToEnd:
+    timeout: 45000
+- takeScreenshot: scenario_recommend_1
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: scenario_recommend_2
+
+- swipe:
+    start: "50%, 60%"
+    end: "50%, 15%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: scenario_recommend_3
+
+# === SCENARIO 4: Chat history ===
+# Tap hamburger menu to open history drawer
+- tapOn:
+    point: "28,63"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: scenario_history_drawer

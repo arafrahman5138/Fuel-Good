@@ -62,8 +62,14 @@ class MetabolicProfileCreate(BaseModel):
     height_cm: Optional[float] = None
     height_ft: Optional[int] = None
     height_in: Optional[float] = None
-    weight_lb: Optional[float] = None
+    weight_lb: Optional[float] = Field(default=None, alias=None)
+    weight_lbs: Optional[float] = Field(default=None, exclude=True)  # Common typo alias
     weight_kg: Optional[float] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        # Accept weight_lbs as an alias for weight_lb
+        if self.weight_lbs is not None and self.weight_lb is None:
+            self.weight_lb = self.weight_lbs
     body_fat_pct: Optional[float] = None
     body_fat_method: Optional[str] = None
     goal: Optional[str] = None

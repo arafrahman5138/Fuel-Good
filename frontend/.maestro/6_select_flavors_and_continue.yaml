@@ -1,0 +1,84 @@
+appId: host.exp.Exponent
+---
+# Flow 6: Select flavors using regex matching
+
+# Select Savory and Spicy using regex to match ", Savory" format
+- tapOn:
+    text: ".*Savory.*"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    text: ".*Spicy.*"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- takeScreenshot: flavors_selected
+
+# Tap continue
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: after_flavors
+
+# Now keep going through remaining onboarding with regex matching
+- repeat:
+    times: 12
+    commands:
+      - tapOn:
+          text: ".*Breakfast.*"
+          optional: true
+      - tapOn:
+          text: ".*Lunch.*"
+          optional: true
+      - tapOn:
+          text: ".*Dinner.*"
+          optional: true
+      - tapOn:
+          text: ".*week.*"
+          optional: true
+      - tapOn:
+          text: ".*minutes.*"
+          optional: true
+      - tapOn:
+          text: ".*None.*"
+          optional: true
+      - tapOn:
+          text: ".*No.*"
+          optional: true
+      - tapOn:
+          text: ".*Easy.*"
+          optional: true
+      - tapOn:
+          text: ".*Medium.*"
+          optional: true
+      - tapOn:
+          text: ".*Standard.*"
+          optional: true
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          text: "Skip"
+          optional: true
+      - tapOn:
+          text: "Get Started"
+          optional: true
+      - tapOn:
+          text: "Start"
+          optional: true
+      - tapOn:
+          text: "Finish"
+          optional: true
+      - tapOn:
+          text: "Done"
+          optional: true
+      - tapOn:
+          text: "Not Now"
+          optional: true
+      - tapOn:
+          text: "Allow"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- takeScreenshot: final_state
