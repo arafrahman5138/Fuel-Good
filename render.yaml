@@ -28,6 +28,8 @@ services:
         value: "250"
       - key: RUN_STARTUP_SEEDING
         value: "false"
+      - key: SYNC_OFFICIAL_MEALS_ON_STARTUP
+        value: "true"
       - key: ALLOW_DEV_DB_BOOTSTRAP
         value: "false"
       - key: LLM_PROVIDER

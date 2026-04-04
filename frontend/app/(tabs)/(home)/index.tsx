@@ -1311,7 +1311,7 @@ const s = StyleSheet.create({
   },
   mealRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: Spacing.sm,
     paddingVertical: Spacing.sm + 2,
   },

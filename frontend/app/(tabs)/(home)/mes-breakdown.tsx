@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
@@ -8,7 +8,8 @@ import { MetabolicRing } from '../../../components/MetabolicRing';
 import { ScoreBreakdown } from '../../../components/ScoreBreakdown';
 import { useTheme } from '../../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
-import { getTierConfig, useMetabolicBudgetStore } from '../../../stores/metabolicBudgetStore';
+import { getTierConfig, getTierFromScore, useMetabolicBudgetStore } from '../../../stores/metabolicBudgetStore';
+import { useThemeStore } from '../../../stores/themeStore';
 
 const COMPONENT_GUIDE = [
   {
@@ -43,10 +44,14 @@ const COMPONENT_GUIDE = [
 
 export default function MESBreakdownScreen() {
   const theme = useTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const systemScheme = useColorScheme();
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
   const dailyMES = useMetabolicBudgetStore((s) => s.dailyScore);
   const budget = useMetabolicBudgetStore((s) => s.budget);
   const fetchAll = useMetabolicBudgetStore((s) => s.fetchAll);
   const loading = useMetabolicBudgetStore((s) => s.loading);
+  const scoreHistory = useMetabolicBudgetStore((s) => s.scoreHistory);
 
   useEffect(() => {
     if (!dailyMES || !budget) {
@@ -85,12 +90,39 @@ export default function MESBreakdownScreen() {
       ]
     : [];
 
+  const weekDays = useMemo(() => {
+    const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+
+    return DAY_LABELS.map((label, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const todayStr = today.toISOString().slice(0, 10);
+      const isFuture = dateStr > todayStr;
+      const entry = scoreHistory.find((e) => e.date === dateStr);
+      const rawScore = entry ? (entry.display_score ?? entry.total_score ?? 0) : 0;
+      const sc = Math.round(rawScore);
+      const tier = sc > 0 ? getTierFromScore(sc) : 'critical';
+      const color = sc > 0 ? getTierConfig(tier).color : theme.textTertiary;
+      return { label, dateStr, score: sc, color, isToday: dateStr === todayStr, isFuture };
+    });
+  }, [scoreHistory, theme.textTertiary]);
+
+  const weekAvg = useMemo(() => {
+    const scored = weekDays.filter((d) => d.score > 0);
+    if (scored.length === 0) return 0;
+    return Math.round(scored.reduce((sum, d) => sum + d.score, 0) / scored.length);
+  }, [weekDays]);
+
   return (
     <ScreenContainer safeArea={false} padded={false}>
       <AppScreenHeader title="MES Breakdown" />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: Spacing.xl * 2 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: 100 }]}
       >
         <View style={[styles.heroCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.heroTop}>
@@ -130,6 +162,60 @@ export default function MESBreakdownScreen() {
           </View>
         ) : null}
 
+        {/* ── This Week's MES ── */}
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.weekHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>This Week</Text>
+            {weekAvg > 0 && (
+              <View style={[styles.weekAvgPill, { backgroundColor: getTierConfig(getTierFromScore(weekAvg)).color + '18' }]}>
+                <Text style={[styles.weekAvgText, { color: getTierConfig(getTierFromScore(weekAvg)).color }]}>
+                  avg {weekAvg}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.sectionSub, { color: theme.textSecondary }]}>
+            Daily MES scores for the current week
+          </Text>
+
+          <View style={styles.weekBarsWrap}>
+            {weekDays.map((day) => (
+              <View key={day.dateStr} style={styles.weekDayCol}>
+                <Text style={[styles.weekDayScore, { color: day.score > 0 ? day.color : theme.textTertiary }]}>
+                  {day.isFuture ? '' : day.score > 0 ? day.score : '–'}
+                </Text>
+                <View style={[styles.weekBarTrack, { backgroundColor: theme.surfaceHighlight }]}>
+                  {day.score > 0 && (
+                    <View
+                      style={[
+                        styles.weekBarFill,
+                        {
+                          height: `${Math.max(day.score, 4)}%`,
+                          backgroundColor: day.color,
+                        },
+                      ]}
+                    />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.weekDayLabel,
+                    {
+                      color: day.isToday ? theme.text : theme.textSecondary,
+                      fontWeight: day.isToday ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {day.label}
+                </Text>
+                {day.isToday && (
+                  <View style={[styles.todayDot, { backgroundColor: theme.primary }]} />
+                )}
+              </View>
+            ))}
+          </View>
+        </View>
+
         <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>How MES is calculated</Text>
           <Text style={[styles.sectionSub, { color: theme.textSecondary }]}>
@@ -147,7 +233,7 @@ export default function MESBreakdownScreen() {
           ) : null}
 
           <LinearGradient
-            colors={['#FFFFFF', '#FBFAF6']}
+            colors={isDark ? [theme.surfaceElevated, theme.surface] : ['#FFFFFF', '#FBFAF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.formulaCard, { borderColor: theme.border }]}
@@ -339,5 +425,60 @@ const styles = StyleSheet.create({
   guideDesc: {
     fontSize: FontSize.xs,
     lineHeight: 18,
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  weekAvgPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+  },
+  weekAvgText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  weekBarsWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 140,
+    gap: 4,
+  },
+  weekDayCol: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+  },
+  weekBarTrack: {
+    width: '100%',
+    flex: 1,
+    borderRadius: 6,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  weekBarFill: {
+    width: '100%',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    minHeight: 4,
+  },
+  weekDayScore: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    marginBottom: 4,
+    height: 16,
+  },
+  weekDayLabel: {
+    fontSize: FontSize.xs,
+    marginTop: 6,
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
   },
 });

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     notification_cron_batch_size: int = 100
     notification_cron_user_limit: int = 250
     run_startup_seeding: bool = False
+    sync_official_meals_on_startup: bool = False
     support_email: str = "support@fuelgood.app"
     resend_api_key: str = ""
     email_from: str = "noreply@fuelgood.app"

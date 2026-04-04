@@ -20,6 +20,7 @@ from app.routers import auth, billing, chat, meal_plan, grocery, recipes, food_d
 from app.db import engine, ensure_legacy_schema_columns, ensure_pgvector_schema
 from app.services.notifications import notification_scheduler_loop
 from app.services.embeddings import active_embedding_provider
+from restore_meals import sync_official_meals
 
 # Import all models so they register with Base.metadata
 from app.models import user, meal_plan as mp_model, recipe, grocery as g_model, gamification as gm_model  # noqa: F401
@@ -46,6 +47,7 @@ async def lifespan(app: FastAPI):
     _configure_logging()
     _validate_security_settings()
     ensure_legacy_schema_columns()
+    _sync_official_meals_on_startup()
     _seed_on_startup()
     scheduler_task = None
     if settings.run_notification_scheduler:
@@ -175,6 +177,14 @@ def _validate_pgvector_readiness() -> None:
         )).scalar()
         if not index_ok:
             raise RuntimeError("A pgvector index on recipe_embeddings.embedding is missing.")
+
+
+def _sync_official_meals_on_startup() -> None:
+    if not settings.sync_official_meals_on_startup:
+        return
+    app_logger.info(json.dumps({"event": "official_meals.sync_starting"}))
+    sync_official_meals(prune=True, init_schema=False)
+    app_logger.info(json.dumps({"event": "official_meals.sync_completed"}))
 
 
 def _seed_on_startup():
@@ -407,6 +417,7 @@ async def health_check():
             "version": "1.0.0",
             "scheduler_enabled": settings.run_notification_scheduler,
             "startup_seeding_enabled": settings.run_startup_seeding,
+            "official_meals_sync_enabled": settings.sync_official_meals_on_startup,
             "llm_provider": settings.llm_provider,
         }
     return {"status": "healthy"}
