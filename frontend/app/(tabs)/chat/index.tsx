@@ -1126,8 +1126,8 @@ export default function ChatScreen() {
                 {recipe && isNewest && !isLoading && (
                   <View style={styles.contextChipsRow}>
                     {[
-                      { label: 'Swap an ingredient', icon: 'swap-horizontal' as const, query: `Swap an ingredient in the ${recipe.title}` },
-                      { label: 'Higher protein', icon: 'barbell-outline' as const, query: `Make the ${recipe.title} higher protein` },
+                      { label: 'Healthify', icon: 'leaf-outline' as const, query: `Make the ${recipe.title} healthier — swap any processed ingredients for whole-food alternatives and improve the MES score` },
+                      { label: 'Higher protein', icon: 'barbell-outline' as const, query: `Make the ${recipe.title} higher protein while keeping it delicious` },
                       { label: 'Save recipe', icon: 'bookmark-outline' as const, onPress: () => toggleSaveRecipe(key, recipe) },
                     ].map((chip, i) => (
                       <TouchableOpacity

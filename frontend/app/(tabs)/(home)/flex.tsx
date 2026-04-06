@@ -412,7 +412,7 @@ export default function FlexScreen() {
 // ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: 0 },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: 0, paddingBottom: 80 },
 
   // Hero
   heroCard: {

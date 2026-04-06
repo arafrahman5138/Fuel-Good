@@ -197,17 +197,17 @@ export const SingleMealRow = React.memo(function SingleMealRow({
               color: theme.text,
               fontSize: compact ? FontSize.xs : FontSize.sm,
               fontWeight: '600',
-              flexShrink: 1,
+              flex: 1,
             }}
             numberOfLines={1}
           >
             {displayTitle}
           </Text>
-          {showMesBadge && badgeScore != null && (
-            <MealMESBadge score={badgeScore} tier={badgeTier} compact />
-          )}
           {!compact && log.fuel_score != null && (
             <FuelScoreBadge score={log.fuel_score} compact fuelTarget={fuelTarget} />
+          )}
+          {showMesBadge && badgeScore != null && (
+            <MealMESBadge score={badgeScore} tier={badgeTier} compact />
           )}
           {showSnackBadge && (
             <View

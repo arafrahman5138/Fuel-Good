@@ -44,6 +44,7 @@ export function MealMESBadge({ score, tier, unscoredHint, compact = false, onPre
     return (
       <Animated.View style={animatedStyle}>
         <Wrapper {...wrapperProps} style={[styles.compactBadge, { backgroundColor: tierCfg.color + '18' }]}>
+          <Ionicons name="flash" size={8} color={tierCfg.color} />
           <Text style={[styles.compactText, { color: tierCfg.color }]}>{Math.round(score)}</Text>
         </Wrapper>
       </Animated.View>

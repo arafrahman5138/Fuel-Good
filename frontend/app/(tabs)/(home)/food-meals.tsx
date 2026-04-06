@@ -671,8 +671,11 @@ export default function TodaysMealsScreen() {
                             </Text>
                           )}
                           <Text style={[st.calBadge, { color: theme.textSecondary }]}>{cal.toFixed(0)} cal</Text>
-                          {(log as any).fuel_score != null && fuelSettings && (
-                            <FuelScoreBadge score={Number((log as any).fuel_score)} compact fuelTarget={fuelSettings.fuel_target} />
+                          {(log as any).fuel_score != null && (
+                            <FuelScoreBadge score={Number((log as any).fuel_score)} compact fuelTarget={fuelSettings?.fuel_target} />
+                          )}
+                          {(log as any).fuel_score == null && (log.source_type === 'recipe' || log.source_type === 'meal_plan') && (
+                            <FuelScoreBadge score={100} compact fuelTarget={fuelSettings?.fuel_target} />
                           )}
                           {!scanSnack && mealMes?.score && (
                             <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />

@@ -40,6 +40,7 @@ export function FuelScoreBadge({ score, compact = false, fuelTarget }: FuelScore
   if (compact) {
     return (
       <View style={[styles.compactContainer, { backgroundColor: tier.color + '18' }]}>
+        <Ionicons name="leaf" size={8} color={tier.color} />
         <Text style={[styles.compactText, { color: tier.color }]}>{Math.round(score)}</Text>
       </View>
     );
