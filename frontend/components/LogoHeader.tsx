@@ -3,8 +3,8 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { APP_NAME } from '../constants/Config';
 
-const iconDark = require('../assets/images/icon-white-transparent.png');
-const iconLight = require('../assets/images/icon-transparent.png');
+const iconDark = require('../assets/images/logo-header-dark.png');
+const iconLight = require('../assets/images/logo-header-light.png');
 
 export default function LogoHeader() {
   const theme = useTheme();
@@ -26,11 +26,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
   },
   iconImage: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   text: {
     fontSize: 17,
