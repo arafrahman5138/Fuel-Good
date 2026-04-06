@@ -1,8 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, AppState, AppStateStatus, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Stack, router, usePathname, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep splash visible while we load auth, billing, etc.
+SplashScreen.preventAutoHideAsync();
 import { useTheme } from '../hooks/useTheme';
 import { useThemeStore } from '../stores/themeStore';
 import { useAuthStore } from '../stores/authStore';
@@ -204,15 +208,17 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
+  // Hide splash screen once auth loading is complete
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
   return (
     <>
       <StatusBar style={mode === 'light' ? 'dark' : 'light'} />
       <OfflineBanner />
-      {isLoading ? (
-        <View style={[styles.loadingScreen, { backgroundColor: theme.background }]}>
-          <ActivityIndicator size="large" color={theme.primary} />
-        </View>
-      ) : null}
       <Stack
         screenOptions={({ navigation }) => ({
           headerShown: false,
