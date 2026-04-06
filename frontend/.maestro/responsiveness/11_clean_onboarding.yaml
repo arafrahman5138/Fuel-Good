@@ -1,0 +1,163 @@
+appId: host.exp.Exponent
+---
+# Clean onboarding from fresh install
+
+# Dismiss notification permission
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Dismiss Expo Go dev menu
+- tapOn:
+    point: "310, 270"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screenshot Step 1: "You already know something is off"
+- takeScreenshot: "SE_OB01_hook_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB01_hook_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Continue to step 2
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 2: "What brought you here?"
+- takeScreenshot: "SE_OB02_motivation_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB02_motivation_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Select option and continue
+- tapOn:
+    text: "I want more energy"
+    optional: true
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 3: Diet history / processed food question
+- takeScreenshot: "SE_OB03_diet_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB03_diet_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+- tapOn:
+    text: "A few times a week"
+    optional: true
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 4: Summary / snapshot
+- takeScreenshot: "SE_OB04_snapshot_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB04_snapshot_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 5: Flex meals explanation
+- takeScreenshot: "SE_OB05_flex_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB05_flex_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 6: Dietary preferences
+- takeScreenshot: "SE_OB06_diet_prefs_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB06_diet_prefs_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 7: Flavor preferences
+- takeScreenshot: "SE_OB07_flavor_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB07_flavor_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 8: Body metrics
+- takeScreenshot: "SE_OB08_body_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB08_body_scrolled1"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB08_body_scrolled2"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500

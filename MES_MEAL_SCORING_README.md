@@ -1,6 +1,6 @@
 # MES Meal Scoring
 
-Last updated: 2026-03-16
+Last updated: 2026-04-05
 
 This README is the practical scoring guide for calculating new meal MES values.
 
@@ -37,7 +37,9 @@ For recipes, scoreability should also match:
 - `calories`
 
 Derived values:
-- `net_carbs_g = max(0, carbs_g - fiber_g)`
+- `rs3_g` = resistant starch from cooled/reheated starches (see section 5a)
+- `effective_fiber_g = fiber_g + rs3_g`
+- `net_carbs_g = max(0, carbs_g - effective_fiber_g)`
 - `protein_target_per_meal = daily_protein_target / 3`
 
 When creating new meals, macros must be recalculated from the actual modeled ingredients. Do not reuse source-card macros after ingredient substitutions.
@@ -73,12 +75,14 @@ Curve:
 
 ### FS
 
-`FS` rewards fiber with diminishing returns:
+`FS` rewards fiber with diminishing returns, using `effective_fiber_g` (which includes RS3 from cooled starches):
 - `0-2 g` => `0..20`
 - `2-6 g` => `20..65`
 - `6-10 g` => `65..90`
 - `10-15 g` => `90..100`
 - `>15 g` => `100`
+
+Note: the raw `fiber_g` from nutrition_info remains unchanged. `effective_fiber_g` is a scoring construct — RS3 is reclassified as functional fiber for MES purposes only.
 
 ### FAS
 
@@ -134,16 +138,48 @@ Current V1 relief policy:
 - `white_rice`: neutral
 - `rice_noodles` and refined grains: no relief
 
-Prep effect handling:
-- `resistant_starch_prep = cooled | cooled_reheated` adds extra GIS relief
-- this must be explicit metadata
-- do not assume a cooling effect unless the recipe is intentionally modeled that way
-
 User-facing explanation reasons may include:
 - `whole-food starch source`
 - `legume-based carb`
 - `intact whole grain`
-- `cooled starch resistant starch effect`
+- `cooled starch RS3 (Xg reclassified as functional fiber)`
+
+## 5a) Resistant starch (RS3) reclassification
+
+When starchy foods are cooled after cooking (meal-prep rice stored overnight, reheated potatoes, etc.), digestible starch undergoes retrogradation and forms resistant starch type 3 (RS3). RS3 resists digestion in the small intestine and ferments in the colon — physiologically equivalent to dietary fiber.
+
+The engine models this as a **carb-to-fiber reclassification**, not a flat GIS bonus:
+1. `rs3_g` is calculated from the meal's `glycemic_profile` (carb source + prep method)
+2. `effective_fiber_g = fiber_g + rs3_g` — boosts the Fiber Score
+3. `net_carbs_g = max(0, carbs_g - effective_fiber_g)` — lowers GIS via the curve
+
+RS3 yield per serving by starch type:
+
+| Starch | Cooled (eaten cold) | Cooled & Reheated |
+|--------|--------------------:|------------------:|
+| White rice | 2.5g | 1.5g |
+| Brown rice | 2.5g | 1.5g |
+| Potato | 3.0g | 2.0g |
+| Sweet potato | 2.0g | 1.2g |
+| Legumes | 1.5g | 1.0g |
+| Oats | 1.5g | 1.0g |
+| Rice noodles | 2.0g | 1.2g |
+| Pasta (refined) | 2.0g | 1.2g |
+| Intact whole grain | 1.5g | 1.0g |
+| Quinoa | 1.5g | 1.0g |
+
+The `resistant_starch_prep` field in `glycemic_profile` controls this:
+- `none`: no RS3 (freshly cooked)
+- `cooled`: eaten cold after overnight cooling (full RS3 yield)
+- `cooled_reheated`: cooled then reheated (partial RS3, typical for meal-prep)
+
+Rules:
+- all meal-prep meals with coolable starches should use `cooled_reheated`
+- only set `cooled` if the meal is specifically designed to be eaten cold
+- do not guess — RS3 requires explicit `resistant_starch_prep` metadata
+- raw `fiber_g` in nutrition_info stays unchanged; `effective_fiber_g` is scoring only
+
+The score result includes `rs3_g` and `effective_fiber_g` for transparency.
 
 ## 6) Backend-only metabolic stability bonus
 
@@ -156,12 +192,12 @@ Purpose:
 
 This bonus is narrow and does not create a new user-facing field.
 
-Current general-user gating:
+Current general-user gating (uses effective values when RS3 applies):
 - `general` carb curve only
 - at least `300` calories
-- `net_carbs_g <= 18`
+- `effective_net_carbs_g <= 18`
 - `protein_g >= 35`
-- `fiber_g >= 6`
+- `effective_fiber_g >= 6`
 - `12 <= fat_g <= 35`
 
 Current bonus shape:

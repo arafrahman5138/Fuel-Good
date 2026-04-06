@@ -128,6 +128,8 @@ class MESScoreResponse(BaseModel):
     fat_g: Optional[float] = None
     ingredient_gis_adjustment: Optional[float] = None
     ingredient_gis_reasons: Optional[List[str]] = None
+    rs3_g: Optional[float] = None
+    effective_fiber_g: Optional[float] = None
     pairing_applied: Optional[bool] = None
     pairing_gis_bonus: Optional[float] = None
     pairing_synergy_bonus: Optional[float] = None

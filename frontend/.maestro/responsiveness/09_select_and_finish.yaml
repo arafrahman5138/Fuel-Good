@@ -1,0 +1,133 @@
+appId: host.exp.Exponent
+---
+# Select activity level and goal by tapping on approximate positions
+
+# Tap "Lightly active" card (second option, roughly y=310)
+- tapOn:
+    point: "187, 310"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap "Lose body fat" (left goal option)
+- tapOn:
+    point: "100, 490"
+- waitForAnimationToEnd:
+    timeout: 500
+
+- takeScreenshot: "SE_07_body_selections"
+
+# Tap Continue
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_07_next_screen"
+
+# Scroll
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_07_next_screen_scrolled"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "See My Plan"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_07_step_a"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_07_step_a_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_07_step_b"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_07_step_b_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Enable"
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_07_step_c"
+
+# Handle system notification permission popup
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Try continuing
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Start Free Trial"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_07_step_d"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_07_step_d_scrolled"
+
+# Try closing with X buttons in various corners
+- tapOn:
+    point: "355, 55"
+    optional: true
+- tapOn:
+    point: "20, 55"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "×"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_07_step_e"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    point: "355, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_07_home_maybe"

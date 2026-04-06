@@ -1,0 +1,43 @@
+appId: host.exp.Exponent
+---
+# The Activity Level screen auto-advances 500ms after selection
+# Tap "Lightly active" to trigger auto-advance
+
+# First scroll up to see if we're on the right sub-step
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "SE_ACT01_top"
+
+# Scroll down to activity
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_ACT02_activity"
+
+# Tap Lightly active card to trigger auto-advance
+# Bounds: [20,132][355,189] - center (187, 160)
+- tapOn:
+    point: "187, 160"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_ACT03_after_tap"
+
+# If we're still here, maybe we need to tap the text directly
+- tapOn:
+    text: ".*Regularly active.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_ACT04_after_tap2"
+
+# Check if we need to scroll up to see "How active are you?" title
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- takeScreenshot: "SE_ACT05_scrolled_top"

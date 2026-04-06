@@ -17,6 +17,7 @@ from app.services.metabolic_engine import (
     calc_ism,
     calc_metabolic_stability_bonus,
     calc_protein_target_g,
+    calc_rs3_grams,
     calc_tier_thresholds,
     compute_meal_mes,
     derive_protein_target_g,
@@ -24,6 +25,7 @@ from app.services.metabolic_engine import (
     infer_glycemic_profile,
     resolve_glycemic_profile,
     BASE_TIER_THRESHOLDS,
+    RS3_YIELD_GRAMS,
 )
 
 
@@ -206,6 +208,7 @@ class TestIngredientAwareGIS(unittest.TestCase):
         self.assertEqual(reasons, [])
 
     def test_cooled_starch_requires_explicit_flag(self):
+        """Cooled starch no longer adds a flat GIS bonus — RS3 is reclassified as fiber."""
         base = infer_glycemic_profile(ingredients=["brown rice"], carb_type=["brown_rice"])
         cooled = resolve_glycemic_profile(
             explicit_profile={
@@ -215,10 +218,69 @@ class TestIngredientAwareGIS(unittest.TestCase):
                 "override_inference": True,
             }
         )
+        # GIS adjustment should be the same (RS3 no longer affects it)
         base_adjustment, _ = calc_ingredient_gis_adjustment(base, "general")
-        cooled_adjustment, reasons = calc_ingredient_gis_adjustment(cooled, "general")
-        self.assertGreater(cooled_adjustment, base_adjustment)
-        self.assertIn("cooled starch resistant starch effect", reasons)
+        cooled_adjustment, _ = calc_ingredient_gis_adjustment(cooled, "general")
+        self.assertEqual(base_adjustment, cooled_adjustment)
+
+        # Instead, RS3 is handled via calc_rs3_grams
+        rs3_g, reasons = calc_rs3_grams(cooled)
+        self.assertEqual(rs3_g, 2.5)
+        self.assertTrue(any("RS3" in r for r in reasons))
+
+    def test_rs3_grams_by_starch_type(self):
+        """Verify RS3 yield for each starch type and prep method."""
+        for (source, prep), expected_g in RS3_YIELD_GRAMS.items():
+            profile = {"primary_carb_source": source, "processing_level": "intact", "resistant_starch_prep": prep}
+            rs3_g, _ = calc_rs3_grams(profile)
+            self.assertAlmostEqual(rs3_g, expected_g, places=1, msg=f"{source}/{prep}")
+
+    def test_rs3_none_prep_returns_zero(self):
+        profile = {"primary_carb_source": "white_rice", "processing_level": "minimally_processed", "resistant_starch_prep": "none"}
+        rs3_g, reasons = calc_rs3_grams(profile)
+        self.assertEqual(rs3_g, 0.0)
+        self.assertEqual(reasons, [])
+
+    def test_rs3_reclassification_meaningful_mes_impact(self):
+        """Cooled rice meal should score ~3-5 MES points higher than fresh."""
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        base_meal = {
+            "protein_g": 50, "carbs_g": 38, "fiber_g": 2, "fat_g": 20, "calories": 540,
+            "carb_type": ["white_rice"],
+            "glycemic_profile": {"primary_carb_source": "white_rice", "processing_level": "minimally_processed", "resistant_starch_prep": "none"},
+        }
+        cooled_meal = {
+            **base_meal,
+            "glycemic_profile": {"primary_carb_source": "white_rice", "processing_level": "minimally_processed", "resistant_starch_prep": "cooled_reheated"},
+        }
+        fresh_score = compute_meal_mes(base_meal, budget)
+        cooled_score = compute_meal_mes(cooled_meal, budget)
+        delta = cooled_score["display_score"] - fresh_score["display_score"]
+        self.assertGreater(delta, 2.0, f"RS3 should create >2 MES point difference, got {delta}")
+
+    def test_rs3_effective_fiber_in_result(self):
+        """Result dict should include rs3_g and effective_fiber_g."""
+        budget = build_metabolic_budget(SEDENTARY_WOMAN)
+        meal = {
+            "protein_g": 40, "carbs_g": 35, "fiber_g": 3, "fat_g": 18, "calories": 470,
+            "glycemic_profile": {"primary_carb_source": "potato", "processing_level": "intact", "resistant_starch_prep": "cooled"},
+        }
+        result = compute_meal_mes(meal, budget)
+        self.assertEqual(result["rs3_g"], 3.0)
+        self.assertEqual(result["effective_fiber_g"], 6.0)  # 3 + 3
+
+    def test_rs3_cooked_cooled_normalizes_to_cooled(self):
+        """Legacy 'cooked_cooled' value should normalize to 'cooled'."""
+        profile = resolve_glycemic_profile(
+            explicit_profile={
+                "primary_carb_source": "white_rice",
+                "processing_level": "minimally_processed",
+                "resistant_starch_prep": "cooked_cooled",
+            }
+        )
+        self.assertEqual(profile["resistant_starch_prep"], "cooled")
+        rs3_g, _ = calc_rs3_grams(profile)
+        self.assertEqual(rs3_g, 2.5)
 
     def test_strict_profile_gets_smaller_adjustment(self):
         profile = infer_glycemic_profile(ingredients=["sweet potato"], carb_type=["sweet_potato"])

@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
 import { useThemeStore } from '../../../stores/themeStore';
@@ -102,6 +103,7 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer safeArea={false} padded={false}>
+      <AppScreenHeader title="Settings" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* ══════════════════════════════════════════════════════

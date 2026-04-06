@@ -1,0 +1,63 @@
+appId: host.exp.Exponent
+---
+# ═══ iPhone 15 Pro Full Responsiveness Test ═══
+
+# Dismiss Expo Go dev menu (X button top-right of modal)
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    point: "370, 263"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screenshot login screen
+- takeScreenshot: "PRO_LOGIN_01_top"
+
+# Scroll login
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "PRO_LOGIN_02_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Login
+- tapOn:
+    point: "196, 276"
+- inputText: "test@fuelgood.dev"
+- tapOn:
+    point: "196, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    point: "196, 355"
+- inputText: "Test12345"
+- tapOn:
+    point: "196, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Screenshot filled form
+- takeScreenshot: "PRO_LOGIN_03_filled"
+
+# Tap Sign In
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Dismiss password save dialog
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_ONBOARD_01"

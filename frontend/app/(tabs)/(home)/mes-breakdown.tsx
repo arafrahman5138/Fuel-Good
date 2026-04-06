@@ -23,7 +23,7 @@ const COMPONENT_GUIDE = [
     key: 'fs',
     short: 'FS',
     title: 'Fiber Support',
-    description: 'Rewards fiber coverage to support stable energy, digestion, and slower glucose swings.',
+    description: 'Rewards fiber coverage to support stable energy, digestion, and slower glucose swings. Includes resistant starch from cooled starches (e.g. meal-prep rice).',
     color: '#3B82F6',
   },
   {

@@ -1,0 +1,49 @@
+appId: host.exp.Exponent
+---
+# Login on iPhone 15 Pro using text-based targeting
+
+# Tap email placeholder
+- tapOn:
+    text: "you@example.com"
+    optional: true
+- eraseText: 50
+- inputText: "test@fuelgood.dev"
+
+# Dismiss keyboard
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap password placeholder
+- tapOn:
+    text: "Enter password"
+    optional: true
+- eraseText: 50
+- inputText: "Test12345"
+
+# Dismiss keyboard
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- takeScreenshot: "PRO_LOGIN_04_filled"
+
+# Sign In
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Dismiss password save
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_ONBOARD_02"

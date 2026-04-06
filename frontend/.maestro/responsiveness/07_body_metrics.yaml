@@ -1,0 +1,151 @@
+appId: host.exp.Exponent
+---
+# Fill in body metrics and continue through onboarding
+
+# Scroll down to see if there are more fields
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_06_body_metrics_scrolled"
+
+# Scroll back up
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Fill in Weight field
+- tapOn:
+    text: "e.g. 165"
+- inputText: "170"
+- tapOn:
+    text: "Fuel Good"
+    optional: true
+- tapOn:
+    text: "Now let's dial"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Fill in Height - feet
+- tapOn:
+    text: "e.g. 5"
+- inputText: "5"
+- tapOn:
+    text: "Now let's dial"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Height - inches
+- tapOn:
+    text: "e.g. 7"
+- inputText: "10"
+- tapOn:
+    text: "Now let's dial"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Age
+- tapOn:
+    text: "e.g. 30"
+- inputText: "28"
+- tapOn:
+    text: "Now let's dial"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Scroll down to see Sex field
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_06_body_metrics_filled"
+
+# Select sex
+- tapOn:
+    text: "Male"
+    optional: true
+- tapOn:
+    text: "Female"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_06_after_body_metrics"
+
+# Continue tapping through remaining screens
+- tapOn:
+    point: "100, 300"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_06_step_after_1"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_06_step_after_1_scrolled"
+
+# Keep advancing
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_06_step_after_2"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Start"
+    optional: true
+- tapOn:
+    text: "Start Free Trial"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_06_step_after_3"
+
+# Try to close paywall
+- tapOn:
+    point: "355, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_06_step_after_4"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    point: "355, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_06_final_state"

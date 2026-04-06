@@ -965,6 +965,7 @@ export default function ScanScreen() {
       const next = normalizeProductResult(await wholeFoodScanApi.analyzeBarcode(barcodeValue.trim()));
       setProductResult(next);
       syncProductDrafts(next);
+      setBarcodeValue('');
       setShowBarcodeSheet(false);
     } catch (err: any) {
       const message = err?.message || '';
@@ -974,12 +975,21 @@ export default function ScanScreen() {
           'Product Not Found',
           'This barcode isn\'t in our database yet. Try scanning the ingredient label on the package instead — that works for any product.',
           [
-            { text: 'Scan Label', onPress: () => { setScanStep('capture'); setShowBarcodeSheet(false); } },
-            { text: 'Try Again', style: 'cancel', onPress: () => setScanStep('capture') },
+            { text: 'Scan Label', onPress: () => { setBarcodeValue(''); setScanStep('capture'); setShowBarcodeSheet(false); } },
+            { text: 'Try Again', style: 'cancel', onPress: () => { setBarcodeValue(''); setScanStep('capture'); } },
           ],
         );
       } else {
-        Alert.alert('Scan failed', message || 'Unable to analyze that barcode right now.');
+        const isNetwork = message.includes('Network') || message.includes('network') || message.includes('fetch');
+        const isServer = err?.response?.status >= 500;
+        const errorTitle = isNetwork ? 'No Connection' : isServer ? 'Server Busy' : 'Scan Failed';
+        const errorMsg = isNetwork
+          ? 'Check your internet connection and try again.'
+          : isServer
+          ? 'Our servers are busy. Please try again in a moment.'
+          : message || 'Unable to analyze that barcode. Make sure all digits are entered correctly.';
+        Alert.alert(errorTitle, errorMsg);
+        setBarcodeValue('');
       }
       setScanStep('capture');
     } finally {
@@ -1256,7 +1266,7 @@ export default function ScanScreen() {
               <View style={styles.captureHintActions}>
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => setShowBarcodeSheet(true)}
+                  onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }}
                   style={styles.captureHintButton}
                 >
                   <Ionicons name="barcode-outline" size={16} color="#FFFFFF" />
@@ -1309,7 +1319,7 @@ export default function ScanScreen() {
               )}
             </TouchableOpacity>
             {scanMode === 'product' ? (
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setShowBarcodeSheet(true)} style={styles.shutterSideBtn}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }} style={styles.shutterSideBtn}>
                 <Ionicons name="barcode-outline" size={20} color="rgba(255,255,255,0.8)" />
               </TouchableOpacity>
             ) : (
@@ -1622,9 +1632,9 @@ export default function ScanScreen() {
                   placeholderTextColor={theme.textTertiary}
                 />
               ) : (
-                <TouchableOpacity onPress={() => setIsEditingLabel(true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.resultTitleInput, { color: theme.text }]} numberOfLines={2}>{mealLabelDraft || mealResult.meal_label}</Text>
-                  <Ionicons name="pencil-outline" size={14} color={theme.textTertiary} />
+                <TouchableOpacity onPress={() => setIsEditingLabel(true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                  <Text style={[styles.resultTitleInput, { color: theme.text, flex: 1 }]} numberOfLines={3}>{mealLabelDraft || mealResult.meal_label}</Text>
+                  <Ionicons name="pencil-outline" size={14} color={theme.textTertiary} style={{ marginTop: 6 }} />
                 </TouchableOpacity>
               )}
               <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>{mealContextCopy}</Text>
@@ -2399,9 +2409,9 @@ export default function ScanScreen() {
         onSecondary={() => setSuccessModal({ visible: false, message: '' })}
       />
 
-      <Modal visible={showBarcodeSheet} transparent animationType="slide" onRequestClose={() => setShowBarcodeSheet(false)}>
+      <Modal visible={showBarcodeSheet} transparent animationType="slide" onRequestClose={() => { setBarcodeValue(''); setShowBarcodeSheet(false); }}>
         <View style={styles.sheetModalBackdrop}>
-          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowBarcodeSheet(false)} />
+          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(false); }} />
           <View style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Use barcode</Text>

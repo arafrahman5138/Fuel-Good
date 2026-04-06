@@ -674,10 +674,8 @@ export default function TodaysMealsScreen() {
                           {(log as any).fuel_score != null && fuelSettings && (
                             <FuelScoreBadge score={Number((log as any).fuel_score)} compact fuelTarget={fuelSettings.fuel_target} />
                           )}
-                          {!scanSnack && mealMes && (
-                            mealMes.score
-                              ? <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
-                              : <MealMESBadge score={null} tier="crash_risk" unscoredHint={mealMes.unscored_hint} compact />
+                          {!scanSnack && mealMes?.score && (
+                            <MealMESBadge score={mealMes.score.display_score || mealMes.score.total_score} tier={mealMes.score.display_tier || mealMes.score.tier} compact />
                           )}
                         </View>
                       </View>

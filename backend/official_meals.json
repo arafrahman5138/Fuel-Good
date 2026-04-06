@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-04-02T16:46:19.916272Z",
-  "meal_count": 79,
+  "meal_count": 90,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -94,7 +94,7 @@
         "carbs": 22,
         "fat": 12,
         "fiber": 2,
-        "mes_default_pairing_adjusted_score": 79.3,
+        "mes_default_pairing_adjusted_score": 78.0,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -114,8 +114,8 @@
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 79.3,
-        "mes_default_pairing_delta": 26.2,
+        "mes_score_with_default_pairing": 78.0,
+        "mes_default_pairing_delta": 24.9,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -126,7 +126,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 0.0,
+        "effective_fiber_g": 2.0
       },
       "difficulty": "easy",
       "tags": [
@@ -795,7 +797,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "quinoa",
+        "processing_level": "intact",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731566"
     },
     {
@@ -908,7 +916,7 @@
         "carbs": 52,
         "fat": 22,
         "fiber": 4,
-        "mes_default_pairing_adjusted_score": 71.0,
+        "mes_default_pairing_adjusted_score": 72.2,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -922,22 +930,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 53.2,
-        "mes_display_score": 53.2,
+        "mes_score": 57.7,
+        "mes_display_score": 57.7,
         "mes_tier": "moderate",
         "mes_display_tier": "moderate",
         "mes_sub_scores": {
-          "gis": 56.9,
+          "gis": 58.7,
           "pas": 41.1,
-          "fs": 42.5,
+          "fs": 59.4,
           "fas": 85.6
         },
         "ingredient_gis_adjustment": 2.5,
         "ingredient_gis_reasons": [
           "intact whole grain"
         ],
-        "mes_score_with_default_pairing": 71.0,
-        "mes_default_pairing_delta": 17.8,
+        "mes_score_with_default_pairing": 72.2,
+        "mes_default_pairing_delta": 14.5,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -948,7 +956,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 5.5
       },
       "difficulty": "medium",
       "tags": [
@@ -991,7 +1001,7 @@
       "glycemic_profile": {
         "primary_carb_source": "brown_rice",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -1283,7 +1293,7 @@
         "carbs": 18,
         "fat": 20,
         "fiber": 1,
-        "mes_default_pairing_adjusted_score": 82.4,
+        "mes_default_pairing_adjusted_score": 81.0,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -1303,8 +1313,8 @@
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 82.4,
-        "mes_default_pairing_delta": 26.0,
+        "mes_score_with_default_pairing": 81.0,
+        "mes_default_pairing_delta": 24.6,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -1315,7 +1325,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 0.0,
+        "effective_fiber_g": 1.0
       },
       "difficulty": "easy",
       "tags": [
@@ -1513,7 +1525,21 @@
           "fas": 82.4
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 4.0,
+        "mes_score_with_default_pairing": 83.3,
+        "mes_default_pairing_adjusted_score": 83.3,
+        "mes_default_pairing_delta": 21.1,
+        "mes_default_pairing_gis_bonus": 8.0,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side",
+          "eat before meal"
+        ]
       },
       "difficulty": "easy",
       "tags": [
@@ -1734,7 +1760,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 0.0,
+        "effective_fiber_g": 2.0
       },
       "difficulty": "medium",
       "tags": [
@@ -1890,7 +1918,7 @@
         "carbs": 22,
         "fat": 28,
         "fiber": 2,
-        "mes_default_pairing_adjusted_score": 78.7,
+        "mes_default_pairing_adjusted_score": 77.4,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -1910,8 +1938,8 @@
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 78.7,
-        "mes_default_pairing_delta": 24.0,
+        "mes_score_with_default_pairing": 77.4,
+        "mes_default_pairing_delta": 22.7,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -1922,7 +1950,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 0.0,
+        "effective_fiber_g": 2.0
       },
       "difficulty": "medium",
       "tags": [
@@ -2074,23 +2104,23 @@
         "fat": 29.6,
         "fiber": 5.8,
         "sugar": 5.8,
-        "mes_score": 78.6,
-        "mes_display_score": 78.6,
-        "mes_tier": "good",
+        "mes_score": 82.4,
+        "mes_display_score": 82.4,
+        "mes_tier": "optimal",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 73.4,
+          "gis": 75.8,
           "pas": 86.5,
-          "fs": 62.8,
+          "fs": 76.2,
           "fas": 91.7
         },
         "ingredient_gis_adjustment": 1.5,
         "ingredient_gis_reasons": [
           "whole-food starch source"
         ],
-        "mes_score_with_default_pairing": 83.2,
-        "mes_default_pairing_adjusted_score": 86.4,
-        "mes_default_pairing_delta": 7.8,
+        "mes_score_with_default_pairing": 89.2,
+        "mes_default_pairing_adjusted_score": 89.2,
+        "mes_default_pairing_delta": 6.8,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
@@ -2102,7 +2132,9 @@
           "healthy fat",
           "vegetable-forward side",
           "eat before meal"
-        ]
+        ],
+        "rs3_g": 2.0,
+        "effective_fiber_g": 7.8
       },
       "difficulty": "easy",
       "tags": [
@@ -2145,7 +2177,7 @@
       "glycemic_profile": {
         "primary_carb_source": "potato",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -2300,7 +2332,7 @@
         "carbs": 48,
         "fat": 24,
         "fiber": 3,
-        "mes_default_pairing_adjusted_score": 76.2,
+        "mes_default_pairing_adjusted_score": 77.4,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -2314,22 +2346,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 56.1,
-        "mes_display_score": 56.1,
+        "mes_score": 60.6,
+        "mes_display_score": 60.6,
         "mes_tier": "moderate",
         "mes_display_tier": "moderate",
         "mes_sub_scores": {
-          "gis": 60.5,
+          "gis": 62.3,
           "pas": 54.2,
-          "fs": 31.2,
+          "fs": 48.1,
           "fas": 87.2
         },
         "ingredient_gis_adjustment": 2.5,
         "ingredient_gis_reasons": [
           "intact whole grain"
         ],
-        "mes_score_with_default_pairing": 76.2,
-        "mes_default_pairing_delta": 20.1,
+        "mes_score_with_default_pairing": 77.4,
+        "mes_default_pairing_delta": 16.8,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -2340,7 +2372,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 4.5
       },
       "difficulty": "medium",
       "tags": [
@@ -2388,7 +2422,7 @@
       "glycemic_profile": {
         "primary_carb_source": "brown_rice",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -2497,7 +2531,7 @@
         "fat": 28.0,
         "fiber": 4.3,
         "sugar": 4.9,
-        "mes_default_pairing_adjusted_score": 85.3,
+        "mes_default_pairing_adjusted_score": 88.0,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -2512,22 +2546,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 76.7,
-        "mes_display_score": 76.7,
+        "mes_score": 81.1,
+        "mes_display_score": 81.1,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 66.3,
+          "gis": 68.1,
           "pas": 98.5,
-          "fs": 45.9,
+          "fs": 62.8,
           "fas": 90.4
         },
         "ingredient_gis_adjustment": 2.5,
         "ingredient_gis_reasons": [
           "intact whole grain"
         ],
-        "mes_score_with_default_pairing": 85.3,
-        "mes_default_pairing_delta": 8.6,
+        "mes_score_with_default_pairing": 88.0,
+        "mes_default_pairing_delta": 6.9,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -2539,7 +2573,9 @@
         ],
         "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
         "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 5.8
       },
       "difficulty": "easy",
       "tags": [
@@ -2582,7 +2618,7 @@
       "glycemic_profile": {
         "primary_carb_source": "brown_rice",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -2775,7 +2811,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "brown_rice",
+        "processing_level": "intact",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731570"
     },
     {
@@ -3073,7 +3115,7 @@
         "fat": 13.0,
         "fiber": 8.8,
         "sugar": 5.6,
-        "mes_default_pairing_adjusted_score": 77.9,
+        "mes_default_pairing_adjusted_score": 79.1,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -3087,20 +3129,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 72.8,
-        "mes_display_score": 72.8,
+        "mes_score": 75.2,
+        "mes_display_score": 75.2,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 79.4,
+          "gis": 81.2,
           "pas": 62.9,
-          "fs": 82.5,
+          "fs": 90.6,
           "fas": 70.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 77.9,
-        "mes_default_pairing_delta": 5.1,
+        "mes_score_with_default_pairing": 79.1,
+        "mes_default_pairing_delta": 3.9,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 6.0,
         "mes_default_pairing_explanation": [
@@ -3111,7 +3153,9 @@
         ],
         "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
         "mes_default_pairing_title": "Kachumber Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 10.3
       },
       "difficulty": "easy",
       "tags": [
@@ -3163,7 +3207,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -3210,7 +3254,7 @@
         "fat": 13.0,
         "fiber": 8.8,
         "sugar": 5.6,
-        "mes_default_pairing_adjusted_score": 77.9,
+        "mes_default_pairing_adjusted_score": 79.1,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -3224,20 +3268,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 72.8,
-        "mes_display_score": 72.8,
+        "mes_score": 75.2,
+        "mes_display_score": 75.2,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 79.4,
+          "gis": 81.2,
           "pas": 62.9,
-          "fs": 82.5,
+          "fs": 90.6,
           "fas": 70.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 77.9,
-        "mes_default_pairing_delta": 5.1,
+        "mes_score_with_default_pairing": 79.1,
+        "mes_default_pairing_delta": 3.9,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 6.0,
         "mes_default_pairing_explanation": [
@@ -3248,7 +3292,9 @@
         ],
         "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
         "mes_default_pairing_title": "Kachumber Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 10.3
       },
       "difficulty": "easy",
       "tags": [
@@ -3300,7 +3346,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -3794,7 +3840,9 @@
           "fas": 96.0
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 4.8
       },
       "difficulty": "easy",
       "tags": [
@@ -3919,7 +3967,9 @@
           "fas": 90.4
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 7.0
       },
       "difficulty": "easy",
       "tags": [
@@ -4074,7 +4124,7 @@
         "fat": 13.0,
         "fiber": 8.8,
         "sugar": 5.6,
-        "mes_default_pairing_adjusted_score": 77.9,
+        "mes_default_pairing_adjusted_score": 79.1,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -4088,20 +4138,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 72.8,
-        "mes_display_score": 72.8,
+        "mes_score": 75.2,
+        "mes_display_score": 75.2,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 79.4,
+          "gis": 81.2,
           "pas": 62.9,
-          "fs": 82.5,
+          "fs": 90.6,
           "fas": 70.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 77.9,
-        "mes_default_pairing_delta": 5.1,
+        "mes_score_with_default_pairing": 79.1,
+        "mes_default_pairing_delta": 3.9,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 6.0,
         "mes_default_pairing_explanation": [
@@ -4112,7 +4162,9 @@
         ],
         "mes_default_pairing_id": "f5d803ea-14ef-4bf5-9f6b-737e67c3ade6",
         "mes_default_pairing_title": "Kachumber Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 10.3
       },
       "difficulty": "easy",
       "tags": [
@@ -4169,7 +4221,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -4301,20 +4353,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 61.8,
-        "mes_display_score": 61.8,
+        "mes_score": 64.5,
+        "mes_display_score": 64.5,
         "mes_tier": "moderate",
         "mes_display_tier": "moderate",
         "mes_sub_scores": {
-          "gis": 68.5,
+          "gis": 70.3,
           "pas": 67.3,
-          "fs": 69.4,
+          "fs": 78.8,
           "fas": 32.5
         },
         "ingredient_gis_adjustment": 2.5,
         "ingredient_gis_reasons": [
           "intact whole grain"
-        ]
+        ],
+        "rs3_g": 1.5,
+        "effective_fiber_g": 8.2
       },
       "difficulty": "easy",
       "tags": [
@@ -4362,7 +4416,7 @@
       "glycemic_profile": {
         "primary_carb_source": "brown_rice",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -4497,27 +4551,29 @@
         "fat": 36.0,
         "fiber": 3.0,
         "sugar": 5.0,
-        "mes_score": 70.4,
-        "mes_display_score": 70.4,
+        "mes_score": 78.0,
+        "mes_display_score": 78.0,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 48.0,
+          "gis": 51.3,
           "pas": 100.0,
-          "fs": 31.2,
+          "fs": 59.4,
           "fas": 96.8
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 75.6,
-        "mes_default_pairing_adjusted_score": 75.6,
-        "mes_default_pairing_delta": 5.2,
+        "mes_score_with_default_pairing": 81.3,
+        "mes_default_pairing_adjusted_score": 81.3,
+        "mes_default_pairing_delta": 3.3,
         "mes_default_pairing_synergy_bonus": 0.0,
         "mes_default_pairing_gis_bonus": 0.0,
         "mes_default_pairing_id": "5a1cb990-eff7-483c-98ec-eba6b6b93074",
         "mes_default_pairing_title": "Stir-Fried Bok Choy with Ginger",
         "mes_default_pairing_role": "veg_side",
-        "mes_default_pairing_reasons": []
+        "mes_default_pairing_reasons": [],
+        "rs3_g": 2.5,
+        "effective_fiber_g": 5.5
       },
       "difficulty": "easy",
       "tags": [
@@ -4563,7 +4619,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "cooked_cooled",
+        "resistant_starch_prep": "cooled",
         "override_inference": false,
         "notes": "Day-old rice has higher resistant starch than freshly cooked."
       },
@@ -4719,7 +4775,9 @@
         "mes_default_pairing_id": "5a1cb990-eff7-483c-98ec-eba6b6b93074",
         "mes_default_pairing_title": "Stir-Fried Bok Choy with Ginger",
         "mes_default_pairing_role": "veg_side",
-        "mes_default_pairing_reasons": []
+        "mes_default_pairing_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 4.0
       },
       "difficulty": "easy",
       "tags": [
@@ -4862,7 +4920,7 @@
         "fat": 21.1,
         "fiber": 6.2,
         "sugar": 5.6,
-        "mes_default_pairing_adjusted_score": 82.4,
+        "mes_default_pairing_adjusted_score": 84.1,
         "mes_default_pairing_reasons": [
           "acidic element",
           "healthy fat",
@@ -4876,22 +4934,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 76.3,
-        "mes_display_score": 76.3,
+        "mes_score": 78.1,
+        "mes_display_score": 78.1,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 80.9,
+          "gis": 82.1,
           "pas": 75.6,
-          "fs": 66.2,
+          "fs": 72.5,
           "fas": 84.9
         },
         "ingredient_gis_adjustment": 5.5,
         "ingredient_gis_reasons": [
           "legume-based carb"
         ],
-        "mes_score_with_default_pairing": 82.4,
-        "mes_default_pairing_delta": 6.1,
+        "mes_score_with_default_pairing": 84.1,
+        "mes_default_pairing_delta": 6.0,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 6.0,
         "mes_default_pairing_explanation": [
@@ -4902,7 +4960,9 @@
         ],
         "mes_default_pairing_id": "8dd68b28-4312-4fa6-b91c-9e65344e645b",
         "mes_default_pairing_title": "Lemon Garlic Zucchini and Mushrooms",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.0,
+        "effective_fiber_g": 7.2
       },
       "difficulty": "easy",
       "tags": [
@@ -4946,7 +5006,7 @@
       "glycemic_profile": {
         "primary_carb_source": "legume",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -5077,7 +5137,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "refined_grain",
+        "processing_level": "refined",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731573"
     },
     {
@@ -5412,7 +5478,9 @@
           "fas": 84.0
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 6.0
       },
       "difficulty": "easy",
       "tags": [
@@ -5750,23 +5818,23 @@
         "fat": 12.9,
         "fiber": 8.2,
         "sugar": 5.2,
-        "mes_score": 74.3,
-        "mes_display_score": 74.3,
+        "mes_score": 76.1,
+        "mes_display_score": 76.1,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 80.8,
+          "gis": 82.0,
           "pas": 69.0,
-          "fs": 78.8,
+          "fs": 85.0,
           "fas": 69.5
         },
         "ingredient_gis_adjustment": 5.5,
         "ingredient_gis_reasons": [
           "legume-based carb"
         ],
-        "mes_score_with_default_pairing": 80.7,
-        "mes_default_pairing_adjusted_score": 83.9,
-        "mes_default_pairing_delta": 9.6,
+        "mes_score_with_default_pairing": 84.7,
+        "mes_default_pairing_adjusted_score": 84.7,
+        "mes_default_pairing_delta": 8.6,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_id": "2d7126b4-cf16-4516-8d5c-55752d7ba3d7",
@@ -5778,7 +5846,9 @@
           "healthy fat",
           "vegetable-forward side",
           "eat before meal"
-        ]
+        ],
+        "rs3_g": 1.0,
+        "effective_fiber_g": 9.2
       },
       "difficulty": "easy",
       "tags": [
@@ -5822,7 +5892,7 @@
       "glycemic_profile": {
         "primary_carb_source": "legume",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -5869,7 +5939,7 @@
         "fat": 13.2,
         "fiber": 8.1,
         "sugar": 6.4,
-        "mes_default_pairing_adjusted_score": 79.0,
+        "mes_default_pairing_adjusted_score": 80.2,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -5884,20 +5954,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 71.2,
-        "mes_display_score": 71.2,
+        "mes_score": 73.9,
+        "mes_display_score": 73.9,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 65.3,
+          "gis": 67.1,
           "pas": 70.5,
-          "fs": 78.1,
+          "fs": 87.5,
           "fas": 71.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 79.0,
-        "mes_default_pairing_delta": 7.8,
+        "mes_score_with_default_pairing": 80.2,
+        "mes_default_pairing_delta": 6.3,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -5909,7 +5979,9 @@
         ],
         "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
         "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 9.6
       },
       "difficulty": "easy",
       "tags": [
@@ -5965,7 +6037,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -6226,7 +6298,7 @@
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 81.6,
+        "mes_score_with_default_pairing": 84.8,
         "mes_default_pairing_adjusted_score": 84.8,
         "mes_default_pairing_delta": 10.1,
         "mes_default_pairing_synergy_bonus": 1.5,
@@ -6240,7 +6312,9 @@
           "healthy fat",
           "vegetable-forward side",
           "eat before meal"
-        ]
+        ],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 5.9
       },
       "difficulty": "easy",
       "tags": [
@@ -6656,7 +6730,9 @@
           "fas": 85.6
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 10.0
       },
       "difficulty": "easy",
       "tags": [
@@ -6860,7 +6936,9 @@
         ],
         "mes_default_pairing_id": "131365e2-b77a-45bb-a6be-04a82c29cce3",
         "mes_default_pairing_title": "Black Bean and Corn Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 0.0,
+        "effective_fiber_g": 3.0
       },
       "difficulty": "easy",
       "tags": [
@@ -8405,7 +8483,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "sweet_potato",
+        "processing_level": "intact",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731581"
     },
     {
@@ -8488,7 +8572,9 @@
           "fas": 90.4
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 7.0
       },
       "difficulty": "easy",
       "tags": [
@@ -8710,7 +8796,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731582"
     },
     {
@@ -9065,7 +9157,7 @@
         "fat": 8.0,
         "fiber": 6.0,
         "sugar": 5.0,
-        "mes_default_pairing_adjusted_score": 70.8,
+        "mes_default_pairing_adjusted_score": 73.0,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -9080,20 +9172,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 61.0,
-        "mes_display_score": 61.0,
+        "mes_score": 63.7,
+        "mes_display_score": 63.7,
         "mes_tier": "moderate",
         "mes_display_tier": "moderate",
         "mes_sub_scores": {
-          "gis": 61.6,
+          "gis": 63.4,
           "pas": 66.2,
-          "fs": 65.0,
+          "fs": 74.4,
           "fas": 45.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 70.8,
-        "mes_default_pairing_delta": 9.8,
+        "mes_score_with_default_pairing": 73.0,
+        "mes_default_pairing_delta": 9.3,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -9105,7 +9197,9 @@
         ],
         "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
         "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 7.5
       },
       "difficulty": "easy",
       "tags": [
@@ -9149,7 +9243,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -9387,7 +9481,9 @@
           "fas": 90.4
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 7.0
       },
       "difficulty": "easy",
       "tags": [
@@ -9642,7 +9738,7 @@
         "fat": 8.0,
         "fiber": 9.0,
         "sugar": 5.5,
-        "mes_default_pairing_adjusted_score": 80.3,
+        "mes_default_pairing_adjusted_score": 81.8,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -9657,22 +9753,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 69.6,
-        "mes_display_score": 69.6,
+        "mes_score": 72.2,
+        "mes_display_score": 72.2,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 64.9,
+          "gis": 67.3,
           "pas": 76.0,
-          "fs": 83.8,
+          "fs": 92.0,
           "fas": 45.0
         },
         "ingredient_gis_adjustment": 1.5,
         "ingredient_gis_reasons": [
           "whole-food starch source"
         ],
-        "mes_score_with_default_pairing": 80.3,
-        "mes_default_pairing_delta": 10.7,
+        "mes_score_with_default_pairing": 81.8,
+        "mes_default_pairing_delta": 9.6,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -9684,7 +9780,9 @@
         ],
         "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
         "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 2.0,
+        "effective_fiber_g": 11.0
       },
       "difficulty": "easy",
       "tags": [
@@ -9732,7 +9830,7 @@
       "glycemic_profile": {
         "primary_carb_source": "potato",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -9864,7 +9962,7 @@
         "fat": 6.0,
         "fiber": 9.0,
         "sugar": 6.0,
-        "mes_default_pairing_adjusted_score": 76.0,
+        "mes_default_pairing_adjusted_score": 77.2,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -9879,20 +9977,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 65.3,
-        "mes_display_score": 65.3,
+        "mes_score": 67.5,
+        "mes_display_score": 67.5,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 59.2,
+          "gis": 61.0,
           "pas": 72.7,
-          "fs": 83.8,
+          "fs": 91.0,
           "fas": 35.0
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 76.0,
-        "mes_default_pairing_delta": 10.7,
+        "mes_score_with_default_pairing": 77.2,
+        "mes_default_pairing_delta": 9.7,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -9904,7 +10002,9 @@
         ],
         "mes_default_pairing_id": "0a823513-6446-45a3-b605-f9ba207ed52c",
         "mes_default_pairing_title": "Cilantro Lime Cabbage Slaw",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.5,
+        "effective_fiber_g": 10.5
       },
       "difficulty": "easy",
       "tags": [
@@ -9958,7 +10058,7 @@
       "glycemic_profile": {
         "primary_carb_source": "white_rice",
         "processing_level": "minimally_processed",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -10050,7 +10150,9 @@
           "fas": 95.2
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 6.0
       },
       "difficulty": "medium",
       "tags": [
@@ -10475,7 +10577,7 @@
         "fat": 24.8,
         "fiber": 3.5,
         "sugar": 15.0,
-        "mes_default_pairing_adjusted_score": 76.8,
+        "mes_default_pairing_adjusted_score": 79.0,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
@@ -10490,20 +10592,20 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 66.0,
-        "mes_display_score": 66.0,
+        "mes_score": 69.6,
+        "mes_display_score": 69.6,
         "mes_tier": "good",
         "mes_display_tier": "good",
         "mes_sub_scores": {
-          "gis": 44.9,
+          "gis": 46.5,
           "pas": 89.7,
-          "fs": 36.9,
+          "fs": 50.4,
           "fas": 87.8
         },
         "ingredient_gis_adjustment": 0.0,
         "ingredient_gis_reasons": [],
-        "mes_score_with_default_pairing": 76.8,
-        "mes_default_pairing_delta": 10.8,
+        "mes_score_with_default_pairing": 79.0,
+        "mes_default_pairing_delta": 9.4,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -10515,7 +10617,9 @@
         ],
         "mes_default_pairing_id": "1e7a8910-e091-47d4-b40b-1bb49ea888fc",
         "mes_default_pairing_title": "Ginger Garlic Broccoli",
-        "mes_default_pairing_role": "veg_side"
+        "mes_default_pairing_role": "veg_side",
+        "rs3_g": 1.2,
+        "effective_fiber_g": 4.7
       },
       "difficulty": "easy",
       "tags": [
@@ -10558,7 +10662,7 @@
       "glycemic_profile": {
         "primary_carb_source": "rice_noodles",
         "processing_level": "refined",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -10687,22 +10791,22 @@
           "override_inference": false,
           "notes": null
         },
-        "mes_score": 84.2,
-        "mes_display_score": 84.2,
+        "mes_score": 86.4,
+        "mes_display_score": 86.4,
         "mes_tier": "optimal",
         "mes_display_tier": "optimal",
         "mes_sub_scores": {
-          "gis": 83.3,
+          "gis": 84.8,
           "pas": 90.8,
-          "fs": 68.8,
+          "fs": 76.2,
           "fas": 93.4
         },
         "ingredient_gis_adjustment": 3.5,
         "ingredient_gis_reasons": [
           "whole-food starch source"
         ],
-        "mes_score_with_default_pairing": 88.6,
-        "mes_default_pairing_delta": 7.6,
+        "mes_score_with_default_pairing": 93.1,
+        "mes_default_pairing_delta": 6.7,
         "mes_default_pairing_synergy_bonus": 1.5,
         "mes_default_pairing_gis_bonus": 7.0,
         "mes_default_pairing_explanation": [
@@ -10715,14 +10819,16 @@
         "mes_default_pairing_id": "5fcd9514-aa74-4a39-9f7c-c5d21ab5a699",
         "mes_default_pairing_title": "Cucumber Tomato Herb Salad",
         "mes_default_pairing_role": "veg_side",
-        "mes_default_pairing_adjusted_score": 91.8,
+        "mes_default_pairing_adjusted_score": 93.1,
         "mes_default_pairing_reasons": [
           "fiber-rich side",
           "acidic element",
           "healthy fat",
           "vegetable-forward side",
           "eat before meal"
-        ]
+        ],
+        "rs3_g": 1.2,
+        "effective_fiber_g": 7.8
       },
       "difficulty": "easy",
       "tags": [
@@ -10765,7 +10871,7 @@
       "glycemic_profile": {
         "primary_carb_source": "sweet_potato",
         "processing_level": "intact",
-        "resistant_starch_prep": "none",
+        "resistant_starch_prep": "cooled_reheated",
         "override_inference": false,
         "notes": null
       },
@@ -10850,7 +10956,13 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": false,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "brown_rice",
+        "processing_level": "intact",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731587"
     },
     {
@@ -11014,7 +11126,9 @@
           "fas": 85.6
         },
         "ingredient_gis_adjustment": 0.0,
-        "ingredient_gis_reasons": []
+        "ingredient_gis_reasons": [],
+        "rs3_g": 0.0,
+        "effective_fiber_g": 7.0
       },
       "difficulty": "easy",
       "tags": [
@@ -11133,8 +11247,1118 @@
       "is_mes_scoreable": false,
       "needs_default_pairing": null,
       "pairing_synergy_profile": null,
-      "glycemic_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
       "created_at": "2026-03-13T22:16:25.731588"
+    },
+    {
+      "id": "e71866b2-a896-4cc3-9bde-bca115f7879b",
+      "title": "Almond Butter Cookie Pie",
+      "description": "A warm, gooey cookie pie made with almond butter, almond flour, and eggs — sweetened with monk fruit and stevia chocolate chips. Six ingredients, zero refined sugar.",
+      "ingredients": [
+        {
+          "name": "creamy unsweetened almond butter",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "monk fruit sweetener, granulated",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "eggs",
+          "quantity": "2",
+          "unit": "",
+          "category": "dairy"
+        },
+        {
+          "name": "almond flour",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "baking soda",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "pantry"
+        },
+        {
+          "name": "stevia-sweetened chocolate chips",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Preheat your oven to 350F and lightly grease a 9-inch pie dish or oven-safe skillet with a thin layer of coconut oil or avocado oil.",
+        "In a large bowl, whisk together the almond butter, monk fruit sweetener, and eggs until smooth and well combined.",
+        "Add the almond flour and baking soda, then stir until a thick, even batter forms.",
+        "Fold in the stevia chocolate chips and pour the batter into the prepared dish. Spread it out evenly.",
+        "Bake for 12-15 minutes until the edges are golden and set but the center still looks slightly soft — it will firm up as it cools.",
+        "Let it rest for at least 10 minutes before slicing. Best served warm."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 15,
+      "total_time_min": 20,
+      "servings": 6,
+      "nutrition_info": {
+        "calories": 270.0,
+        "protein": 10.0,
+        "carbs": 12.0,
+        "fat": 22.0,
+        "fiber": 4.0,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "low-sugar",
+        "grain-free"
+      ],
+      "flavor_profile": [
+        "rich",
+        "sweet",
+        "nutty"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "grain-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "blood_sugar_support",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "eggs"
+      ],
+      "carb_type": [
+        "nut_flour"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/d6582a48d58b.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "b448a2a5-7ec4-4a35-ac92-8b0cffc6a69d",
+      "title": "Taco Ground Turkey",
+      "description": "Meal-prep taco-spiced ground turkey with a homemade whole-food spice blend. Smoky, savory, and ready for bowls.",
+      "ingredients": [
+        {
+          "name": "lean ground turkey (93/7)",
+          "quantity": "3",
+          "unit": "lb",
+          "category": "protein"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "smoked paprika",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "onion powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "oregano",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "salt",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Heat the olive oil in a large skillet over medium-high heat.",
+        "Add the ground turkey and break it apart with a spatula.",
+        "Add all the spices — chili powder, cumin, smoked paprika, garlic powder, onion powder, oregano, salt, and pepper — and stir through.",
+        "Cook for 10-12 minutes, stirring occasionally, until the turkey is fully cooked and the seasoning is evenly distributed.",
+        "Let cool slightly before portioning into containers."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 12,
+      "total_time_min": 17,
+      "servings": 5,
+      "nutrition_info": {
+        "calories": 390.0,
+        "protein": 50.0,
+        "carbs": 1.0,
+        "fat": 20.0,
+        "fiber": 0.0,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "taco"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "savory",
+        "spiced"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "mexican-inspired",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "turkey"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "taco_turkey_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "0b8f6f48-0398-445d-bff9-dc7596c1efe1",
+      "title": "Cilantro Lime Jasmine Rice",
+      "description": "Fluffy jasmine rice folded with fresh cilantro and lime juice. Light, fragrant, and built for bowls.",
+      "ingredients": [
+        {
+          "name": "dry jasmine rice",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "water",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "pantry"
+        },
+        {
+          "name": "cilantro, chopped",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "lime, juiced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "salt",
+          "quantity": "1",
+          "unit": "pinch",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Rinse the jasmine rice under cold water until the water runs clear.",
+        "Add the rice to a pot with the water and a pinch of salt. Bring to a boil.",
+        "Cover, reduce heat to low, and simmer for 10 minutes until the water is absorbed.",
+        "Remove from heat and let it sit covered for 2 minutes, then fluff with a fork.",
+        "Fold in the chopped cilantro and lime juice while the rice is still warm."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 12,
+      "total_time_min": 17,
+      "servings": 5,
+      "nutrition_info": {
+        "calories": 135.0,
+        "protein": 2.7,
+        "carbs": 29.0,
+        "fat": 0.3,
+        "fiber": 0.6,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "rice",
+        "side"
+      ],
+      "flavor_profile": [
+        "fresh",
+        "zesty",
+        "light"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "mexican-inspired",
+      "health_benefits": [
+        "sustained_energy"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": "taco_turkey_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "8c995cba-1b23-4f02-8283-f5d865821d3a",
+      "title": "Cilantro Jalapeño Green Sauce",
+      "description": "A creamy blended sauce with Greek yogurt, cilantro, basil, garlic, jalapeño, and lime. Cool, herby, and bright.",
+      "ingredients": [
+        {
+          "name": "nonfat plain Greek yogurt",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "cilantro",
+          "quantity": "1/2",
+          "unit": "bunch",
+          "category": "produce"
+        },
+        {
+          "name": "basil leaves",
+          "quantity": "4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves",
+          "quantity": "4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "jalapeño",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "limes, juiced",
+          "quantity": "2",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Add the yogurt, cilantro, basil, garlic, jalapeño, lime juice, olive oil, salt, and pepper to a blender.",
+        "Blend until completely smooth.",
+        "Taste and adjust salt or lime as needed.",
+        "Store in an airtight container until ready to use."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 5,
+      "servings": 5,
+      "nutrition_info": {
+        "calories": 81.0,
+        "protein": 9.5,
+        "carbs": 4.0,
+        "fat": 3.0,
+        "fiber": 0.2,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "sauce",
+        "meal-prep",
+        "quick"
+      ],
+      "flavor_profile": [
+        "herby",
+        "creamy",
+        "bright"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican-inspired",
+      "health_benefits": [
+        "gut_health"
+      ],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": "taco_turkey_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "64e28341-d0bb-4a80-ac19-ec390f3226e1",
+      "title": "Taco Turkey Cilantro Lime Bowl",
+      "description": "Meal-prep taco-spiced ground turkey over cilantro lime jasmine rice with fresh pico de gallo and a creamy cilantro jalapeño green sauce.",
+      "ingredients": [
+        {
+          "name": "Taco Ground Turkey (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "protein"
+        },
+        {
+          "name": "Cilantro Lime Jasmine Rice (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "carb"
+        },
+        {
+          "name": "Pico de Gallo (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "produce"
+        },
+        {
+          "name": "Cilantro Jalapeño Green Sauce (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Heat the olive oil in a large skillet over medium-high heat. Add the ground turkey and break it apart. Add all the taco spices and cook 10-12 minutes until fully done.",
+        "While the turkey cooks, rinse the jasmine rice and cook with water and a pinch of salt. Bring to a boil, cover, and simmer 10 minutes. Fluff and fold in chopped cilantro and lime juice.",
+        "Dice the tomatoes, onion, jalapeños, and cilantro for the pico. Add lime juice, salt, pepper, and garlic powder. Mix well and set aside.",
+        "Blend the yogurt, cilantro, basil, garlic, jalapeño, lime juice, olive oil, salt, and pepper until smooth.",
+        "Divide the rice, turkey, pico, and green sauce into meal-prep containers."
+      ],
+      "prep_time_min": 20,
+      "cook_time_min": 15,
+      "total_time_min": 35,
+      "servings": 5,
+      "nutrition_info": {
+        "calories": 624.0,
+        "protein": 62.8,
+        "carbs": 38.0,
+        "fat": 23.4,
+        "fiber": 2.0,
+        "sugar": 4.0,
+        "mes_score": 75.4,
+        "mes_display_score": 75.4,
+        "mes_tier": "good",
+        "mes_sub_scores": {
+          "gis": 70.6,
+          "pas": 100.0,
+          "fs": 36.9,
+          "fas": 86.7
+        },
+        "rs3_g": 1.5,
+        "effective_fiber_g": 3.5
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "bowls"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "zesty",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican-inspired",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "turkey"
+      ],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/7e8c16e60f78.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "taco_turkey_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": {
+        "protein": "b448a2a5-7ec4-4a35-ac92-8b0cffc6a69d",
+        "carb": "0b8f6f48-0398-445d-bff9-dc7596c1efe1",
+        "veg": "37b59f72-7223-400a-998d-3a2521bbe52d",
+        "sauce": "8c995cba-1b23-4f02-8283-f5d865821d3a"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "46ebffe8-b895-44cf-8f25-f41769ff9dc4",
+      "title": "Cottage Cheese Brownie Batter",
+      "description": "A no-bake fudgy brownie batter made with blended cottage cheese, coconut flour, chocolate protein powder, and stevia chocolate chips. Rich, high-protein, zero refined sugar.",
+      "ingredients": [
+        {
+          "name": "cottage cheese",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "vanilla extract",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        },
+        {
+          "name": "coconut flour",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "chocolate protein powder",
+          "quantity": "1",
+          "unit": "scoop",
+          "category": "pantry"
+        },
+        {
+          "name": "stevia-sweetened chocolate chips",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, monk fruit sweetener, and vanilla extract to a blender or food processor. Blend until completely smooth with no lumps.",
+        "Transfer to a bowl. Add the coconut flour and chocolate protein powder and stir until a thick, fudgy batter forms. If it feels too thick, add a splash of milk.",
+        "Fold in the stevia chocolate chips.",
+        "Serve immediately or store in an airtight container in the fridge for up to 5 days."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 5,
+      "servings": 6,
+      "nutrition_info": {
+        "calories": 180.0,
+        "protein": 14.0,
+        "carbs": 12.0,
+        "fat": 8.0,
+        "fiber": 5.0,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-bake"
+      ],
+      "flavor_profile": [
+        "rich",
+        "fudgy",
+        "chocolatey"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "grain-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [
+        "coconut_flour"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/6bfd0353de36.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "f4364971-b5e7-4eec-819d-9308bdaeeb13",
+      "title": "Cottage Cheese Ice Cream — Mixed Berry",
+      "description": "A 3-ingredient high-protein ice cream made with blended cottage cheese and mixed berries, sweetened with monk fruit. No ice cream maker needed.",
+      "ingredients": [
+        {
+          "name": "whole milk cottage cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "mixed berries, fresh or frozen",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "3",
+          "unit": "tbsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, mixed berries, and monk fruit sweetener to a blender. Blend on high until completely smooth with no lumps remaining.",
+        "Pour the mixture into a freezer-safe container and spread evenly. Transfer to the freezer for at least 6 hours or until frozen solid.",
+        "When ready to serve, remove from the freezer and let sit at room temperature for about 10 minutes until soft enough to scoop. Divide into bowls and enjoy."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 365,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 120.0,
+        "protein": 15.0,
+        "carbs": 10.0,
+        "fat": 4.0,
+        "fiber": 1.0,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-churn",
+        "frozen"
+      ],
+      "flavor_profile": [
+        "sweet",
+        "fruity",
+        "creamy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/4dec7d91098d.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "3824ca70-3540-45dd-a5c6-74af1c263cfc",
+      "title": "Cottage Cheese Ice Cream — Strawberry Cheesecake",
+      "description": "A high-protein frozen treat with blended cottage cheese, strawberries, and vanilla. The vanilla plays up the natural tang for a cheesecake-like flavor.",
+      "ingredients": [
+        {
+          "name": "whole milk cottage cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "strawberries, fresh or frozen",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "3",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "vanilla extract",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, strawberries, monk fruit sweetener, and vanilla extract to a blender. Blend on high until completely smooth.",
+        "Pour into a freezer-safe container and spread evenly. Freeze for at least 6 hours until solid.",
+        "Let sit at room temperature for about 10 minutes before scooping and serving."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 365,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 120.0,
+        "protein": 15.0,
+        "carbs": 10.0,
+        "fat": 4.0,
+        "fiber": 1.5,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-churn",
+        "frozen"
+      ],
+      "flavor_profile": [
+        "sweet",
+        "tangy",
+        "creamy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/34678f23b469.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "47fcf816-f39a-4d2f-9e78-953b62dc2fe4",
+      "title": "Cottage Cheese Ice Cream — Chocolate Berry",
+      "description": "A rich, fudgy chocolate-berry frozen treat made with cottage cheese and unsweetened cocoa powder. High-protein and indulgent.",
+      "ingredients": [
+        {
+          "name": "whole milk cottage cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "mixed berries, fresh or frozen",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "3",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "unsweetened cocoa powder",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, mixed berries, monk fruit sweetener, and cocoa powder to a blender. Blend on high until completely smooth and uniformly chocolatey.",
+        "Pour into a freezer-safe container and spread evenly. Freeze for at least 6 hours until solid.",
+        "Let sit at room temperature for about 10 minutes before scooping and serving."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 365,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 130.0,
+        "protein": 16.0,
+        "carbs": 12.0,
+        "fat": 4.5,
+        "fiber": 2.5,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-churn",
+        "frozen",
+        "chocolate"
+      ],
+      "flavor_profile": [
+        "rich",
+        "fudgy",
+        "chocolatey"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/db8256f1029a.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "21c81c07-33eb-4e9f-aad0-b0cf548ea55f",
+      "title": "Cottage Cheese Ice Cream — Lemon Blueberry",
+      "description": "A bright, refreshing frozen treat with cottage cheese, blueberries, and fresh lemon zest and juice. Light, tangy, and high-protein.",
+      "ingredients": [
+        {
+          "name": "whole milk cottage cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "blueberries, fresh or frozen",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "3",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "lemon, zested",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "lemon juice",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, blueberries, monk fruit sweetener, lemon zest, and lemon juice to a blender. Blend on high until completely smooth.",
+        "Pour into a freezer-safe container and spread evenly. Freeze for at least 6 hours until solid.",
+        "Let sit at room temperature for about 10 minutes before scooping and serving."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 365,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 125.0,
+        "protein": 15.0,
+        "carbs": 12.0,
+        "fat": 4.0,
+        "fiber": 1.5,
+        "sugar": 3.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-churn",
+        "frozen"
+      ],
+      "flavor_profile": [
+        "bright",
+        "tangy",
+        "refreshing"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/e6aadb7c13f1.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "8be80578-158d-478a-9148-3c801e6ef4ce",
+      "title": "Cottage Cheese Ice Cream — Peach Mango",
+      "description": "A tropical frozen treat with cottage cheese, frozen peaches, and mango. Naturally sweet, high-protein, and refreshing.",
+      "ingredients": [
+        {
+          "name": "whole milk cottage cheese",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "dairy"
+        },
+        {
+          "name": "frozen peaches",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "frozen mango chunks",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "3",
+          "unit": "tbsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Add the cottage cheese, frozen peaches, frozen mango, and monk fruit sweetener to a blender. Blend on high until completely smooth.",
+        "Pour into a freezer-safe container and spread evenly. Freeze for at least 6 hours until solid.",
+        "Let sit at room temperature for about 10 minutes before scooping and serving."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 365,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 130.0,
+        "protein": 15.0,
+        "carbs": 13.0,
+        "fat": 4.0,
+        "fiber": 1.0,
+        "sugar": 4.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "dessert",
+        "high-protein",
+        "no-churn",
+        "frozen",
+        "tropical"
+      ],
+      "flavor_profile": [
+        "sweet",
+        "tropical",
+        "creamy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "american",
+      "health_benefits": [
+        "muscle_recovery",
+        "gut_health"
+      ],
+      "protein_type": [
+        "cottage_cheese"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/d4031b4a08f0.png",
+      "recipe_role": "dessert",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-05T00:00:00.000000"
     }
   ]
 }

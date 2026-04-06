@@ -364,6 +364,12 @@ export default function RecipeDetailScreen() {
 
   useEffect(() => {
     const target = recipe;
+    // Prep components don't get individual MES scores
+    if (target?.is_component) {
+      setMesPreview(null);
+      setLoadingMesPreview(false);
+      return;
+    }
     const nutrition = target?.nutrition_info as any;
     if (!nutrition) {
       setMesPreview(null);
@@ -551,9 +557,10 @@ export default function RecipeDetailScreen() {
 
   const activeRecipe = recipe;
   const canAddToPlate = !!activeRecipe.is_component;
+  const isComponent = !!activeRecipe.is_component;
   const nutrition = activeRecipe.nutrition_info || {};
   const storedDisplayMesRaw = Number((nutrition as any).mes_display_score ?? (nutrition as any).mes_score);
-  const hasStoredDisplayMes = Number.isFinite(storedDisplayMesRaw);
+  const hasStoredDisplayMes = !isComponent && Number.isFinite(storedDisplayMesRaw);
   const storedDisplayMes = hasStoredDisplayMes ? storedDisplayMesRaw : null;
   const storedBreakdown = (nutrition as any).mes_breakdown as
     | { protein_score?: number; fiber_score?: number; sugar_score?: number }

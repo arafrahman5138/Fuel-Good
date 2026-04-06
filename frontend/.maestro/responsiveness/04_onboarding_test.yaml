@@ -1,0 +1,112 @@
+appId: host.exp.Exponent
+---
+# Dismiss password dialog and test onboarding screens
+
+# Dismiss save password dialog
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screenshot onboarding step 1
+- takeScreenshot: "SE_03_onboarding_step1_top"
+
+# Scroll down to see full content
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step1_bottom"
+
+# Swipe back up
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Tap Continue/Next to advance
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_03_onboarding_step2"
+
+# Continue through onboarding steps
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step2_scrolled"
+
+# Try to advance
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_03_onboarding_step3"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step3_scrolled"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_03_onboarding_step4"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step4_scrolled"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_03_onboarding_step5"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step5_scrolled"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_03_onboarding_step6"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_03_onboarding_step6_scrolled"

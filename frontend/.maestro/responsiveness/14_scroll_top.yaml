@@ -1,0 +1,17 @@
+appId: host.exp.Exponent
+---
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "SE_DEBUG_top"

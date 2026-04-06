@@ -1,0 +1,67 @@
+appId: host.exp.Exponent
+---
+# Login screen responsiveness test
+
+# Screenshot the login screen (top)
+- takeScreenshot: "SE_01_login_top"
+
+# Swipe down to see full login form
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_01_login_bottom"
+
+# Swipe back up
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Test login form - email
+- tapOn:
+    text: "you@example.com"
+    optional: true
+- eraseText: 30
+- inputText: "test@fuelgood.dev"
+
+# Screenshot with keyboard open
+- takeScreenshot: "SE_01_login_keyboard_email"
+
+# Dismiss keyboard by tapping header
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Password field
+- tapOn:
+    text: "Enter password"
+    optional: true
+- eraseText: 30
+- inputText: "Test12345"
+- takeScreenshot: "SE_01_login_keyboard_password"
+
+# Dismiss keyboard by tapping header
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screenshot login form filled
+- takeScreenshot: "SE_01_login_filled"
+
+# Scroll to and tap Sign In
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+
+# Wait for home screen
+- waitForAnimationToEnd:
+    timeout: 25000
+- takeScreenshot: "SE_02_home_initial"

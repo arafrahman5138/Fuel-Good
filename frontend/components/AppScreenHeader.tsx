@@ -13,9 +13,10 @@ interface AppScreenHeaderProps {
   title?: string;
   centerContent?: React.ReactNode;
   rightContent?: React.ReactNode;
+  onBack?: () => void;
 }
 
-export function AppScreenHeader({ title, centerContent, rightContent }: AppScreenHeaderProps) {
+export function AppScreenHeader({ title, centerContent, rightContent, onBack }: AppScreenHeaderProps) {
   const theme = useTheme();
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
@@ -35,7 +36,7 @@ export function AppScreenHeader({ title, centerContent, rightContent }: AppScree
     >
       <TouchableOpacity
         style={[styles.backBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
-        onPress={() => router.back()}
+        onPress={() => onBack ? onBack() : router.canGoBack() ? router.back() : router.replace('/(tabs)/(home)')}
         activeOpacity={0.7}
       >
         <Ionicons name="chevron-back" size={24} color={theme.primary} style={{ transform: [{ translateX: -1 }] }} />

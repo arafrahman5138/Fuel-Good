@@ -1,0 +1,118 @@
+appId: host.exp.Exponent
+---
+# Scroll to the very top first
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "SE_08_top_of_form"
+
+# Check what the height inches field shows
+- tapOn:
+    point: "260, 313"
+- eraseText: 20
+- inputText: "10"
+
+# Dismiss keyboard
+- tapOn:
+    point: "187, 80"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "SE_08_height_fixed"
+
+# Scroll down and tap Continue
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "SE_08_after_continue"
+
+# Next screen
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_08_after_continue_scrolled"
+
+# Continue advancing
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "See My Plan"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "SE_08_plan"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_08_plan_scrolled"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_08_notif"
+
+# Notification permission
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_08_paywall"
+
+# Paywall - try to close/skip
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_08_paywall_scrolled"
+
+# Close paywall (X button usually top-right or top-left)
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_08_after_paywall"
+
+# Check if we're home
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_08_final"

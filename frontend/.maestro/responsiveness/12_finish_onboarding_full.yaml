@@ -1,0 +1,188 @@
+appId: host.exp.Exponent
+---
+# Complete remaining onboarding - currently on "flavor profile"
+
+# Select 2 flavors (text has leading comma from chip icon)
+- tapOn:
+    text: ".*Savory"
+- tapOn:
+    text: ".*Spicy"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_OB09_after_flavor"
+
+# Should be on dietary preferences or next step
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB09_scrolled"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Try selecting options and continue
+- tapOn:
+    text: ".*No Restrictions.*"
+    optional: true
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_OB10_next"
+
+# Check if body metrics
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB10_next_scrolled"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Fill body metrics (if on that screen)
+- tapOn:
+    text: "e.g. 165"
+    optional: true
+- inputText: "170"
+- tapOn:
+    point: "187, 40"
+- waitForAnimationToEnd:
+    timeout: 500
+
+- tapOn:
+    text: "e.g. 5"
+    optional: true
+- inputText: "5"
+- tapOn:
+    point: "187, 40"
+- waitForAnimationToEnd:
+    timeout: 500
+
+- tapOn:
+    text: "e.g. 7"
+    optional: true
+- inputText: "10"
+- tapOn:
+    point: "187, 40"
+- waitForAnimationToEnd:
+    timeout: 500
+
+- tapOn:
+    text: "e.g. 30"
+    optional: true
+- inputText: "28"
+- tapOn:
+    point: "187, 40"
+- waitForAnimationToEnd:
+    timeout: 500
+
+- takeScreenshot: "SE_OB10_body_filled"
+
+# Scroll to sex, activity, goal
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+
+- tapOn:
+    text: "Male"
+    optional: true
+- tapOn:
+    text: ".*1-3 light.*"
+    optional: true
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+
+- tapOn:
+    text: ".*Build muscle.*"
+    optional: true
+- takeScreenshot: "SE_OB10_selections"
+
+# Continue
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "SE_OB11_after_body"
+
+# Wait for generation
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "SE_OB12_generated"
+
+# Scroll
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB12_generated_scrolled"
+
+# Continue past all remaining screens
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: ".*See.*Plan.*"
+    optional: true
+- tapOn:
+    text: ".*Get Started.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_OB13_next"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: ".*Not.*"
+    optional: true
+- tapOn:
+    text: ".*Skip.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# System notification
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_OB14_paywall"
+
+# Scroll paywall
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_OB14_paywall_scrolled"
+
+# Close paywall X button
+- tapOn:
+    point: "350, 55"
+    optional: true
+- tapOn:
+    point: "25, 55"
+    optional: true
+- tapOn:
+    text: ".*Not.*"
+    optional: true
+- tapOn:
+    text: ".*Skip.*"
+    optional: true
+- tapOn:
+    text: ".*Maybe.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_HOME_arrived"

@@ -1,0 +1,103 @@
+appId: host.exp.Exponent
+---
+# Fill body metrics by tapping exact field coordinates
+# Based on screenshot, form is at top of screen now
+
+# First scroll to top
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap Weight input field (centered, below "Weight" label)
+- tapOn:
+    point: "150, 230"
+- inputText: "170"
+# Tap outside to dismiss
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_BM01_weight"
+
+# Tap Height feet field
+- tapOn:
+    point: "100, 310"
+- inputText: "5"
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Height inches field
+- tapOn:
+    point: "270, 310"
+- inputText: "10"
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Age field
+- tapOn:
+    point: "150, 385"
+- inputText: "28"
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_BM02_filled"
+
+# Scroll down to see Sex, Activity, Goal
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_BM03_scrolled"
+
+# Select Male
+- tapOn:
+    text: "Male"
+    optional: true
+
+# Select Lightly active (tap the card area)
+- tapOn:
+    text: ".*Lightly active.*"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Scroll to see goals
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_BM04_goals"
+
+# Select a goal
+- tapOn:
+    text: ".*Build muscle.*"
+    optional: true
+- tapOn:
+    text: ".*Lose body fat.*"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_BM05_selected"
+
+# Tap Continue
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "SE_BM06_after_continue"

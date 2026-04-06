@@ -241,6 +241,18 @@ def _score_scan(
             score += 3
             reasoning.append(f"Strong protein ({protein:.0f}g) supports satiety and recovery.")
 
+    # ── Clean meal boost ──
+    # If a homemade meal has zero processing flags and passes whole-food
+    # checks, it deserves the same 100 as a curated recipe.
+    if (
+        not flags
+        and whole_food_status in ("pass", None)
+        and ctx in ("home", "homemade")
+        and not has_dessert_component
+    ):
+        score = max(score, 100.0)
+        reasoning.append("No processed ingredients detected — clean whole-food meal.")
+
     score = max(0.0, min(100.0, round(score, 1)))
     tier, tier_label = _tier_for_score(score)
 

@@ -1,0 +1,226 @@
+appId: host.exp.Exponent
+---
+# ─── COMPREHENSIVE RESPONSIVENESS TEST ───
+# Test every screen on iPhone SE, scrolling fully and taking screenshots
+
+# ═══ TAB 1: HOME ═══
+# Dismiss any dialogs
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Go to Home tab
+- tapOn:
+    text: "Home"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_HOME_01_top"
+
+# Scroll through home screen
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_HOME_02_scroll1"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_HOME_03_scroll2"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_HOME_04_scroll3"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_HOME_05_scroll4"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_HOME_06_bottom"
+
+# Scroll back to top
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+
+# ═══ TAB 2: MEALS ═══
+- tapOn:
+    text: "Meals"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_MEALS_01_top"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_MEALS_02_scroll1"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_MEALS_03_scroll2"
+
+# Scroll back
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+
+# Tap into "Meals" menu item (first card - browse recipes)
+- tapOn:
+    text: "Meals"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_MEALS_04_browse"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_MEALS_05_browse_scroll"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_MEALS_06_browse_scroll2"
+
+# Go back
+- tapOn:
+    text: "Back"
+    optional: true
+- tapOn:
+    point: "25, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ═══ TAB 3: TRACK ═══
+- tapOn:
+    text: "Track"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_TRACK_01_top"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_TRACK_02_scroll1"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_TRACK_03_scroll2"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_TRACK_04_scroll3"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_TRACK_05_scroll4"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_TRACK_06_bottom"
+
+# ═══ TAB 4: COACH ═══
+- tapOn:
+    text: "Coach"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_COACH_01_top"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_COACH_02_scroll1"
+
+# Test keyboard on coach
+- tapOn:
+    text: ".*craving.*"
+    optional: true
+- tapOn:
+    text: ".*message.*"
+    optional: true
+- tapOn:
+    text: ".*type.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "SE_COACH_03_input"
+
+# Dismiss keyboard
+- tapOn:
+    point: "187, 200"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# ═══ SETTINGS ═══
+# Navigate to settings - look for gear/profile icon
+- tapOn:
+    point: "350, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "SE_SETTINGS_01"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_SETTINGS_02_scroll"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_SETTINGS_03_scroll2"
+
+# Go back to home
+- tapOn:
+    text: "Home"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "SE_FINAL_home"

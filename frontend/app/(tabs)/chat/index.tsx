@@ -10,6 +10,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Keyboard,
   Platform,
   useWindowDimensions,
@@ -116,12 +117,14 @@ export default function ChatScreen() {
   const handleNewChat = () => {
     clearChat();
     setInput('');
+    setAttachedPhoto(null);
     setEditingKey(null);
     setRecipeDraft(null);
     setRecipeOverrides({});
     setCheckedIngredients({});
-    // Scroll to top after state clears
+    // Scroll to top after state clears and ensure input is reset
     requestAnimationFrame(() => {
+      setInput('');
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1320,19 +1323,24 @@ export default function ChatScreen() {
               placeholder={attachedPhoto ? "Describe what's in the photo..." : "Ask about any food..."}
               placeholderTextColor={theme.textTertiary}
               multiline
+              blurOnSubmit
               maxLength={500}
               onSubmitEditing={handleSend}
               returnKeyType="send"
               allowFontScaling={false}
             />
-            <TouchableOpacity
+            <Pressable
               onPress={handleSend}
               disabled={(!input.trim() && !attachedPhoto) || isLoading}
-              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Send message"
+              testID="send-button"
+              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
             >
               <LinearGradient
                 colors={(input.trim() || attachedPhoto) ? (['#16A34A', '#0D9488'] as const) : [theme.surfaceHighlight, theme.surfaceHighlight]}
                 style={[styles.sendButton, isCompact && styles.sendButtonCompact]}
+                pointerEvents="none"
               >
                 <Ionicons
                   name="arrow-up"
@@ -1340,7 +1348,7 @@ export default function ChatScreen() {
                   color={(input.trim() || attachedPhoto) ? '#FFFFFF' : theme.textTertiary}
                 />
               </LinearGradient>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           </View>
         </View>

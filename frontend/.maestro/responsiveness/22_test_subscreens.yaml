@@ -1,0 +1,144 @@
+appId: host.exp.Exponent
+---
+# ═══ Test sub-screens on iPhone SE ═══
+
+# Go to Meals tab
+- tapOn:
+    point: "117, 635"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Tap "Meals" card (first card in grid - Full recipes)
+- tapOn:
+    text: ".*Full recipes.*"
+    optional: true
+- tapOn:
+    text: "Meals"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_BROWSE_01_top"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_BROWSE_02_scroll"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_BROWSE_03_scroll2"
+
+# Tap on first recipe card to see recipe detail
+- tapOn:
+    point: "187, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_RECIPE_01_top"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_RECIPE_02_scroll"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_RECIPE_03_scroll2"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_RECIPE_04_scroll3"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_RECIPE_05_bottom"
+
+# Go back
+- tapOn:
+    point: "25, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Go back to meals hub
+- tapOn:
+    point: "25, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap "My Plan" card
+- tapOn:
+    text: ".*My Plan.*"
+    optional: true
+- tapOn:
+    text: ".*Weekly plan.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_PLAN_01_top"
+
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_PLAN_02_scroll"
+
+# Go back to meals hub
+- tapOn:
+    point: "25, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap Grocery
+- tapOn:
+    text: ".*Grocery.*"
+    optional: true
+- tapOn:
+    text: ".*Shopping list.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_GROCERY_01"
+
+# Go back
+- tapOn:
+    point: "25, 55"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Go to Home and test Flex
+- tapOn:
+    point: "47, 635"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Test the + button (quick actions)
+- tapOn:
+    point: "332, 635"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_QUICKACTIONS_01"
+
+# Dismiss quick actions
+- tapOn:
+    point: "332, 635"
+    optional: true
+- tapOn:
+    point: "187, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "SE_QUICKACTIONS_02_dismissed"

@@ -1,0 +1,51 @@
+appId: host.exp.Exponent
+---
+# Retry login with registered account
+
+# Tap the email field (should still have text)
+- tapOn:
+    text: "test@fuelgood.dev"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Dismiss keyboard by tapping elsewhere
+- tapOn:
+    text: "Fuel Good"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Now tap password area - look for password field below email
+- tapOn:
+    text: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Type into password field
+- tapOn:
+    point: "187,310"
+- eraseText: 50
+- inputText: "Test12345"
+
+# Dismiss keyboard
+- tapOn:
+    text: "Fuel Good"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Take screenshot of filled form
+- takeScreenshot: "SE_02_login_retry_filled"
+
+# Tap Sign In
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+
+# Wait for navigation
+- waitForAnimationToEnd:
+    timeout: 30000
+
+- takeScreenshot: "SE_02_home_screen"

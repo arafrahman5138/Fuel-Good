@@ -1,0 +1,202 @@
+appId: host.exp.Exponent
+---
+# Complete onboarding by selecting options and continuing
+
+# Step: "What brought you here?" - select some options
+- tapOn:
+    text: "I want more energy"
+    optional: true
+- tapOn:
+    text: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_energy_check"
+
+# Next step - try to scroll and continue
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_04_onboarding_energy_check_scrolled"
+
+# Select an option if needed and continue
+- tapOn:
+    text: "Afternoon slump"
+    optional: true
+- tapOn:
+    text: "Low throughout the day"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step3"
+
+# Scroll and screenshot
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_04_onboarding_step3_scrolled"
+
+# Select option and continue
+- tapOn:
+    text: "Lose weight"
+    optional: true
+- tapOn:
+    text: "Feel more energized"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step4"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_04_onboarding_step4_scrolled"
+
+# Keep continuing through steps
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step5"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step6"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_04_onboarding_step6_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step7"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_04_onboarding_step8"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_04_onboarding_step8_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "I'm ready"
+    optional: true
+- tapOn:
+    text: "Let's go"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_04_onboarding_step9"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_04_onboarding_step10"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Next"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Not now"
+    optional: true
+- tapOn:
+    text: "Maybe later"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_04_onboarding_step11"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Start Free Trial"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Not now"
+    optional: true
+- tapOn:
+    text: "Maybe later"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_04_onboarding_final"

@@ -1,0 +1,262 @@
+appId: host.exp.Exponent
+---
+# ═══ iPhone 15 Pro Max Full Test ═══
+
+# Dismiss dev menu
+- tapOn:
+    point: "400, 300"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screenshot login
+- takeScreenshot: "MAX_LOGIN_01_top"
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "MAX_LOGIN_02_bottom"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Login
+- tapOn:
+    text: "you@example.com"
+    optional: true
+- eraseText: 50
+- inputText: "test@fuelgood.dev"
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Enter password"
+    optional: true
+- eraseText: 50
+- inputText: "Test12345"
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "MAX_LOGIN_03_filled"
+
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 15000
+
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_HOME_01_top"
+
+# ═══ HOME ═══
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_HOME_02_scroll1"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_HOME_03_scroll2"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_HOME_04_scroll3"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_HOME_05_scroll4"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_HOME_06_bottom"
+
+# ═══ MEALS ═══
+- tapOn:
+    text: ".*Meals.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_MEALS_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_MEALS_02_scroll"
+
+# Browse recipes
+- tapOn:
+    text: ".*Full recipes.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "MAX_BROWSE_01"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_BROWSE_02"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_BROWSE_03"
+
+# Recipe detail
+- tapOn:
+    point: "215, 350"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "MAX_RECIPE_01"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_RECIPE_02"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_RECIPE_03"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_RECIPE_04"
+
+# Back to meals hub
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Plan
+- tapOn:
+    text: ".*My Plan.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_PLAN_01"
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Grocery
+- tapOn:
+    text: ".*Grocery.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_GROCERY_01"
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ═══ TRACK ═══
+- tapOn:
+    text: ".*Track.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_TRACK_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_TRACK_02"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_TRACK_03"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_TRACK_04"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_TRACK_05"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_TRACK_06"
+
+# ═══ COACH ═══
+- tapOn:
+    text: ".*Coach.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_COACH_01"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_COACH_02"
+
+# ═══ SETTINGS ═══
+- tapOn:
+    text: ".*Home.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "400, 82"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "MAX_SETTINGS_01"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_SETTINGS_02"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_SETTINGS_03"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "MAX_SETTINGS_04"
+
+# Quick Actions
+- tapOn:
+    text: ".*Home.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    text: ".*Open quick actions.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "MAX_QUICKACTIONS_01"
+
+- takeScreenshot: "MAX_FINAL"

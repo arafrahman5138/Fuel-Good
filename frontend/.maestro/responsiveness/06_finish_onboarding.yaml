@@ -1,0 +1,151 @@
+appId: host.exp.Exponent
+---
+# Select "A few times a week" and continue through remaining onboarding
+
+# Current screen: "How often do you eat ultra-processed food?"
+- tapOn:
+    text: "A few times a week"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_after_processed"
+
+# Next screen - take screenshot, select option, continue
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_05_onboarding_next_scrolled"
+- swipe:
+    start: "50%, 30%"
+    end: "50%, 80%"
+    duration: 500
+
+# Try various common option texts
+- tapOn:
+    text: "Yes"
+    optional: true
+- tapOn:
+    text: "Sometimes"
+    optional: true
+- tapOn:
+    text: "Moderate"
+    optional: true
+- tapOn:
+    text: "3-4 times"
+    optional: true
+- tapOn:
+    text: "Active"
+    optional: true
+- tapOn:
+    text: "Moderately active"
+    optional: true
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_a"
+
+# Keep going - try tapping first option in each step
+- tapOn:
+    point: "100, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_b"
+
+- tapOn:
+    point: "100, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_c"
+
+- tapOn:
+    point: "100, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_d"
+
+- tapOn:
+    point: "100, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_e"
+
+- tapOn:
+    point: "100, 300"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Start"
+    optional: true
+- tapOn:
+    text: "Get Started"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_05_onboarding_step_f"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Start"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_05_onboarding_step_g"
+
+# Try paywall/subscribe skip
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    text: "✕"
+    optional: true
+- tapOn:
+    text: "×"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_05_onboarding_end"

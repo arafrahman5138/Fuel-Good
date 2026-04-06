@@ -171,6 +171,7 @@ export default function HomeScreen() {
   const weekListRef = useRef<FlatList<any>>(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [loggingMealId, setLoggingMealId] = useState<string | null>(null);
+  const [recentMeals, setRecentMeals] = useState<any[]>([]);
   const [loggedMealIds, setLoggedMealIds] = useState<Set<string>>(new Set());
 
   const weekDays = useMemo(() => {
@@ -273,6 +274,29 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [selectedDayKey, fetchMetabolic, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
 
+  const loadRecentMeals = async () => {
+    try {
+      // Fetch logs from the last 7 days to find unique meals for quick re-logging
+      const days: any[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(toDateKey(d));
+      }
+      const results = await Promise.all(days.map((dk) => nutritionApi.getLogs(dk).catch(() => [])));
+      const allLogs = results.flat();
+      // Deduplicate by label, keep most recent
+      const seen = new Map<string, any>();
+      for (const log of allLogs) {
+        const label = log.label || log.food_name || '';
+        if (label && !seen.has(label)) {
+          seen.set(label, log);
+        }
+      }
+      setRecentMeals(Array.from(seen.values()).slice(0, 6));
+    } catch {}
+  };
+
   useEffect(() => {
     loadRecommended();
     loadCurrentPlan();
@@ -282,6 +306,7 @@ export default function HomeScreen() {
     fetchFuelWeekly(selectedDayKey);
     fetchFlexSuggestions(selectedDayKey);
     fetchHealthPulse(selectedDayKey);
+    loadRecentMeals();
   }, []);
 
   useEffect(() => {
@@ -590,7 +615,7 @@ export default function HomeScreen() {
     return (
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() => router.push(`/(tabs)/meals/recipe/${item.id}` as any)}
+        onPress={() => router.push(`/(tabs)/(home)/recipe/${item.id}` as any)}
         style={{ marginRight: Spacing.md }}
       >
         <View style={[s.recCard, { width: CARD_WIDTH, height: CARD_WIDTH * 1.25 }]}>
@@ -949,7 +974,7 @@ export default function HomeScreen() {
                     <View key={meal.id || idx} style={[s.mealRow, idx < todayMeals.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.surfaceHighlight }]}>
                       <TouchableOpacity
                         activeOpacity={0.7}
-                        onPress={() => meal.recipe_data?.id && router.push(`/(tabs)/meals/recipe/${meal.recipe_data.id}` as any)}
+                        onPress={() => meal.recipe_data?.id && router.push(`/(tabs)/(home)/recipe/${meal.recipe_data.id}` as any)}
                         style={s.mealRowBody}
                       >
                         <View style={[s.mealIcon, { backgroundColor: isLogged ? '#22C55E18' : theme.surfaceHighlight }]}>
@@ -1095,6 +1120,53 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ── Recent Meals Quick-Log ─────────────────────────────────── */}
+        {recentMeals.length > 0 && (
+          <View style={{ marginTop: Spacing.md }}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Log Again</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.sm }}>
+              {recentMeals.map((meal, i) => {
+                const label = meal.label || meal.food_name || 'Meal';
+                const fuelScore = meal.fuel_score ?? meal.score;
+                return (
+                  <TouchableOpacity
+                    key={`recent-${i}`}
+                    activeOpacity={0.8}
+                    onPress={async () => {
+                      try {
+                        await nutritionApi.createLog({
+                          label,
+                          calories: meal.calories,
+                          protein: meal.protein,
+                          carbs: meal.carbs,
+                          fat: meal.fat,
+                          fiber: meal.fiber,
+                          source_type: 'quick_log',
+                          meal_type: meal.meal_type || 'snack',
+                          fuel_score: fuelScore,
+                        });
+                        Alert.alert('Logged!', `"${label}" added to today's log.`);
+                        loadDailyNutrition(selectedDayKey);
+                        fetchFuelDaily(selectedDayKey);
+                      } catch {
+                        Alert.alert('Log failed', 'Unable to log that meal right now.');
+                      }
+                    }}
+                    style={[styles.recentMealChip, { backgroundColor: isDarkTheme ? theme.surfaceElevated : '#F5F5F0', borderColor: theme.border }]}
+                  >
+                    <Text style={[styles.recentMealLabel, { color: theme.text }]} numberOfLines={1}>{label}</Text>
+                    {fuelScore != null && (
+                      <View style={[styles.recentMealBadge, { backgroundColor: fuelScore >= 80 ? '#16A34A' : fuelScore >= 50 ? '#D97706' : '#EF4444' }]}>
+                        <Text style={styles.recentMealBadgeText}>{Math.round(fuelScore)}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* ── Quick Actions (with Healthify CTA) ─────────────────────── */}
         <Animated.View style={[actionsEntrance.style, { marginTop: Spacing.md }]}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
@@ -1123,6 +1195,24 @@ export default function HomeScreen() {
             <Ionicons name="sparkles" size={36} color="rgba(255,255,255,0.25)" />
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* Healthify suggestion chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }} contentContainerStyle={{ gap: Spacing.xs }}>
+          {['pizza', 'burger', 'mac and cheese', 'ice cream', 'fried chicken', 'tacos'].map((item) => (
+            <TouchableOpacity
+              key={item}
+              activeOpacity={0.7}
+              onPress={() => {
+                trackBehaviorEvent('healthify_chip_tapped', { craving: item });
+                router.push({ pathname: '/(tabs)/chat', params: { prefill: `healthify ${item}` } });
+              }}
+              style={[styles.healthifyChip, { borderColor: theme.border, backgroundColor: isDarkTheme ? theme.surfaceElevated : '#F5F5F0' }]}
+            >
+              <Ionicons name="sparkles-outline" size={14} color="#16A34A" />
+              <Text style={[styles.healthifyChipText, { color: theme.textSecondary }]}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Scan Food CTA — second hero tile */}
         <TouchableOpacity
@@ -1663,5 +1753,44 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: FontSize.sm,
     lineHeight: 22,
+  },
+  recentMealChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  recentMealLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    maxWidth: 140,
+  },
+  recentMealBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  recentMealBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  healthifyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  healthifyChipText: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
   },
 });

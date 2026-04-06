@@ -61,6 +61,8 @@ export function MealScoreSheet({ visible, onClose, title, score, proteinTarget }
   const proteinG = score.protein_g ?? 0;
   const fiberG = score.fiber_g ?? 0;
   const fatG = score.fat_g ?? 0;
+  const rs3G = (score as any).rs3_g ?? 0;
+  const effectiveFiberG = (score as any).effective_fiber_g ?? fiberG;
 
   return (
     <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
@@ -121,7 +123,13 @@ export function MealScoreSheet({ visible, onClose, title, score, proteinTarget }
                   color="#34C759"
                   theme={theme}
                 />
-                <MacroCell label="Fiber" value={`${Math.round(fiberG)}g`} color="#4A90D9" theme={theme} />
+                <MacroCell
+                  label="Fiber"
+                  value={`${Math.round(effectiveFiberG)}g`}
+                  detail={rs3G > 0 ? `incl. ${rs3G}g RS3` : undefined}
+                  color="#4A90D9"
+                  theme={theme}
+                />
                 <MacroCell label="Fat" value={`${Math.round(fatG)}g`} color="#A855F7" theme={theme} />
               </View>
             </View>

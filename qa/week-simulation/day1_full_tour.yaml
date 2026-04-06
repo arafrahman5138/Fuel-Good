@@ -1,0 +1,114 @@
+appId: host.exp.Exponent
+---
+# Day 1: Complete app tour - every tab and key screen
+
+# ═══════════════════════════════════
+# HOME TAB - Starting point
+# ═══════════════════════════════════
+- openLink: "exp://localhost:8081"
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Scroll down to see full home content
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ═══════════════════════════════════
+# MEALS TAB
+# ═══════════════════════════════════
+- tapOn:
+    text: "Meals"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Scroll the meals tab
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ═══════════════════════════════════
+# TRACK TAB (Chronometer)
+# ═══════════════════════════════════
+- tapOn:
+    text: "Track"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Scroll track tab
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ═══════════════════════════════════
+# COACH TAB (Chat/Healthify)
+# ═══════════════════════════════════
+- tapOn:
+    text: "Coach"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ═══════════════════════════════════
+# PROFILE TAB
+# ═══════════════════════════════════
+- openLink: "exp://localhost:8081/(tabs)/profile"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Scroll profile
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Go back to home
+- tapOn:
+    text: "Home"
+- waitForAnimationToEnd:
+    timeout: 3000

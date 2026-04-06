@@ -230,6 +230,42 @@ export default function FuelWeeklyScreen() {
           })()}
         </LinearGradient>
 
+        {/* ── Week in Review Narrative ── */}
+        {weekly && weekly.meal_count > 0 && (() => {
+          const avg = Math.round(weekly.avg_fuel_score);
+          const meals = weekly.meal_count;
+          const flexUsed = weekly.flex_budget?.flex_used ?? 0;
+          const flexEarned = weekly.flex_budget?.total_flex ?? 0;
+          // Find best day
+          const days = weekly.daily_breakdown ?? [];
+          const daysWithMeals = days.filter((d: any) => d.meal_count > 0);
+          const bestDay = daysWithMeals.length > 0
+            ? daysWithMeals.reduce((best: any, d: any) => (d.avg_fuel_score > (best?.avg_fuel_score ?? 0)) ? d : best, daysWithMeals[0])
+            : null;
+          const bestDayLabel = bestDay ? new Date(bestDay.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : null;
+
+          const lines: string[] = [];
+          lines.push(`You logged ${meals} meal${meals !== 1 ? 's' : ''} this week.`);
+          if (bestDayLabel) lines.push(`Best Fuel day: ${bestDayLabel}.`);
+          if (flexEarned > 0) lines.push(`You earned ${flexEarned} flex meal${flexEarned !== 1 ? 's' : ''}.`);
+          if (flexUsed > 0) lines.push(`Used ${flexUsed} — and your average stayed at ${avg}. The system works.`);
+          if (avg >= 90) lines.push('Elite performance. Keep this up.');
+          else if (avg >= 75) lines.push('Strong foundation. You\'re building real momentum.');
+          else if (avg >= 60) lines.push('Decent baseline. A few more clean meals and you\'ll be in Strong territory.');
+
+          return (
+            <View style={[styles.narrativeCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Ionicons name="analytics-outline" size={16} color={tier.color} />
+                <Text style={[styles.narrativeTitle, { color: theme.text }]}>Your Week in Review</Text>
+              </View>
+              <Text style={[styles.narrativeText, { color: textSecondary }]}>
+                {lines.join(' ')}
+              </Text>
+            </View>
+          );
+        })()}
+
         {/* ── Day-by-Day ── */}
         <Text style={[styles.sectionTitle, { color: textTertiary }]}>DAY BY DAY</Text>
 
@@ -580,5 +616,19 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: '600',
     flex: 1,
+  },
+  narrativeCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  narrativeTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  narrativeText: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
 });

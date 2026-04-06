@@ -1,0 +1,48 @@
+appId: host.exp.Exponent
+---
+# Fix login - clear and re-enter credentials
+
+# Tap email field and clear it completely
+- tapOn:
+    id: "email-input"
+    optional: true
+- tapOn:
+    text: "test@fuelgood.devv"
+    optional: true
+- eraseText: 50
+- inputText: "test@fuelgood.dev"
+
+# Dismiss keyboard
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap password field
+- tapOn:
+    text: "Enter password"
+    optional: true
+- tapOn:
+    id: "password-input"
+    optional: true
+- eraseText: 50
+- inputText: "Test12345"
+
+# Dismiss keyboard
+- tapOn:
+    text: "Welcome Back"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap Sign In
+- scrollUntilVisible:
+    element: "Sign In"
+    direction: DOWN
+- tapOn: "Sign In"
+
+# Wait for home screen
+- waitForAnimationToEnd:
+    timeout: 30000
+- takeScreenshot: "SE_02_home_after_login"

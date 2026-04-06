@@ -1,0 +1,6 @@
+appId: host.exp.Exponent
+---
+# Tap the X button to close the Expo Go developer menu (top right of the modal)
+- tapOn:
+    point: "345,91"
+- waitForAnimationToEnd

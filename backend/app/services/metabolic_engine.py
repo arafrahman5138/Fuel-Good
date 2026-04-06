@@ -252,7 +252,32 @@ GLYCEMIC_PRIMARY_SOURCE_BONUS = {
     "other": 0.0,
 }
 GLYCEMIC_PROCESSING_BONUS = {"intact": 0.5, "minimally_processed": 0.0, "refined": 0.0}
-GLYCEMIC_RESISTANT_STARCH_BONUS = {"none": 0.0, "cooled": 2.0, "cooled_reheated": 1.5}
+GLYCEMIC_RESISTANT_STARCH_BONUS = {"none": 0.0, "cooled": 0.0, "cooled_reheated": 0.0}  # deprecated — RS3 now handled via fiber reclassification
+
+# RS3 yield in grams per serving, keyed by (primary_carb_source, resistant_starch_prep).
+# Cooled starches form RS3 via retrogradation; reheating partially reverses it.
+RS3_YIELD_GRAMS: dict[tuple[str, str], float] = {
+    ("white_rice", "cooled"): 2.5,
+    ("white_rice", "cooled_reheated"): 1.5,
+    ("brown_rice", "cooled"): 2.5,
+    ("brown_rice", "cooled_reheated"): 1.5,
+    ("potato", "cooled"): 3.0,
+    ("potato", "cooled_reheated"): 2.0,
+    ("sweet_potato", "cooled"): 2.0,
+    ("sweet_potato", "cooled_reheated"): 1.2,
+    ("legume", "cooled"): 1.5,
+    ("legume", "cooled_reheated"): 1.0,
+    ("oats", "cooled"): 1.5,
+    ("oats", "cooled_reheated"): 1.0,
+    ("rice_noodles", "cooled"): 2.0,
+    ("rice_noodles", "cooled_reheated"): 1.2,
+    ("refined_grain", "cooled"): 2.0,
+    ("refined_grain", "cooled_reheated"): 1.2,
+    ("intact_whole_grain", "cooled"): 1.5,
+    ("intact_whole_grain", "cooled_reheated"): 1.0,
+    ("quinoa", "cooled"): 1.5,
+    ("quinoa", "cooled_reheated"): 1.0,
+}
 GLYCEMIC_SOURCE_REASONS = {
     "sweet_potato": "whole-food starch source",
     "potato": "whole-food starch source",
@@ -526,6 +551,9 @@ def calc_metabolic_stability_bonus(
     fat_g: float,
     calories: float,
     budget: MetabolicBudget | ComputedBudget | dict[str, float] | None = None,
+    *,
+    effective_fiber_g: float | None = None,
+    effective_net_carbs_g: float | None = None,
 ) -> float:
     """Restore a small edge for clearly metabolically excellent low-carb meals.
 
@@ -536,6 +564,9 @@ def calc_metabolic_stability_bonus(
     - adequate fat and real meal calories
 
     It is backend-only and capped tightly so it does not overpower the base model.
+
+    When effective_fiber_g / effective_net_carbs_g are provided (RS3 reclassification),
+    those values are used for the gates instead of raw fiber/carbs.
     """
     b = _normalize_budget(budget)
     if getattr(b, "carb_curve", "general") != "general":
@@ -544,24 +575,25 @@ def calc_metabolic_stability_bonus(
     if calories < 300:
         return 0.0
 
-    net_carbs_g = max(0.0, carbs_g - fiber_g)
-    if net_carbs_g > 18:
+    eff_fiber = effective_fiber_g if effective_fiber_g is not None else fiber_g
+    eff_net_carbs = effective_net_carbs_g if effective_net_carbs_g is not None else max(0.0, carbs_g - fiber_g)
+    if eff_net_carbs > 18:
         return 0.0
 
-    if protein_g < 35 or fiber_g < 6:
+    if protein_g < 35 or eff_fiber < 6:
         return 0.0
 
     if fat_g < 12 or fat_g > 35:
         return 0.0
 
     bonus = 2.0
-    if net_carbs_g <= 8:
+    if eff_net_carbs <= 8:
         bonus += 0.5
     if protein_g >= 40:
         bonus += 0.25
     if 15 <= fat_g <= 30:
         bonus += 0.25
-    if fiber_g >= 8:
+    if eff_fiber >= 8:
         bonus += 0.25
     return min(3.0, round(bonus, 2))
 
@@ -590,6 +622,8 @@ def _normalize_glycemic_profile(profile: dict[str, Any] | None) -> dict[str, Any
     primary_carb_source = str(profile.get("primary_carb_source", "other") or "other").strip().lower()
     processing_level = str(profile.get("processing_level", "minimally_processed") or "minimally_processed").strip().lower()
     resistant_starch_prep = str(profile.get("resistant_starch_prep", "none") or "none").strip().lower()
+    if resistant_starch_prep == "cooked_cooled":
+        resistant_starch_prep = "cooled"
     if primary_carb_source not in GLYCEMIC_PRIMARY_SOURCES:
         primary_carb_source = "other"
     if processing_level not in GLYCEMIC_PROCESSING_LEVELS:
@@ -707,16 +741,38 @@ def calc_ingredient_gis_adjustment(
 
     base_bonus = GLYCEMIC_PRIMARY_SOURCE_BONUS.get(profile["primary_carb_source"], 0.0)
     processing_bonus = GLYCEMIC_PROCESSING_BONUS.get(profile["processing_level"], 0.0)
-    resistant_bonus = GLYCEMIC_RESISTANT_STARCH_BONUS.get(profile["resistant_starch_prep"], 0.0)
-    scaled = (base_bonus + processing_bonus + resistant_bonus) * GLYCEMIC_CURVE_SCALING.get(curve, 1.0)
+    # RS3 no longer contributes a flat GIS bonus — it is reclassified as fiber in calc_rs3_grams()
+    scaled = (base_bonus + processing_bonus) * GLYCEMIC_CURVE_SCALING.get(curve, 1.0)
     adjustment = min(GLYCEMIC_ADJUSTMENT_CAP, round(max(0.0, scaled), 1))
     if adjustment <= 0:
         return 0.0, []
 
     reasons = [GLYCEMIC_SOURCE_REASONS.get(profile["primary_carb_source"], "whole-food starch source")]
-    if profile["resistant_starch_prep"] in {"cooled", "cooled_reheated"}:
-        reasons.append("cooled starch resistant starch effect")
     return adjustment, reasons
+
+
+def calc_rs3_grams(
+    glycemic_profile: dict[str, Any] | None,
+) -> tuple[float, list[str]]:
+    """Calculate RS3 grams from cooled/reheated starch retrogradation.
+
+    RS3 is reclassified from digestible carb to functional fiber:
+    - Adds to effective fiber (improves FS)
+    - Subtracts from effective net carbs (improves GIS via the curve)
+
+    Returns (rs3_grams, reasons).
+    """
+    profile = _normalize_glycemic_profile(glycemic_profile)
+    if not profile:
+        return 0.0, []
+    prep = profile.get("resistant_starch_prep", "none")
+    if prep == "none":
+        return 0.0, []
+    source = profile.get("primary_carb_source", "other")
+    rs3_g = RS3_YIELD_GRAMS.get((source, prep), 0.0)
+    if rs3_g <= 0:
+        return 0.0, []
+    return rs3_g, [f"cooled starch RS3 ({rs3_g}g reclassified as functional fiber)"]
 
 
 def build_glycemic_nutrition_input(
@@ -1212,9 +1268,9 @@ def should_score_meal(context: str) -> bool:
 def includes_in_daily_mes(context: str) -> bool:
     """Whether a meal context contributes macros to daily MES.
 
-    Desserts contribute to daily totals. Sauces/condiments are excluded.
+    Only full meals and desserts contribute. Prep components and sauces are excluded.
     """
-    return context != MEAL_CONTEXT_SAUCE
+    return context in (MEAL_CONTEXT_FULL, MEAL_CONTEXT_DESSERT)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1237,21 +1293,25 @@ def _extract_nutrition(nutrition: dict[str, Any]) -> tuple[float, float, float, 
 
 
 def _combine_nutrition(a: dict[str, Any] | None, b: dict[str, Any] | None) -> dict[str, Any]:
-    combined: dict[str, Any] = {}
-    for key in (
-        "protein",
-        "protein_g",
-        "fiber",
-        "fiber_g",
-        "carbs",
-        "carbs_g",
-        "sugar",
-        "sugar_g",
-        "calories",
-        "fat",
-        "fat_g",
-    ):
-        combined[key] = float((a or {}).get(key, 0) or 0) + float((b or {}).get(key, 0) or 0)
+    # Normalize both sources via _extract_nutrition so mixed key formats
+    # (protein vs protein_g) combine correctly instead of being silently lost.
+    a_p, a_f, a_c, a_fat = _extract_nutrition(a or {})
+    b_p, b_f, b_c, b_fat = _extract_nutrition(b or {})
+    a_cal = float((a or {}).get("calories", (a or {}).get("calories_kcal", 0)) or 0)
+    b_cal = float((b or {}).get("calories", (b or {}).get("calories_kcal", 0)) or 0)
+    combined: dict[str, Any] = {
+        "protein_g": a_p + b_p,
+        "protein": a_p + b_p,
+        "fiber_g": a_f + b_f,
+        "fiber": a_f + b_f,
+        "carbs_g": a_c + b_c,
+        "carbs": a_c + b_c,
+        "sugar_g": a_c + b_c,
+        "sugar": a_c + b_c,
+        "fat_g": a_fat + b_fat,
+        "fat": a_fat + b_fat,
+        "calories": a_cal + b_cal,
+    }
     combined["glycemic_profile"] = (
         resolve_glycemic_profile(a)
         or resolve_glycemic_profile(b)
@@ -1310,9 +1370,12 @@ def _score_to_result_dict(
     thresholds: dict[str, int] | None,
     ingredient_gis_adjustment: float = 0.0,
     ingredient_gis_reasons: list[str] | None = None,
+    rs3_g: float = 0.0,
+    effective_fiber_g: float | None = None,
 ) -> dict[str, Any]:
     tier = score_to_tier(raw_mes, thresholds)
-    net_carbs_g = max(0.0, carbs_g - fiber_g)
+    eff_fiber = effective_fiber_g if effective_fiber_g is not None else fiber_g
+    net_carbs_g = max(0.0, carbs_g - eff_fiber)
     return {
         "protein_score": round(pas, 1),
         "fiber_score": round(fs, 1),
@@ -1342,6 +1405,8 @@ def _score_to_result_dict(
         "fat_g": round(fat_g, 1),
         "ingredient_gis_adjustment": round(float(ingredient_gis_adjustment or 0), 1),
         "ingredient_gis_reasons": list(ingredient_gis_reasons or []),
+        "rs3_g": round(rs3_g, 1),
+        "effective_fiber_g": round(eff_fiber, 1),
     }
 
 
@@ -1361,21 +1426,26 @@ def _compute_meal_mes_result(
 
     # Per-meal targets
     protein_target = b.protein_g / MEALS_PER_DAY
-    net_carbs_g = max(0.0, carbs_g - fiber_g)
 
-    # Sub-scores
-    carb_curve = getattr(b, "carb_curve", "general")
-    base_gis = calc_gis(net_carbs_g, carb_curve)
+    # RS3 reclassification: cooled/reheated starches convert digestible carb → functional fiber
     glycemic_profile = resolve_glycemic_profile(nutrition)
+    rs3_g, rs3_reasons = calc_rs3_grams(glycemic_profile)
+    effective_fiber_g = fiber_g + rs3_g
+    effective_net_carbs_g = max(0.0, carbs_g - effective_fiber_g)
+
+    # Sub-scores — use effective values that account for RS3
+    carb_curve = getattr(b, "carb_curve", "general")
+    base_gis = calc_gis(effective_net_carbs_g, carb_curve)
     ingredient_gis_adjustment, ingredient_gis_reasons = (0.0, [])
     if apply_ingredient_adjustment:
         ingredient_gis_adjustment, ingredient_gis_reasons = calc_ingredient_gis_adjustment(
             glycemic_profile,
             carb_curve,
         )
+        ingredient_gis_reasons = ingredient_gis_reasons + rs3_reasons
     gis = min(100.0, base_gis + ingredient_gis_adjustment)
     pas = calc_pas(protein_g, protein_target)
-    fs = calc_fs(fiber_g)
+    fs = calc_fs(effective_fiber_g)
     fas = calc_fas(fat_g)
     stability_bonus = calc_metabolic_stability_bonus(
         protein_g=protein_g,
@@ -1384,6 +1454,8 @@ def _compute_meal_mes_result(
         fat_g=fat_g,
         calories=calories,
         budget=b,
+        effective_fiber_g=effective_fiber_g,
+        effective_net_carbs_g=effective_net_carbs_g,
     )
 
     # Weighted composite
@@ -1407,6 +1479,8 @@ def _compute_meal_mes_result(
         thresholds=b.tier_thresholds,
         ingredient_gis_adjustment=ingredient_gis_adjustment,
         ingredient_gis_reasons=ingredient_gis_reasons,
+        rs3_g=rs3_g,
+        effective_fiber_g=effective_fiber_g,
     )
 
 
@@ -1501,8 +1575,15 @@ def compute_meal_mes_with_pairing(
     protein_g, fiber_g, carbs_g, fat_g = _extract_nutrition(combined)
     calories = float(combined.get("calories", combined.get("calories_kcal", 0)) or 0)
     protein_target = b.protein_g / MEALS_PER_DAY
+
+    # RS3 reclassification for the combined meal
+    glycemic_profile_combined = resolve_glycemic_profile(combined)
+    rs3_g, rs3_reasons = calc_rs3_grams(glycemic_profile_combined)
+    effective_fiber_g = fiber_g + rs3_g
+    effective_net_carbs_g = max(0.0, carbs_g - effective_fiber_g)
+
     pas = calc_pas(protein_g, protein_target)
-    fs = calc_fs(fiber_g)
+    fs = calc_fs(effective_fiber_g)
     fas = calc_fas(fat_g)
     stability_bonus = calc_metabolic_stability_bonus(
         protein_g=protein_g,
@@ -1511,6 +1592,8 @@ def compute_meal_mes_with_pairing(
         fat_g=fat_g,
         calories=calories,
         budget=b,
+        effective_fiber_g=effective_fiber_g,
+        effective_net_carbs_g=effective_net_carbs_g,
     )
     base_gis = float((macro_result.get("sub_scores") or {}).get("gis", 0) or 0)
     adjusted_gis = min(100.0, base_gis + synergy["gis_bonus"])
@@ -1523,6 +1606,10 @@ def compute_meal_mes_with_pairing(
         + synergy["synergy_bonus"],
         1,
     )
+    combined_ingredient_reasons = list(macro_result.get("ingredient_gis_reasons") or [])
+    for reason in rs3_reasons:
+        if reason not in combined_ingredient_reasons:
+            combined_ingredient_reasons.append(reason)
     adjusted_score = _score_to_result_dict(
         raw_mes=raw_mes,
         gis=adjusted_gis,
@@ -1536,7 +1623,9 @@ def compute_meal_mes_with_pairing(
         weights=b.weights,
         thresholds=b.tier_thresholds,
         ingredient_gis_adjustment=float(macro_result.get("ingredient_gis_adjustment", 0) or 0),
-        ingredient_gis_reasons=list(macro_result.get("ingredient_gis_reasons") or []),
+        ingredient_gis_reasons=combined_ingredient_reasons,
+        rs3_g=rs3_g,
+        effective_fiber_g=effective_fiber_g,
     )
     return {
         "score": adjusted_score,

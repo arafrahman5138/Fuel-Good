@@ -1,0 +1,228 @@
+appId: host.exp.Exponent
+---
+# ═══ iPhone 15 Pro - All Screens Test ═══
+
+# ═══ HOME TAB ═══
+- takeScreenshot: "PRO_HOME_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_HOME_02_scroll1"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_HOME_03_scroll2"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_HOME_04_scroll3"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_HOME_05_scroll4"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_HOME_06_bottom"
+
+# ═══ MEALS TAB ═══
+- tapOn:
+    text: ".*Meals.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_MEALS_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_MEALS_02_scroll"
+
+# Browse recipes
+- tapOn:
+    text: ".*Full recipes.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "PRO_BROWSE_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_BROWSE_02_scroll"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_BROWSE_03_scroll2"
+
+# Tap a recipe
+- tapOn:
+    point: "196, 350"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "PRO_RECIPE_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_RECIPE_02_scroll"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_RECIPE_03_scroll2"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_RECIPE_04_scroll3"
+
+# Go back x2
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# My Plan
+- tapOn:
+    text: ".*My Plan.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "PRO_PLAN_01"
+
+# Go back
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Grocery
+- tapOn:
+    text: ".*Grocery.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "PRO_GROCERY_01"
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ═══ TRACK TAB ═══
+- tapOn:
+    text: "Track"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_TRACK_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_TRACK_02_scroll1"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_TRACK_03_scroll2"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_TRACK_04_scroll3"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_TRACK_05_scroll4"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_TRACK_06_bottom"
+
+# ═══ COACH TAB ═══
+- tapOn:
+    text: "Coach"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_COACH_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_COACH_02_scroll"
+
+# ═══ SETTINGS ═══
+# Go to settings via gear icon at top
+- tapOn:
+    point: "30, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Navigate to home, then settings
+- tapOn:
+    text: ".*Home.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap avatar/profile button at top right
+- tapOn:
+    point: "360, 77"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "PRO_SETTINGS_01_top"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_SETTINGS_02_scroll"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_SETTINGS_03_scroll2"
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "PRO_SETTINGS_04_scroll3"
+
+# + Quick Actions button
+- tapOn:
+    text: ".*Home.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# Plus button (right side of tab bar)
+- tapOn:
+    point: "365, 810"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "PRO_QUICKACTIONS_01"
+
+# Dismiss
+- tapOn:
+    point: "365, 810"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "PRO_FINAL"

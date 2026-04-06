@@ -1,0 +1,149 @@
+appId: host.exp.Exponent
+---
+# Fill body metrics using exact bounds from hierarchy
+
+# Tap Weight field at center [33,327][323,345]
+- tapOn:
+    point: "178, 336"
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: "170"
+- takeScreenshot: "SE_BF01_weight_entered"
+
+# Tap outside to dismiss keyboard
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Height feet [33,417][158,435]
+- tapOn:
+    point: "95, 426"
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: "5"
+
+# Tap outside
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Height inches [206,417][330,435]
+- tapOn:
+    point: "268, 426"
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: "10"
+
+# Tap outside
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Tap Age [33,507][307,525]
+- tapOn:
+    point: "170, 516"
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: "28"
+
+# Tap outside
+- tapOn:
+    point: "187, 100"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- takeScreenshot: "SE_BF02_all_filled"
+
+# Now scroll down and select remaining options + Continue
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 500
+- takeScreenshot: "SE_BF03_goals_visible"
+
+# Select a goal (Lose body fat should be selected already from before)
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "SE_BF04_after_body"
+
+# Wait for any loading/generation
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "SE_BF05_loaded"
+
+# Continue through remaining screens
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_BF05_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: ".*Plan.*"
+    optional: true
+- tapOn:
+    text: ".*Start.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_BF06_next"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_BF06_next_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Notification
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "SE_BF07_notif"
+
+# Continue
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_BF08_paywall"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_BF08_paywall_scrolled"
+
+# Close paywall
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_BF09_final"

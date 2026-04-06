@@ -1,0 +1,61 @@
+appId: host.exp.Exponent
+---
+# Commitment screen - tap "Yes, I'm all in"
+- tapOn:
+    text: ".*all in.*"
+    optional: true
+- tapOn:
+    text: ".*Yes.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_COMMIT01"
+
+# Try start trial or continue
+- tapOn:
+    text: ".*Start my free trial.*"
+    optional: true
+- tapOn:
+    text: ".*explore.*"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_COMMIT02"
+
+# Handle subscribe/paywall screen
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_SUBSCRIBE01_scrolled"
+
+# Try to close/skip paywall
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- tapOn:
+    text: ".*restore.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_SUBSCRIBE02"
+
+# Try more close options
+- tapOn:
+    point: "355, 45"
+    optional: true
+- tapOn:
+    point: "20, 45"
+    optional: true
+- tapOn:
+    point: "350, 60"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_HOME01_final"

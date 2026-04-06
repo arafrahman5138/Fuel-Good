@@ -12,14 +12,24 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/splash-icon-light.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0F"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fuelgood.ios",
       "usesAppleSignIn": true,
+      "splash": {
+        "image": "./assets/images/splash-icon-light.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FFFFFF",
+        "dark": {
+          "image": "./assets/images/splash-icon-dark.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0A0F"
+        }
+      },
       "config": {
         "usesNonExemptEncryption": false
       },

@@ -1,0 +1,125 @@
+appId: host.exp.Exponent
+---
+# Need to scroll to see Sex buttons and select one
+# First scroll to top to see the full form
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 90%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Scroll down just enough to see Sex field
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 50%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_FIX01_sex_visible"
+
+# Tap Male button - should be left option under "Sex" label
+- tapOn: "Male"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_FIX02_male_selected"
+
+# Now scroll down to Activity and Goal
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Now check if goal is selected - tap "Lose body fat" to be sure
+# Goal cards are in a 2-column grid
+- tapOn:
+    text: ".*Lose body fat"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "SE_FIX03_goal_selected"
+
+# Continue should now work since all required fields are set
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "SE_FIX04_advanced"
+
+# Wait for any loading
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_FIX05_loaded"
+
+# Scroll
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_FIX05_scrolled"
+
+# Continue through remaining screens
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_FIX06_next"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_FIX06_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_FIX07"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_FIX08"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_FIX09_paywall"
+
+# Scroll paywall
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_FIX09_paywall_scrolled"
+
+# Close paywall
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_FIX10_home"

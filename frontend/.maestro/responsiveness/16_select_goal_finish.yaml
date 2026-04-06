@@ -1,0 +1,78 @@
+appId: host.exp.Exponent
+---
+# Select goal - the goal cards are at specific bounds from hierarchy:
+# Lose body fat: [20,378][177,458] -> center (98, 418)
+# Build muscle: [187,378][345,458] -> center (266, 418)
+# We need to tap directly on the card
+
+- tapOn:
+    point: "98, 418"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "SE_GOAL01_selected"
+
+# Now tap Continue
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "SE_GOAL02_after"
+
+# Check if we advanced
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_GOAL03_loaded"
+
+# Scroll
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_GOAL03_scrolled"
+
+# Keep continuing
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_GOAL04_next"
+
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+    duration: 500
+- takeScreenshot: "SE_GOAL04_scrolled"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "SE_GOAL05"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_GOAL06"
+
+# Try closing paywall
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    point: "350, 50"
+    optional: true
+- tapOn:
+    point: "25, 50"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "SE_GOAL07_end"

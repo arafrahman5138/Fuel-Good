@@ -245,8 +245,30 @@ Before asking for approval, prepare the complete meal package.
 - default pairing choice if applicable
 - component composition if applicable
 - full nutrition estimate
+- glycemic profile with `resistant_starch_prep` (see below)
 - MES score details
 - meal photo prompt for Gemini Flash image generation
+
+### Glycemic profile and resistant starch
+
+Every meal with a starchy carb source must include a `glycemic_profile`:
+
+```json
+{
+  "primary_carb_source": "white_rice",
+  "processing_level": "minimally_processed",
+  "resistant_starch_prep": "cooled_reheated",
+  "override_inference": false,
+  "notes": null
+}
+```
+
+Set `resistant_starch_prep` based on how the meal is designed to be eaten:
+- `cooled_reheated` — meal-prep meals (cooked, stored, reheated). This is the default for all Fuel Good meal-prep recipes.
+- `cooled` — meals eaten cold (e.g. cold rice salads)
+- `none` — freshly cooked and served immediately (e.g. desserts, cook-and-eat-now recipes)
+
+This affects MES scoring: cooled starches form RS3 which is reclassified as functional fiber, improving both the Fiber Score and GIS. See `MES_MEAL_SCORING_README.md` section 5a for the full RS3 yield table.
 
 ### If components are included
 Also provide:
@@ -300,9 +322,10 @@ Always send MES information back with the draft.
 
 ### Use the current MES method
 Calculate and report MES using the app's current scoring model:
-- compute the base meal MES from the meal nutrition
+- compute the base meal MES from the meal nutrition (including RS3 reclassification if `resistant_starch_prep` is set)
 - if there is a default pairing, compute the combined meal + pairing nutrition
 - apply the pairing-adjusted logic on top of the combined nutrition when available
+- include `rs3_g` and `effective_fiber_g` in the report when RS3 applies
 
 This means default pairings should not be treated as a simple note on the side. They should use the same paired scoring logic already used in the app.
 
@@ -348,6 +371,8 @@ When building the draft, align to the current stored field pattern where possibl
 - `mes_display_score`
 - `mes_tier`
 - `mes_sub_scores`
+- `rs3_g`
+- `effective_fiber_g`
 - `mes_score_with_default_pairing`
 - `mes_default_pairing_delta`
 - `mes_default_pairing_adjusted_score`
@@ -438,5 +463,6 @@ Until then, keep everything as a draft proposal only.
 - Did I rename the meal?
 - Did I rewrite the instructions naturally?
 - Did I choose reuse over duplication where appropriate?
-- Did I include MES details?
+- Did I set `glycemic_profile` with the correct `resistant_starch_prep` for any starchy carbs?
+- Did I include MES details (including RS3 and effective fiber when applicable)?
 - Did I clearly state that nothing has been added to the DB yet?
