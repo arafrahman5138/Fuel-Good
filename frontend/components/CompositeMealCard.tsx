@@ -203,8 +203,11 @@ export const SingleMealRow = React.memo(function SingleMealRow({
           >
             {displayTitle}
           </Text>
-          {!compact && log.fuel_score != null && (
+          {log.fuel_score != null && (
             <FuelScoreBadge score={log.fuel_score} compact fuelTarget={fuelTarget} />
+          )}
+          {log.fuel_score == null && (log.source_type === 'recipe' || log.source_type === 'meal_plan') && (
+            <FuelScoreBadge score={100} compact fuelTarget={fuelTarget} />
           )}
           {showMesBadge && badgeScore != null && (
             <MealMESBadge score={badgeScore} tier={badgeTier} compact />
