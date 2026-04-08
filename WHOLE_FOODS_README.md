@@ -11,9 +11,22 @@ A guide to real, nutrient-dense whole foods that support optimal health.
 - Turkey
 - Elk
 - Lamb
+- Organ meats (liver, heart, kidney - the most nutrient-dense foods available)
+- Shellfish (oysters, mussels, shrimp, crab, clams - rich in zinc, B12, selenium)
 - Dairy (milk, cheese, yogurt, kefir)
 - Eggs
 - Whey
+- Bone broth (collagen, glycine, minerals)
+
+### Whole Food Fats
+- Avocados and olives
+- Coconut (oil, milk, flesh)
+- Butter and ghee
+- Tallow and lard
+
+### Nuts & Seeds
+- Almonds, walnuts, macadamias, pecans, cashews
+- Chia seeds, flax seeds, hemp seeds, pumpkin seeds, sunflower seeds
 
 ### Carbohydrate Sources
 - Fruit (all varieties)
@@ -30,26 +43,7 @@ A guide to real, nutrient-dense whole foods that support optimal health.
 - Maple syrup (pure)
 - Fruit juices (in moderation)
 
-## Consider Adding
-
-### Nuts & Seeds
-- Almonds, walnuts, macadamias, pecans, cashews
-- Chia seeds, flax seeds, hemp seeds, pumpkin seeds, sunflower seeds
-
-### Organ Meats
-- Liver, heart, kidney (the most nutrient-dense foods available)
-
-### Shellfish
-- Oysters, mussels, shrimp, crab, clams (rich in zinc, B12, selenium)
-
-### Whole Food Fats
-- Avocados and olives
-- Coconut (oil, milk, flesh)
-- Butter and ghee
-- Tallow and lard
-
-### Other
-- Bone broth (collagen, glycine, minerals)
+### Herbs, Spices & Sea Vegetables
 - Herbs and spices (turmeric, ginger, garlic, rosemary, cinnamon)
 - Sea vegetables (nori, kelp, dulse - iodine and trace minerals)
 
