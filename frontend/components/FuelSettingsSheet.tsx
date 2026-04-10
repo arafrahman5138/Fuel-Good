@@ -29,7 +29,7 @@ const RATIO_PRESETS = [
     target: 90,
     label: 'Strict',
     ratio: '90 / 10',
-    description: 'Mostly whole foods, ~2-3 flex meals/week',
+    description: 'Mostly whole foods — minimal flex',
     icon: 'shield-checkmark' as const,
     color: '#22C55E',
   },
@@ -37,7 +37,7 @@ const RATIO_PRESETS = [
     target: 80,
     label: 'Balanced',
     ratio: '80 / 20',
-    description: 'Great balance — ~5-7 flex meals/week',
+    description: 'Great balance — a few flex meals/week',
     icon: 'leaf' as const,
     color: '#4ADE80',
   },
@@ -45,7 +45,7 @@ const RATIO_PRESETS = [
     target: 70,
     label: 'Flexible',
     ratio: '70 / 30',
-    description: 'More freedom — ~8-10 flex meals/week',
+    description: 'More freedom — more flex meals/week',
     icon: 'happy' as const,
     color: '#F59E0B',
   },
@@ -58,11 +58,9 @@ const MEALS_OPTIONS = [
 ];
 
 function estimateFlexMeals(target: number, mealsPerWeek: number): number {
-  const projectedPoints = mealsPerWeek * 95;
-  const targetPoints = mealsPerWeek * target;
-  const surplus = projectedPoints - targetPoints;
-  const cheatCost = Math.max(1, target - 35);
-  return Math.max(0, Math.floor(surplus / cheatCost));
+  // Match backend: flex = expectedMeals - ceil(expectedMeals * cleanPct / 100)
+  const cleanMealsTarget = Math.ceil(mealsPerWeek * target / 100);
+  return Math.max(0, mealsPerWeek - cleanMealsTarget);
 }
 
 export function FuelSettingsSheet({ visible, onClose }: FuelSettingsSheetProps) {

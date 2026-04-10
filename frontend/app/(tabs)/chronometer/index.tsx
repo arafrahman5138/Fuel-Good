@@ -48,6 +48,7 @@ import type { MealSuggestion } from '../../../components/MetabolicCoach';
 import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../../stores/metabolicBudgetStore';
 import { useFuelStore } from '../../../stores/fuelStore';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../../constants/Colors';
+import { toDateKey } from '../../../utils/dateKey';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -77,13 +78,6 @@ interface DailySummary {
   comparison: Record<string, NutrientComparison>;
   logs: DailyLog[];
 }
-
-const toDateKey = (date: Date): string => {
-  // Use toLocaleDateString to guarantee local-timezone date (Hermes can return UTC from getDate())
-  const [m, d, y] = date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/');
-  return `${y}-${m}-${d}`;
-};
-
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -148,7 +142,7 @@ export default function ChronometerScreen() {
     const weekStart = fuelWeekly?.week_start ?? (() => {
       const d = new Date();
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      return d.toISOString().slice(0, 10);
+      return toDateKey(d);
     })();
     const thisWeek = mesHistory.filter(
       (e: any) => e.date >= weekStart && (e.display_score ?? e.total_score ?? 0) > 0,
@@ -168,8 +162,8 @@ export default function ChronometerScreen() {
     prevWeekEnd.setDate(weekStart.getDate() - 1);
     const prevWeekStart = new Date(prevWeekEnd);
     prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
-    const prevStartStr = prevWeekStart.toISOString().slice(0, 10);
-    const prevEndStr = prevWeekEnd.toISOString().slice(0, 10);
+    const prevStartStr = toDateKey(prevWeekStart);
+    const prevEndStr = toDateKey(prevWeekEnd);
     const prevDays = fuelCalendar.days.filter(
       (d: any) => d.date >= prevStartStr && d.date <= prevEndStr && d.avg_fuel_score > 0,
     );

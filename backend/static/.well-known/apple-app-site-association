@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.fuelgood.ios",
+        "paths": [
+          "/recipe/*",
+          "/scan",
+          "/subscribe",
+          "/meal-plan"
+        ]
+      }
+    ]
+  }
+}

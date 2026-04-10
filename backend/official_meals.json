@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-04-02T16:46:19.916272Z",
-  "meal_count": 90,
+  "meal_count": 95,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -12359,6 +12359,537 @@
         "notes": null
       },
       "created_at": "2026-04-05T00:00:00.000000"
+    },
+    {
+      "id": "5731bc10-7662-4c14-afb6-6bd7d9eaeca9",
+      "title": "Bang Bang Chicken",
+      "description": "Crispy-seared diced chicken thighs seasoned with coconut aminos, garlic, and onion powder. Built for bang bang bowls.",
+      "ingredients": [
+        {
+          "name": "boneless skinless chicken thighs, diced",
+          "quantity": "2",
+          "unit": "lbs",
+          "category": "protein"
+        },
+        {
+          "name": "coconut aminos",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "salt",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "onion powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Dice the chicken thighs and toss in a bowl with coconut aminos, salt, pepper, garlic powder, and onion powder until evenly coated.",
+        "Heat avocado oil in a large skillet over medium-high heat.",
+        "Spread the chicken in a single layer and cook undisturbed for 5-7 minutes to build a golden crust.",
+        "Stir and continue cooking, mixing every few minutes, until the largest piece reaches 175-185F internal — about 8-10 more minutes total.",
+        "Turn off the heat and toss with a few tablespoons of bang bang sauce if desired."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 15,
+      "total_time_min": 25,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 280.0,
+        "protein": 42.0,
+        "carbs": 2.0,
+        "fat": 12.0,
+        "fiber": 0.0,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "asian"
+      ],
+      "flavor_profile": [
+        "savory",
+        "umami",
+        "crispy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "asian-fusion",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "bang_bang_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-07T00:00:00.000000"
+    },
+    {
+      "id": "806625ce-5599-4223-96e8-44c18d9ce0e5",
+      "title": "Bone Broth Jasmine Rice",
+      "description": "Fluffy jasmine rice cooked in chicken bone broth for extra flavor and collagen. Simple, savory, and meal-prep ready.",
+      "ingredients": [
+        {
+          "name": "dry jasmine rice",
+          "quantity": "1",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "chicken bone broth",
+          "quantity": "2",
+          "unit": "cups",
+          "category": "pantry"
+        },
+        {
+          "name": "salt",
+          "quantity": "1",
+          "unit": "pinch",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Rinse the jasmine rice under cold water until the water runs clear.",
+        "Combine the rice, bone broth, and a pinch of salt in a pot. Bring to a boil.",
+        "Cover, reduce heat to low, and simmer for 10 minutes until the liquid is absorbed.",
+        "Remove from heat, let rest covered for 2 minutes, then fluff with a fork."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 12,
+      "total_time_min": 17,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 145.0,
+        "protein": 4.0,
+        "carbs": 29.0,
+        "fat": 0.5,
+        "fiber": 0.5,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "rice",
+        "bone-broth"
+      ],
+      "flavor_profile": [
+        "savory",
+        "clean",
+        "mild"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "asian-fusion",
+      "health_benefits": [
+        "gut_health",
+        "sustained_energy"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "carb_base",
+      "is_component": true,
+      "meal_group_id": "bang_bang_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-07T00:00:00.000000"
+    },
+    {
+      "id": "c49c84e8-194c-4faa-856f-281c0bc4cfe6",
+      "title": "Cucumber Carrot Sesame Salad",
+      "description": "A crunchy Asian-style salad with sliced cucumbers, shredded carrots, rice vinegar, and toasted sesame seeds. Bright, refreshing, and pairs perfectly with rice bowls.",
+      "ingredients": [
+        {
+          "name": "mini cucumbers, sliced thin",
+          "quantity": "4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "carrots, julienned",
+          "quantity": "4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "plain rice vinegar",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "sesame seeds",
+          "quantity": "1/2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "black sesame seeds",
+          "quantity": "1/2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "salt",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Toss the sliced cucumbers and shredded carrots in a bowl.",
+        "Add the rice vinegar, monk fruit sweetener, sesame seeds, black sesame seeds, salt, and garlic powder.",
+        "Mix well and refrigerate until ready to serve — it gets better as it sits."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 0,
+      "total_time_min": 10,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 55.0,
+        "protein": 2.0,
+        "carbs": 10.0,
+        "fat": 1.5,
+        "fiber": 3.0,
+        "sugar": 4.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "side",
+        "quick",
+        "salad",
+        "asian"
+      ],
+      "flavor_profile": [
+        "crunchy",
+        "bright",
+        "tangy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "asian-fusion",
+      "health_benefits": [
+        "gut_health",
+        "blood_sugar_support"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "nonstarchy_veg"
+      ],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": "bang_bang_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "fiber_class": "med",
+        "acid": true,
+        "healthy_fat": false,
+        "veg_density": "high",
+        "recommended_timing": "with_meal"
+      },
+      "glycemic_profile": {
+        "primary_carb_source": "nonstarchy_veg",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-07T00:00:00.000000"
+    },
+    {
+      "id": "6d60b23f-fd5b-4143-b8fe-f8f5c1a0e5d6",
+      "title": "Bang Bang Sauce",
+      "description": "A spicy-sweet creamy sauce made with clean avocado oil mayo, fresh chili, monk fruit, and rice vinegar. Whole-food rebuild of the classic.",
+      "ingredients": [
+        {
+          "name": "avocado oil mayo (clean label)",
+          "quantity": "3/4",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "monk fruit sweetener",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "plain rice vinegar",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "sambal oelek (fresh chili paste)",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "garlic, minced",
+          "quantity": "1",
+          "unit": "clove",
+          "category": "produce"
+        },
+        {
+          "name": "chili flakes",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Whisk together the mayo, monk fruit sweetener, rice vinegar, sambal oelek, minced garlic, and chili flakes until smooth.",
+        "Taste and adjust heat or sweetness as needed.",
+        "Refrigerate until ready to use."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 0,
+      "total_time_min": 5,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 140.0,
+        "protein": 0.5,
+        "carbs": 1.0,
+        "fat": 15.0,
+        "fiber": 0.0,
+        "sugar": 0.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "sauce",
+        "spicy",
+        "quick"
+      ],
+      "flavor_profile": [
+        "spicy",
+        "sweet",
+        "creamy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "asian-fusion",
+      "health_benefits": [],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": "bang_bang_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-07T00:00:00.000000"
+    },
+    {
+      "id": "22abb10d-84e4-41ce-925a-d789b6805dbc",
+      "title": "Bang Bang Chicken Rice Bowl",
+      "description": "Crispy-seared chicken thighs tossed in a spicy-sweet bang bang sauce over bone broth jasmine rice, with a crunchy cucumber carrot sesame salad, shredded red cabbage, and green onions.",
+      "ingredients": [
+        {
+          "name": "Bang Bang Chicken (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "protein"
+        },
+        {
+          "name": "Bone Broth Jasmine Rice (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "carb"
+        },
+        {
+          "name": "Cucumber Carrot Sesame Salad (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "produce"
+        },
+        {
+          "name": "Bang Bang Sauce (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "sauce"
+        },
+        {
+          "name": "shredded red cabbage",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "green onions, sliced",
+          "quantity": "2",
+          "unit": "stalks",
+          "category": "produce"
+        },
+        {
+          "name": "sesame seeds",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Make the bang bang sauce and the cucumber carrot sesame salad first and refrigerate both until ready to serve.",
+        "Dice the chicken thighs and season with coconut aminos, salt, pepper, garlic powder, and onion powder.",
+        "Sear the chicken in a hot skillet with avocado oil — cook undisturbed 5-7 minutes for a crust, then stir and cook until 175-185F internal.",
+        "While the chicken cooks, prepare the bone broth jasmine rice — combine rice and bone broth, bring to a boil, cover, and simmer 10 minutes.",
+        "Turn off the heat under the chicken and toss with a few tablespoons of the bang bang sauce.",
+        "Assemble the bowls: rice on the bottom, chicken on top, cucumber carrot salad on the side, shredded red cabbage, green onions, and a drizzle of extra bang bang sauce."
+      ],
+      "prep_time_min": 15,
+      "cook_time_min": 15,
+      "total_time_min": 30,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 620.0,
+        "protein": 48.5,
+        "carbs": 42.0,
+        "fat": 29.0,
+        "fiber": 3.5,
+        "sugar": 3.0,
+        "mes_score": 74.7,
+        "mes_display_score": 74.7,
+        "mes_tier": "good",
+        "mes_sub_scores": {
+          "gis": 67.6,
+          "pas": 85.8,
+          "fs": 53.8,
+          "fas": 91.2
+        },
+        "rs3_g": 1.5,
+        "effective_fiber_g": 5.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "bowls"
+      ],
+      "flavor_profile": [
+        "spicy",
+        "sweet",
+        "crunchy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "asian-fusion",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/a116f7a2e657.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "bang_bang_bowl_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": {
+        "protein": "5731bc10-7662-4c14-afb6-6bd7d9eaeca9",
+        "carb": "806625ce-5599-4223-96e8-44c18d9ce0e5",
+        "veg": "c49c84e8-194c-4faa-856f-281c0bc4cfe6",
+        "sauce": "6d60b23f-fd5b-4143-b8fe-f8f5c1a0e5d6"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-07T00:00:00.000000"
     }
   ]
 }

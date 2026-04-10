@@ -13,6 +13,7 @@ import {
   PREMIUM_ENTITLEMENT_ID,
   REVENUECAT_IOS_API_KEY,
 } from '../constants/Config';
+import { analytics } from './analytics';
 import { UserEntitlement, getDefaultEntitlement } from '../stores/authStore';
 
 let configuredAppUserId: string | null = null;
@@ -168,6 +169,16 @@ function paywallResultToFlags(result: PAYWALL_RESULT): Partial<BillingPurchaseOu
   }
 }
 
+/** Check if the entitlement's period has ended — signals need for a re-sync. */
+export function isEntitlementStale(entitlement?: UserEntitlement | null): boolean {
+  if (!entitlement?.current_period_ends_at) return false;
+  try {
+    return new Date(entitlement.current_period_ends_at).getTime() < Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export const billingService = {
   isSupported(): boolean {
     return isRevenueCatSupportedPlatform();
@@ -188,10 +199,21 @@ export const billingService = {
     }
   },
 
-  async getOfferings(): Promise<PurchasesOffering | null> {
+  async getOfferings(retries = 1): Promise<PurchasesOffering | null> {
     await requireConfigured();
-    const offerings = await Purchases.getOfferings();
-    return offerings.current || null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const offerings = await Purchases.getOfferings();
+        return offerings.current || null;
+      } catch (err) {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    return null;
   },
 
   async getCustomerInfo(): Promise<CustomerInfo | null> {
@@ -266,7 +288,20 @@ export const billingService = {
 
   addCustomerInfoListener(listener: (entitlement: UserEntitlement) => void) {
     if (!isRevenueCatEnabled()) return () => {};
-    customerInfoListener = (customerInfo) => listener(toEntitlement(customerInfo));
+    customerInfoListener = (customerInfo) => {
+      const entitlement = toEntitlement(customerInfo);
+      // Track subscription lifecycle changes
+      if (entitlement.subscription_state === 'active') {
+        analytics.trackEvent('subscription_renewed', { product_id: entitlement.product_id });
+      } else if (entitlement.subscription_state === 'trialing') {
+        analytics.trackEvent('subscription_started', { product_id: entitlement.product_id, is_trial: true });
+      } else if (entitlement.subscription_state === 'expired') {
+        analytics.trackEvent('subscription_cancelled', { product_id: entitlement.product_id });
+      } else if (entitlement.subscription_state === 'billing_issue') {
+        analytics.trackEvent('subscription_billing_issue', { product_id: entitlement.product_id });
+      }
+      listener(entitlement);
+    };
     Purchases.addCustomerInfoUpdateListener(customerInfoListener);
     return () => {
       if (customerInfoListener) {

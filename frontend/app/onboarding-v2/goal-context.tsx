@@ -47,6 +47,8 @@ export default function GoalContextScreen() {
   const [selectedGoal, setSelectedGoal] = useState(store.primaryGoal);
   const [selectedAge, setSelectedAge] = useState(store.ageRange);
   const [selectedSex, setSelectedSex] = useState(store.sex);
+  const heightInRef = useRef<TextInput>(null);
+  const weightRef = useRef<TextInput>(null);
   const [heightFt, setHeightFt] = useState('');
   const [heightIn, setHeightIn] = useState('');
   const [weightLbs, setWeightLbs] = useState('');
@@ -237,11 +239,15 @@ export default function GoalContextScreen() {
               placeholderTextColor="#6B7280"
               keyboardType="number-pad"
               maxLength={1}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => heightInRef.current?.focus()}
             />
             <Text style={styles.inputUnit}>ft</Text>
           </View>
           <View style={styles.inputGroup}>
             <TextInput
+              ref={heightInRef}
               style={styles.textInput}
               value={heightIn}
               onChangeText={setHeightIn}
@@ -249,6 +255,9 @@ export default function GoalContextScreen() {
               placeholderTextColor="#6B7280"
               keyboardType="number-pad"
               maxLength={2}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => weightRef.current?.focus()}
             />
             <Text style={styles.inputUnit}>in</Text>
           </View>
@@ -258,6 +267,7 @@ export default function GoalContextScreen() {
         <Text style={styles.fieldLabel}>Weight</Text>
         <View style={styles.inputGroup}>
           <TextInput
+            ref={weightRef}
             style={[styles.textInput, { flex: 1 }]}
             value={weightLbs}
             onChangeText={setWeightLbs}
@@ -265,6 +275,7 @@ export default function GoalContextScreen() {
             placeholderTextColor="#6B7280"
             keyboardType="number-pad"
             maxLength={3}
+            returnKeyType="done"
           />
           <Text style={styles.inputUnit}>lbs</Text>
         </View>

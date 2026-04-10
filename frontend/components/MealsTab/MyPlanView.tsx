@@ -30,6 +30,7 @@ import { useFuelStore } from '../../stores/fuelStore';
 import { mealPlanApi, nutritionApi, recipeApi } from '../../services/api';
 import { FLAVOR_OPTIONS, DIETARY_OPTIONS, ALLERGY_OPTIONS } from '../../constants/Config';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { toDateKey } from '../../utils/dateKey';
 import { cleanRecipeDescription } from '../../utils/recipeDescription';
 import { ProjectedMESCard } from '../ProjectedMESCard';
 import { maybePromptForPush } from '../../services/notifications';
@@ -927,7 +928,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
                 const now = new Date();
                 const nowMon = new Date(now);
                 nowMon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-                const isThisWeek = start.toISOString().slice(0, 10) === nowMon.toISOString().slice(0, 10);
+                const isThisWeek = toDateKey(start) === toDateKey(nowMon);
                 if (isThisWeek) return 'This Week';
                 const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 return `${fmt(start)} – ${fmt(end)}`;

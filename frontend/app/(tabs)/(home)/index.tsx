@@ -38,16 +38,10 @@ import { Shadows } from '../../../constants/Shadows';
 import { useEntranceAnimation } from '../../../hooks/useAnimations';
 import { trackBehaviorEvent } from '../../../services/notifications';
 import { resolveImageUrl } from '../../../utils/imageUrl';
+import { toDateKey } from '../../../utils/dateKey';
 
 const TODAY_DAY_INDEX = 22; // offset 0 in [-22..+8]
 const INITIAL_DAY_INDEX = Math.max(0, TODAY_DAY_INDEX - 3);
-
-const toDateKey = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, '0');
-  const d = `${date.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
 
 const DAILY_TIPS = [
   'Swap refined vegetable oils with extra virgin olive oil or avocado oil. They\'re rich in healthy monounsaturated fats and antioxidants.',
@@ -520,7 +514,7 @@ export default function HomeScreen() {
   // Weekly MES — average scores from the current week (Mon–Sun), matching fuel weekly bounds
   const weekStart = fuelWeekly?.week_start ?? (() => {
     const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
-    return d.toISOString().slice(0, 10);
+    return toDateKey(d);
   })();
   const thisWeekScores = scoreHistory
     .filter((e) => e.date >= weekStart && (e.display_score ?? e.total_score ?? 0) > 0);
@@ -1239,57 +1233,6 @@ export default function HomeScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <View style={styles.actionsGrid}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity
-              key={index}
-              activeOpacity={0.9}
-              onPress={() => {
-                trackBehaviorEvent('home_quick_action_used', { label: action.label, route: action.route });
-                router.push(action.route as any);
-              }}
-              style={[styles.actionCard, { width: (width - Spacing.xl * 2 - Spacing.sm) / 2 }]}
-            >
-              <Card
-                padding={Spacing.md}
-                style={[
-                  styles.actionCardInner,
-                  {
-                    backgroundColor: isDarkTheme ? theme.surfaceElevated : '#FBFAF7',
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={styles.actionCardTopRow}>
-                  <View
-                    style={[
-                      styles.actionIcon,
-                      { backgroundColor: isDarkTheme ? action.accent + '1A' : action.accentBg },
-                    ]}
-                  >
-                    <Ionicons name={action.icon} size={19} color={action.accent} />
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={15}
-                    color={isDarkTheme ? theme.textSecondary : theme.textTertiary}
-                  />
-                </View>
-                <View style={styles.actionCopy}>
-                  <Text
-                    style={[styles.actionLabel, { color: isDarkTheme ? '#F3F4F6' : theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {action.label}
-                  </Text>
-                  <Text style={[styles.actionDescription, { color: theme.textSecondary }]} numberOfLines={2}>
-                    {action.description}
-                  </Text>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
-        </View>
         </Animated.View>
 
         {/* ── Daily Tip ──────────────────────────────────────────────── */}
@@ -1739,6 +1682,28 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: '500',
     lineHeight: 17,
+  },
+  quickNavRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  quickNavItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickNavIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickNavLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   tipHeader: {
     flexDirection: 'row',

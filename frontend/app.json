@@ -45,7 +45,10 @@
             ]
           }
         ]
-      }
+      },
+      "associatedDomains": [
+        "applinks:fuelgood.app"
+      ]
     },
     "android": {
       "allowBackup": false,
@@ -71,6 +74,13 @@
       "expo-secure-store",
       "expo-notifications",
       "expo-apple-authentication",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "fuel-good",
+          "project": "fuelgood-mobile"
+        }
+      ],
       [
         "expo-camera",
         {

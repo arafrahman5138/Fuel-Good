@@ -21,6 +21,7 @@ import { billingApi } from '../services/api';
 import { billingService } from '../services/billing';
 import { useAuthStore } from '../stores/authStore';
 import { API_URL, APP_ENV, APP_STORE_MANAGE_SUBSCRIPTIONS_URL, PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../constants/Config';
+import { analytics } from '../services/analytics';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 
 interface BillingConfig {
@@ -60,6 +61,11 @@ export default function SubscribeScreen() {
   const [restoring, setRestoring] = useState(false);
   const [openingPaywall, setOpeningPaywall] = useState(false);
   const userHasDirectPremium = user?.entitlement?.access_level === 'premium' && user?.entitlement?.requires_paywall === false;
+
+  // Track paywall_shown when screen mounts
+  useEffect(() => {
+    analytics.trackEvent('paywall_shown');
+  }, []);
 
   useEffect(() => {
     if (hasPremiumAccess || userHasDirectPremium) {
@@ -127,7 +133,9 @@ export default function SubscribeScreen() {
 
     try {
       setPurchasingId(productId);
+      analytics.trackEvent('paywall_purchase_started', { product_id: productId });
       const entitlement = await billingService.purchasePackage(selected);
+      analytics.trackEvent('paywall_purchase_completed', { product_id: productId });
       setEntitlement(entitlement);
       const synced = await billingApi.sync(true).catch(() => null);
       if (synced?.entitlement) {
@@ -165,6 +173,7 @@ export default function SubscribeScreen() {
   const handleRestore = async () => {
     try {
       setRestoring(true);
+      analytics.trackEvent('paywall_restore_tapped');
       const entitlement = await billingService.restorePurchases();
       setEntitlement(entitlement);
       const synced = await billingApi.sync(true).catch(() => null);
@@ -247,6 +256,40 @@ export default function SubscribeScreen() {
               <Text style={[styles.noticeBody, { color: theme.textSecondary }]}>
                 {billingError || 'This build does not have live billing configured yet. You can continue testing the rest of the app.'}
               </Text>
+              <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
+                <Button
+                  title="Retry"
+                  onPress={() => {
+                    analytics.trackEvent('paywall_retry_tapped');
+                    setBillingError(null);
+                    setLoading(true);
+                    const reload = async () => {
+                      try {
+                        const cfg = await billingApi.getConfig();
+                        setConfig(cfg);
+                        if (user?.id) {
+                          await billingService.bootstrap(user.id, user.email, user.name);
+                          setOffering(await billingService.getOfferings());
+                        }
+                      } catch (err: any) {
+                        setBillingError(err?.message || 'Still unavailable. Please try again later.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    };
+                    reload();
+                  }}
+                  size="sm"
+                />
+                <Button
+                  title="Contact Support"
+                  onPress={() => {
+                    analytics.trackEvent('paywall_support_tapped');
+                    openSupport();
+                  }}
+                  size="sm"
+                />
+              </View>
             </View>
           ) : null}
 

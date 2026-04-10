@@ -7,6 +7,7 @@ import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { toDateKey } from '../utils/dateKey';
 
 interface CalendarDay {
   date: string;
@@ -76,7 +77,7 @@ export function FuelCalendarHeatMap({
     rows.push(grid.slice(i, i + 7));
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toDateKey(new Date());
 
   const todayPulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {

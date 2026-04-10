@@ -148,53 +148,11 @@ def _meal_display_mes(recipe: Recipe, budget: Any, recipe_index: dict[str, Recip
 # Lifestyle preferences that are NOT dietary restrictions — skip them in filtering
 _NON_RESTRICTIVE_DIETS = {"balanced", "none", "everything", "flexible", "standard", "moderate"}
 
-# ── Allergen expansion: map category allergies to specific ingredient keywords ──
-ALLERGEN_EXPANSIONS: dict[str, list[str]] = {
-    "nuts": [
-        "almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut",
-        "macadamia", "brazil nut", "pine nut", "nut butter", "nut milk",
-        "praline", "marzipan", "nougat",
-    ],
-    "tree nuts": [
-        "almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut",
-        "macadamia", "brazil nut", "pine nut",
-    ],
-    "peanuts": ["peanut"],
-    "wheat": [
-        "wheat", " flour", "bread", "pasta", "couscous", "bulgur",
-        "farro", "semolina", "naan", "pita", "crouton",
-    ],
-    "gluten": [
-        "wheat", " flour", "bread", "pasta", "couscous", "bulgur",
-        "farro", "semolina", "barley", "rye", "naan", "pita",
-    ],
-    "dairy": [
-        "milk", "cheese", "butter", "cream", "yogurt", "whey",
-        "casein", "ghee", "sour cream", "ice cream", "kefir",
-    ],
-    "eggs": ["egg"],
-    "soy": ["soy", "tofu", "edamame", "tempeh", "miso"],
-    "shellfish": [
-        "shrimp", "crab", "lobster", "mussel", "clam", "oyster",
-        "scallop", "crawfish", "prawn",
-    ],
-    "fish": [
-        "salmon", "tuna", "cod", "trout", "sardine", "mackerel",
-        "anchovy", "tilapia", "halibut", "bass", "mahi", "swordfish",
-    ],
-    "sesame": ["sesame", "tahini"],
-}
+# Re-export from shared module for backwards compatibility
+from app.services.allergen_utils import ALLERGEN_EXPANSIONS, expand_allergies  # noqa: F401
 
-
-def _expand_allergies(allergies: list[str]) -> set[str]:
-    """Expand category allergies (e.g., 'nuts') into specific ingredient keywords."""
-    expanded: set[str] = set()
-    for allergy in allergies:
-        key = allergy.lower().strip()
-        expanded.add(key)
-        if key in ALLERGEN_EXPANSIONS:
-            expanded.update(ALLERGEN_EXPANSIONS[key])
-    return expanded
+# Keep the private alias so existing callers inside this file still work.
+_expand_allergies = expand_allergies
 
 
 # ── Dietary inference keywords ──

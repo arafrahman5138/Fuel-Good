@@ -510,9 +510,7 @@ export default function SettingsScreen() {
           About
         </Text>
         <View style={[styles.infoCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Environment</Text>
-          <Text style={[styles.infoValue, { color: theme.text }]}>{APP_ENV}</Text>
-          <Text style={[styles.infoLabel, { color: theme.textSecondary, marginTop: Spacing.sm }]}>Version</Text>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Version</Text>
           <Text style={[styles.infoValue, { color: theme.text }]}>{APP_VERSION}</Text>
         </View>
 

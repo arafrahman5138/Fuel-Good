@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontSize, Spacing } from '../constants/Colors';
+import { offlineQueue } from '../services/offlineQueue';
 
 /**
  * Displays a banner when the device appears to be offline.
@@ -26,6 +27,10 @@ export function OfflineBanner() {
         });
         clearTimeout(timeout);
         if (mounted) {
+          // Came back online — flush queued offline mutations
+          if (failCountRef.current >= 2) {
+            offlineQueue.flush().catch(() => {});
+          }
           failCountRef.current = 0;
           setIsOffline(false);
         }

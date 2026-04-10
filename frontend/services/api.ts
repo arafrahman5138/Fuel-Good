@@ -3,11 +3,12 @@ import { useAuthStore } from '../stores/authStore';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { reportClientError } from './errorReporting';
+import { offlineQueue } from './offlineQueue';
 
 class ApiClient {
   private baseUrl: string;
   private defaultTimeout = 15000; // 15 seconds
-  private aiTimeout = 60000; // 60 seconds for AI calls
+  private aiTimeout = 90000; // 90 seconds for AI streaming calls
   private maxRetries = 1;
 
   constructor() {
@@ -192,34 +193,51 @@ class ApiClient {
   /**
    * Wrapper that retries a request once after a silent token refresh on 401.
    */
+  private isMutation(method: string): boolean {
+    return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  }
+
+  private isNetworkError(err: unknown): boolean {
+    if (err instanceof TypeError && err.message === 'Network request failed') return true;
+    if (err instanceof Error && err.message.includes('timed out')) return false; // timeout ≠ offline
+    return false;
+  }
+
   private async requestWithRefresh<T>(
     method: string,
     endpoint: string,
     body?: unknown,
   ): Promise<T> {
+    const headers = this.getHeaders();
+    const serializedBody = body ? JSON.stringify(body) : undefined;
+
     const doFetch = () =>
       this.fetchWithRetry(
         `${this.baseUrl}${endpoint}`,
-        {
-          method,
-          headers: this.getHeaders(),
-          body: body ? JSON.stringify(body) : undefined,
-        },
+        { method, headers, body: serializedBody },
         endpoint,
       );
 
-    let response = await doFetch();
+    try {
+      let response = await doFetch();
 
-    // On 401, try a silent refresh and retry once
-    if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
-      const refreshed = await this.tryRefresh();
-      if (refreshed) {
-        response = await doFetch();
+      // On 401, try a silent refresh and retry once
+      if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
+        const refreshed = await this.tryRefresh();
+        if (refreshed) {
+          response = await doFetch();
+        }
       }
-    }
 
-    if (!response.ok) await this.parseAndThrow(response, endpoint);
-    return response.json();
+      if (!response.ok) await this.parseAndThrow(response, endpoint);
+      return response.json();
+    } catch (err) {
+      // Queue mutations when the device is offline
+      if (this.isMutation(method) && this.isNetworkError(err)) {
+        await offlineQueue.enqueue(method, `${this.baseUrl}${endpoint}`, headers, serializedBody ?? null);
+      }
+      throw err;
+    }
   }
 
   async get<T>(endpoint: string): Promise<T> {

@@ -12,6 +12,7 @@ from app.models.recipe import Recipe
 from app.models.saved_recipe import SavedRecipe
 from app.nutrition_tags import HEALTH_BENEFIT_LABELS
 from app.achievements_engine import check_achievements
+from app.services.allergen_utils import expand_allergies, recipe_matches_user_preferences
 from app.services.ingredient_substitution import apply_user_substitutions
 from app.services.metabolic_engine import (
     build_glycemic_nutrition_input,
@@ -335,10 +336,39 @@ async def browse_recipes(
             ct_conditions = [cast(Recipe.carb_type, SAString).ilike(f'%"{cv}"%') for cv in carb_values]
             query = query.filter(or_(*ct_conditions))
 
-    # Paginate at DB level
-    total = query.count()
-    offset = (page - 1) * page_size
-    page_items = query.offset(offset).limit(page_size).all()
+    # ── Auto-filter by user allergies, dietary preferences & dislikes ──
+    user_allergies = current_user.allergies or []
+    user_dietary_raw = current_user.dietary_preferences or []
+    user_disliked_raw = current_user.disliked_ingredients or []
+
+    _NON_RESTRICTIVE = {"balanced", "none", "everything", "flexible", "standard", "moderate"}
+    user_dietary = {d.lower() for d in user_dietary_raw} - _NON_RESTRICTIVE
+    user_disliked = {d.lower() for d in user_disliked_raw}
+
+    needs_pref_filter = bool(user_allergies or user_dietary or user_disliked)
+
+    if needs_pref_filter:
+        expanded = expand_allergies(user_allergies)
+        all_recipes = query.all()
+        filtered = [
+            r for r in all_recipes
+            if recipe_matches_user_preferences(
+                r.ingredients or [],
+                r.dietary_tags or [],
+                r.title or "",
+                expanded_allergies=expanded,
+                user_dietary=user_dietary,
+                user_disliked=user_disliked,
+            )
+        ]
+        total = len(filtered)
+        offset = (page - 1) * page_size
+        page_items = filtered[offset : offset + page_size]
+    else:
+        # No preference filtering needed — paginate at DB level
+        total = query.count()
+        offset = (page - 1) * page_size
+        page_items = query.offset(offset).limit(page_size).all()
 
     return {
         "items": [_serialize_recipe_card(r, db, current_user) for r in page_items],

@@ -10,6 +10,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
 import { getTierConfig, getTierFromScore, useMetabolicBudgetStore } from '../../../stores/metabolicBudgetStore';
 import { useThemeStore } from '../../../stores/themeStore';
+import { toDateKey } from '../../../utils/dateKey';
 
 const COMPONENT_GUIDE = [
   {
@@ -99,8 +100,8 @@ export default function MESBreakdownScreen() {
     return DAY_LABELS.map((label, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const todayStr = today.toISOString().slice(0, 10);
+      const dateStr = toDateKey(d);
+      const todayStr = toDateKey(today);
       const isFuture = dateStr > todayStr;
       const entry = scoreHistory.find((e) => e.date === dateStr);
       const rawScore = entry ? (entry.display_score ?? entry.total_score ?? 0) : 0;

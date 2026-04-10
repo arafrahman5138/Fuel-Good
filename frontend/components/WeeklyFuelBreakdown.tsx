@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from './GradientCard';
 import { useTheme } from '../hooks/useTheme';
+import { toDateKey } from '../utils/dateKey';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 
 interface DailyFuel {
@@ -50,11 +51,11 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
+      const key = toDateKey(d);
       const entry = dayMap.get(key);
       const score = entry?.avg_fuel_score ?? 0;
       const mealCount = entry?.meal_count ?? 0;
-      const isToday = key === now.toISOString().slice(0, 10);
+      const isToday = key === toDateKey(now);
 
       if (mealCount > 0) {
         if (score >= fuelTarget) clean++;

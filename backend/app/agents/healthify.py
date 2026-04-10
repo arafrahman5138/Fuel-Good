@@ -1171,7 +1171,7 @@ async def _generate_healthified_payload(
     retrieved_context: list[dict[str, Any]],
     user_context: str = "",
 ) -> dict[str, Any]:
-    llm = get_llm("chat")
+    llm = get_llm("chat", max_tokens=4096)
     system_prompt = GENERATE_PROMPT
     if user_context:
         system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"
@@ -1545,7 +1545,7 @@ async def healthify_agent(
 
     retrieved_context = [_recipe_to_payload(item["recipe"]) for item in (retrieval.get("results") or [])[:3]]
     if stream:
-        llm = get_llm("chat")
+        llm = get_llm("chat", max_tokens=4096)
         system_prompt = GENERATE_PROMPT
         if user_context:
             system_prompt = f"{GENERATE_PROMPT}\n\n{user_context}"

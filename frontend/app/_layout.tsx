@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { ActivityIndicator, AppState, AppStateStatus, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, AppState, AppStateStatus, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Stack, router, usePathname, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,10 +11,12 @@ import { useTheme } from '../hooks/useTheme';
 import { useThemeStore } from '../stores/themeStore';
 import { useAuthStore } from '../stores/authStore';
 import { useGamificationStore } from '../stores/gamificationStore';
-import { initializeErrorReporting } from '../services/errorReporting';
+import { initializeErrorReporting, wrapWithSentry } from '../services/errorReporting';
+import { analytics } from '../services/analytics';
+import { useScreenTracking } from '../hooks/useScreenTracking';
 import { preloadReduceMotion } from '../hooks/useAnimations';
 import { billingApi } from '../services/api';
-import { billingService } from '../services/billing';
+import { billingService, isEntitlementStale } from '../services/billing';
 import { registerNotificationListeners, syncPushTokenWithBackend } from '../services/notifications';
 import { subscribeToBillingChanges } from '../services/supabase';
 import { OfflineBanner } from '../components/OfflineBanner';
@@ -35,7 +37,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const theme = useTheme();
   const mode = useThemeStore((s) => s.mode);
   const token = useAuthStore((s) => s.token);
@@ -49,6 +51,9 @@ export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const segments = useSegments();
   const pathname = usePathname();
+
+  // Auto-track screen views on navigation change
+  useScreenTracking();
 
   const currentRootSegment = segments[0];
   const isAuthRoute = currentRootSegment === '(auth)';
@@ -75,6 +80,7 @@ export default function RootLayout() {
     useThemeStore.getState().loadSaved();
     useAuthStore.getState().loadAuth();
     initializeErrorReporting();
+    analytics.init();
     // Sync streak on initial launch
     useGamificationStore.getState().syncStreak();
   }, []);
@@ -84,11 +90,50 @@ export default function RootLayout() {
     return cleanup;
   }, []);
 
+  // Handle deep links (fuelgood:// scheme and universal links)
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const { url } = event;
+      if (!url) return;
+      try {
+        const parsed = new URL(url);
+        const path = parsed.pathname || parsed.host || '';
+        if (path.startsWith('/recipe/') || path.startsWith('recipe/')) {
+          const id = path.replace(/^\/?recipe\//, '');
+          if (id) router.push(`/cook/${id}` as any);
+        } else if (path === '/scan' || path === 'scan') {
+          router.push('/scan/' as any);
+        } else if (path === '/subscribe' || path === 'subscribe') {
+          router.push('/subscribe' as any);
+        } else if (path === '/meal-plan' || path === 'meal-plan') {
+          router.push('/(tabs)/(meals)' as any);
+        }
+        analytics.trackEvent('deep_link_opened', { url, path });
+      } catch {
+        // Malformed URL — ignore.
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    // Handle the URL that launched the app (cold start)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+    return () => subscription.remove();
+  }, []);
+
   useEffect(() => {
     if (token) {
       syncPushTokenWithBackend().catch(() => {});
     }
   }, [token]);
+
+  // Identify user for analytics once profile is available
+  useEffect(() => {
+    if (user?.id) {
+      analytics.identify(String(user.id), { email: user.email });
+    }
+  }, [user?.id]);
 
   const billingBootstrapped = useRef(false);
   useEffect(() => {
@@ -176,9 +221,19 @@ export default function RootLayout() {
     // has premium access or is inside the temporary free-trial window.
     if (!skipBillingGate && !hasPremiumAccess && !isWithinFreeTrial) {
       if (!canAccessWithoutPremium) {
+        analytics.trackEvent('paywall_gate_activated', { pathname });
         router.replace('/subscribe');
       }
       return;
+    }
+
+    // Force re-sync if the entitlement period has expired (stale check)
+    if (user?.entitlement && isEntitlementStale(user.entitlement)) {
+      billingApi.sync(false).then((status) => {
+        if (status?.entitlement) {
+          useAuthStore.getState().setEntitlement(status.entitlement);
+        }
+      }).catch(() => {});
     }
 
     if (isAuthRoute || isSubscribeRoute) {
@@ -189,7 +244,8 @@ export default function RootLayout() {
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && nextState === 'active') {
-        // App came to foreground — sync streak
+        // App came to foreground — sync streak & track
+        analytics.trackEvent('app_opened');
         const token = useAuthStore.getState().token;
         if (token) {
           useGamificationStore.getState().syncStreak();
@@ -275,6 +331,8 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default wrapWithSentry(RootLayout);
 
 const styles = StyleSheet.create({
   loadingScreen: {

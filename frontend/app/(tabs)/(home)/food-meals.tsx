@@ -24,6 +24,7 @@ import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../
 import { useFuelStore } from '../../../stores/fuelStore';
 import type { MealMES } from '../../../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
+import { toDateKey } from '../../../utils/dateKey';
 
 // ── Types ──
 
@@ -94,10 +95,6 @@ function cleanScanTitle(raw: string | undefined, snap: Record<string, any>) {
 
 function isScanSnack(snap: Record<string, any>, sourceType?: string) {
   return sourceType === 'scan' && snap?.meal_context === 'snack';
-}
-
-function toDateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatDateLabel(d: Date): { dayName: string; dateStr: string; isToday: boolean } {

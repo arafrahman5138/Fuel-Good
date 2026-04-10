@@ -60,6 +60,9 @@ export const TERMS_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_TERMS_URL)
 export const SUPPORT_URL = normalizeOptionalUrl(process.env.EXPO_PUBLIC_SUPPORT_URL) || 'https://fuelgood.app/support';
 export const CLIENT_ERROR_REPORTING_ENABLED = (process.env.EXPO_PUBLIC_ENABLE_ERROR_REPORTING?.trim() || 'true') !== 'false';
 export const ENABLE_ANALYTICS = (process.env.EXPO_PUBLIC_ENABLE_ANALYTICS?.trim() || 'false') === 'true';
+export const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY?.trim() || '';
+export const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || 'https://us.i.posthog.com';
+export const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || '';
 export const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() || '';
 export const APP_STORE_MANAGE_SUBSCRIPTIONS_URL =
   process.env.EXPO_PUBLIC_APP_STORE_MANAGE_SUBSCRIPTIONS_URL?.trim()
