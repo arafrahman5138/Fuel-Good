@@ -1,0 +1,28 @@
+.git
+.gitignore
+.DS_Store
+
+# Local env and editor state
+.env
+.env.local
+.expo
+.vscode
+
+# Local tooling artifacts
+.maestro
+.npm-cache
+coverage
+
+# Dependencies rebuilt on EAS
+node_modules
+
+# Temp scripts
+tmp_*.js
+
+# Local screenshots and walkthrough captures
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.mov
+*.mp4

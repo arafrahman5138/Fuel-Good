@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-04-02T16:46:19.916272Z",
-  "meal_count": 95,
+  "meal_count": 96,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -12890,6 +12890,247 @@
         "notes": null
       },
       "created_at": "2026-04-07T00:00:00.000000"
+    },
+    {
+      "id": "1554d258-ad19-414d-9888-96756eb01fdb",
+      "title": "Grilled Steak Fajita Tacos",
+      "description": "Seared ribeye steaks with charred fajita peppers and onions, served in warm corn tortillas with fresh guacamole, habanero sour cream, cotija cheese, and cilantro.",
+      "ingredients": [
+        {
+          "name": "ribeye steaks (~1.25 in thick)",
+          "quantity": "2",
+          "unit": "16-18 oz",
+          "category": "protein"
+        },
+        {
+          "name": "yellow bell pepper, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "orange bell pepper, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red bell pepper, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "green bell pepper, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red onion, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "chili powder",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "smoked paprika",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garlic powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "onion powder",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "oregano",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "salt",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "avocados, mashed",
+          "quantity": "3",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "jalapeño, diced (seeds removed)",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red onion, diced",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh cilantro, chopped",
+          "quantity": "1/3",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "garlic clove, minced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "lime, juiced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "full-fat sour cream",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "dairy"
+        },
+        {
+          "name": "whole-food habanero hot sauce",
+          "quantity": "1/2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "honey",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "corn tortillas",
+          "quantity": "12",
+          "unit": "",
+          "category": "pantry"
+        },
+        {
+          "name": "cotija cheese, crumbled",
+          "quantity": "4",
+          "unit": "oz",
+          "category": "dairy"
+        }
+      ],
+      "steps": [
+        "Mix together the fajita rub — chili powder, cumin, smoked paprika, garlic powder, onion powder, oregano, salt, and pepper.",
+        "Make the guacamole — mash the avocados and fold in the diced jalapeño, red onion, cilantro, garlic, lime juice, salt, and pepper. Refrigerate until ready to serve.",
+        "Make the habanero sour cream — stir together the sour cream, habanero hot sauce, and honey. Refrigerate until ready.",
+        "Pat the steaks dry, coat in avocado oil, and season generously on all sides with the fajita rub.",
+        "Toss the sliced peppers and onion with a drizzle of avocado oil and a good shake of the fajita rub until well coated.",
+        "Grill the fajita veggies over medium-high heat for 6-8 minutes, mixing every couple of minutes until charred and tender. Set aside.",
+        "Sear the steaks over medium-high heat for about 2.5-3.5 minutes per side until they hit your desired temp — pull at around 130F for medium-rare.",
+        "Let the steaks rest 5-10 minutes, then thinly slice against the grain.",
+        "Warm the corn tortillas and assemble — sliced steak, charred fajita veggies, a scoop of guacamole, a drizzle of habanero sour cream, crumbled cotija, and fresh cilantro."
+      ],
+      "prep_time_min": 20,
+      "cook_time_min": 20,
+      "total_time_min": 40,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 720.0,
+        "protein": 52.0,
+        "carbs": 38.0,
+        "fat": 42.0,
+        "fiber": 10.0,
+        "sugar": 6.0,
+        "mes_score": 89.9,
+        "mes_display_score": 89.9,
+        "mes_tier": "optimal",
+        "mes_sub_scores": {
+          "gis": 78.4,
+          "pas": 93.5,
+          "fs": 90.0,
+          "fas": 98.5
+        },
+        "rs3_g": 0.0,
+        "effective_fiber_g": 10.0
+      },
+      "difficulty": "medium",
+      "tags": [
+        "grilled",
+        "high-protein",
+        "tacos"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "charred",
+        "spicy"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "mexican",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy",
+        "heart_health"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "corn_tortilla"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/cd4098a3875d.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": null,
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": true,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "other",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-11T00:00:00.000000"
     }
   ]
 }

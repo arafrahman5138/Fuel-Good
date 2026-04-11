@@ -14,7 +14,7 @@
     "splash": {
       "image": "./assets/images/splash-icon-light.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#F9F9F2"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,11 +23,11 @@
       "splash": {
         "image": "./assets/images/splash-icon-light.png",
         "resizeMode": "contain",
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#F9F9F2",
         "dark": {
           "image": "./assets/images/splash-icon-dark.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0A0A0F"
+          "backgroundColor": "#222121"
         }
       },
       "config": {
@@ -54,7 +54,7 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0A0A0F"
+        "backgroundColor": "#222121"
       },
       "package": "com.fuelgood.app",
       "permissions": [

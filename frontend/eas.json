@@ -13,7 +13,8 @@
         "EXPO_PUBLIC_RELEASE_CHANNEL": "development",
         "EXPO_PUBLIC_ENABLE_ERROR_REPORTING": "true",
         "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
-        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f"
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "preview": {
@@ -27,7 +28,8 @@
         "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_pkQnpZsWQMeDLvqlLlVnHXtGiKk",
         "EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID": "Fuel Good Premium",
-        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f"
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "simulator": false,
@@ -45,7 +47,8 @@
         "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_pkQnpZsWQMeDLvqlLlVnHXtGiKk",
         "EXPO_PUBLIC_PREMIUM_ENTITLEMENT_ID": "Fuel Good Premium",
-        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f"
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "fd207039-72fe-4e1c-a344-495e48d4bc4f",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
         "image": "latest",
