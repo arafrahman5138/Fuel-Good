@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Image,
@@ -167,6 +168,8 @@ export default function HomeScreen() {
   const [loggingMealId, setLoggingMealId] = useState<string | null>(null);
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
   const [loggedMealIds, setLoggedMealIds] = useState<Set<string>>(new Set());
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const weekDays = useMemo(() => {
     const now = new Date();
@@ -248,11 +251,14 @@ export default function HomeScreen() {
     try {
       const data = await nutritionApi.getDaily(date);
       if (data) setDailySummary(data);
-    } catch {}
+    } catch {
+      setLoadError(true);
+    }
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setLoadError(false);
     // Reset meal plan hasLoaded so it reloads
     useMealPlanStore.setState({ hasLoaded: false });
     await Promise.all([
@@ -292,15 +298,17 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    loadRecommended();
-    loadCurrentPlan();
-    loadDailyNutrition(selectedDayKey);
-    fetchMetabolic(selectedDayKey);
-    fetchFuelDaily(selectedDayKey);
-    fetchFuelWeekly(selectedDayKey);
-    fetchFlexSuggestions(selectedDayKey);
-    fetchHealthPulse(selectedDayKey);
-    loadRecentMeals();
+    Promise.all([
+      loadRecommended(),
+      loadCurrentPlan(),
+      loadDailyNutrition(selectedDayKey),
+      fetchMetabolic(selectedDayKey),
+      fetchFuelDaily(selectedDayKey),
+      fetchFuelWeekly(selectedDayKey),
+      fetchFlexSuggestions(selectedDayKey),
+      fetchHealthPulse(selectedDayKey),
+      loadRecentMeals(),
+    ]).finally(() => setIsInitialLoading(false));
   }, []);
 
   useEffect(() => {
@@ -706,7 +714,7 @@ export default function HomeScreen() {
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
                 {(fuelStreak?.current_streak ?? 0) > 0 && (
-                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak.current_streak}</Text>
+                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak}</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -742,6 +750,20 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
+        {isInitialLoading && (
+          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 120 }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        )}
+        {loadError && !isInitialLoading && (
+          <TouchableOpacity
+            onPress={() => { setLoadError(false); onRefresh(); }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, marginHorizontal: Spacing.xl, marginBottom: 4, backgroundColor: theme.warning + '18', borderRadius: BorderRadius.md }}
+          >
+            <Ionicons name="cloud-offline-outline" size={14} color={theme.warning} style={{ marginRight: 6 }} />
+            <Text style={{ fontSize: FontSize.sm, color: theme.warning }}>Some data couldn't load. Tap to retry.</Text>
+          </TouchableOpacity>
+        )}
         {/* Header */}
         <Animated.View
           style={[
@@ -765,7 +787,7 @@ export default function HomeScreen() {
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
                 {(fuelStreak?.current_streak ?? 0) > 0 && (
-                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak.current_streak}</Text>
+                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak}</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity

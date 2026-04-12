@@ -71,9 +71,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
 
   // Theme-adaptive colours
   const blurTint = isDark ? 'dark' : 'light';
-  const tintBg = isDark ? 'rgba(10, 10, 15, 0.42)' : 'rgba(248, 248, 248, 0.68)';
+  const tintBg = isDark ? 'rgba(10, 10, 15, 0.65)' : 'rgba(248, 248, 248, 0.78)';
   const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const inactiveColor = isDark ? 'rgba(255,255,255,0.82)' : CHARCOAL;
+  const inactiveColor = isDark ? 'rgba(255,255,255,0.82)' : theme.textSecondary;
   const pillShadow = Shadows.lg(isDark);
   const plusShadow = Shadows.md(isDark);
   const menuShadow = Shadows.overlay(isDark);

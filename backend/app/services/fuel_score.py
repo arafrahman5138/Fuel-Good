@@ -187,12 +187,16 @@ def _score_scan(
                 score += 4
                 reasoning.append(f"Includes whole-grain or complex carb sources.")
 
-    # Dessert/sweet penalty — these are flex meals by design
+    # Dessert/sweet penalty — only for processed desserts
     if has_dessert_component:
-        score -= 15
-        score = min(score, 65)
-        flags.append("Dessert / sweet treat")
-        reasoning.append("This is a sweet treat — desserts and sweets are heavily processed by nature.")
+        has_processing_flags = bool(whole_food_flags and any(
+            str((f or {}).get("severity", "")) in ("high", "medium") for f in whole_food_flags
+        ))
+        if has_processing_flags or whole_food_status == "fail":
+            score -= 15
+            score = min(score, 65)
+            flags.append("Dessert / sweet treat")
+            reasoning.append("This dessert contains processed ingredients.")
 
     # ── Whole-food flag penalties (from scan pipeline) ──
     if whole_food_flags:

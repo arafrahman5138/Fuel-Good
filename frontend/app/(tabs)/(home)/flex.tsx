@@ -98,7 +98,7 @@ export default function FlexScreen() {
   const cleanLogged = budget?.clean_meals_logged ?? 0;
   const cleanTarget = budget?.clean_meals_target ?? 17;
   const cleanPct = budget?.clean_pct ?? settings?.clean_eating_pct ?? 80;
-  const projectedAvg = budget?.projected_weekly_avg ?? 0;
+  const projectedAvg = budget?.avg_fuel_score ?? budget?.projected_weekly_avg ?? 0;
   const mealsLogged = budget?.meals_logged ?? 0;
   const expectedMeals = budget?.expected_meals ?? 21;
   const tier = getTierLabel(projectedAvg);
@@ -131,16 +131,21 @@ export default function FlexScreen() {
       return;
     }
     setIsLogging(true);
-    const result = await logManualFlex({ tag: selectedTag || 'other' });
-    setIsLogging(false);
-    if (result) {
-      setShowLogSheet(false);
-      setSelectedTag(null);
-      setToastMessage(
-        `${result.title} logged! ${result.flex_available} flex meal${result.flex_available !== 1 ? 's' : ''} remaining`,
-      );
-    } else {
-      Alert.alert('Logging Failed', 'Something went wrong logging your flex meal. Please try again.');
+    try {
+      const result = await logManualFlex({ tag: selectedTag || 'other' });
+      if (result) {
+        setShowLogSheet(false);
+        setSelectedTag(null);
+        setToastMessage(
+          `${result.title} logged! ${result.flex_available} flex meal${result.flex_available !== 1 ? 's' : ''} remaining`,
+        );
+      } else {
+        Alert.alert('Logging Failed', 'Something went wrong logging your flex meal. Please try again.');
+      }
+    } catch {
+      Alert.alert('Logging Failed', 'Could not log your flex meal. Check your connection and try again.');
+    } finally {
+      setIsLogging(false);
     }
   };
 

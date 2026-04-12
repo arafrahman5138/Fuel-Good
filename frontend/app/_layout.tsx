@@ -58,7 +58,7 @@ function RootLayout() {
   const currentRootSegment = segments[0];
   const isAuthRoute = currentRootSegment === '(auth)';
   const isOnboardingV2Route = currentRootSegment === 'onboarding-v2';
-  const isOnboardingRoute = isOnboardingV2Route || (isAuthRoute && segments[1] === 'onboarding');
+  const isOnboardingRoute = isOnboardingV2Route || (isAuthRoute && (segments as string[])[1] === 'onboarding');
   const isSubscribeRoute = pathname === '/subscribe';
   const canAccessWithoutPremium = isAuthRoute || isOnboardingV2Route || isSubscribeRoute || pathname === '/';
   const skipBillingGate = __DEV__;

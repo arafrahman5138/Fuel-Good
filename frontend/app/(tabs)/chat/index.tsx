@@ -769,13 +769,7 @@ export default function ChatScreen() {
                       : [styles.messageBubble, styles.assistantBubble]
                   }
                 >
-                {msg.role === 'assistant' && (
-                  <View style={styles.assistantHeader}>
-                    <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
-                      <Ionicons name="sparkles" size={10} color="#FFF" />
-                    </LinearGradient>
-                  </View>
-                )}
+                {/* Assistant avatar removed for cleaner look */}
                 {msg.role === 'user' ? (
                   <LinearGradient
                     colors={['#22C55E', '#16A34A'] as const}
@@ -1217,12 +1211,7 @@ export default function ChatScreen() {
           }}
           ListFooterComponent={isLoading ? (
             <Animated.View style={[styles.messageBubble, styles.assistantBubble, { width: '100%' }]}>
-              <View style={styles.assistantHeader}>
-                <LinearGradient colors={theme.gradient.primary} style={styles.miniIcon}>
-                  <Ionicons name="sparkles" size={10} color="#FFF" />
-                </LinearGradient>
-                <Text style={[styles.assistantLabel, { color: theme.primary }]}>Fuel Coach</Text>
-              </View>
+              {/* Assistant avatar removed for cleaner look */}
               <View style={[styles.bubbleContent, { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }]}>
                 {streamingText ? (
                   streamingText.trimStart().startsWith('{') || streamingText.trimStart().startsWith('```') ? (

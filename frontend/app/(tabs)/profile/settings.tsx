@@ -82,17 +82,25 @@ export default function SettingsScreen() {
     }
   }, [budget]);
 
+  const [isSavingWeights, setIsSavingWeights] = useState(false);
   const saveBudgetWeights = async () => {
     const total = proteinW + fiberW + sugarW;
     const pw = proteinW / total;
     const fw = fiberW / total;
     const sw = sugarW / total;
-    await updateBudget({
-      weight_protein: Math.round(pw * 100) / 100,
-      weight_fiber: Math.round(fw * 100) / 100,
-      weight_sugar: Math.round(sw * 100) / 100,
-    });
-    setShowBudgetEditor(false);
+    setIsSavingWeights(true);
+    try {
+      await updateBudget({
+        weight_protein: Math.round(pw * 100) / 100,
+        weight_fiber: Math.round(fw * 100) / 100,
+        weight_sugar: Math.round(sw * 100) / 100,
+      });
+      setShowBudgetEditor(false);
+    } catch {
+      Alert.alert('Error', 'Failed to save weights. Please try again.');
+    } finally {
+      setIsSavingWeights(false);
+    }
   };
 
   const themeOptions: { id: 'system' | 'light' | 'dark'; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -191,13 +199,13 @@ export default function SettingsScreen() {
             {
               icon: 'restaurant' as const,
               label: 'Liked Proteins',
-              desc: (user?.protein_preferences?.likes?.length ? user.protein_preferences.likes.join(', ') : null) || 'Not set',
+              desc: (user?.protein_preferences?.liked?.length ? user.protein_preferences.liked.join(', ') : null) || 'Not set',
               section: 'liked_proteins',
             },
             {
               icon: 'remove-circle' as const,
               label: 'Proteins to Avoid',
-              desc: (user?.protein_preferences?.dislikes?.length ? user.protein_preferences.dislikes.join(', ') : null) || 'None',
+              desc: (user?.protein_preferences?.disliked?.length ? user.protein_preferences.disliked.join(', ') : null) || 'None',
               section: 'disliked_proteins',
             },
             {
@@ -564,6 +572,7 @@ export default function SettingsScreen() {
                           style: 'destructive',
                           onPress: async () => {
                             try {
+                              Alert.alert('Deleting...', 'Please wait while we delete your account.');
                               await authApi.deleteAccount();
                               logout();
                               router.replace('/(auth)/login');

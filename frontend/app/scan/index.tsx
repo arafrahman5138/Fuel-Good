@@ -1871,35 +1871,6 @@ export default function ScanScreen() {
           )}
         </View>
 
-        {mealResult.pairing_opportunity && mealResult.pairing_recommended_title && mealResult.pairing_projected_mes != null && (
-          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>Recommended pairing</Text>
-            <View style={[styles.pairingPreviewCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-              <View style={styles.pairingPreviewHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.pairingPreviewTitle, { color: theme.text }]}>{mealResult.pairing_recommended_title}</Text>
-                  <Text style={[styles.pairingPreviewCopy, { color: theme.textSecondary }]}>
-                    {mealResult.pairing_timing === 'before_meal' ? 'Best before the meal' : 'Best with the meal'}
-                  </Text>
-                </View>
-                <View style={[styles.pairingDeltaPill, { backgroundColor: theme.primaryMuted }]}>
-                  <Text style={[styles.pairingDeltaText, { color: theme.primary }]}>
-                    +{Math.round(mealResult.pairing_projected_delta || 0)} MES
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.pairingPreviewMes, { color: theme.text }]}>
-                {mealResult.mes ? Math.round(mealResult.mes.score) : '--'} {'->'} {Math.round(mealResult.pairing_projected_mes)}
-              </Text>
-              {!!mealResult.pairing_reasons?.length && (
-                <Text style={[styles.pairingPreviewCopy, { color: theme.textSecondary }]}>
-                  {mealResult.pairing_reasons.join(' • ')}
-                </Text>
-              )}
-            </View>
-          </View>
-        )}
-
         {/* ── Tips — collapsible, merged upgrade + recovery ── */}
         {((mealResult.upgrade_suggestions || []).length > 0 || (mealResult.recovery_plan || []).length > 0) && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
