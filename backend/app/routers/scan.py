@@ -467,13 +467,16 @@ async def analyze_product_image(
     try:
         storage_ref = None
         if is_supabase_storage_configured():
-            storage_ref = await _store_scan_image(
-                user_id=current_user.id,
-                namespace="label-scans",
-                bucket=settings.supabase_storage_label_scans_bucket,
-                image_bytes=image_bytes,
-                mime_type=image.content_type,
-            )
+            try:
+                storage_ref = await _store_scan_image(
+                    user_id=current_user.id,
+                    namespace="label-scans",
+                    bucket=settings.supabase_storage_label_scans_bucket,
+                    image_bytes=image_bytes,
+                    mime_type=image.content_type,
+                )
+            except Exception:
+                logger.warning("Label scan image storage request failed; continuing without stored image", exc_info=True)
 
         result = await analyze_product_label_image(
             image_bytes=image_bytes,
