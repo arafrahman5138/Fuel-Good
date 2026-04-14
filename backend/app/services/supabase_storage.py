@@ -28,7 +28,8 @@ def build_private_object_path(*, user_id: str, namespace: str, extension: str) -
     safe_extension = (extension or "jpg").lower().strip(".") or "jpg"
     now = datetime.now(UTC)
     stamp = now.strftime("%Y/%m/%d")
-    return f"{namespace}/{user_id}/{stamp}/{uuid.uuid4()}.{safe_extension}"
+    # user_id must be the first path segment to satisfy RLS policies
+    return f"{user_id}/{stamp}/{uuid.uuid4()}.{safe_extension}"
 
 
 async def upload_private_object(
@@ -47,7 +48,7 @@ async def upload_private_object(
                 "Authorization": f"Bearer {settings.supabase_service_role_key}",
                 "apikey": settings.supabase_service_role_key,
                 "Content-Type": mime_type,
-                "x-upsert": "false",
+                "x-upsert": "true",
             },
         )
         response.raise_for_status()
