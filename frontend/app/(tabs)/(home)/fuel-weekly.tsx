@@ -235,7 +235,7 @@ export default function FuelWeeklyScreen() {
           const avg = Math.round(weekly.avg_fuel_score);
           const meals = weekly.meal_count;
           const flexUsed = weekly.flex_budget?.flex_used ?? 0;
-          const flexEarned = weekly.flex_budget?.total_flex ?? 0;
+          const flexEarned = weekly.flex_budget?.flex_budget ?? 0;
           // Find best day
           const days = weekly.daily_breakdown ?? [];
           const daysWithMeals = days.filter((d: any) => d.meal_count > 0);

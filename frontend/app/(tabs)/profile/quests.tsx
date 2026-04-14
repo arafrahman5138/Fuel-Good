@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   StyleSheet,
@@ -37,15 +38,14 @@ export default function QuestsScreen() {
   const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
   const fetchMetabolicStreak = useMetabolicBudgetStore((s) => s.fetchStreak);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const xp = stats?.xp_points ?? user?.xp_points ?? 0;
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
 
   useEffect(() => {
-    fetchQuests();
-    fetchStats();
-    fetchFuelStreak();
-    fetchMetabolicStreak();
+    Promise.allSettled([fetchQuests(), fetchStats(), fetchFuelStreak(), fetchMetabolicStreak()])
+      .finally(() => setIsLoading(false));
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -75,6 +75,11 @@ export default function QuestsScreen() {
           <View style={{ width: 36 }} />
         </View>
 
+        {isLoading && (
+          <View style={{ alignItems: 'center', paddingVertical: 60 }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        )}
         {/* Streak Overview */}
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={styles.streakRow}>

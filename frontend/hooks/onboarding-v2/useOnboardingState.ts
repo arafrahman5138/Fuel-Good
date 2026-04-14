@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface OnboardingState {
   // Screen 3
@@ -64,24 +66,47 @@ const initialState = {
   completedAt: null as Date | null,
 };
 
-export const useOnboardingState = create<OnboardingState>((set) => ({
-  ...initialState,
-  setEnergyFeeling: (value) => set({ energyFeeling: value }),
-  setDietHistory: (value) => set({ dietHistory: value }),
-  setPrimaryGoal: (value) => set({ primaryGoal: value }),
-  setAgeRange: (value) => set({ ageRange: value }),
-  setHeight: (value) => set({ height: value }),
-  setWeight: (value) => set({ weight: value }),
-  setSex: (value) => set({ sex: value }),
-  setActivityLevel: (value) => set({ activityLevel: value }),
-  setCommitted: (value) => set({ committed: value }),
-  incrementPaywallDismiss: () =>
-    set((state) => ({
-      paywallDismissCount: Math.min(state.paywallDismissCount + 1, 2) as 0 | 1 | 2,
-    })),
-  setScanCompleted: (value) => set({ scanCompleted: value }),
-  setReviewPromptShown: (value) => set({ reviewPromptShown: value }),
-  setReviewLeft: (value) => set({ reviewLeft: value }),
-  setCompletedAt: (value) => set({ completedAt: value }),
-  reset: () => set({ ...initialState, startedAt: new Date() }),
-}));
+export const useOnboardingState = create<OnboardingState>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      setEnergyFeeling: (value) => set({ energyFeeling: value }),
+      setDietHistory: (value) => set({ dietHistory: value }),
+      setPrimaryGoal: (value) => set({ primaryGoal: value }),
+      setAgeRange: (value) => set({ ageRange: value }),
+      setHeight: (value) => set({ height: value }),
+      setWeight: (value) => set({ weight: value }),
+      setSex: (value) => set({ sex: value }),
+      setActivityLevel: (value) => set({ activityLevel: value }),
+      setCommitted: (value) => set({ committed: value }),
+      incrementPaywallDismiss: () =>
+        set((state) => ({
+          paywallDismissCount: Math.min(state.paywallDismissCount + 1, 2) as 0 | 1 | 2,
+        })),
+      setScanCompleted: (value) => set({ scanCompleted: value }),
+      setReviewPromptShown: (value) => set({ reviewPromptShown: value }),
+      setReviewLeft: (value) => set({ reviewLeft: value }),
+      setCompletedAt: (value) => set({ completedAt: value }),
+      reset: () => set({ ...initialState, startedAt: new Date() }),
+    }),
+    {
+      name: 'onboarding-v2-state',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        energyFeeling: state.energyFeeling,
+        dietHistory: state.dietHistory,
+        primaryGoal: state.primaryGoal,
+        ageRange: state.ageRange,
+        height: state.height,
+        weight: state.weight,
+        sex: state.sex,
+        activityLevel: state.activityLevel,
+        committed: state.committed,
+        paywallDismissCount: state.paywallDismissCount,
+        scanCompleted: state.scanCompleted,
+        startedAt: state.startedAt,
+        completedAt: state.completedAt,
+      }),
+    }
+  )
+);

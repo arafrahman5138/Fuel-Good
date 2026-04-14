@@ -20,9 +20,11 @@ node_modules
 tmp_*.js
 
 # Local screenshots and walkthrough captures
-*.png
-*.jpg
-*.jpeg
+assets/images/generated-splash-check-dark/
+assets/images/generated-splash-check-light/
+assets/images/*-splash-sheet*.png
+qa_splash_burst_*/
+qa_splash_burst_*_sheet.png
 *.heic
 *.mov
 *.mp4

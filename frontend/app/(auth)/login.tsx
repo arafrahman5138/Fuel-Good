@@ -402,7 +402,7 @@ export default function LoginScreen() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => setIsRegister(!isRegister)} style={styles.toggleAuth}>
+          <TouchableOpacity onPress={() => { setIsRegister(!isRegister); setError(''); setFieldErrors({}); setPassword(''); }} style={styles.toggleAuth}>
             <Text style={[styles.toggleText, { color: theme.textSecondary }]}>
               {isRegister ? 'Already have an account? ' : "Don't have an account? "}
               <Text style={{ color: theme.primary, fontWeight: '700' }}>

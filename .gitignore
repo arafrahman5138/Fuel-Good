@@ -7,6 +7,14 @@ frontend/.env.local
 node_modules/
 *.log
 /.expo
+.DS_Store
+
+# Local artifacts / generated review assets
+backend/backups/
+frontend/qa_splash_burst_*/
+frontend/qa_splash_burst_*_sheet.png
+tasks/audit-screenshots/
+day1_*.png
 
 # Python
 __pycache__/

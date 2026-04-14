@@ -111,8 +111,12 @@ export default function GoalContextScreen() {
   };
 
   const handleBodyContinue = () => {
-    const totalInches = (parseInt(heightFt, 10) || 0) * 12 + (parseInt(heightIn, 10) || 0);
+    const ft = parseInt(heightFt, 10) || 0;
+    const inches = parseInt(heightIn, 10) || 0;
+    const totalInches = ft * 12 + inches;
     const w = parseInt(weightLbs, 10) || 0;
+
+    if (totalInches <= 0 || w <= 0) return; // Prevent invalid body metrics
 
     store.setAgeRange(selectedAge);
     store.setSex(selectedSex);
@@ -133,7 +137,9 @@ export default function GoalContextScreen() {
     selectedAge !== '' &&
     selectedSex !== null &&
     heightFt !== '' &&
-    weightLbs !== '';
+    parseInt(heightFt, 10) > 0 &&
+    weightLbs !== '' &&
+    parseInt(weightLbs, 10) > 0;
 
   const renderSubStep0 = () => (
     <View style={styles.stepContent}>

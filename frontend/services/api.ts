@@ -184,9 +184,18 @@ class ApiClient {
     }
 
     // Client errors (4xx) - use the server's detail message if available
-    const userMessage = error.detail && typeof error.detail === 'string' && !error.detail.includes('/')
-      ? error.detail
-      : 'This request could not be completed. Please check your input and try again.';
+    let userMessage = 'This request could not be completed. Please check your input and try again.';
+    if (error.detail) {
+      if (typeof error.detail === 'string' && !error.detail.includes('/')) {
+        userMessage = error.detail;
+      } else if (Array.isArray(error.detail) && error.detail.length > 0) {
+        // Pydantic validation errors return detail as an array of objects with msg fields
+        const firstError = error.detail[0];
+        if (firstError?.msg) {
+          userMessage = firstError.msg.replace(/^value is not /i, 'Invalid value: ');
+        }
+      }
+    }
     throw new Error(userMessage);
   }
 

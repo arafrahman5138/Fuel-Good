@@ -341,6 +341,7 @@ export default function ScanScreen() {
   const [whyScoreExpanded, setWhyScoreExpanded] = useState(false);
   const [tipsExpanded, setTipsExpanded] = useState(false);
   const [flagsExpanded, setFlagsExpanded] = useState(false);
+  const [labelExpanded, setLabelExpanded] = useState(false);
 
   const [productResult, setProductResult] = useState<ProductResult | null>(null);
   const [successModal, setSuccessModal] = useState<{ visible: boolean; message: string }>({
@@ -1146,7 +1147,7 @@ export default function ScanScreen() {
                           <Text style={styles.recentScoreText}>{Math.round(score)}</Text>
                         </View>
                       )}
-                      <Text style={styles.recentScanLabel} numberOfLines={1}>{item.label || 'Saved item'}</Text>
+                      <Text style={styles.recentScanLabel} numberOfLines={2}>{item.label || 'Saved item'}</Text>
                     </View>
                     {item.scan_type === 'meal' && (
                       <TouchableOpacity
@@ -1191,7 +1192,7 @@ export default function ScanScreen() {
                           <Text style={styles.recentScoreText}>{Math.round(score)}</Text>
                         </View>
                       )}
-                      <Text style={styles.recentScanLabel} numberOfLines={1}>{label || 'Scanned item'}</Text>
+                      <Text style={styles.recentScanLabel} numberOfLines={2}>{label || 'Scanned item'}</Text>
                     </View>
                     {scanMode === 'meal' && (
                       <TouchableOpacity
@@ -2028,7 +2029,7 @@ export default function ScanScreen() {
               <Text style={[styles.verdictEyebrow, { color: productTierMeta.color }]}>{productResult.verdict}</Text>
               <Text style={[styles.resultTitleText, { color: theme.text }]}>{productResult.product_name}</Text>
               {!!productResult.brand && <Text style={[styles.resultMeta, { color: theme.textSecondary }]}>{productResult.brand}</Text>}
-              <View style={[styles.statusChip, { backgroundColor: productTierMeta.bg }]}>
+              <View style={[styles.statusChip, { backgroundColor: productTierMeta.color + '18' }]}>
                 <Text style={[styles.statusChipText, { color: productTierMeta.color }]}>{productTierMeta.label}</Text>
               </View>
             </View>
@@ -2043,7 +2044,7 @@ export default function ScanScreen() {
             </View>
           ) : null}
           <Text style={[styles.resultSummary, { color: theme.textSecondary }]}>{productResult.summary}</Text>
-          <View style={[styles.productActionCard, { backgroundColor: productTierMeta.bg }]}>
+          <View style={[styles.productActionCard, { backgroundColor: productTierMeta.color + '15' }]}>
             <Ionicons name="leaf-outline" size={18} color={productTierMeta.color} />
             <Text style={[styles.productActionCopy, { color: theme.text }]}>{productResult.recommended_action}</Text>
           </View>
@@ -2075,24 +2076,33 @@ export default function ScanScreen() {
           )}
         </View>
 
-        <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
-          <View style={styles.macroGrid}>
-            {[
-              { label: 'Calories', value: `${productResult.nutrition_snapshot.calories}`, accent: macroAccents.calories },
-              { label: 'Protein', value: `${productResult.nutrition_snapshot.protein_g}g`, accent: macroAccents.protein },
-              { label: 'Carbs', value: `${productResult.nutrition_snapshot.carbs_g}g`, accent: macroAccents.carbs },
-              { label: 'Fat', value: `${Math.round(productResult.nutrition_snapshot.fat_g)}g`, accent: macroAccents.fat },
-              { label: 'Fiber', value: `${productResult.nutrition_snapshot.fiber_g}g`, accent: macroAccents.fiber },
-              { label: 'Sugar', value: `${productResult.nutrition_snapshot.sugar_g}g`, accent: macroAccents.carbs },
-            ].map((row) => (
-              <View key={row.label} style={[styles.macroCard, { backgroundColor: row.accent.bg }]}>
-                <Text style={[styles.macroCardValue, { color: row.accent.color }]}>{row.value}</Text>
-                <Text style={[styles.macroCardLabel, { color: theme.textSecondary }]}>{row.label}</Text>
-              </View>
-            ))}
+        {(productResult.nutrition_snapshot.calories > 0 || productResult.nutrition_snapshot.protein_g > 0) ? (
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
+            <View style={styles.macroGrid}>
+              {[
+                { label: 'Calories', value: `${productResult.nutrition_snapshot.calories}`, accent: macroAccents.calories },
+                { label: 'Protein', value: `${productResult.nutrition_snapshot.protein_g}g`, accent: macroAccents.protein },
+                { label: 'Carbs', value: `${productResult.nutrition_snapshot.carbs_g}g`, accent: macroAccents.carbs },
+                { label: 'Fat', value: `${Math.round(productResult.nutrition_snapshot.fat_g)}g`, accent: macroAccents.fat },
+                { label: 'Fiber', value: `${productResult.nutrition_snapshot.fiber_g}g`, accent: macroAccents.fiber },
+                { label: 'Sugar', value: `${productResult.nutrition_snapshot.sugar_g}g`, accent: macroAccents.carbs },
+              ].map((row) => (
+                <View key={row.label} style={[styles.macroCard, { backgroundColor: row.accent.bg }]}>
+                  <Text style={[styles.macroCardValue, { color: row.accent.color }]}>{row.value}</Text>
+                  <Text style={[styles.macroCardLabel, { color: theme.textSecondary }]}>{row.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>Nutrition snapshot</Text>
+            <Text style={{ color: theme.textTertiary, fontSize: FontSize.sm }}>
+              Nutrition facts were not detected from this label. Try scanning the nutrition panel directly.
+            </Text>
+          </View>
+        )}
 
         {flaggedRows.length > 0 && (
           <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -2146,18 +2156,34 @@ export default function ScanScreen() {
         )}
 
         <View style={[styles.resultSection, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.sectionHeading, { color: theme.text }]}>Extracted label</Text>
-          <Text style={[styles.productLabelText, { color: theme.textSecondary }]}>
-            {productResult.ingredients_text || 'No ingredient text was extracted from this scan yet.'}
-          </Text>
-          {(productResult.notes || []).length > 0 && (
-            <View style={styles.productNotesWrap}>
-              {(productResult.notes || []).map((item) => (
-                <View key={item} style={styles.guidanceRow}>
-                  <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
-                  <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+          <TouchableOpacity
+            onPress={() => setLabelExpanded(!labelExpanded)}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Extracted label</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
+                {productResult.ingredient_count || 0} ingredients
+              </Text>
+              <Ionicons name={labelExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textTertiary} />
+            </View>
+          </TouchableOpacity>
+          {labelExpanded && (
+            <View style={{ marginTop: Spacing.sm }}>
+              <Text style={[styles.productLabelText, { color: theme.textSecondary }]}>
+                {productResult.ingredients_text || 'No ingredient text was extracted from this scan yet.'}
+              </Text>
+              {(productResult.notes || []).length > 0 && (
+                <View style={styles.productNotesWrap}>
+                  {(productResult.notes || []).map((item) => (
+                    <View key={item} style={styles.guidanceRow}>
+                      <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
+                      <Text style={[styles.guidanceText, { color: theme.text }]}>{item}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
+              )}
             </View>
           )}
         </View>
@@ -2584,11 +2610,11 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: BorderRadius.lg,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginRight: 8,
-    minWidth: 140,
-    maxWidth: 220,
+    minWidth: 200,
+    maxWidth: 280,
     gap: 8,
   },
   recentScoreBadge: {
@@ -2605,9 +2631,10 @@ const styles = StyleSheet.create({
   },
   recentScanLabel: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: FontSize.xs,
-    fontWeight: '500' as const,
+    fontSize: FontSize.sm,
+    fontWeight: '600' as const,
     flex: 1,
+    lineHeight: 18,
   },
   recentRelogBtn: {
     flexDirection: 'row' as const,
