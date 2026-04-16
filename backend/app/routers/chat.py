@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 import asyncio
 import json
@@ -15,7 +16,7 @@ from app.models.metabolic_profile import MetabolicProfile
 from app.schemas.chat import ChatRequest, ChatResponse, ChatSessionSummary
 from app.agents.healthify import healthify_agent, parse_healthify_response, repair_missing_recipe
 from app.services.metabolic_engine import load_budget_for_user, aggregate_daily_totals, remaining_budget
-from typing import List
+from typing import List, Literal, Optional
 from datetime import UTC, date, datetime
 from app.services.notifications import record_notification_event
 from app.services.chat_limits import acquire_chat_slot, enforce_chat_quota, record_chat_usage, release_chat_slot
@@ -597,6 +598,53 @@ def _filter_suggestions(suggestions: list[str], user: User | None) -> list[str]:
         return suggestions
 
     return [s for s in suggestions if not (_SUGGESTION_TAGS.get(s, set()) & excluded_tags)]
+
+
+class ChatReportRequest(BaseModel):
+    session_id: Optional[str] = None
+    message_content: str = Field(..., min_length=1, max_length=10000)
+    reason: Literal["harmful", "inaccurate", "inappropriate", "other"]
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+@router.post("/report")
+async def report_chat_message(
+    payload: ChatReportRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """User-submitted moderation report for an AI-generated chat response.
+
+    Required by App Store Guideline on user-generated / AI-generated content:
+    provide a mechanism for users to flag objectionable responses. Each report
+    is persisted as a notification_event so operators can review in the admin
+    pipeline without introducing a new table/migration on submission day.
+    """
+    try:
+        excerpt = payload.message_content[:1000]
+        record_notification_event(
+            db,
+            user_id=current_user.id,
+            event_type="chat_report_submitted",
+            properties={
+                "reason": payload.reason,
+                "session_id": payload.session_id,
+                "message_excerpt": excerpt,
+                "notes": (payload.notes or "")[:500] or None,
+                "reported_at": datetime.now(UTC).isoformat(),
+            },
+            source="user",
+        )
+        db.commit()
+        logger.warning(
+            "chat_report_submitted reason=%s session=%s user_id=%s",
+            payload.reason,
+            payload.session_id or "n/a",
+            current_user.id,
+        )
+    except Exception:
+        logger.exception("Failed to persist chat report; acknowledging to client anyway")
+    return {"ok": True}
 
 
 @router.get("/suggestions")

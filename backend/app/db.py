@@ -13,10 +13,11 @@ settings = get_settings()
 
 engine = create_engine(
     settings.database_url,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=20,
+    max_overflow=30,
     pool_pre_ping=True,
     pool_recycle=300,
+    pool_timeout=30,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -200,6 +201,8 @@ def ensure_legacy_schema_columns() -> None:
         ("scanned_meal_logs", "image_path", "ALTER TABLE scanned_meal_logs ADD COLUMN image_path VARCHAR"),
         ("scanned_meal_logs", "image_mime_type", "ALTER TABLE scanned_meal_logs ADD COLUMN image_mime_type VARCHAR"),
         ("scanned_meal_logs", "fuel_score", "ALTER TABLE scanned_meal_logs ADD COLUMN fuel_score FLOAT"),
+        ("notification_deliveries", "retry_count", "ALTER TABLE notification_deliveries ADD COLUMN retry_count INTEGER DEFAULT 0 NOT NULL"),
+        ("notification_deliveries", "next_retry_at", "ALTER TABLE notification_deliveries ADD COLUMN next_retry_at TIMESTAMP"),
     ]
     embed_dim = int(settings.embedding_dimension)
     with engine.begin() as conn:
@@ -233,6 +236,7 @@ def ensure_legacy_schema_columns() -> None:
             "CREATE INDEX IF NOT EXISTS ix_daily_fuel_summaries_date ON daily_fuel_summaries(date)",
             "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_user_id ON weekly_fuel_summaries(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_week_start ON weekly_fuel_summaries(week_start)",
+            "CREATE INDEX IF NOT EXISTS ix_notification_deliveries_next_retry_at ON notification_deliveries(next_retry_at)",
         ]:
             try:
                 conn.execute(text(idx_sql))

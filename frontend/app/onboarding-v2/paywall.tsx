@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState
 import { billingService } from '../../services/billing';
 import { authApi, metabolicApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/Config';
 
 type PlanChoice = 'annual' | 'weekly';
 
@@ -377,22 +379,50 @@ export default function PaywallScreen() {
         </Animated.View>
 
         {paywallDismissCount < 2 && (
-          <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
+          <>
+            <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
+            <Text style={styles.renewalDisclosure}>
+              After the 7-day free trial, your subscription auto-renews at {pricing.current} until
+              cancelled. Manage or cancel anytime in your Apple ID subscription settings.
+            </Text>
+          </>
         )}
 
         {paywallDismissCount === 2 && (
-          <TouchableOpacity
-            onPress={() => saveAndNavigate()}
-            activeOpacity={0.7}
-            style={styles.continueFreeButton}
-          >
-            <Text style={styles.continueFreeText}>Continue with free plan</Text>
-          </TouchableOpacity>
+          <>
+            <Text style={styles.renewalDisclosure}>
+              Subscription auto-renews at {pricing.current} until cancelled. Manage or cancel
+              anytime in your Apple ID subscription settings.
+            </Text>
+            <TouchableOpacity
+              onPress={() => saveAndNavigate()}
+              activeOpacity={0.7}
+              style={styles.continueFreeButton}
+            >
+              <Text style={styles.continueFreeText}>Continue with free plan</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <TouchableOpacity onPress={handleRestore} activeOpacity={0.7} style={styles.restoreButton}>
           <Text style={styles.restoreText}>Restore purchases</Text>
         </TouchableOpacity>
+
+        <View style={styles.legalLinksRow}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLinkText}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>·</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.progressWrapper}>
           <OnboardingProgress total={12} current={11} />
@@ -638,6 +668,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     textDecorationLine: 'underline',
+  },
+  renewalDisclosure: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 4,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: '#4B5563',
   },
   progressWrapper: {
     alignItems: 'center',

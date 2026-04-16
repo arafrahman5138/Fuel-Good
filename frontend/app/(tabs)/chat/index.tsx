@@ -454,6 +454,41 @@ export default function ChatScreen() {
     }
   };
 
+  const handleReportMessage = (messageContent: string) => {
+    const submitReport = (reason: 'harmful' | 'inaccurate' | 'inappropriate' | 'other') => {
+      chatApi
+        .reportMessage({
+          session_id: sessionId || null,
+          message_content: messageContent,
+          reason,
+        })
+        .then(() => {
+          Alert.alert(
+            'Report submitted',
+            "Thanks for letting us know. We'll review this response.",
+          );
+        })
+        .catch(() => {
+          Alert.alert(
+            'Report received',
+            "Thanks — we've noted the issue. Please email support@fuelgood.app if this keeps happening.",
+          );
+        });
+    };
+    Alert.alert(
+      'Report this response',
+      'What went wrong?',
+      [
+        { text: 'Harmful or unsafe', onPress: () => submitReport('harmful') },
+        { text: 'Inaccurate information', onPress: () => submitReport('inaccurate') },
+        { text: 'Inappropriate content', onPress: () => submitReport('inappropriate') },
+        { text: 'Something else', onPress: () => submitReport('other') },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  };
+
   const handleDeleteSession = (id: string) => {
     Alert.alert(
       'Delete Chat',
@@ -559,7 +594,7 @@ export default function ChatScreen() {
                     { color: theme.textTertiary },
                   ]}
                   numberOfLines={1}
-                  allowFontScaling={false}
+                  maxFontSizeMultiplier={1.3}
                 >
                   {isCompact ? 'Your AI nutrition coach' : 'Recipes, swaps, nutrition advice & more'}
                 </Text>
@@ -816,6 +851,16 @@ export default function ChatScreen() {
                     <Text style={[styles.messageText, { color: theme.text }]}>
                       {payload?.message || msg.content}
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => handleReportMessage(payload?.message || msg.content || '')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Report this response"
+                      hitSlop={8}
+                      style={styles.reportButton}
+                    >
+                      <Ionicons name="flag-outline" size={11} color={theme.textTertiary} />
+                      <Text style={[styles.reportButtonText, { color: theme.textTertiary }]}>Report</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
@@ -1316,7 +1361,7 @@ export default function ChatScreen() {
               maxLength={500}
               onSubmitEditing={handleSend}
               returnKeyType="send"
-              allowFontScaling={false}
+              maxFontSizeMultiplier={1.4}
             />
             <Pressable
               onPress={handleSend}
@@ -1600,6 +1645,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md + 2,
     borderRadius: BorderRadius.xl,
+  },
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 8,
+    opacity: 0.6,
+  },
+  reportButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   userBubbleContent: {
     alignSelf: 'flex-end',

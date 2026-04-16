@@ -5,6 +5,7 @@ import {
   Animated,
   Easing,
   Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -569,6 +570,22 @@ export default function ScanScreen() {
       .catch(() => setCameraGranted(false));
   };
 
+  const openAppSettings = () => {
+    Linking.openSettings().catch(() => {});
+  };
+
+  const showPermissionDeniedAlert = (kind: 'camera' | 'photos') => {
+    const title = kind === 'camera' ? 'Camera access needed' : 'Photo access needed';
+    const message =
+      kind === 'camera'
+        ? 'Enable camera access in Settings to scan meals and product labels.'
+        : 'Enable photo library access in Settings to attach meal and label images.';
+    Alert.alert(title, message, [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Open Settings', onPress: openAppSettings },
+    ]);
+  };
+
   useEffect(() => {
     if (!isAnalyzingMeal) {
       pulseAnim.stopAnimation();
@@ -709,14 +726,18 @@ export default function ScanScreen() {
       if (source === 'camera') {
         const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
         const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!cameraPermission.granted || !mediaPermission.granted) {
-          Alert.alert('Permission needed', 'Camera and photo permissions are required to capture a meal photo.');
+        if (!cameraPermission.granted) {
+          showPermissionDeniedAlert('camera');
+          return;
+        }
+        if (!mediaPermission.granted) {
+          showPermissionDeniedAlert('photos');
           return;
         }
       } else {
         const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!mediaPermission.granted) {
-          Alert.alert('Permission needed', 'Photo library permission is required to choose a meal photo.');
+          showPermissionDeniedAlert('photos');
           return;
         }
       }
@@ -806,14 +827,18 @@ export default function ScanScreen() {
       if (source === 'camera') {
         const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
         const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!cameraPermission.granted || !mediaPermission.granted) {
-          Alert.alert('Permission needed', 'Camera and photo permissions are required to capture a label photo.');
+        if (!cameraPermission.granted) {
+          showPermissionDeniedAlert('camera');
+          return;
+        }
+        if (!mediaPermission.granted) {
+          showPermissionDeniedAlert('photos');
           return;
         }
       } else {
         const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!mediaPermission.granted) {
-          Alert.alert('Permission needed', 'Photo library permission is required to choose a label photo.');
+          showPermissionDeniedAlert('photos');
           return;
         }
       }
@@ -1099,6 +1124,16 @@ export default function ScanScreen() {
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>Scan food items and ingredient labels to get instant nutrition scores.</Text>
                 <TouchableOpacity onPress={handleGrantCamera} style={{ backgroundColor: '#22C55E', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 }}>
                   <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Grant Access</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {!permUndetermined && cameraGranted === false && (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+                <Ionicons name="lock-closed-outline" size={48} color="#F59E0B" style={{ marginBottom: 16 }} />
+                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>Enable Camera in Settings</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>Camera access was turned off. Enable it to scan foods and labels.</Text>
+                <TouchableOpacity onPress={openAppSettings} style={{ backgroundColor: '#22C55E', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 }}>
+                  <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Open Settings</Text>
                 </TouchableOpacity>
               </View>
             )}

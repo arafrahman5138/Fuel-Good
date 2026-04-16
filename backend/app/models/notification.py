@@ -89,6 +89,8 @@ class NotificationDelivery(Base):
     opened_at = Column(DateTime, nullable=True)
     conversion_at = Column(DateTime, nullable=True)
     failure_reason = Column(String, nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
+    next_retry_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

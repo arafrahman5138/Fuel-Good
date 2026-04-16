@@ -25,3 +25,10 @@ __pycache__/
 env/
 venv/
 /.venv
+
+# Local SQLite DB (production uses Postgres via DATABASE_URL)
+backend/real_food.db
+backend/*.db
+
+# Scratch / dev harness scripts
+frontend/tmp_*.js

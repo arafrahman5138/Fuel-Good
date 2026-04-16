@@ -572,12 +572,25 @@ export default function SettingsScreen() {
                           style: 'destructive',
                           onPress: async () => {
                             try {
-                              Alert.alert('Deleting...', 'Please wait while we delete your account.');
                               await authApi.deleteAccount();
                               logout();
                               router.replace('/(auth)/login');
                             } catch (err: any) {
-                              Alert.alert('Error', err?.message || 'Failed to delete account. Please contact support.');
+                              const detail = err?.message || 'Unknown error';
+                              Alert.alert(
+                                "We couldn't delete your account",
+                                `${detail}\n\nYour account was not deleted. Email ${SUPPORT_EMAIL} and we'll handle it.`,
+                                [
+                                  {
+                                    text: 'Email support',
+                                    onPress: () =>
+                                      Linking.openURL(
+                                        `mailto:${SUPPORT_EMAIL}?subject=Account%20deletion%20request`,
+                                      ).catch(() => {}),
+                                  },
+                                  { text: 'OK', style: 'cancel' },
+                                ],
+                              );
                             }
                           },
                         },
