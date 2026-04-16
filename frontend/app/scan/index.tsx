@@ -1401,6 +1401,9 @@ export default function ScanScreen() {
         onPress={showExit ? handleExitToHome : handleBack}
         activeOpacity={0.85}
         style={[styles.headerCircle, { borderColor: theme.border, backgroundColor: theme.surface }]}
+        accessibilityRole="button"
+        accessibilityLabel={showExit ? 'Close scanner' : 'Go back'}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Ionicons name={showExit ? 'close' : 'chevron-back'} size={showExit ? 18 : 20} color={showExit ? theme.textSecondary : theme.primary} style={showExit ? undefined : { transform: [{ translateX: -1 }] }} />
       </TouchableOpacity>
@@ -1694,7 +1697,13 @@ export default function ScanScreen() {
                   placeholderTextColor={theme.textTertiary}
                 />
               ) : (
-                <TouchableOpacity onPress={() => setIsEditingLabel(true)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => setIsEditingLabel(true)}
+                  activeOpacity={0.7}
+                  style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit meal label, current ${mealLabelDraft || mealResult.meal_label}`}
+                >
                   <Text style={[styles.resultTitleInput, { color: theme.text, flex: 1 }]} numberOfLines={3}>{mealLabelDraft || mealResult.meal_label}</Text>
                   <Ionicons name="pencil-outline" size={14} color={theme.textTertiary} style={{ marginTop: 6 }} />
                 </TouchableOpacity>
@@ -1716,6 +1725,9 @@ export default function ScanScreen() {
                 activeOpacity={0.7}
                 disabled={favToggleLoading}
                 style={{ alignItems: 'center', marginTop: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons
                   name={isFavorited ? 'heart' : 'heart-outline'}
@@ -1862,6 +1874,8 @@ export default function ScanScreen() {
                     onPress={() => setIngredientDrafts((current) => current.filter((_, idx) => idx !== index))}
                     activeOpacity={0.85}
                     style={[styles.ingredientChip, { borderColor: theme.border, backgroundColor: theme.surface }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ingredient ${item}`}
                   >
                     <Text style={[styles.ingredientChipText, { color: theme.text }]}>{item}</Text>
                     <Ionicons name="close" size={14} color={theme.textSecondary} />
@@ -1876,7 +1890,14 @@ export default function ScanScreen() {
                   placeholderTextColor={theme.textTertiary}
                   style={[styles.formInput, styles.addIngredientInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
                 />
-                <TouchableOpacity onPress={addIngredient} activeOpacity={0.85} style={[styles.squareButton, { backgroundColor: theme.primaryMuted }]}>
+                <TouchableOpacity
+                  onPress={addIngredient}
+                  activeOpacity={0.85}
+                  style={[styles.squareButton, { backgroundColor: theme.primaryMuted }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add ingredient"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <Ionicons name="add" size={20} color={theme.primary} />
                 </TouchableOpacity>
               </View>
@@ -1912,6 +1933,9 @@ export default function ScanScreen() {
                       opacity: !correctionText.trim() || isCorrecting ? 0.5 : 1,
                     },
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Submit correction"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   {isCorrecting ? (
                     <Animated.View style={{ opacity: 0.7 }}>
@@ -2352,7 +2376,13 @@ export default function ScanScreen() {
       {/* Describe Meal Sheet */}
       <Modal visible={showDescribeMealSheet} transparent animationType="slide" onRequestClose={() => setShowDescribeMealSheet(false)}>
         <View style={styles.sheetModalBackdrop}>
-          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowDescribeMealSheet(false)} />
+          <TouchableOpacity
+            style={styles.sheetModalScrim}
+            activeOpacity={1}
+            onPress={() => setShowDescribeMealSheet(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss describe meal sheet"
+          />
           <View style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Describe your meal</Text>
@@ -2393,7 +2423,13 @@ export default function ScanScreen() {
       {/* Compare Products Sheet */}
       <Modal visible={showCompareSheet} transparent animationType="slide" onRequestClose={() => setShowCompareSheet(false)}>
         <View style={styles.sheetModalBackdrop}>
-          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowCompareSheet(false)} />
+          <TouchableOpacity
+            style={styles.sheetModalScrim}
+            activeOpacity={1}
+            onPress={() => setShowCompareSheet(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss compare sheet"
+          />
           <View style={[styles.sheetModalCard, { backgroundColor: theme.surface, maxHeight: '70%' }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Compare Products</Text>
@@ -2426,6 +2462,9 @@ export default function ScanScreen() {
                       onPress={() => setCompareList((prev) => prev.filter((_, i) => i !== compareList.indexOf(item)))}
                       activeOpacity={0.7}
                       style={{ padding: 4 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${item.name} from comparison`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Ionicons name="close-circle-outline" size={18} color={theme.textTertiary} />
                     </TouchableOpacity>
@@ -2469,7 +2508,13 @@ export default function ScanScreen() {
 
       <Modal visible={showBarcodeSheet} transparent animationType="slide" onRequestClose={() => { setBarcodeValue(''); setShowBarcodeSheet(false); }}>
         <View style={styles.sheetModalBackdrop}>
-          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(false); }} />
+          <TouchableOpacity
+            style={styles.sheetModalScrim}
+            activeOpacity={1}
+            onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(false); }}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss barcode sheet"
+          />
           <View style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Use barcode</Text>
@@ -2493,7 +2538,13 @@ export default function ScanScreen() {
 
       <Modal visible={showProductEditSheet} transparent animationType="slide" onRequestClose={() => setShowProductEditSheet(false)}>
         <View style={styles.sheetModalBackdrop}>
-          <TouchableOpacity style={styles.sheetModalScrim} activeOpacity={1} onPress={() => setShowProductEditSheet(false)} />
+          <TouchableOpacity
+            style={styles.sheetModalScrim}
+            activeOpacity={1}
+            onPress={() => setShowProductEditSheet(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss edit label sheet"
+          />
           <ScrollView
             style={[styles.sheetModalCard, { backgroundColor: theme.surface }]}
             contentContainerStyle={styles.sheetModalContent}
