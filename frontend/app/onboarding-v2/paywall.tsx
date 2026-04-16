@@ -204,7 +204,14 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Dismiss X */}
-      <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.dismissButton}
+        onPress={handleDismiss}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss paywall"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
         <Ionicons name="close" size={22} color="#6B7280" />
       </TouchableOpacity>
 
@@ -267,6 +274,8 @@ export default function PaywallScreen() {
                 <TouchableOpacity
                   style={[styles.priceCard, styles.priceCardSelected]}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annual plan, $11.99 per year, less than $1 per month"
                 >
                   <View style={styles.priceCardContent}>
                     <View style={styles.radioOuter}>
@@ -304,6 +313,8 @@ export default function PaywallScreen() {
                   style={[styles.priceCard, selectedPlan === 'annual' && styles.priceCardSelected]}
                   activeOpacity={0.8}
                   onPress={() => setSelectedPlan('annual')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select annual plan, ${pricing.current}${selectedPlan === 'annual' ? ', selected' : ''}`}
                 >
                   {paywallDismissCount === 0 && (
                     <View style={styles.bestValueBadge}>
@@ -332,6 +343,8 @@ export default function PaywallScreen() {
                     style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
                     activeOpacity={0.8}
                     onPress={() => setSelectedPlan('weekly')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select weekly plan, $4.99 per week${selectedPlan === 'weekly' ? ', selected' : ''}`}
                   >
                     <View style={styles.priceCardContent}>
                       <View style={styles.radioOuter}>

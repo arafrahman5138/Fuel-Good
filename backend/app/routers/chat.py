@@ -44,7 +44,7 @@ def _apply_chat_limits_or_raise(db: Session, user: User) -> None:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("healthify.quota_check.failed user_id=%s error=%s", user.id, exc)
+        logger.exception("healthify.quota_check.failed error=%s", exc)
         raise HTTPException(
             status_code=429,
             detail="Chat limit check failed. Please try again in a moment.",

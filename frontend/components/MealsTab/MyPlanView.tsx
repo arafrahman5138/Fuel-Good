@@ -22,6 +22,8 @@ import { Card } from '../GradientCard';
 import { MealImage } from '../MealImage';
 import { Button } from '../Button';
 import { ChipSelector } from '../ChipSelector';
+import { SkeletonCard } from '../SkeletonLoader';
+import { DataErrorState } from '../DataErrorState';
 import { useTheme } from '../../hooks/useTheme';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -97,6 +99,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
     useMealPlanStore();
   const loadCurrentPlan = useMealPlanStore((s) => s.loadCurrentPlan);
   const isLoadingPlan = useMealPlanStore((s) => s.isLoading);
+  const planLoadError = useMealPlanStore((s) => s.loadError);
 
   // MES projected scores
   const mesBudget = useMetabolicBudgetStore((s) => s.budget);
@@ -420,10 +423,46 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
   if (isLoadingPlan && !currentPlan) {
     return (
       <ScreenContainer safeArea={false}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={{ color: theme.textSecondary, marginTop: Spacing.md, fontSize: FontSize.md }}>Loading your meal plan...</Text>
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scroll, { paddingBottom: ctaBottomOffset + Spacing.xl }]}
+        >
+          <View style={styles.planHeader}>
+            <View>
+              <Text style={[styles.title, { color: theme.text, marginBottom: 0 }]}>Meal Plan</Text>
+              <Text style={[styles.planDate, { color: theme.textSecondary }]}>Loading your week…</Text>
+            </View>
+          </View>
+          <View style={{ gap: Spacing.md }}>
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={3} />
+          </View>
+        </ScrollView>
+      </ScreenContainer>
+    );
+  }
+
+  if (planLoadError && !currentPlan) {
+    return (
+      <ScreenContainer safeArea={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scroll, { paddingBottom: ctaBottomOffset + Spacing.xl }]}
+        >
+          <View style={styles.planHeader}>
+            <View>
+              <Text style={[styles.title, { color: theme.text, marginBottom: 0 }]}>Meal Plan</Text>
+              <Text style={[styles.planDate, { color: theme.textSecondary }]}>We hit a snag loading your plan</Text>
+            </View>
+          </View>
+          <DataErrorState
+            thing="meal plan"
+            onRetry={() => loadCurrentPlan(true)}
+            style={{ marginHorizontal: 0, marginTop: Spacing.lg }}
+          />
+        </ScrollView>
       </ScreenContainer>
     );
   }

@@ -1150,7 +1150,14 @@ export default function ScanScreen() {
 
         {/* Top bar: close + branding pill */}
         <View style={styles.captureTopRow}>
-          <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.8} style={styles.captureCloseBtn}>
+          <TouchableOpacity
+            onPress={handleExitToHome}
+            activeOpacity={0.8}
+            style={styles.captureCloseBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Close scanner"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
             <Ionicons name="close" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.captureBrandPill}>
@@ -1334,6 +1341,9 @@ export default function ScanScreen() {
                 }
               }}
               style={styles.shutterSideBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Choose photo from library"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="images-outline" size={20} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
@@ -1347,6 +1357,8 @@ export default function ScanScreen() {
                 }
               }}
               style={styles.shutterBtn}
+              accessibilityRole="button"
+              accessibilityLabel={scanMode === 'meal' ? 'Capture meal photo' : 'Capture product photo'}
             >
               {isLoading ? (
                 <ActivityIndicator color="#16A34A" />
@@ -1355,11 +1367,25 @@ export default function ScanScreen() {
               )}
             </TouchableOpacity>
             {scanMode === 'product' ? (
-              <TouchableOpacity activeOpacity={0.8} onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }} style={styles.shutterSideBtn}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }}
+                style={styles.shutterSideBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Enter barcode"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Ionicons name="barcode-outline" size={20} color="rgba(255,255,255,0.8)" />
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setShowDescribeMealSheet(true)} style={styles.shutterSideBtn}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowDescribeMealSheet(true)}
+                style={styles.shutterSideBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Describe meal"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
               </TouchableOpacity>
             )}

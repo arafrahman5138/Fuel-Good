@@ -53,8 +53,8 @@ export default function ForgotPasswordScreen() {
   const handleResetPassword = async () => {
     setError('');
     setMessage('');
-    if (!/^\d{6}$/.test(code.trim())) {
-      setError('Enter the 6-digit reset code');
+    if (!/^\d{6,8}$/.test(code.trim())) {
+      setError('Enter the reset code from your email');
       return;
     }
     if (newPassword.length < 8) {
@@ -95,7 +95,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.content}>
             <Text style={[styles.title, { color: theme.text }]}>Reset Password</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              Request a 6-digit code, then enter it here with your new password.
+              Request a reset code, then enter it here with your new password.
             </Text>
 
             {error ? (
@@ -141,12 +141,12 @@ export default function ForgotPasswordScreen() {
             ) : null}
 
             <View style={styles.group}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>6-Digit Code</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Reset Code</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.surfaceElevated, color: theme.text, borderColor: theme.border }]}
                 value={code}
-                onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="123456"
+                onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="12345678"
                 placeholderTextColor={theme.textTertiary}
                 keyboardType="number-pad"
               />

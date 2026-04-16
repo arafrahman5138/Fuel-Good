@@ -6,7 +6,7 @@ import secrets
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -48,10 +48,15 @@ _apple_jwks_cache: dict[str, Any] = {"keys": None, "fetched_at": 0.0}
 
 
 _MAX_RESET_ATTEMPTS = 5
+# 8-digit codes give 10^8 = 100M possibilities, far outside a brute-force
+# window at our 20 req/min auth rate limit (≈72k requests/day per IP, so
+# worst-case expected success per IP is ~1400 days).
+_RESET_CODE_LENGTH = 8
+_RESET_CODE_MAX = 10 ** _RESET_CODE_LENGTH
 
 
 def _generate_password_reset_code() -> str:
-    return f"{secrets.randbelow(1_000_000):06d}"
+    return f"{secrets.randbelow(_RESET_CODE_MAX):0{_RESET_CODE_LENGTH}d}"
 
 
 def _hash_password_reset_code(email: str, code: str) -> str:
@@ -421,21 +426,22 @@ async def update_preferences(
 
 @router.delete("/account")
 async def delete_account(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Permanently delete the current user's account and all associated data."""
-    user_id = str(current_user.id)
-    logger.info("Account deletion requested for user %s", user_id)
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.info("account_deletion.requested request_id=%s", request_id)
 
-    # Delete related data (cascade will handle most, but be explicit for safety)
+    # Cascade FKs handle user-owned rows (see 2e4861eab987 + c7d8e9f0a1b2).
     try:
         db.delete(current_user)
         db.commit()
-        logger.info("Account deleted successfully for user %s", user_id)
+        logger.info("account_deletion.succeeded request_id=%s", request_id)
     except Exception:
         db.rollback()
-        logger.exception("Failed to delete account for user %s", user_id)
+        logger.exception("account_deletion.failed request_id=%s", request_id)
         raise HTTPException(status_code=500, detail="Failed to delete account. Please contact support.")
 
     return {"message": "Account deleted successfully"}

@@ -385,6 +385,9 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         onPress={() => item.set(Math.max(0.1, Math.round((item.value - 0.05) * 100) / 100))}
                         style={[styles.stepperBtn, { backgroundColor: theme.surfaceHighlight }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Decrease ${item.label} weight`}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
                         <Ionicons name="remove" size={16} color={theme.text} />
                       </TouchableOpacity>
@@ -392,6 +395,9 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         onPress={() => item.set(Math.min(0.8, Math.round((item.value + 0.05) * 100) / 100))}
                         style={[styles.stepperBtn, { backgroundColor: theme.surfaceHighlight }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Increase ${item.label} weight`}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
                         <Ionicons name="add" size={16} color={theme.text} />
                       </TouchableOpacity>
@@ -602,6 +608,8 @@ export default function SettingsScreen() {
             );
           }}
           style={[styles.signOutBtn, { backgroundColor: theme.errorMuted, borderColor: theme.error + '25', marginTop: Spacing.sm }]}
+          accessibilityRole="button"
+          accessibilityHint="Double tap to permanently delete your account and all data"
         >
           <Ionicons name="trash-outline" size={18} color={theme.error} />
           <Text style={[styles.signOutText, { color: theme.error }]}>Delete Account</Text>

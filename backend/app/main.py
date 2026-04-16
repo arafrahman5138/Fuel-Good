@@ -46,12 +46,27 @@ def _configure_sentry() -> None:
         app_logger.warning("sentry_sdk not installed; skipping Sentry init")
         return
 
+    def _scrub_event(event, hint):
+        # Belt and suspenders: drop request body + cookies + auth headers so
+        # emails / passwords / tokens never leave our infra.
+        request = event.get("request") or {}
+        headers = request.get("headers") or {}
+        for key in list(headers.keys()):
+            if key.lower() in {"authorization", "cookie", "x-api-key"}:
+                headers[key] = "[scrubbed]"
+        if "data" in request:
+            request["data"] = "[scrubbed]"
+        if "cookies" in request:
+            request["cookies"] = "[scrubbed]"
+        return event
+
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         environment=settings.environment,
         traces_sample_rate=settings.sentry_traces_sample_rate,
         profiles_sample_rate=settings.sentry_profiles_sample_rate,
         send_default_pii=False,
+        before_send=_scrub_event,
         integrations=[
             FastApiIntegration(transaction_style="endpoint"),
             StarletteIntegration(transaction_style="endpoint"),

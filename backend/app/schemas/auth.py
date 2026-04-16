@@ -49,7 +49,9 @@ class PasswordResetRequestResponse(BaseModel):
 
 class PasswordResetConfirm(BaseModel):
     email: EmailStr
-    code: str = Field(min_length=6, max_length=6)
+    # Accept 6-digit codes during the rollout window so any in-flight reset
+    # tokens still work; new codes are always 8 digits.
+    code: str = Field(min_length=6, max_length=8)
     new_password: str = Field(min_length=8, max_length=128)
 
     @field_validator('new_password')
