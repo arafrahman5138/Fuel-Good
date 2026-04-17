@@ -233,11 +233,24 @@ async def get_nutrition_streak(
     db: Session = Depends(get_db),
 ):
     ns = db.query(NutritionStreak).filter(NutritionStreak.user_id == current_user.id).first()
+    # R15: align nutrition-streak with the canonical User.current_streak. The
+    # nutrition-specific threshold streak stays available via the `threshold`
+    # and `last_qualifying_date` fields for drill-down UIs, but the headline
+    # `current_streak` number must agree with /fuel/streak and /game/stats so
+    # the UI doesn't render three conflicting numbers.
+    canonical_current = int(current_user.current_streak or 0)
     if not ns:
-        return NutritionStreakResponse(current_streak=0, longest_streak=0, threshold=60.0)
+        return NutritionStreakResponse(
+            current_streak=canonical_current,
+            longest_streak=int(current_user.longest_streak or 0),
+            threshold=60.0,
+        )
     return NutritionStreakResponse(
-        current_streak=ns.current_streak,
-        longest_streak=ns.longest_streak,
+        current_streak=canonical_current,
+        longest_streak=max(
+            int(current_user.longest_streak or 0),
+            int(ns.longest_streak or 0),
+        ),
         threshold=ns.threshold or 60.0,
         last_qualifying_date=ns.last_qualifying_date.isoformat() if ns.last_qualifying_date else None,
     )
@@ -323,6 +336,28 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
     qual = random.choice(quality_pool)
     meta = random.choice(metabolic_pool)
 
+    # Batch 10 fix (QA N12): the quality pool's `hit_fiber` and metabolic pool's
+    # `fiber_floor` generated near-identical user-facing quests ("Eat 28g Fiber"
+    # + "Meet 28g Fiber Floor") on the same day, worth a combined 100 XP for a
+    # single action. Dedupe by goal-type: if the metabolic pick collides with
+    # the quality pick, re-roll the quality pool from the non-fiber remainder.
+    _quality_fiber_keys = {"hit_fiber"}
+    _metabolic_fiber_keys = {"fiber_floor"}
+    _quality_protein_keys = {"hit_protein"}
+    _metabolic_protein_keys = {"protein_target"}
+    qual_key = qual[2]
+    meta_key = meta[2]
+    collide = (
+        (qual_key in _quality_fiber_keys and meta_key in _metabolic_fiber_keys)
+        or (qual_key in _quality_protein_keys and meta_key in _metabolic_protein_keys)
+    )
+    if collide:
+        # Pick from the quality pool *without* the colliding entry. If only one
+        # non-colliding option exists, take it; otherwise random across the rest.
+        remaining = [q for q in quality_pool if q[2] != qual_key]
+        if remaining:
+            qual = random.choice(remaining)
+
     # ── Fuel quest pool ──
     fuel_target = getattr(user, "fuel_target", None) or 80
     fuel_pool = [
@@ -336,8 +371,32 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
     ]
     fuel = random.choice(fuel_pool)
 
+    # R16 (Month-1 target-user feedback): previously the daily loop emitted 5
+    # quests (one per pool: general + logging + quality + metabolic + fuel).
+    # That's "we built all the things" energy — Whoop and MacroFactor get by
+    # on 2-3 daily goals. Research consensus is that 3 is the sweet spot:
+    # too few feels empty, too many feels like a checklist job. We drop
+    # `general` (save-a-recipe, explore-a-cuisine — low retention signal) and
+    # alternate the third slot between `quality` and `metabolic` day-over-day
+    # so the daily deck stays fresh without overwhelming.
+    #
+    # Keep the prior collision-dedup logic intact — it ran above before this
+    # block chose `qual` and `meta`. We just don't emit both of them now; we
+    # pick the one that alternates by day-of-week so users get variety over a
+    # week without seeing duplicates on the same day.
+    day_of_week = today.weekday()  # Monday=0, Sunday=6
+    # Even days: quality quest. Odd days: metabolic quest. Sunday rotates.
+    third_slot_type = "quality" if day_of_week % 2 == 0 else "metabolic"
+    third_slot_value = qual if third_slot_type == "quality" else meta
+
+    quest_plan: list[tuple[str, tuple]] = [
+        ("logging", log),
+        ("fuel", fuel),
+        (third_slot_type, third_slot_value),
+    ]
+
     quests = []
-    for quest_type, (title, desc, meta_key, target, xp) in [("general", gen), ("logging", log), ("quality", qual), ("metabolic", meta), ("fuel", fuel)]:
+    for quest_type, (title, desc, meta_key, target, xp) in quest_plan:
         q = DailyQuest(
             id=str(uuid.uuid4()),
             user_id=user.id,

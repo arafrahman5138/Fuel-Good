@@ -128,6 +128,14 @@ def _sync_targets_from_profile_if_needed(
     target.carbs_g_target = round(float(computed.carb_ceiling_g or 0), 1)
     target.fat_g_target = round(float(computed.fat_g or 0), 1)
     target.fiber_g_target = round(float(computed.fiber_g or 0), 1)
+
+    # Batch 2 (QA N2): hypertension caps sodium at AHA's 1500 mg/day — override
+    # the generic 2300 mg default when the profile carries the HTN flag. Clone
+    # the dict first so we don't mutate ESSENTIAL_MICROS_DEFAULTS in place.
+    if getattr(profile, "hypertension", False):
+        current = dict(target.micronutrient_targets or ESSENTIAL_MICROS_DEFAULTS)
+        current["sodium_mg"] = 1500.0
+        target.micronutrient_targets = current
     return target
 
 
@@ -454,6 +462,22 @@ async def create_log(
         logger.warning("Fuel score computation failed", exc_info=True)
         fuel_score_val = None
 
+    # Batch 9 fix (QA N14): for manual logs with no group_id, the API used to
+    # echo `group_mes_tier: null` — making the UI show a blank tier chip. We
+    # now derive a tier from the fuel score when the payload doesn't supply
+    # one, so every log response carries a readable tier label.
+    computed_group_tier = payload.group_mes_tier
+    if computed_group_tier is None and fuel_score_val is not None:
+        fs = float(fuel_score_val)
+        if fs >= 85:
+            computed_group_tier = "whole_food"
+        elif fs >= 70:
+            computed_group_tier = "solid"
+        elif fs >= 50:
+            computed_group_tier = "mixed"
+        else:
+            computed_group_tier = "ultra_processed"
+
     log = FoodLog(
         user_id=current_user.id,
         date=day,
@@ -462,7 +486,7 @@ async def create_log(
         source_id=payload.source_id,
         group_id=payload.group_id,
         group_mes_score=payload.group_mes_score,
-        group_mes_tier=payload.group_mes_tier,
+        group_mes_tier=computed_group_tier,
         title=payload.title or title,
         servings=payload.servings,
         quantity=payload.quantity,
