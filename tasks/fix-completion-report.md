@@ -215,3 +215,101 @@ Per-pillar:
 - [x] **Closing report** written (this file)
 
 Report produced 2026-04-16 by Claude (Sonnet 4.6). Plan file retained at `/Users/arafrahman/.claude/plans/silly-finding-hoare.md` for Batches 7/8/11/12 execution.
+
+---
+
+## Session 2 Resumption (2026-04-17)
+
+Session 1 (Sonnet 4.6, 2026-04-16) ended when it hit the Claude API
+many-image 2000px dimension limit while writing this very report. The
+engineering work was already on disk but nothing had been committed.
+
+Session 2 (Opus 4.7 1M, 2026-04-17) picked up where Session 1 left off:
+verify the in-flight work end-to-end, close the small PARTIAL gaps, and
+land everything in a small set of logical commits. No new fixes in
+Session 2 - this is purely the wrap-up Session 1 never got to.
+
+### Verification performed
+
+1. **Backend sanity**
+   - Full pytest suite: 335 passed, 3 pre-existing failures (not caused
+     by Session 1 changes, confirmed via stash/re-run on baseline).
+   - The 4 new Session 1 test files (42 tests) all green.
+   - **Alembic drift found**: `alembic current` reported `c7d8e9f0a1b2`
+     (head) but the 8 safety-flag columns were not actually present on
+     `metabolic_profiles`. A prior downgrade/upgrade cycle had evidently
+     left the version row ahead of the schema. Fixed by force-stamping
+     back to `b5c6d7e8f9a0` and re-running `upgrade head`, which re-ran
+     the migration and added the columns. See lessons.md.
+
+2. **Persona API safety spot-checks** (direct engine, no UI needed):
+   - Elena (lactating + fat-loss): cal=2596 = round(TDEE + 350). PASS.
+   - Derrick (T2D + HTN): sodium cap drops 2300 -> 1500 mg via nutrition
+     sync path. PASS.
+   - Margaret (IBD flare / low-residue): fiber_g=5.0. PASS.
+   - Haruki (muscle_gain, very active): cal=3176 > TDEE. PASS.
+   - Control: Elena *without* lactating flag still sees the expected
+     fat-loss deficit. PASS.
+
+3. **iOS simulator walkthrough** (iPhone 15 Pro via existing native
+   build + metro bundler; native `expo run:ios` blocked by cocoapods /
+   Ruby 4.0 unicode_normalize regression, documented in lessons.md):
+   - Registered Alex QA account via /api/auth/register.
+   - Walked through onboarding-v2 steps 1 through paywall. Along the
+     way confirmed: R4 meals/day chips render (2/3/4/5), N26 non-binary
+     sex option renders, step-11 personalized targets render non-zero
+     after profile POST (222g P / 90g C / 115g F / TDEE 3098 / target
+     3408 for a muscle-gain + IR profile).
+   - Landed on Home with "READY TO FUEL" tier label (NOT red
+     "Needs Work") - R3 VERIFIED visually.
+   - Single Fuel ring on Home, no double-ring - R14 hint.
+   - Coach tab: sent a "Chicken Stir Fry" quickstart -> structured
+     recipe card rendered with title / description / 10 ingredients /
+     6 steps / MES scores / action buttons. R2 VERIFIED visually.
+   - Recipe detail screen: Share button visible in header next to Save.
+     R13 VERIFIED visually.
+
+4. **Recipe catalog**: 117 meals in official_meals.json verified at
+   file level. Local DB happened to be empty so R6 browse count was
+   checked in the JSON source rather than the browse API.
+
+### Commits landed (on main, local, NOT pushed)
+
+    bc138c1 Add metabolic safety flags: lactation, HTN, IBD, ED-recovery
+    6f9e045 Fix meal planner: pescatarian inference + low-carb per-meal cap
+    7a556fe Chat recipe-card guarantee + scoring calibration battery (R2, R23)
+    c3ddaec Gamification: 3 daily quests + single canonical streak + HTN sodium sync
+    09b1113 Onboarding: meals/day, non-binary sex, targets round-trip, fuel API
+    493a5aa Frontend polish: shame copy, single price, dessert mode, share, chips
+    49d4a4b Docs: Session 1 Month-1 persona QA + fix batches + roadmap
+
+### Still deferred (unchanged from Session 1)
+
+- **Batch 7 (pricing unification, N10)**: paywall.tsx is fixed frontend-
+  side in commit 493a5aa but the backend `/api/billing/config` endpoint
+  has to be live in the target environment for the new code to show
+  canonical prices. Verify before any App Store ship.
+- **Batch 8 (chat 503 on constraint conflicts, N11/BUG-012)**: untouched.
+- **R1 (liked_proteins soft bias)**: untouched.
+- **R5 (scanner as first-class tab)**: untouched.
+- **R6 (catalog 117 -> 150+)**: partial - 7 meals added, ~33 still needed.
+- **R7 (pantry feature)**: untouched.
+- **R10 (regenerate single meal)**: untouched.
+- **R11 (plan your flex)**: untouched.
+- **R22 (Jest frontend card test)**: skipped per Session 2 plan scope.
+
+### Migration caveat for operators
+
+When applying `c7d8e9f0a1b2_add_metabolic_safety_flags`, verify the
+columns actually exist after `alembic upgrade head` by running
+
+    SELECT column_name FROM information_schema.columns
+    WHERE table_name='metabolic_profiles'
+      AND column_name IN ('lactating','hypertension','ibd_active_flare',
+          'low_residue_required','eating_disorder_recovery',
+          'months_postpartum','systolic_mmhg','diastolic_mmhg');
+
+If the count isn't 8, force the version back to `b5c6d7e8f9a0` and
+re-run `alembic upgrade head`.
+
+Session 2 produced by Claude Opus 4.7 (1M context) on 2026-04-17.
