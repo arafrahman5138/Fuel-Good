@@ -90,6 +90,7 @@ export const DIETARY_OPTIONS = [
   { id: 'none', label: 'No Restrictions' },
   { id: 'vegan', label: 'Vegan' },
   { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'pescatarian', label: 'Pescatarian' },
   { id: 'gluten-free', label: 'Gluten Free' },
   { id: 'dairy-free', label: 'Dairy Free' },
   { id: 'keto', label: 'Keto' },

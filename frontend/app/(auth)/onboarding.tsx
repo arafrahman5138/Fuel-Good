@@ -25,7 +25,7 @@ import { FuelScoreRing } from '../../components/FuelScoreRing';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
 import { getTierConfig, useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
-import { authApi, metabolicApi } from '../../services/api';
+import { authApi, fuelApi, metabolicApi, nutritionApi, recipeApi } from '../../services/api';
 import {
   ALLERGY_OPTIONS,
   DIETARY_OPTIONS,
@@ -55,9 +55,31 @@ const GOAL_OPTIONS = [
   { value: 'metabolic_reset', label: 'Metabolic reset / health', icon: 'heart-outline' as const },
 ];
 
+// R4 (Month-1 target-user feedback): the Flex Budget previously hardcoded 21
+// meals/week ("17 clean target"). Alex does intermittent fasting and eats ~15
+// meals/week — the whole math felt off for the Attia-adjacent longevity
+// segment, which is the app's primary ICP. Capturing meals-per-day during
+// onboarding scales the clean-eating target appropriately. Backend field
+// already exists at User.expected_meals_per_week; this UI wires it in.
+const MEALS_PER_DAY_OPTIONS = [
+  { value: 2, label: '2', subtitle: 'IF / OMAD' },
+  { value: 3, label: '3', subtitle: 'Most common' },
+  { value: 4, label: '4', subtitle: 'With a snack' },
+  { value: 5, label: '5+', subtitle: 'Smaller frequent' },
+];
+
+// Batch 5 fix (QA N26): binary-only Male/Female excluded non-binary users
+// (persona Jordan Reyes, they/them) from completing onboarding honestly. Sex
+// *is* used for Mifflin-St Jeor BMR and protein derivation, so we still need
+// a biological answer, but we now accept "non_binary" (defaults to female
+// BMR math — a conservative lower estimate) and "prefer_not_to_say" (same).
+// Backend schema accepts any string; metabolic_engine coerces unknown values
+// to female math.
 const SEX_OPTIONS = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
+  { value: 'non_binary', label: 'Non-binary' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ];
 
 const MOTIVATION_OPTIONS = [
@@ -192,6 +214,8 @@ export default function OnboardingScreen() {
   const [sex, setSex] = useState<string | null>(null);
   const [activityLevel, setActivityLevel] = useState<string | null>(null);
   const [goal, setGoal] = useState<string | null>(null);
+  // R4: default 3 meals/day = 21/week (existing behavior). User can adjust.
+  const [mealsPerDay, setMealsPerDay] = useState<number>(3);
   const [bodyFatPct, setBodyFatPct] = useState('');
   const [insulinResistant, setInsulinResistant] = useState(false);
   const [prediabetes, setPrediabetes] = useState(false);
@@ -352,51 +376,72 @@ export default function OnboardingScreen() {
     step === 12 ||
     (step === 13 && isCommitted !== null);
 
-  // ─── Step 11: Compute targets from metabolic profile (local preview) ───
+  // ─── Step 11: Save metabolic profile + fetch server-computed targets ───
+  // Previously used a client-side Mifflin-St Jeor estimate with a wrong calorie
+  // formula (protein*4 + carb_ceiling*4 + fat*9) that summed macro TARGETS as if
+  // they were intake and ignored goal surplus/deficit — producing a -988 kcal
+  // deficit on Haruki's muscle_gain profile (UI 2276 vs API 3955). Now POSTs the
+  // profile and reads the authoritative values from /metabolic/budget and
+  // /nutrition/targets so the preview matches what the backend will enforce.
+  // Ref: QA finding N40/N41/N42, fix plan Batch 1.
 
   useEffect(() => {
     if (step !== 11) return;
     if (!bodyGoalsValid) return;
+    let cancelled = false;
 
-    // Simple local estimate for the mirror step (real computation happens server-side in step 12)
-    const w = parseFloat(weightLb);
-    const a = parseInt(age);
-    const g = goal || 'maintenance';
+    const run = async () => {
+      try {
+        const data: Record<string, any> = {
+          weight_lb: parseFloat(weightLb),
+          height_ft: parseInt(heightFt),
+          height_in: parseFloat(heightIn || '0'),
+          age: parseInt(age),
+          sex,
+          activity_level: activityLevel,
+          goal,
+          insulin_resistant: insulinResistant,
+          prediabetes,
+          type_2_diabetes: type2Diabetes,
+          onboarding_step_completed: 11,
+        };
+        if (bodyFatPct.trim()) data.body_fat_pct = parseFloat(bodyFatPct);
 
-    const proteinFloor = g === 'muscle_gain' ? 1.2 : 1.0;
-    const protein = Math.round(w * proteinFloor);
+        // saveProfile triggers server budget recompute; also auto-refreshes the
+        // store's `budget` via get().fetchBudget().
+        await saveMetabolicProfile(data);
+        const [budget, targets] = await Promise.all([
+          metabolicApi.getBudget().catch(() => null),
+          nutritionApi.getTargets().catch(() => null),
+        ]);
+        if (cancelled) return;
 
-    let carbCeiling = 130;
-    if (insulinResistant || type2Diabetes) carbCeiling = 90;
-    else if (activityLevel === 'athletic') carbCeiling = 175;
-    else if (activityLevel === 'active') carbCeiling = 155;
-    if (g === 'fat_loss') carbCeiling = Math.round(carbCeiling * 0.85);
+        const tdee = budget?.tdee ?? 0;
+        const calorieTarget = targets?.calories_target ?? tdee;
+        const proteinG = targets?.protein_g_target ?? budget?.protein_target_g ?? 0;
+        const carbCeilingG = targets?.carbs_g_target ?? budget?.carb_ceiling_g ?? 0;
+        const fiberG = targets?.fiber_g_target ?? budget?.fiber_floor_g ?? 0;
+        const fatG = targets?.fat_g_target ?? budget?.fat_target_g ?? 0;
 
-    const fiber = Math.round(w * 0.18);
-    const fat = Math.round(w * 0.45);
+        setComputedTargets({
+          protein_g: Math.round(proteinG),
+          carb_ceiling_g: Math.round(carbCeilingG),
+          fiber_g: Math.round(fiberG),
+          fat_g: Math.round(fatG),
+          calorie_target_kcal: Math.round(calorieTarget),
+          tdee: Math.round(tdee),
+        });
+      } catch (err) {
+        // If the server call fails we keep whatever was previously computed so
+        // the screen isn't blank. The step 12 retry path also exists as a
+        // safety net.
+        // eslint-disable-next-line no-console
+        console.warn('[onboarding] step 11 targets fetch failed', err);
+      }
+    };
 
-    const cal = Math.round(protein * 4 + carbCeiling * 4 + fat * 9);
-
-    // Simple Mifflin-St Jeor TDEE estimate
-    const heightCm = (parseInt(heightFt) * 12 + parseFloat(heightIn || '0')) * 2.54;
-    const weightKg = w * 0.453592;
-    let bmr = sex === 'female'
-      ? 10 * weightKg + 6.25 * heightCm - 5 * a - 161
-      : 10 * weightKg + 6.25 * heightCm - 5 * a + 5;
-    const actMultiplier = activityLevel === 'sedentary' ? 1.2
-      : activityLevel === 'moderate' ? 1.375
-      : activityLevel === 'active' ? 1.55
-      : 1.725;
-    const tdee = Math.round(bmr * actMultiplier);
-
-    setComputedTargets({
-      protein_g: protein,
-      carb_ceiling_g: carbCeiling,
-      fiber_g: fiber,
-      fat_g: fat,
-      calorie_target_kcal: cal,
-      tdee,
-    });
+    void run();
+    return () => { cancelled = true; };
   }, [step, bodyGoalsValid]);
 
   // ─── Step 12: Save preferences + metabolic profile + fetch meal suggestions (with inline loading) ───
@@ -431,39 +476,120 @@ export default function OnboardingScreen() {
         // Preferences save failed — still continue
       }
 
-      // Save metabolic profile
+      // R4: persist meals-per-day so the Flex Budget scales to the user's
+      // eating cadence (IF/OMAD users see 14 meals/week, not 21).
+      // fuel_settings.expected_meals_per_week drives clean_meals_target.
+      try {
+        await fuelApi.updateSettings({
+          expected_meals_per_week: Math.max(7, Math.min(35, mealsPerDay * 7)),
+        });
+      } catch {
+        // Safe to swallow — backend defaults to 21 if the call failed.
+      }
+
+      // Metabolic profile was already saved at step 11 (see Batch 1 fix). We
+      // still bump onboarding_step_completed to 13 so auth_layout can detect
+      // completion, but skip recomputing the whole profile to avoid a second
+      // round-trip and to keep the targets visible on step 11 stable.
       if (bodyGoalsValid) {
         try {
-          const data: Record<string, any> = {
-            weight_lb: parseFloat(weightLb),
-            height_ft: parseInt(heightFt),
-            height_in: parseFloat(heightIn || '0'),
-            age: parseInt(age),
-            sex,
-            activity_level: activityLevel,
-            goal,
-            insulin_resistant: insulinResistant,
-            prediabetes,
-            type_2_diabetes: type2Diabetes,
-            onboarding_step_completed: 13,
-          };
-          if (bodyFatPct.trim()) {
-            data.body_fat_pct = parseFloat(bodyFatPct);
-          }
-          await saveMetabolicProfile(data);
+          await saveMetabolicProfile({ onboarding_step_completed: 13 });
           await fetchBudget();
         } catch {
           // Metabolic save failed — still continue with fallback meals
         }
       }
 
-      // Fetch personalized meal suggestions
+      // Fetch personalized meal suggestions. `metabolic/meal-suggestions`
+      // requires a non-empty daily log to score well, so onboarding users
+      // usually see an empty array. Fall back to `/recipes/browse` with the
+      // dietary filter so at least the reveal reflects the user's stated
+      // pescatarian / vegan / keto preference (QA finding N38 — meal reveal
+      // used to be a static marketing asset for every persona).
+      //
+      // R1 upgrade (Month-1 target-user feedback): also honor liked_proteins
+      // and flavor_preferences. Alex marked salmon + shrimp as liked; the
+      // previous fallback still showed him 3 chicken meals + 1 beef meal.
+      // That's a trust-cost at minute 4. Now we pass `protein_type` and a
+      // preferred flavor to /recipes/browse. The browse endpoint treats
+      // these as filters, not hard requirements, so if the catalog can't
+      // satisfy (e.g., only 1 salmon breakfast exists) it still returns
+      // something rather than an empty array.
       try {
         const suggestions = await metabolicApi.getMealSuggestions(undefined, 4);
         if (!cancelled && suggestions && suggestions.length > 0) {
           setMealSuggestions(suggestions.slice(0, 4));
         } else if (!cancelled) {
-          setMealSuggestions(FALLBACK_MEALS);
+          const nonRestrictive = new Set(['none', 'no restrictions', '']);
+          const primaryDiet = (dietary || []).find((d) => !nonRestrictive.has(String(d).toLowerCase()));
+          // Cap at 3 liked proteins so the filter doesn't over-constrain and
+          // drop the result set to 0. Most onboarding users pick 3–5 proteins.
+          const proteinFilter = (likedProteins || []).slice(0, 3).join(',') || undefined;
+          // Surface ONE flavor hint. Passing all 3 flavors would be too narrow.
+          const flavorHint = (flavors || [])[0];
+          const browse = await recipeApi
+            .browse({
+              dietary_tags: primaryDiet,
+              protein_type: proteinFilter,
+              flavor: flavorHint,  // backend param is singular — see backend/app/routers/recipes.py
+              limit: 20,  // over-fetch a ranking pool; we re-sort client-side by liked-protein match count
+            })
+            .catch(() => null);
+          // R1: the browse API returns recipes whose protein_type matches
+          // ANY of the requested liked-proteins (OR semantics), and the
+          // default sort promotes the most common protein (chicken dominates
+          // the current catalog). That means Alex asking for chicken / salmon
+          // / shrimp / eggs gets back ~20 items with chicken in the top 4.
+          // Re-rank client-side so the reveal screen surfaces items that hit
+          // MORE of the user's liked proteins before falling back to defaults.
+          // Also drop anything whose protein_type includes a disliked protein.
+          const rawItems = Array.isArray(browse?.items) ? browse.items : [];
+          const disliked = new Set((dislikedProteins || []).map((p: string) => p.toLowerCase()));
+          const likedSet = new Set((likedProteins || []).map((p: string) => p.toLowerCase()));
+          const filtered = disliked.size
+            ? rawItems.filter((r: any) => {
+                const pts = Array.isArray(r?.protein_type) ? r.protein_type : [];
+                return !pts.some((p: string) => disliked.has(String(p).toLowerCase()));
+              })
+            : rawItems;
+          const items = filtered
+            .map((r: any) => {
+              const pts = Array.isArray(r?.protein_type) ? r.protein_type : [];
+              // Score = how many of the user's liked proteins this recipe
+              // contains. Promote non-chicken matches slightly higher since
+              // chicken is the catalog default and already over-represented.
+              let score = 0;
+              for (const p of pts) {
+                const norm = String(p).toLowerCase();
+                if (likedSet.has(norm)) {
+                  score += norm === 'chicken' ? 1 : 2;
+                }
+              }
+              return { recipe: r, score };
+            })
+            .sort((a: any, b: any) => b.score - a.score)
+            .map((entry: any) => entry.recipe);
+          if (items.length > 0) {
+            setMealSuggestions(
+              items.slice(0, 4).map((r: any, idx: number) => ({
+                recipe_id: r.id,
+                title: r.title,
+                description: r.description,
+                meal_score: r?.nutrition_info?.mes_score ?? 85,
+                meal_tier: 'good',
+                projected_daily_score: 80,
+                projected_daily_tier: 'good',
+                protein_g: r?.nutrition_info?.protein ?? 0,
+                fiber_g: r?.nutrition_info?.fiber ?? 0,
+                sugar_g: r?.nutrition_info?.sugar ?? 0,
+                calories: r?.nutrition_info?.calories ?? 0,
+                cuisine: r.cuisine ?? null,
+                total_time_min: r.total_time_min ?? null,
+              }))
+            );
+          } else {
+            setMealSuggestions(FALLBACK_MEALS);
+          }
         }
       } catch {
         if (!cancelled) setMealSuggestions(FALLBACK_MEALS);
@@ -951,6 +1077,56 @@ export default function OnboardingScreen() {
                   {activityLevel === opt.value && <Ionicons name="checkmark-circle" size={20} color={theme.primary} />}
                 </TouchableOpacity>
               ))}
+
+              {/* R4: Typical meals per day. Scales the 80%-clean target from
+                  the default 21/week (17 clean + 4 flex) to whatever matches
+                  the user's actual eating cadence — IF users see 14 meals/wk
+                  with 11 clean + 3 flex instead of a guilt-trip "0 of 17". */}
+              <Text style={[styles.fieldLabel, { color: theme.text, marginTop: Spacing.md }]}>
+                Typical meals per day
+              </Text>
+              <Text style={[styles.hintText, { color: theme.textTertiary, marginBottom: Spacing.sm }]}>
+                We scale your weekly clean-eating target to match. Intermittent
+                fasting? Pick 2.
+              </Text>
+              <View style={styles.goalGrid}>
+                {MEALS_PER_DAY_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setMealsPerDay(opt.value)}
+                    style={[
+                      styles.goalCard,
+                      { backgroundColor: theme.surfaceElevated, borderColor: theme.border },
+                      mealsPerDay === opt.value && {
+                        borderColor: theme.primary,
+                        backgroundColor: theme.primary + '15',
+                      },
+                    ]}
+                    accessibilityLabel={`${opt.value} meals per day — ${opt.subtitle}`}
+                  >
+                    <Text
+                      style={[
+                        styles.goalLabel,
+                        {
+                          color: mealsPerDay === opt.value ? theme.primary : theme.text,
+                          fontSize: FontSize.lg,
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.hintText,
+                        { color: theme.textTertiary, fontSize: 11 },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.subtitle}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               {/* Goal */}
               <Text style={[styles.fieldLabel, { color: theme.text, marginTop: Spacing.md }]}>Goal</Text>

@@ -264,9 +264,23 @@ async def get_fuel_streak(
 ):
     fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
     streak_data = compute_fuel_streak(db, current_user.id, fuel_target)
+    # R15 (Month-1 target-user feedback): UI historically displayed up to
+    # three different "streak" numbers depending on which endpoint a given
+    # screen queried — /fuel/streak (days hitting the fuel target),
+    # /game/stats (User.current_streak, bumped on meal log), and
+    # /game/nutrition-streak (days hitting nutrition threshold). For a user
+    # looking at "streak" as a single concept, three counters disagreeing
+    # is broken. Canonicalize on `User.current_streak` (app-open / meal-log
+    # streak — matches the README's framing of "show up every day"). The
+    # fuel-target-specific streak math is still returned for drill-down as
+    # `fuel_target_streak` / `fuel_target_longest` — UI can surface it in
+    # a fuel-specific card without competing with the headline number.
     return FuelStreakResponse(
-        current_streak=streak_data["current_streak"],
-        longest_streak=streak_data["longest_streak"],
+        current_streak=int(current_user.current_streak or 0),
+        longest_streak=max(
+            int(current_user.longest_streak or 0),
+            int(streak_data.get("longest_streak") or 0),
+        ),
         fuel_target=fuel_target,
     )
 

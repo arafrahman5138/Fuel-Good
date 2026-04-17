@@ -63,6 +63,21 @@ export default function LoginScreen() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const { setTokens, setUser } = useAuthStore();
 
+  // Batch 5 fix (QA N22/N45): clear form state whenever the user toggles
+  // between Sign In and Create Account. Previously the `email` / `password` /
+  // `name` fields persisted across the toggle *and* across screen unmount/
+  // remount inside the nav stack, which caused concatenated values like
+  // `jordan+ui5@jordan+ui@qatest.fuelg...` when a user typed, switched modes,
+  // and typed again. Simultaneously clears any stale validation errors so the
+  // user sees a clean form.
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setName('');
+    setFieldErrors({});
+    setError('');
+  }, [isRegister]);
+
   // Error shake animation
   const errorShake = useRef(new Animated.Value(0)).current;
   const errorOpacity = useRef(new Animated.Value(0)).current;
