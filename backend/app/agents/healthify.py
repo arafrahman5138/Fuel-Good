@@ -900,6 +900,119 @@ def parse_healthify_response(raw_text: str) -> dict[str, Any]:
     return payload
 
 
+# R2 (Month-1 target-user feedback): chat responses that the README promises as
+# "transform a craving into a whole-food recipe" were returning prose-only about
+# 50% of the time because the LLM didn't emit valid JSON on the first try. When
+# an intent is supposed to produce a recipe card (fridge-to-meal, healthify-
+# unhealthy-meal, lookup-existing-meal, modify-prior-recipe), this helper does
+# ONE bounded retry with an ultra-strict "JSON only" prompt. The second call
+# uses a small fast-model config so latency stays reasonable.
+#
+# Returns the (possibly upgraded) payload. If the retry also fails, returns the
+# original payload unchanged — never makes things worse.
+_RETRY_SYSTEM_PROMPT = """You are Fuel Good Healthify. You MUST respond with one JSON object and nothing else.
+No markdown, no code fences, no leading/trailing prose. Just the JSON.
+
+Required schema:
+{
+  "message": "1-2 sentence explanation",
+  "recipe": {
+    "title": "short title",
+    "description": "1 sentence",
+    "ingredients": [{"name": "str", "quantity": "str", "unit": "str"}, ...],
+    "steps": ["...", "...", "..."],
+    "prep_time_min": <int>,
+    "cook_time_min": <int>,
+    "servings": <int>
+  },
+  "swaps": [{"original": "...", "replacement": "...", "reason": "..."}] or null,
+  "nutrition": {"healthified_estimate": {"calories": <int>, "protein": <int>, "carbs": <int>, "fat": <int>, "fiber": <int>}} or null
+}
+
+Requirements:
+- recipe.ingredients must have 3+ entries.
+- recipe.steps must have 3+ entries.
+- recipe must NOT be null for a recipe request.
+"""
+
+RECIPE_REQUIRING_INTENTS = frozenset({
+    "fridge_to_meal",
+    "healthify_unhealthy_meal",
+    "lookup_existing_meal",
+    "modify_prior_recipe",
+})
+
+
+async def _retry_for_recipe_card(
+    user_input: str,
+    original_payload: dict[str, Any],
+    user_context: str,
+) -> dict[str, Any]:
+    """Second-pass call that demands JSON. Only runs when the first call
+    produced prose. Preserves the original payload's message/metadata keys
+    when the retry fails to parse, so we never regress the user experience.
+    """
+    try:
+        llm = get_llm("chat")  # reuse the chat provider; don't reach for a "scan" model
+    except Exception:
+        return original_payload
+
+    system = _RETRY_SYSTEM_PROMPT
+    if user_context:
+        system = f"{system}\n\n{user_context}"
+    try:
+        response = await llm.ainvoke([
+            SystemMessage(content=system),
+            HumanMessage(
+                content=(
+                    f"Request: {user_input}\n\n"
+                    f"Prior attempt (treat as reference, rewrite fully as JSON):\n"
+                    f"{original_payload.get('message', '')[:800]}"
+                )
+            ),
+        ])
+    except Exception as exc:
+        logger.info("healthify.retry.llm_failed: %s", exc)
+        return original_payload
+
+    retried = parse_healthify_response(response.content)
+    if retried.get("recipe"):
+        # Success: the retry produced a valid card. Preserve any metadata from
+        # the first attempt that the retry didn't populate. Can't use
+        # dict.setdefault because parse_healthify_response explicitly emits
+        # `matched_recipe_id: None` (etc.) when the JSON lacks the key — that
+        # counts as present. Use explicit `is None` replacement instead.
+        for k in ("response_mode", "matched_recipe_id", "retrieval_confidence",
+                  "prompt_version", "mes_score"):
+            if retried.get(k) is None and original_payload.get(k) is not None:
+                retried[k] = original_payload[k]
+        # Keep the longer of the two prose messages if the retry returned a
+        # terse one-liner (users still want context around the recipe).
+        original_msg = original_payload.get("message") or ""
+        retried_msg = retried.get("message") or ""
+        if len(original_msg) > len(retried_msg) * 2 and original_msg:
+            retried["message"] = original_msg
+        return retried
+    return original_payload
+
+
+async def ensure_recipe_card(
+    intent: str,
+    user_input: str,
+    payload: dict[str, Any],
+    user_context: str = "",
+) -> dict[str, Any]:
+    """Public entry point for R2. Handlers call this AFTER their primary LLM
+    call so that prose-only responses get one retry opportunity before
+    reaching the user.
+    """
+    if intent not in RECIPE_REQUIRING_INTENTS:
+        return payload
+    if payload.get("recipe"):
+        return payload
+    return await _retry_for_recipe_card(user_input, payload, user_context)
+
+
 def _validate_recipe_payload(payload: dict[str, Any]) -> dict[str, Any]:
     recipe = payload.get("recipe")
     if not recipe:
@@ -1441,6 +1554,10 @@ async def healthify_agent(
                 yield ""  # heartbeat: keeps SSE connection alive during LLM processing
                 try:
                     payload = await _handle_fridge_to_meal(user_input, history, user_context)
+                    # R2: if the LLM emitted prose only, retry once with a JSON-only
+                    # prompt. Keeps the README promise that every recipe request
+                    # produces a card, not a paragraph.
+                    payload = await ensure_recipe_card(intent, user_input, payload, user_context)
                     mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
                     if mes:
                         payload["mes_score"] = mes
@@ -1450,6 +1567,7 @@ async def healthify_agent(
                     yield _STREAM_ERROR_PAYLOAD
             return _fridge_stream()
         payload = await _handle_fridge_to_meal(user_input, history, user_context)
+        payload = await ensure_recipe_card(intent, user_input, payload, user_context)  # R2
         mes = _compute_recipe_mes_from_cache(cached, payload.get("nutrition"))
         if mes:
             payload["mes_score"] = mes
@@ -1505,6 +1623,11 @@ async def healthify_agent(
     if intent == "modify_prior_recipe":
         modified_payload = await _modify_prior_recipe(user_input, history, user_context)
         if modified_payload:
+            # R2: modification must also produce a card (user expects the
+            # updated recipe rendered, not a prose summary of the change).
+            modified_payload = await ensure_recipe_card(
+                intent, user_input, modified_payload, user_context
+            )
             nutrition = modified_payload.get("nutrition")
             mes = _compute_recipe_mes_from_cache(cached, nutrition)
             if mes:
@@ -1568,6 +1691,10 @@ async def healthify_agent(
         return stream_response()
 
     payload = await _generate_healthified_payload(user_input, history, retrieved_context, user_context)
+    # R2: this path handles `healthify_unhealthy_meal` and `lookup_existing_meal`
+    # intents — both should produce a recipe card. Retry once with JSON-only
+    # prompt if the first call emitted prose.
+    payload = await ensure_recipe_card(intent, user_input, payload, user_context)
     if top:
         payload["matched_recipe_id"] = str(top["recipe"].id)
         payload["retrieval_confidence"] = float(top.get("score") or 0)

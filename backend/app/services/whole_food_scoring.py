@@ -261,9 +261,65 @@ def _build_flag_explanations(
     return explanations
 
 
+#: Batch 4 fix (QA N6/N7): beverage category check. Before this, Coca-Cola
+#: UPC 049000028911 scored 82/100 "Mostly good" because the ingredient count
+#: (~6) awarded +6 and "Relatively short ingredient list" highlighted as a
+#: POSITIVE even though HFCS, phosphoric acid, and artificial sweeteners are
+#: present. A sugary beverage that carries ultra-processed red flags must
+#: land in the ultra_processed tier (<20) regardless of ingredient brevity.
+_BEVERAGE_NAME_TOKENS = (
+    "cola", "soda", "soft drink", "pop", "fizzy",
+    "energy drink", "sports drink", "juice drink",
+    "sweetened beverage", "frappucc", "flavored water",
+    "sparkling juice", "iced tea", "sweet tea",
+    "refresh", "gatorade", "powerade", "sprite",
+    "mountain dew", "pepsi", "coke", "coca", "7-up", "7up",
+    "rc cola", "dr pepper",
+)
+_ARTIFICIAL_SWEETENER_TOKENS = (
+    "aspartame", "sucralose", "acesulfame", "acesulfame-k", "acesulfame potassium",
+    "saccharin", "neotame", "advantame", "stevia glycoside",
+)
+ULTRA_PROCESSED_BEVERAGE_PENALTY = -55
+ULTRA_PROCESSED_BEVERAGE_CEILING = 19  # guaranteed below "mixed" tier (50)
+
+
+def _is_sweetened_beverage(
+    product_name: str,
+    ingredient_text: str,
+    added_sugars: list[str],
+    sugar_g: float,
+) -> tuple[bool, list[str]]:
+    """Return (is_sweetened_beverage, reasons).
+
+    A product is treated as a sweetened beverage when its name suggests soda
+    /juice drink / energy drink AND it carries either an added-sugar match or
+    an artificial sweetener. Returns the matching reasons for the output.
+    """
+    text = f"{product_name} {ingredient_text}".lower()
+    beverage_hits = [tok for tok in _BEVERAGE_NAME_TOKENS if tok in text]
+    if not beverage_hits:
+        return False, []
+    sweetener_hits = [tok for tok in _ARTIFICIAL_SWEETENER_TOKENS if tok in text]
+    if not added_sugars and not sweetener_hits and sugar_g < 10:
+        # E.g. plain sparkling water — "sparkling juice" caught by name but
+        # no sugar present.
+        return False, []
+    reasons = []
+    if beverage_hits:
+        reasons.append(f"Beverage category ({beverage_hits[0]})")
+    if added_sugars:
+        reasons.append("added sugars detected")
+    if sweetener_hits:
+        reasons.append(f"artificial sweeteners ({sweetener_hits[0]})")
+    return True, reasons
+
+
 def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     ingredients = _split_ingredients(payload.get("ingredients_text"))
     ingredient_count = len(ingredients)
+    product_name = str(payload.get("product_name") or payload.get("brand") or "").lower()
+    ingredient_text = " ".join(ingredients).lower()
 
     protein_g = _get_float(payload, "protein_g", "protein")
     fiber_g = _get_float(payload, "fiber_g", "fiber")
@@ -284,13 +340,35 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     concerns: list[str] = []
     reasoning: list[str] = []
 
+    # Batch 4: sweetened-beverage detection short-circuits the positive
+    # signals of a short ingredient list. Coke has 6 ingredients but those
+    # ingredients are all ultra-processed — it must not benefit from brevity.
+    is_bev, bev_reasons = _is_sweetened_beverage(product_name, ingredient_text, added_sugars, sugar_g)
+    if is_bev:
+        score += ULTRA_PROCESSED_BEVERAGE_PENALTY
+        concerns.append("Sweetened beverage: ultra-processed regardless of ingredient count.")
+        reasoning.append("Beverage override: " + "; ".join(bev_reasons))
+
+    # R23 generalization (Sprint 1 scoring-calibration battery): the
+    # short-ingredient-list bonus was rescuing ultra-processed snacks whose
+    # whole pitch is seed-oil + salt + potato (Lay's Chips scored 83 "solid"
+    # pre-fix). Suppress the positive ingredient-count signal whenever a
+    # *major* red flag fires: seed oils, added sugars, refined flours,
+    # or the beverage-category penalty. The penalties for those red flags
+    # still apply below — we just stop giving simultaneous credit for the
+    # short list. Artificial additives and gums are left as "minor" — they
+    # don't suppress the bonus on their own because some legitimate
+    # minimally-processed foods (e.g., a sparkling water with "natural flavor")
+    # contain one ambiguous token.
+    has_major_red_flag = bool(is_bev or seed_oils or added_sugars or refined_flours)
+
     if ingredient_count == 0:
         score -= 14
         concerns.append("Ingredient list is missing, so the product is harder to trust.")
-    elif ingredient_count <= 5:
+    elif ingredient_count <= 5 and not has_major_red_flag:
         score += 6
         highlights.append("Very short ingredient list.")
-    elif ingredient_count <= 10:
+    elif ingredient_count <= 10 and not has_major_red_flag:
         score += 3
         highlights.append("Relatively short ingredient list.")
     elif ingredient_count > 20:
@@ -375,6 +453,12 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     if calories > 0 and protein_g >= 10 and sugar_g <= 8 and not additives and not seed_oils:
         score += 4
         highlights.append("Macros are relatively aligned with a whole-food product.")
+
+    # Batch 4: sweetened beverages always land ultra_processed even if some
+    # redeeming macros sneak in (e.g., 15 g protein from a sugary recovery
+    # drink still shouldn't read "solid" tier).
+    if is_bev:
+        score = min(score, float(ULTRA_PROCESSED_BEVERAGE_CEILING))
 
     score = max(0.0, min(100.0, round(score, 1)))
 

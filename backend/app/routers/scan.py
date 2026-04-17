@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import mimetypes
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any, Optional
@@ -346,14 +348,29 @@ async def analyze_product(
     }
 
 
+#: Batch 4 (QA N16): real barcodes are 8–14 digits (EAN-8/13, UPC-A/E, ITF-14).
+#: Malformed inputs previously fell through to a generic "Product not found"
+#: 404, indistinguishable from a legitimate not-found.
+_BARCODE_RE = re.compile(r"^\d{8,14}$")
+
+
 @router.get("/product/barcode/{barcode}")
 async def analyze_product_barcode(
     barcode: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if not barcode.strip():
+    barcode = barcode.strip()
+    if not barcode:
         raise HTTPException(status_code=400, detail="Barcode is required.")
+    # Batch 4 (N16): reject malformed barcodes with 422 (not 404) so the
+    # frontend can surface a distinct message ("that doesn't look like a
+    # barcode") separate from the "not in database" 404 case.
+    if not _BARCODE_RE.match(barcode):
+        raise HTTPException(
+            status_code=422,
+            detail="Barcode must be 8–14 digits (EAN/UPC format).",
+        )
 
     # ── Check cache: reuse recent scan of same barcode (< 7 days old) ──
     from datetime import timedelta
@@ -391,16 +408,46 @@ async def analyze_product_barcode(
             "image_front_url",
         ])
     }
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-    except httpx.HTTPError:
-        raise HTTPException(status_code=502, detail="Unable to reach barcode product database right now.")
+    # Batch 4 (QA N8): common UPCs (Lay's, Oreos, Quaker, La Croix, whole milk,
+    # rolled oats — 6 of 8 tested) used to return 502 because the 10-second
+    # timeout + zero retries against the public OpenFoodFacts endpoint is
+    # fragile. Retry twice with exponential backoff, bump timeout to 30s, and
+    # degrade gracefully to 404 with a `fallback` hint so the frontend can
+    # offer the label-scan CTA instead of a dead end.
+    data = None
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
+            break
+        except httpx.HTTPError as err:
+            last_error = err
+            if attempt < 2:
+                await asyncio.sleep(0.5 * (2 ** attempt))  # 0.5s, 1s
+                continue
+    if data is None:
+        logger.warning("barcode lookup failed after retries: %s", last_error)
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": "Product not found — try scanning the label directly.",
+                "fallback": "label_scan",
+                "barcode": barcode,
+            },
+        )
 
     if data.get("status") != 1 or not data.get("product"):
-        raise HTTPException(status_code=404, detail="Product not found for that barcode.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": "Product not found for that barcode.",
+                "fallback": "label_scan",
+                "barcode": barcode,
+            },
+        )
 
     payload = _extract_product_payload(data["product"], barcode)
     result = analyze_whole_food_product(payload)
