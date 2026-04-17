@@ -2,7 +2,7 @@
   "source": "live_database",
   "database_url": "postgresql://realfood:realfood_local@localhost:5432/fuelgood",
   "exported_at": "2026-04-02T16:46:19.916272Z",
-  "meal_count": 110,
+  "meal_count": 117,
   "meals": [
     {
       "id": "6e3a09d3-110a-4584-bb8e-05556837cb36",
@@ -15152,6 +15152,898 @@
         "notes": null
       },
       "created_at": "2026-04-12T00:00:00.000000"
+    },
+    {
+      "id": "f5c2e4e8-a0de-4f53-9f07-90707c6f614c",
+      "title": "Beef Seekh Kebabs",
+      "description": "Smoky, charred beef seekh kebabs with grated onion, fresh cilantro, mint, serrano, and warm spices. Sheet pan-roasted then broiled until crisp on the outside.",
+      "ingredients": [
+        {
+          "name": "ground beef (80/20)",
+          "quantity": "2",
+          "unit": "lbs",
+          "category": "protein"
+        },
+        {
+          "name": "red onions, grated and squeezed dry",
+          "quantity": "3",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "cilantro, finely chopped",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh mint, finely chopped",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves, grated",
+          "quantity": "4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "fresh ginger, grated",
+          "quantity": "1.5",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "serrano chili, finely minced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "coriander",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "garam masala",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "smoked paprika",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "salt",
+          "quantity": "1.5",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "black pepper",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "2",
+          "unit": "tsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Grate the red onions and squeeze out all the liquid with your hands or through a cheesecloth — this is critical so the kebabs don't fall apart.",
+        "In a large bowl, combine the grated onion with the ground beef, chopped cilantro, mint, grated garlic, grated ginger, minced serrano, and all the spices.",
+        "Mix for 2-3 minutes with your hands until the mixture turns sticky and holds together well.",
+        "Spread the mixture onto a sheet pan. Using a spatula, separate it into 8 long, thick strips shaped like seekh kebabs.",
+        "Drizzle with olive oil and roast at 425F for 18-20 minutes, then broil for 4-6 minutes until charred on top.",
+        "Let rest a few minutes before serving."
+      ],
+      "prep_time_min": 20,
+      "cook_time_min": 25,
+      "total_time_min": 45,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 420.0,
+        "protein": 38.0,
+        "carbs": 6.0,
+        "fat": 28.0,
+        "fiber": 1.5,
+        "sugar": 2.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "kebab",
+        "sheet-pan"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "charred",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "pakistani",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "seekh_kebab_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "eaa82492-f5b4-41e2-80aa-115963186552",
+      "title": "Roasted Garlic Chutney Mayo",
+      "description": "Creamy avocado oil mayo blended with a whole roasted garlic bulb, fresh cilantro, mint, serrano, and lemon. Rich, herby, and bright.",
+      "ingredients": [
+        {
+          "name": "garlic, whole bulb",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "clean avocado oil mayo",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "pantry"
+        },
+        {
+          "name": "cilantro",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh mint",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "serrano chili",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "lemon, juiced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "cumin",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "coriander",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        },
+        {
+          "name": "salt and pepper",
+          "quantity": "to taste",
+          "unit": "",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Wrap the whole garlic bulb in foil with a drizzle of olive oil and a pinch of salt.",
+        "Roast at 425F for 40-45 minutes (or 10-15 min once kebabs come out and the oven is still hot) until the cloves are soft and caramelized.",
+        "Squeeze the roasted garlic cloves into a blender. Add the mayo, cilantro, mint, serrano, lemon juice, cumin, coriander, salt, and pepper.",
+        "Blend until smooth and vibrant green. Refrigerate until ready to use."
+      ],
+      "prep_time_min": 5,
+      "cook_time_min": 45,
+      "total_time_min": 50,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 90.0,
+        "protein": 0.5,
+        "carbs": 2.0,
+        "fat": 9.5,
+        "fiber": 0.5,
+        "sugar": 0.5
+      },
+      "difficulty": "easy",
+      "tags": [
+        "sauce",
+        "herby",
+        "creamy"
+      ],
+      "flavor_profile": [
+        "creamy",
+        "herby",
+        "tangy"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "pakistani",
+      "health_benefits": [],
+      "protein_type": [],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "sauce",
+      "is_component": true,
+      "meal_group_id": "seekh_kebab_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "97c187ef-a2a7-4b7c-9ba8-fa5654ed1eb1",
+      "title": "Sumac Onion Salad",
+      "description": "Thinly sliced red onion with fresh parsley, mint, tangy sumac, and lemon. Bright, tart, and a classic Middle Eastern pairing for grilled meats.",
+      "ingredients": [
+        {
+          "name": "red onions, thinly sliced",
+          "quantity": "2",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "fresh parsley, chopped",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "fresh mint, chopped",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "sumac",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "spices"
+        },
+        {
+          "name": "lemon, juiced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "olive oil",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "salt",
+          "quantity": "1/2",
+          "unit": "tsp",
+          "category": "spices"
+        }
+      ],
+      "steps": [
+        "Thinly slice the red onions and soak them in cold water for 10 minutes to mellow their bite. Drain well.",
+        "Combine the onions with chopped parsley and mint in a bowl.",
+        "Sprinkle with sumac, lemon juice, olive oil, and salt. Toss well.",
+        "Let sit for 5 minutes before serving so the flavors can meld."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 0,
+      "total_time_min": 10,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 55.0,
+        "protein": 1.5,
+        "carbs": 7.0,
+        "fat": 3.5,
+        "fiber": 2.0,
+        "sugar": 3.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "side",
+        "salad",
+        "fresh",
+        "quick"
+      ],
+      "flavor_profile": [
+        "tart",
+        "bright",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free",
+        "vegan"
+      ],
+      "cuisine": "middle_eastern",
+      "health_benefits": [
+        "gut_health",
+        "blood_sugar_support"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "nonstarchy_veg"
+      ],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": "seekh_kebab_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "fiber_class": "med",
+        "acid": true,
+        "healthy_fat": true,
+        "veg_density": "high",
+        "recommended_timing": "with_meal"
+      },
+      "glycemic_profile": {
+        "primary_carb_source": "nonstarchy_veg",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "67338416-85c1-4398-be84-1879962faa43",
+      "title": "Beef Seekh Kebab Plate",
+      "description": "Smoky, charred beef seekh kebabs made with grated onion, fresh herbs, and warm spices, served over rice with a roasted garlic chutney mayo. Paired with a bright sumac onion salad.",
+      "ingredients": [
+        {
+          "name": "Beef Seekh Kebabs (component)",
+          "quantity": "2",
+          "unit": "kebabs",
+          "category": "protein"
+        },
+        {
+          "name": "White Rice (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "carb"
+        },
+        {
+          "name": "Roasted Garlic Chutney Mayo (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "sauce"
+        }
+      ],
+      "steps": [
+        "Roast the garlic bulb in foil at 425F while prepping the kebabs.",
+        "Mix the seasoned ground beef with grated onion, herbs, and spices. Shape into seekh strips on a sheet pan.",
+        "Roast the kebabs at 425F for 18-20 minutes, then broil for 4-6 minutes until charred.",
+        "Blend the roasted garlic with mayo, herbs, serrano, and lemon for the chutney mayo.",
+        "Prepare the sumac onion salad — slice onions, toss with herbs, sumac, lemon, and olive oil.",
+        "Plate: rice on the bottom, 2 seekh kebabs on top, drizzle of chutney mayo, sumac onion salad on the side."
+      ],
+      "prep_time_min": 20,
+      "cook_time_min": 45,
+      "total_time_min": 65,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 715.0,
+        "protein": 42.7,
+        "carbs": 53.0,
+        "fat": 37.7,
+        "fiber": 2.5,
+        "sugar": 4.0,
+        "mes_score": 65.5,
+        "mes_display_score": 65.5,
+        "mes_tier": "good",
+        "mes_sub_scores": {
+          "gis": 53.2,
+          "pas": 73.2,
+          "fs": 42.5,
+          "fas": 98.2
+        },
+        "rs3_g": 1.5,
+        "effective_fiber_g": 4.0,
+        "mes_score_with_default_pairing": 73.6,
+        "mes_default_pairing_adjusted_score": 73.6,
+        "mes_default_pairing_delta": 8.1,
+        "mes_default_pairing_gis_bonus": 6.0,
+        "mes_default_pairing_synergy_bonus": 1.5,
+        "mes_default_pairing_reasons": [
+          "fiber-rich side",
+          "acidic element",
+          "healthy fat",
+          "vegetable-forward side"
+        ]
+      },
+      "difficulty": "medium",
+      "tags": [
+        "meal-prep",
+        "high-protein",
+        "kebab",
+        "dinner"
+      ],
+      "flavor_profile": [
+        "smoky",
+        "charred",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free"
+      ],
+      "cuisine": "pakistani",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "beef"
+      ],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/1e3894aa62cc.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "seekh_kebab_group_v1",
+      "default_pairing_ids": [
+        "97c187ef-a2a7-4b7c-9ba8-fa5654ed1eb1"
+      ],
+      "component_composition": {
+        "protein": "f5c2e4e8-a0de-4f53-9f07-90707c6f614c",
+        "carb": "edce49c5-21b3-4915-9e75-e9c381ed32fd",
+        "sauce": "eaa82492-f5b4-41e2-80aa-115963186552"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "e306db71-b112-4d63-b07d-0ca904097ca3",
+      "title": "Thai Basil Chicken",
+      "description": "Ground chicken stir-fried with shallots, garlic, Thai chili, and fresh basil in a coconut aminos-honey-fish sauce glaze. Umami-rich and aromatic.",
+      "ingredients": [
+        {
+          "name": "ground chicken",
+          "quantity": "1.5",
+          "unit": "lb",
+          "category": "protein"
+        },
+        {
+          "name": "shallot or red onion, diced",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "garlic cloves, minced",
+          "quantity": "5",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red chili, chopped",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "jalapeño, diced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "Thai basil leaves",
+          "quantity": "1/2",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "avocado oil",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "coconut aminos",
+          "quantity": "4",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "honey",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "sambal oelek",
+          "quantity": "1.5",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "clean fish sauce",
+          "quantity": "1.5",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "lime, juiced",
+          "quantity": "1/2",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Mix the coconut aminos, honey, sambal oelek, and fish sauce in a small bowl and set aside.",
+        "Heat avocado oil in a wok or large skillet over medium-high heat. Sauté the shallot, garlic, and jalapeño for 1 minute without letting them burn.",
+        "Add the ground chicken and cook just until no longer pink. Don't overcook or it'll dry out — it should be slightly juicy.",
+        "Stir the sauce and pour it over the chicken. Cook until the sauce is incorporated and reduced slightly.",
+        "Turn off the heat. Fold in the fresh basil leaves and red chili. Squeeze a little lime over the top."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 10,
+      "total_time_min": 20,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 350.0,
+        "protein": 42.0,
+        "carbs": 10.0,
+        "fat": 15.0,
+        "fiber": 1.0,
+        "sugar": 4.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "stir-fry",
+        "high-protein",
+        "quick"
+      ],
+      "flavor_profile": [
+        "spicy",
+        "umami",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "thai",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "chicken"
+      ],
+      "carb_type": [],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "protein_base",
+      "is_component": true,
+      "meal_group_id": "thai_basil_chicken_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": null,
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "3fdfc45a-acca-4d0f-88a4-5806dfe1c526",
+      "title": "Thai Cucumber Salad",
+      "description": "A bright, tangy Thai-style salad with thinly sliced cucumber, red onion, and chili in a lime-fish sauce dressing. Cool, acidic, and pairs perfectly with rich stir-fries.",
+      "ingredients": [
+        {
+          "name": "cucumbers, thinly sliced",
+          "quantity": "2",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red onion, thinly sliced",
+          "quantity": "1/4",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "red chili, sliced",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "fresh cilantro, chopped",
+          "quantity": "1/4",
+          "unit": "cup",
+          "category": "produce"
+        },
+        {
+          "name": "lime juice",
+          "quantity": "2",
+          "unit": "tbsp",
+          "category": "produce"
+        },
+        {
+          "name": "clean fish sauce",
+          "quantity": "1",
+          "unit": "tbsp",
+          "category": "pantry"
+        },
+        {
+          "name": "honey",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        },
+        {
+          "name": "sesame seeds",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        }
+      ],
+      "steps": [
+        "Thinly slice the cucumbers and red onion.",
+        "Whisk the lime juice, fish sauce, and honey in a small bowl.",
+        "Toss the cucumbers, onion, chili, and cilantro with the dressing.",
+        "Let sit 5 minutes for the flavors to meld. Top with sesame seeds before serving."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 0,
+      "total_time_min": 10,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 45.0,
+        "protein": 1.0,
+        "carbs": 8.0,
+        "fat": 0.5,
+        "fiber": 1.0,
+        "sugar": 3.0
+      },
+      "difficulty": "easy",
+      "tags": [
+        "side",
+        "salad",
+        "quick",
+        "fresh"
+      ],
+      "flavor_profile": [
+        "tangy",
+        "spicy",
+        "fresh"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "thai",
+      "health_benefits": [
+        "gut_health",
+        "blood_sugar_support"
+      ],
+      "protein_type": [],
+      "carb_type": [
+        "nonstarchy_veg"
+      ],
+      "is_ai_generated": false,
+      "image_url": "",
+      "recipe_role": "veg_side",
+      "is_component": true,
+      "meal_group_id": "thai_basil_chicken_group_v1",
+      "default_pairing_ids": [],
+      "component_composition": null,
+      "is_mes_scoreable": false,
+      "needs_default_pairing": false,
+      "pairing_synergy_profile": {
+        "fiber_class": "low",
+        "acid": true,
+        "healthy_fat": false,
+        "veg_density": "high",
+        "recommended_timing": "with_meal"
+      },
+      "glycemic_profile": {
+        "primary_carb_source": "nonstarchy_veg",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-13T00:00:00.000000"
+    },
+    {
+      "id": "00923973-d73a-469b-9eb5-4baf02757133",
+      "title": "Thai Basil Chicken Bowl",
+      "description": "Ground chicken stir-fried with shallots, garlic, Thai chili, and fresh basil in a coconut aminos-honey-fish sauce glaze. Served over rice with a runny fried egg and a bright Thai cucumber salad.",
+      "ingredients": [
+        {
+          "name": "Thai Basil Chicken (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "protein"
+        },
+        {
+          "name": "White Rice (component)",
+          "quantity": "1",
+          "unit": "serving",
+          "category": "carb"
+        },
+        {
+          "name": "fried egg",
+          "quantity": "1",
+          "unit": "",
+          "category": "dairy"
+        },
+        {
+          "name": "green onion, sliced",
+          "quantity": "1",
+          "unit": "stalk",
+          "category": "produce"
+        },
+        {
+          "name": "sesame seeds",
+          "quantity": "1",
+          "unit": "tsp",
+          "category": "pantry"
+        },
+        {
+          "name": "fresh Thai basil leaves",
+          "quantity": "few",
+          "unit": "",
+          "category": "produce"
+        },
+        {
+          "name": "lime wedge",
+          "quantity": "1",
+          "unit": "",
+          "category": "produce"
+        }
+      ],
+      "steps": [
+        "Sauté shallot, garlic, and jalapeño in avocado oil. Add ground chicken and cook until just done.",
+        "Stir in the sauce (coconut aminos, honey, sambal oelek, fish sauce) and cook briefly until reduced. Fold in basil and chili, squeeze lime.",
+        "Cook rice separately and fry an egg sunny-side up.",
+        "Assemble: rice on the bottom, Thai basil chicken on top, place the fried egg over the chicken. Garnish with green onion, sesame seeds, extra basil, and a lime wedge.",
+        "Serve with Thai Cucumber Salad on the side."
+      ],
+      "prep_time_min": 10,
+      "cook_time_min": 15,
+      "total_time_min": 25,
+      "servings": 4,
+      "nutrition_info": {
+        "calories": 645.0,
+        "protein": 53.2,
+        "carbs": 55.5,
+        "fat": 22.4,
+        "fiber": 1.5,
+        "sugar": 4.0,
+        "mes_score": 67.3,
+        "mes_display_score": 67.3,
+        "mes_tier": "good",
+        "mes_sub_scores": {
+          "gis": 48.7,
+          "pas": 96.1,
+          "fs": 31.2,
+          "fas": 85.9
+        },
+        "rs3_g": 1.5,
+        "effective_fiber_g": 3.0,
+        "mes_score_with_default_pairing": 70.8,
+        "mes_default_pairing_adjusted_score": 70.8,
+        "mes_default_pairing_delta": 3.5,
+        "mes_default_pairing_gis_bonus": 4.0,
+        "mes_default_pairing_synergy_bonus": 1.25,
+        "mes_default_pairing_reasons": [
+          "acidic element",
+          "vegetable-forward side"
+        ]
+      },
+      "difficulty": "easy",
+      "tags": [
+        "stir-fry",
+        "high-protein",
+        "bowls"
+      ],
+      "flavor_profile": [
+        "spicy",
+        "umami",
+        "herby"
+      ],
+      "dietary_tags": [
+        "gluten-free",
+        "dairy-free"
+      ],
+      "cuisine": "thai",
+      "health_benefits": [
+        "muscle_recovery",
+        "sustained_energy"
+      ],
+      "protein_type": [
+        "chicken",
+        "eggs"
+      ],
+      "carb_type": [
+        "white_rice"
+      ],
+      "is_ai_generated": false,
+      "image_url": "/static/meal-images/a74de0295711.png",
+      "recipe_role": "full_meal",
+      "is_component": false,
+      "meal_group_id": "thai_basil_chicken_group_v1",
+      "default_pairing_ids": [
+        "3fdfc45a-acca-4d0f-88a4-5806dfe1c526"
+      ],
+      "component_composition": {
+        "protein": "e306db71-b112-4d63-b07d-0ca904097ca3",
+        "carb": "edce49c5-21b3-4915-9e75-e9c381ed32fd"
+      },
+      "is_mes_scoreable": true,
+      "needs_default_pairing": true,
+      "pairing_synergy_profile": null,
+      "glycemic_profile": {
+        "primary_carb_source": "white_rice",
+        "processing_level": "minimally_processed",
+        "resistant_starch_prep": "cooled_reheated",
+        "override_inference": false,
+        "notes": null
+      },
+      "created_at": "2026-04-13T00:00:00.000000"
     }
   ]
 }

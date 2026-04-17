@@ -222,6 +222,19 @@ def _infer_dietary_compatibility(recipe: Recipe, diet: str) -> bool:
         }
         return not any(kw in ingredient_text for kw in meat_kw)
 
+    # Batch 3 fix (QA N5): pescatarian allows fish + seafood + eggs + dairy,
+    # excludes land-animal meats. Mirrors `vegetarian` but without blocking
+    # fish/seafood terms. Without this case, the fallback returns False for
+    # every untagged recipe → Jordan's 14-slot plan collapsed to 1 meal.
+    if diet == "pescatarian":
+        land_meat_kw = {
+            "chicken", "beef", "pork", "turkey", "lamb", "bacon", "sausage",
+            "steak", "meatball", "oxtail", "bison", "venison", "duck",
+            "goose", "veal", "goat", "rabbit", "prosciutto", "pancetta",
+            "salami", "chorizo", "ham ",
+        }
+        return not any(kw in ingredient_text for kw in land_meat_kw)
+
     if diet in ("nut-free", "tree-nut-free", "tree nut-free", "tree nuts"):
         nut_kw = {
             "almond", "walnut", "cashew", "pecan", "pistachio", "hazelnut",
@@ -399,6 +412,24 @@ def _candidate_pool(
             continue
         if any(d in ingredient_names for d in disliked_proteins_lower):
             continue
+
+        # Batch 6 fix (QA N9): low-carb / keto users previously got meals
+        # blowing past their per-meal carb budget (Derrick saw a 72 g-carb
+        # Butter Chicken Bowl + a 44 g Gochujang Chicken in a 21-slot plan).
+        # Enforce a hard per-meal cap. carb_ceiling_g divided across
+        # meals_per_day × ~40% budget per meal gives ~10 g/meal for a 75 g
+        # daily ceiling (Derrick T2D) — tight but deliberate.
+        if ("low-carb" in (dietary or []) or "keto" in (dietary or [])) and budget is not None:
+            carb_ceiling = getattr(budget, "carb_ceiling_g", 0) or 0
+            if carb_ceiling > 0:
+                max_carbs_per_meal = round(carb_ceiling / max(meals_per_day, 1) * 0.4)
+                recipe_carbs = float(
+                    (recipe.nutrition_info or {}).get("carbs")
+                    or (recipe.nutrition_info or {}).get("carbs_g")
+                    or 0
+                )
+                if recipe_carbs > max_carbs_per_meal:
+                    continue
 
         mes = _meal_display_mes(recipe, budget, recipe_index)
         preference_score = _preference_alignment_score(
