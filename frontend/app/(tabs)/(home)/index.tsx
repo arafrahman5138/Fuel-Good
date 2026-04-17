@@ -708,6 +708,7 @@ export default function HomeScreen() {
 
             <View style={styles.stickyHeaderRight}>
               <TouchableOpacity
+                testID="home-sticky-streak"
                 onPress={() => router.push('/(tabs)/profile/quests' as any)}
                 activeOpacity={0.7}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
@@ -718,6 +719,7 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
+                testID="home-sticky-profile"
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
@@ -781,6 +783,7 @@ export default function HomeScreen() {
           <View style={styles.headerRight}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
               <TouchableOpacity
+                testID="home-header-streak"
                 onPress={() => router.push('/(tabs)/profile/quests' as any)}
                 activeOpacity={0.7}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
@@ -791,6 +794,7 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
+                testID="home-header-profile"
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
@@ -989,6 +993,7 @@ export default function HomeScreen() {
                   return (
                     <View key={meal.id || idx} style={[s.mealRow, idx < todayMeals.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.surfaceHighlight }]}>
                       <TouchableOpacity
+                        testID={`todays-plan-meal-${idx}`}
                         activeOpacity={0.7}
                         onPress={() => meal.recipe_data?.id && router.push(`/(tabs)/(home)/recipe/${meal.recipe_data.id}` as any)}
                         style={s.mealRowBody}
@@ -1189,6 +1194,7 @@ export default function HomeScreen() {
 
         {/* Healthify CTA — full-width hero tile */}
         <TouchableOpacity
+          testID="home-healthify-tile"
           activeOpacity={0.85}
           onPress={() => {
             trackBehaviorEvent('home_quick_action_used', { label: 'Healthify', route: '/(tabs)/chat' });
@@ -1213,7 +1219,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Healthify suggestion chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }} contentContainerStyle={{ gap: Spacing.xs }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm }}>
           {['pizza', 'burger', 'mac and cheese', 'ice cream', 'fried chicken', 'tacos'].map((item) => (
             <TouchableOpacity
               key={item}
@@ -1228,10 +1234,11 @@ export default function HomeScreen() {
               <Text style={[styles.healthifyChipText, { color: theme.textSecondary }]}>{item}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         {/* Scan Food CTA — second hero tile */}
         <TouchableOpacity
+          testID="home-scan-tile"
           activeOpacity={0.85}
           onPress={() => {
             trackBehaviorEvent('home_quick_action_used', { label: 'Scan Food', route: '/scan' });

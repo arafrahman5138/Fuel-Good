@@ -1115,7 +1115,7 @@ export default function ScanScreen() {
 
         {/* Top bar: close + branding pill */}
         <View style={styles.captureTopRow}>
-          <TouchableOpacity onPress={handleExitToHome} activeOpacity={0.8} style={styles.captureCloseBtn}>
+          <TouchableOpacity testID="scan-close" onPress={handleExitToHome} activeOpacity={0.8} style={styles.captureCloseBtn}>
             <Ionicons name="close" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.captureBrandPill}>
@@ -1227,6 +1227,7 @@ export default function ScanScreen() {
               return (
                 <TouchableOpacity
                   key={item.key}
+                  testID={`scan-mode-${item.key}`}
                   onPress={() => handleModeChange(item.key)}
                   activeOpacity={0.8}
                   style={[
@@ -1615,7 +1616,7 @@ export default function ScanScreen() {
         contentContainerStyle={{
           paddingHorizontal: Spacing.xl,
           paddingTop: Spacing.md,
-          paddingBottom: insets.bottom + 132,
+          paddingBottom: Spacing.xl,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -2019,7 +2020,7 @@ export default function ScanScreen() {
         contentContainerStyle={{
           paddingHorizontal: Spacing.xl,
           paddingTop: Spacing.md,
-          paddingBottom: insets.bottom + 32,
+          paddingBottom: Spacing.xl,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -46,11 +46,12 @@ interface MenuItem {
   glow: string;
 }
 
-function MenuCard({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
+function MenuCard({ children, onPress, style, testID }: { children: React.ReactNode; onPress: () => void; style?: any; testID?: string }) {
   const press = usePressScale();
   return (
     <Animated.View style={[press.animatedStyle, style]}>
       <TouchableOpacity
+        testID={testID}
         activeOpacity={0.75}
         onPress={onPress}
         onPressIn={press.onPressIn}
@@ -153,6 +154,7 @@ export default function MealsScreen() {
           ]}
         >
           <TouchableOpacity
+            testID="meals-back"
             style={[
               styles.backBtn,
               Shadows.sm(isDark),
@@ -234,6 +236,7 @@ export default function MealsScreen() {
           {MENU_ITEMS.map((item) => (
             <MenuCard
               key={item.id}
+              testID={`meals-hub-${item.id}`}
               onPress={() => setActiveView(item.id)}
               style={[styles.cardOuter, { width: CARD_WIDTH }]}
             >

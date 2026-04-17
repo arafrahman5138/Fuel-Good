@@ -767,6 +767,7 @@ export default function RecipeDetailScreen() {
         ]}
       >
         <TouchableOpacity
+          testID="recipe-back"
           style={[styles.navBackBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
           onPress={() => router.back()}
           activeOpacity={0.7}

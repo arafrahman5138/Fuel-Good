@@ -18,7 +18,7 @@ import { OnboardingProgress } from '../../components/onboarding-v2/OnboardingPro
 import { useOnboardingAnalytics } from '../../hooks/onboarding-v2/useOnboardingAnalytics';
 import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState';
 import { billingService } from '../../services/billing';
-import { authApi, metabolicApi } from '../../services/api';
+import { authApi, billingApi, metabolicApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 
 type PlanChoice = 'annual' | 'weekly';
@@ -36,16 +36,47 @@ const FEATURES = [
   { icon: 'analytics-outline' as const, label: 'Track progress \u2014 scores, streaks, quests' },
 ];
 
-function getHeadline(dismissCount: number): string {
-  if (dismissCount === 0) return 'Start fueling good';
-  if (dismissCount === 1) return 'Wait \u2014 here\u2019s 50% off to get started.';
-  return 'Try Fuel Good free';
+// R17 fix (Month-1 target-user feedback): retire the dismissal-ladder pricing
+// that dropped from $59.99 → $29.99 → $11.99 as the user dismissed the paywall.
+// That pattern is (a) dark-pattern-adjacent — Noom was hit with a $56M class-
+// action over similar auto-renewal/pricing opacity; (b) internally inconsistent
+// with the $9.99/mo + $49.99/yr the subscribe screen fetches from /billing/config;
+// (c) erodes trust, which is the single most valuable brand asset in wellness.
+// We now show ONE headline and fetch the canonical product prices from the
+// backend. If the API fails, we fall back to documented defaults so onboarding
+// is never blocked.
+
+type PricingView = {
+  monthlyDisplayPrice: string;   // e.g. "$9.99"
+  annualDisplayPrice: string;     // e.g. "$59.99"
+  annualMonthlyEquivalent: string;  // e.g. "$5/month"
+  savingsCopy: string;             // e.g. "Save over 58% with annual billing."
+};
+
+const PRICING_FALLBACK: PricingView = {
+  monthlyDisplayPrice: '$9.99',
+  annualDisplayPrice: '$59.99',
+  annualMonthlyEquivalent: '$5/month',
+  savingsCopy: 'Save over 58% with annual billing.',
+};
+
+function getHeadline(): string {
+  return 'Start fueling good';
 }
 
-function getAnnualPrice(dismissCount: number): { original: string; current: string; monthly: string } {
-  if (dismissCount === 0) return { original: '', current: '$59.99/year', monthly: '$5/month' };
-  if (dismissCount === 1) return { original: '$59.99', current: '$29.99/year', monthly: '$2.50/month' };
-  return { original: '$59.99', current: '$11.99/year', monthly: 'Less than $1/month' };
+// R17: derive a monthly-equivalent string from an annual display price like
+// "$59.99" → "$5/month". Safe against missing/malformed input — returns ''
+// so the caller can fall back to PRICING_FALLBACK.
+function deriveMonthlyEquivalent(annualDisplayPrice: string | undefined): string {
+  if (!annualDisplayPrice) return '';
+  const match = annualDisplayPrice.match(/[\d,.]+/);
+  if (!match) return '';
+  const amount = parseFloat(match[0].replace(/,/g, ''));
+  if (!isFinite(amount) || amount <= 0) return '';
+  const monthly = amount / 12;
+  // Round to nearest whole dollar when annual is a clean round price, else .50
+  const rounded = monthly < 1 ? Math.round(monthly * 100) / 100 : Math.round(monthly);
+  return `$${rounded}/month`;
 }
 
 export default function PaywallScreen() {
@@ -58,6 +89,9 @@ export default function PaywallScreen() {
   const [selectedPlan, setSelectedPlan] = useState<PlanChoice>('annual');
   const [isLoading, setIsLoading] = useState(false);
   const [showLossMessage, setShowLossMessage] = useState(false);
+  // R17: pricing is fetched from /api/billing/config so onboarding matches
+  // what the subscribe screen + StoreKit/RevenueCat will actually charge.
+  const [pricing, setPricing] = useState<PricingView>(PRICING_FALLBACK);
 
   const lossFade = useRef(new Animated.Value(0)).current;
 
@@ -65,8 +99,37 @@ export default function PaywallScreen() {
   const slideUp = useRef(new Animated.Value(30)).current;
   const ctaScale = useRef(new Animated.Value(0.97)).current;
 
-  const pricing = getAnnualPrice(paywallDismissCount);
-  const headline = getHeadline(paywallDismissCount);
+  const headline = getHeadline();
+
+  // R17: fetch canonical pricing once on mount. Derives annual-as-monthly for
+  // the subline copy that used to be hardcoded "$5/month".
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const config = await billingApi.getConfig();
+        const products = Array.isArray(config?.products) ? config.products : [];
+        const monthly = products.find((p: any) =>
+          p.package_type === 'monthly' || p.product_id === 'monthly'
+        );
+        const annual = products.find((p: any) =>
+          p.package_type === 'yearly' || p.product_id === 'yearly'
+        );
+        if (cancelled) return;
+        const next: PricingView = {
+          monthlyDisplayPrice: monthly?.display_price || PRICING_FALLBACK.monthlyDisplayPrice,
+          annualDisplayPrice: annual?.display_price || PRICING_FALLBACK.annualDisplayPrice,
+          annualMonthlyEquivalent: deriveMonthlyEquivalent(annual?.display_price)
+            || PRICING_FALLBACK.annualMonthlyEquivalent,
+          savingsCopy: config?.paywall?.annual_savings_copy || PRICING_FALLBACK.savingsCopy,
+        };
+        setPricing(next);
+      } catch {
+        // keep fallback — onboarding must never block on a billing fetch
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     analytics.trackScreenView(12, 'paywall');
@@ -227,13 +290,15 @@ export default function PaywallScreen() {
           {/* Headline */}
           <Text style={styles.headline}>{headline}</Text>
 
-          {/* Urgency text for discounts */}
-          {paywallDismissCount === 1 && (
-            <Text style={styles.urgencyText}>This offer won't appear again</Text>
-          )}
+          {/* R17: removed urgency text + scarecrow free-tier branch. A user
+              who dismisses the paywall twice used to see a "limited features —
+              3 scans/week, no meal plans" scarecrow with a discounted $11.99
+              price that wasn't honored elsewhere. That was a dark-pattern
+              funnel (shame → discount → price inconsistency). Now we show one
+              honest paywall at one honest price, every time. */}
 
-          {/* Free tier view (3rd paywall) */}
-          {paywallDismissCount === 2 ? (
+          {/* Free tier view (3rd paywall) — REMOVED by R17 */}
+          {false ? (
             <>
               <Text style={styles.freeTierSubtext}>
                 Limited features — 3 scans/week, no meal plans.
@@ -314,34 +379,36 @@ export default function PaywallScreen() {
                     </View>
                     <View style={styles.priceInfo}>
                       <View style={styles.priceRow}>
-                        {pricing.original !== '' && (
-                          <Text style={styles.originalPrice}>{pricing.original}</Text>
-                        )}
-                        <Text style={styles.currentPrice}>{pricing.current}</Text>
+                        <Text style={styles.currentPrice}>
+                          {pricing.annualDisplayPrice}/year
+                        </Text>
                       </View>
-                      <Text style={styles.priceSubtext}>{pricing.monthly}</Text>
+                      <Text style={styles.priceSubtext}>
+                        {pricing.annualMonthlyEquivalent} · {pricing.savingsCopy}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
 
-                {/* Weekly */}
-                {paywallDismissCount === 0 && (
-                  <TouchableOpacity
-                    style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedPlan('weekly')}
-                  >
-                    <View style={styles.priceCardContent}>
-                      <View style={styles.radioOuter}>
-                        {selectedPlan === 'weekly' && <View style={styles.radioInner} />}
-                      </View>
-                      <View style={styles.priceInfo}>
-                        <Text style={styles.currentPrice}>$4.99/week</Text>
-                        <Text style={styles.priceSubtext}>Billed weekly</Text>
-                      </View>
+                {/* R17: replaced hardcoded $4.99/week with the canonical
+                    monthly price from /billing/config. */}
+                <TouchableOpacity
+                  style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedPlan('weekly')}
+                >
+                  <View style={styles.priceCardContent}>
+                    <View style={styles.radioOuter}>
+                      {selectedPlan === 'weekly' && <View style={styles.radioInner} />}
                     </View>
-                  </TouchableOpacity>
-                )}
+                    <View style={styles.priceInfo}>
+                      <Text style={styles.currentPrice}>
+                        {pricing.monthlyDisplayPrice}/month
+                      </Text>
+                      <Text style={styles.priceSubtext}>Billed monthly</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               </View>
             </>
           )}
@@ -366,9 +433,8 @@ export default function PaywallScreen() {
                 <ActivityIndicator color="#000" />
               ) : (
                 <>
-                  <Text style={styles.ctaText}>
-                    {paywallDismissCount === 2 ? 'Unlock everything — $11.99/year' : 'Try Free for 7 Days'}
-                  </Text>
+                  {/* R17: single CTA, no tier-gated discount text. */}
+                  <Text style={styles.ctaText}>Try Free for 7 Days</Text>
                   <Ionicons name="arrow-forward" size={18} color="#000" />
                 </>
               )}
@@ -376,19 +442,11 @@ export default function PaywallScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {paywallDismissCount < 2 && (
-          <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
-        )}
-
-        {paywallDismissCount === 2 && (
-          <TouchableOpacity
-            onPress={() => saveAndNavigate()}
-            activeOpacity={0.7}
-            style={styles.continueFreeButton}
-          >
-            <Text style={styles.continueFreeText}>Continue with free plan</Text>
-          </TouchableOpacity>
-        )}
+        {/* R17: reassurance always shown; scarecrow "continue with free plan"
+            button that only appeared after 2 dismisses is removed. Dismiss is
+            still possible via the back/skip gesture and still increments the
+            counter for analytics, but the UI no longer changes based on it. */}
+        <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
 
         <TouchableOpacity onPress={handleRestore} activeOpacity={0.7} style={styles.restoreButton}>
           <Text style={styles.restoreText}>Restore purchases</Text>

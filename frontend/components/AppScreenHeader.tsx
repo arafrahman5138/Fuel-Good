@@ -35,6 +35,7 @@ export function AppScreenHeader({ title, centerContent, rightContent, onBack }: 
       ]}
     >
       <TouchableOpacity
+        testID="screen-header-back"
         style={[styles.backBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
         onPress={() => onBack ? onBack() : router.canGoBack() ? router.back() : router.replace('/(tabs)/(home)')}
         activeOpacity={0.7}

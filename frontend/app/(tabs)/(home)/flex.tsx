@@ -42,7 +42,23 @@ const FLEX_TAGS = [
 ];
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
-function getTierLabel(avg: number): { label: string; color: string } {
+// R3 fix (Month-1 target-user feedback): a brand-new user with 0 meals logged
+// previously saw a bright red "Needs Work" label on their Flex Budget. The
+// whole brand is "presence of the good, not absence of the bad" — opening with
+// a shame tier on day 0 contradicts that philosophy and matches the Noom dark-
+// pattern vibe we explicitly aren't. Guard: when the user hasn't logged enough
+// meals to produce a meaningful average (default <3), show a neutral "Ready to
+// start" in gray instead. Pass `mealsLogged` to trigger the guard.
+const NEUTRAL_START_COLOR = '#94A3B8';  // slate-400 — quiet, not red.
+const MIN_MEALS_FOR_TIER = 3;
+
+function getTierLabel(
+  avg: number,
+  mealsLogged: number | null = null,
+): { label: string; color: string } {
+  if (mealsLogged !== null && mealsLogged < MIN_MEALS_FOR_TIER) {
+    return { label: 'Ready to start', color: NEUTRAL_START_COLOR };
+  }
   if (avg >= 90) return { label: 'Elite', color: '#22C55E' };
   if (avg >= 75) return { label: 'Strong', color: '#4ADE80' };
   if (avg >= 60) return { label: 'Decent', color: '#F59E0B' };
@@ -101,7 +117,9 @@ export default function FlexScreen() {
   const projectedAvg = budget?.avg_fuel_score ?? budget?.projected_weekly_avg ?? 0;
   const mealsLogged = budget?.meals_logged ?? 0;
   const expectedMeals = budget?.expected_meals ?? 21;
-  const tier = getTierLabel(projectedAvg);
+  // R3 fix: pass mealsLogged so fresh users see "Ready to start" instead of
+  // red "Needs Work" on day 0.
+  const tier = getTierLabel(projectedAvg, mealsLogged);
 
   // Meals from daily breakdown
   const allMeals = useMemo(() => {

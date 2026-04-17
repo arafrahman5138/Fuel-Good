@@ -45,6 +45,7 @@ export function FlexSummaryCard({
 
   return (
     <TouchableOpacity
+      testID="home-flex-banner"
       activeOpacity={0.78}
       onPress={() => router.push('/(tabs)/(home)/flex')}
       style={[

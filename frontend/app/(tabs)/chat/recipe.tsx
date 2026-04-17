@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Share, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,6 +58,46 @@ export default function ChatRecipeDetailScreen() {
     }
   };
 
+  // R13 (Month-1 target-user feedback): Alex wants to send Healthified
+  // recipes to his wife Emma. iMessage share is the lowest-friction path —
+  // the React Native Share API surfaces the iOS share sheet, which includes
+  // Messages, Mail, Notes, Save-to-PDF, etc. for free. The shared text is
+  // plain enough to render cleanly in any client (no app-specific deep
+  // link, no auth dependency).
+  const handleShare = async () => {
+    try {
+      const ingredientLines = (recipe.ingredients || [])
+        .map((i: any) => `• ${formatIngredientDisplayLine(i)}`)
+        .join('\n');
+      const stepLines = (recipe.steps || [])
+        .map((s: string, idx: number) => `${idx + 1}. ${s}`)
+        .join('\n');
+      const mesLine = mesScore?.display_score
+        ? ` · MES ${Math.round(mesScore.display_score)}`
+        : '';
+      const body = [
+        `${recipe.title}`,
+        `Fuel 100${mesLine} · via Fuel Good`,
+        '',
+        recipe.description ? `${recipe.description}\n` : '',
+        'INGREDIENTS',
+        ingredientLines,
+        '',
+        'STEPS',
+        stepLines,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      await Share.share({
+        title: recipe.title,
+        message: body,
+      });
+    } catch (err: any) {
+      Alert.alert('Share failed', err?.message || 'Could not open share sheet.');
+    }
+  };
+
   return (
     <ScreenContainer safeArea={false} padded={false}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -70,15 +110,37 @@ export default function ChatRecipeDetailScreen() {
         <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
           {recipe.title || 'Recipe'}
         </Text>
-        {!isSaved ? (
-          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={handleSave} activeOpacity={0.7}>
-            <Ionicons name="bookmark-outline" size={18} color={theme.primary} />
+        <View style={styles.headerActions}>
+          {/* R13: iOS share sheet → text, mail, notes. Lowest-friction way
+              to get a Healthified recipe to a partner / family group. */}
+          <TouchableOpacity
+            style={[styles.saveBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={handleShare}
+            activeOpacity={0.7}
+            accessibilityLabel="Share recipe"
+            testID="chat-recipe-share-button"
+          >
+            <Ionicons name="share-outline" size={18} color={theme.primary} />
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '30' }]} activeOpacity={1}>
-            <Ionicons name="bookmark" size={18} color={theme.primary} />
-          </TouchableOpacity>
-        )}
+          {!isSaved ? (
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              onPress={handleSave}
+              activeOpacity={0.7}
+              testID="chat-recipe-save-button"
+            >
+              <Ionicons name="bookmark-outline" size={18} color={theme.primary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '30' }]}
+              activeOpacity={1}
+              testID="chat-recipe-save-button"
+            >
+              <Ionicons name="bookmark" size={18} color={theme.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView
@@ -264,6 +326,12 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 42,
+  },
+  // R13: cluster for Save + Share buttons in the recipe detail header.
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   saveBtn: {
     width: 42,

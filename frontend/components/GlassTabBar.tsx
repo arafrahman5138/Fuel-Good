@@ -254,6 +254,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               return (
                 <TouchableOpacity
                   key={route.key}
+                  testID={`tab-${route.name.replace(/[()]/g, '') || 'home'}`}
                   accessibilityRole="button"
                   accessibilityState={isFocused ? { selected: true } : {}}
                   accessibilityLabel={options.tabBarAccessibilityLabel}
@@ -303,6 +304,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         {/* ── "+" Log Meal button ── */}
         <Animated.View style={[plusPress.animatedStyle, { transform: [{ scale: plusScale }] }]}>
           <TouchableOpacity
+            testID="tab-plus"
             style={[
               styles.plusButton,
               plusShadow,
@@ -340,6 +342,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           >
             {[
               {
+                testID: 'quick-action-log-meal',
                 icon: 'restaurant-outline' as const,
                 label: 'Log Meal',
                 sub: 'Add from meals',
@@ -349,6 +352,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 },
               },
               {
+                testID: 'quick-action-scan',
                 icon: 'scan-outline' as const,
                 label: 'Scan',
                 sub: 'Meal or product',
@@ -358,6 +362,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 },
               },
               {
+                testID: 'quick-action-create-plan',
                 icon: 'calendar-outline' as const,
                 label: 'Create New Plan',
                 sub: 'Open planner',
@@ -367,6 +372,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 },
               },
               {
+                testID: 'quick-action-chat',
                 icon: 'sparkles-outline' as const,
                 label: 'New Chat with AI',
                 sub: 'Open Healthify',
@@ -378,6 +384,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
             ].map((item, idx) => (
               <TouchableOpacity
                 key={item.label}
+                testID={item.testID}
                 onPress={item.onPress}
                 style={[
                   styles.addMenuItem,

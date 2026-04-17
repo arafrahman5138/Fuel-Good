@@ -58,7 +58,27 @@ type RecipeDetail = {
   cook_time_min?: number;
   servings?: number;
   components?: ComponentDetail[];
+  // R19: `tags` carries meal_type (breakfast/lunch/dinner/snack/dessert). We
+  // check for "dessert" to flip the header copy into a celebration mode —
+  // desserts are the flex-reward moment and the whole brand is "earn it, then
+  // enjoy it". The data already comes down from /recipes/{id} — we just didn't
+  // surface it in the RecipeDetail type before.
+  tags?: string[];
+  meal_type?: string;
 };
+
+// R19 helper: determine whether a recipe is a dessert/treat to flip the
+// cook-mode header copy into a celebratory tone instead of a neutral utility
+// tone. Cheap detection — prefer explicit tag/meal_type first, fall back to
+// a title keyword sniff for old records that don't have clean metadata.
+function isDessertRecipe(recipe: RecipeDetail | null): boolean {
+  if (!recipe) return false;
+  const tags = (recipe.tags || []).map((t) => String(t).toLowerCase());
+  if (tags.includes('dessert')) return true;
+  if ((recipe.meal_type || '').toLowerCase() === 'dessert') return true;
+  const title = (recipe.title || '').toLowerCase();
+  return /\b(dessert|brownie|cookie|cake|mousse|pudding|ice cream|cheesecake|truffle)\b/.test(title);
+}
 
 type CookProgressPayload = {
   currentStep: number;
@@ -555,6 +575,24 @@ export default function CookModeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={navBarHeight}
     >
+      {/* R19: celebration banner for desserts. The brand framing is "eat
+          clean, earn your cheat meals" — when a user opens cook mode on a
+          dessert, we explicitly celebrate the moment instead of rendering a
+          neutral cook view. This is the flex-feature's emotional payoff. */}
+      {isDessertRecipe(recipe) && (
+        <LinearGradient
+          colors={['#F59E0B', '#D97706']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.dessertBanner}
+        >
+          <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+          <Text style={styles.dessertBannerText}>
+            Flex treat time — you earned this.
+          </Text>
+        </LinearGradient>
+      )}
+
       {/* ── Sticky Header ── */}
       <View style={[styles.stickyHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View style={styles.headerTopRow}>
@@ -925,6 +963,22 @@ const styles = StyleSheet.create({
   container:   { flex: 1 },
   centered:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
   emptyText:   { fontSize: FontSize.md },
+
+  // R19: celebration banner above the sticky header for dessert recipes.
+  dessertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+  },
+  dessertBannerText: {
+    color: '#FFFFFF',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
 
   // Sticky header
   stickyHeader: {

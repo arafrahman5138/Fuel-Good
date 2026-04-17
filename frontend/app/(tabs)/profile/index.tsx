@@ -129,6 +129,7 @@ export default function ProfileScreen() {
         {/* ── Top Bar ─────────────────────────────────────────── */}
         <View style={[styles.topBar, { justifyContent: 'flex-end' }]}>
           <TouchableOpacity
+            testID="profile-open-settings"
             onPress={() => router.push('/(tabs)/profile/settings' as any)}
             activeOpacity={0.7}
             style={[styles.topBarBtn, { backgroundColor: theme.surfaceElevated }]}
