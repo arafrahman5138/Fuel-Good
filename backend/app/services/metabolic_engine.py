@@ -70,6 +70,15 @@ class MetabolicProfileInput:
     fasting_glucose_mgdl: Optional[float] = None
     hba1c_pct: Optional[float] = None
     triglycerides_mgdl: Optional[float] = None
+    # ── Batch 2 safety flags (QA N1–N4) ──
+    lactating: bool = False
+    months_postpartum: Optional[int] = None
+    hypertension: bool = False
+    systolic_mmhg: Optional[int] = None
+    diastolic_mmhg: Optional[int] = None
+    ibd_active_flare: bool = False
+    low_residue_required: bool = False
+    eating_disorder_recovery: bool = False
 
     @property
     def weight_kg(self) -> float:
@@ -1043,15 +1052,43 @@ def calc_tier_thresholds(profile: MetabolicProfileInput) -> dict[str, int]:
     }
 
 
+#: Batch 2 — lactation adds calories on top of whatever the goal would normally
+#: prescribe. CDC/ACOG recommend ≈450 kcal/day bonus for exclusive breastfeeding,
+#: tapering as the infant ages. We apply a 350 kcal floor for the first 12 months
+#: which keeps a lactating mother above TDEE even on a fat_loss goal (the QA
+#: report's N1 repro was Elena at -450 kcal while breastfeeding).
+LACTATION_CALORIE_BONUS_KCAL = 350
+
+#: Batch 2 — AHA guidance caps sodium at 1500 mg/day for users with hypertension
+#: or at risk. The generic micronutrient default (2300 mg) is unsafe for HTN+lisinopril
+#: users like QA persona Derrick. See frontend nutrition targets sync.
+HYPERTENSION_SODIUM_CEILING_MG = 1500
+
+#: Batch 2 — active IBD/Crohn's flare guidance is <10 g/day low-residue. The
+#: whole-food bias of Fuel Good (30 g fiber floor) actively harms these users.
+#: This floor is used when low_residue_required=True; it's a *ceiling* in spirit
+#: but preserved as a "floor" to keep the field name compatible with callers.
+LOW_RESIDUE_FIBER_FLOOR_G = 5
+
+
 def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
     """Derive all scoring targets and weights from a profile.
 
     Replaces all hardcoded default values with profile-aware computation.
+    Batch 2 safety flags (lactation / HTN / IBD / ED) adjust calorie + fiber
+    targets to physiologically-appropriate values. See QA findings N1–N4.
     """
     tdee = calc_tdee(profile)
     protein_g = calc_protein_target_g(profile)
     carb_g = calc_carb_ceiling_g(profile)
     fiber_g = max(FIBER_FLOOR_MINIMUM_G, profile.weight_lb * FIBER_TARGET_G_PER_LB)
+
+    # Batch 2: invert fiber target for active IBD/Crohn's flare. Low-residue
+    # guidance is <10 g/day. Override, not max() — this is the only case where
+    # we *lower* the fiber floor below the body-weight derivation.
+    if getattr(profile, "low_residue_required", False) or getattr(profile, "ibd_active_flare", False):
+        fiber_g = float(LOW_RESIDUE_FIBER_FLOOR_G)
+
     fat_g = calc_fat_target_g(tdee, carb_g, protein_g, profile)
     calorie_target_kcal = calc_macro_calorie_target_kcal(protein_g, carb_g, fat_g)
 
@@ -1065,6 +1102,16 @@ def build_metabolic_budget(profile: MetabolicProfileInput) -> ComputedBudget:
             calorie_target_kcal = round(tdee * 0.90)    # -10% mild deficit
         else:  # MAINTENANCE
             calorie_target_kcal = round(tdee)            # Match TDEE
+
+    # Batch 2: lactation adds calories on top of whatever the goal prescribed.
+    # Safe default is +350 kcal (CDC range 330–400). If a user explicitly wants
+    # a fat_loss goal while breastfeeding, we still guarantee they eat at least
+    # TDEE + lactation bonus so milk supply isn't compromised.
+    if getattr(profile, "lactating", False):
+        calorie_target_kcal = max(
+            calorie_target_kcal,
+            round(tdee + LACTATION_CALORIE_BONUS_KCAL),
+        )
 
     ism = calc_ism(profile)
 
@@ -2112,6 +2159,16 @@ def load_budget_for_user(db: Session, user_id: str, *, profile: "MetabolicProfil
         prediabetes=getattr(orm_profile, "prediabetes", False) or False,
         type_2_diabetes=getattr(orm_profile, "type_2_diabetes", False) or False,
         triglycerides_mgdl=getattr(orm_profile, "triglycerides_mgdl", None),
+        # Batch 2 safety flags — propagated to engine so calorie/fiber math
+        # picks them up. `getattr` defaults keep older rows safe pre-migration.
+        lactating=getattr(orm_profile, "lactating", False) or False,
+        months_postpartum=getattr(orm_profile, "months_postpartum", None),
+        hypertension=getattr(orm_profile, "hypertension", False) or False,
+        systolic_mmhg=getattr(orm_profile, "systolic_mmhg", None),
+        diastolic_mmhg=getattr(orm_profile, "diastolic_mmhg", None),
+        ibd_active_flare=getattr(orm_profile, "ibd_active_flare", False) or False,
+        low_residue_required=getattr(orm_profile, "low_residue_required", False) or False,
+        eating_disorder_recovery=getattr(orm_profile, "eating_disorder_recovery", False) or False,
     )
 
     return build_metabolic_budget(profile_input)

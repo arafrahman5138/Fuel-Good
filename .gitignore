@@ -14,7 +14,9 @@ backend/backups/
 frontend/qa_splash_burst_*/
 frontend/qa_splash_burst_*_sheet.png
 tasks/audit-screenshots/
+tasks/responsiveness-*/
 day1_*.png
+runs/
 
 # Python
 __pycache__/

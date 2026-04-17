@@ -262,6 +262,11 @@ async def save_profile(
         "goal", "activity_level", "target_weight_lb",
         "insulin_resistant", "prediabetes", "type_2_diabetes",
         "fasting_glucose_mgdl", "hba1c_pct", "triglycerides_mgdl",
+        # Batch 2 safety flags (QA N1–N4)
+        "lactating", "months_postpartum",
+        "hypertension", "systolic_mmhg", "diastolic_mmhg",
+        "ibd_active_flare", "low_residue_required",
+        "eating_disorder_recovery",
         "onboarding_step_completed",
     )
     for field in profile_fields:
@@ -364,6 +369,15 @@ def _profile_response(profile: MetabolicProfile) -> MetabolicProfileResponse:
         fasting_glucose_mgdl=getattr(profile, "fasting_glucose_mgdl", None),
         hba1c_pct=getattr(profile, "hba1c_pct", None),
         triglycerides_mgdl=getattr(profile, "triglycerides_mgdl", None),
+        # Batch 2 safety flags
+        lactating=getattr(profile, "lactating", None),
+        months_postpartum=getattr(profile, "months_postpartum", None),
+        hypertension=getattr(profile, "hypertension", None),
+        systolic_mmhg=getattr(profile, "systolic_mmhg", None),
+        diastolic_mmhg=getattr(profile, "diastolic_mmhg", None),
+        ibd_active_flare=getattr(profile, "ibd_active_flare", None),
+        low_residue_required=getattr(profile, "low_residue_required", None),
+        eating_disorder_recovery=getattr(profile, "eating_disorder_recovery", None),
         onboarding_step_completed=getattr(profile, "onboarding_step_completed", None),
     )
 
@@ -386,6 +400,11 @@ async def patch_profile(
         "goal", "activity_level", "target_weight_lb",
         "insulin_resistant", "prediabetes", "type_2_diabetes",
         "fasting_glucose_mgdl", "hba1c_pct", "triglycerides_mgdl",
+        # Batch 2 safety flags (QA N1–N4)
+        "lactating", "months_postpartum",
+        "hypertension", "systolic_mmhg", "diastolic_mmhg",
+        "ibd_active_flare", "low_residue_required",
+        "eating_disorder_recovery",
         "onboarding_step_completed",
     )
     for field in profile_fields:

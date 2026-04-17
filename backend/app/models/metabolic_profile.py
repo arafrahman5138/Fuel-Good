@@ -40,6 +40,18 @@ class MetabolicProfile(Base):
     hba1c_pct = Column(Float, nullable=True)
     triglycerides_mgdl = Column(Float, nullable=True)
 
+    # ── Batch 2 safety flags (QA findings N1–N4) ──
+    # Physiological + life-stage states the app was unsafe for as-shipped.
+    # See backend/alembic/versions/<latest>_add_safety_flags.py for migration.
+    lactating = Column(Boolean, default=False)
+    months_postpartum = Column(Integer, nullable=True)
+    hypertension = Column(Boolean, default=False)
+    systolic_mmhg = Column(Integer, nullable=True)
+    diastolic_mmhg = Column(Integer, nullable=True)
+    ibd_active_flare = Column(Boolean, default=False)
+    low_residue_required = Column(Boolean, default=False)
+    eating_disorder_recovery = Column(Boolean, default=False)
+
     # ── Derived planning values ──
     target_weight_lb = Column(Float, nullable=True)
     protein_target_g = Column(Float, nullable=True)

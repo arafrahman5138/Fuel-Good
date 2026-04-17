@@ -81,6 +81,18 @@ class MetabolicProfileCreate(BaseModel):
     fasting_glucose_mgdl: Optional[float] = None
     hba1c_pct: Optional[float] = None
     triglycerides_mgdl: Optional[float] = None
+    # Batch 2 safety flags (QA findings N1–N4) — physiological + life-stage
+    # states that require bespoke calorie / sodium / fiber targeting and/or
+    # suppression of restriction-adjacent UI. Defaulting to None so existing
+    # clients that don't send these are unchanged.
+    lactating: Optional[bool] = None
+    months_postpartum: Optional[int] = None
+    hypertension: Optional[bool] = None
+    systolic_mmhg: Optional[int] = None
+    diastolic_mmhg: Optional[int] = None
+    ibd_active_flare: Optional[bool] = None
+    low_residue_required: Optional[bool] = None
+    eating_disorder_recovery: Optional[bool] = None
     onboarding_step_completed: Optional[int] = None
 
 
@@ -103,6 +115,15 @@ class MetabolicProfileResponse(BaseModel):
     fasting_glucose_mgdl: Optional[float] = None
     hba1c_pct: Optional[float] = None
     triglycerides_mgdl: Optional[float] = None
+    # Batch 2 safety flags — mirrored on response
+    lactating: Optional[bool] = None
+    months_postpartum: Optional[int] = None
+    hypertension: Optional[bool] = None
+    systolic_mmhg: Optional[int] = None
+    diastolic_mmhg: Optional[int] = None
+    ibd_active_flare: Optional[bool] = None
+    low_residue_required: Optional[bool] = None
+    eating_disorder_recovery: Optional[bool] = None
     onboarding_step_completed: Optional[int] = None
 
 
