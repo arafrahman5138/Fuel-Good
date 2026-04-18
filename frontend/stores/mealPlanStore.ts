@@ -90,8 +90,12 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
           set({ currentPlan: plan, hasLoaded: true, loadError: false });
         }
       } else {
-        // No plan on server — treated as an empty state (not an error).
-        set({ hasLoaded: true, loadError: false });
+        // No plan on server — clear any stale cached plan so Home doesn't
+        // render phantom items with IDs the backend can't resolve.
+        // (Repro: server restart or DB wipe while the app has the old
+        // plan still in memory — logging a "meal" fell through to a 404
+        // because source_id pointed at a MealPlanItem that no longer existed.)
+        set({ currentPlan: null, hasLoaded: true, loadError: false });
       }
     } catch {
       // Network / server error — surface so the UI can show a retry affordance.
