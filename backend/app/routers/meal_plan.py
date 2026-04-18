@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from datetime import UTC, date, datetime, timedelta
-from typing import List
+from typing import List, Optional
 from app.db import get_db
 from app.auth import get_current_user
 from app.models.user import User
@@ -465,7 +465,7 @@ async def replace_meal_plan_item(
     return _serialize_plan(item.meal_plan, budget)
 
 
-@router.get("/current", response_model=MealPlanResponse)
+@router.get("/current", response_model=Optional[MealPlanResponse])
 async def get_current_plan(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -474,8 +474,13 @@ async def get_current_plan(
         MealPlan.user_id == current_user.id
     ).order_by(MealPlan.created_at.desc()).first()
 
+    # A user without a plan is an empty state, not an error. Returning 404 here
+    # made the Home "Some data couldn't load" banner fire and the Meal Plan
+    # screen show a red error card on every fresh account. Return null so the
+    # frontend (stores/mealPlanStore.ts) hits the empty-state branch instead
+    # of the loadError catch.
     if not plan:
-        raise HTTPException(status_code=404, detail="No meal plan found")
+        return None
 
     # Re-filter plan items against user's CURRENT dietary preferences,
     # allergies, and disliked ingredients to prevent stale meals showing
