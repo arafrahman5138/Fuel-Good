@@ -17,6 +17,7 @@ All columns nullable or default False so existing rows are unaffected.
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers
@@ -27,46 +28,40 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "metabolic_profiles",
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("metabolic_profiles")}
+
+    columns_to_add = [
         sa.Column("lactating", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("months_postpartum", sa.Integer(), nullable=True),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("hypertension", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("systolic_mmhg", sa.Integer(), nullable=True),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("diastolic_mmhg", sa.Integer(), nullable=True),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("ibd_active_flare", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("low_residue_required", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-    )
-    op.add_column(
-        "metabolic_profiles",
         sa.Column("eating_disorder_recovery", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-    )
+    ]
+
+    for column in columns_to_add:
+        if column.name not in existing_columns:
+            op.add_column("metabolic_profiles", column)
 
 
 def downgrade() -> None:
-    op.drop_column("metabolic_profiles", "eating_disorder_recovery")
-    op.drop_column("metabolic_profiles", "low_residue_required")
-    op.drop_column("metabolic_profiles", "ibd_active_flare")
-    op.drop_column("metabolic_profiles", "diastolic_mmhg")
-    op.drop_column("metabolic_profiles", "systolic_mmhg")
-    op.drop_column("metabolic_profiles", "hypertension")
-    op.drop_column("metabolic_profiles", "months_postpartum")
-    op.drop_column("metabolic_profiles", "lactating")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("metabolic_profiles")}
+
+    for column_name in [
+        "eating_disorder_recovery",
+        "low_residue_required",
+        "ibd_active_flare",
+        "diastolic_mmhg",
+        "systolic_mmhg",
+        "hypertension",
+        "months_postpartum",
+        "lactating",
+    ]:
+        if column_name in existing_columns:
+            op.drop_column("metabolic_profiles", column_name)
