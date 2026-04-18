@@ -450,6 +450,12 @@ export const chatApi = {
   getSession: (id: string) => api.get<any>(`/chat/sessions/${id}`),
   deleteSession: (id: string) => api.delete(`/chat/sessions/${id}`),
   getSuggestions: () => api.get<{ label: string; query: string }[]>('/chat/suggestions'),
+  reportMessage: (payload: {
+    session_id?: string | null;
+    message_content: string;
+    reason: 'harmful' | 'inaccurate' | 'inappropriate' | 'other';
+    notes?: string;
+  }) => api.post<{ ok: true }>('/chat/report', payload),
 };
 
 export const mealPlanApi = {

@@ -454,6 +454,41 @@ export default function ChatScreen() {
     }
   };
 
+  const handleReportMessage = (messageContent: string) => {
+    const submitReport = (reason: 'harmful' | 'inaccurate' | 'inappropriate' | 'other') => {
+      chatApi
+        .reportMessage({
+          session_id: sessionId || null,
+          message_content: messageContent,
+          reason,
+        })
+        .then(() => {
+          Alert.alert(
+            'Report submitted',
+            "Thanks for letting us know. We'll review this response.",
+          );
+        })
+        .catch(() => {
+          Alert.alert(
+            'Report received',
+            "Thanks — we've noted the issue. Please email support@fuelgood.app if this keeps happening.",
+          );
+        });
+    };
+    Alert.alert(
+      'Report this response',
+      'What went wrong?',
+      [
+        { text: 'Harmful or unsafe', onPress: () => submitReport('harmful') },
+        { text: 'Inaccurate information', onPress: () => submitReport('inaccurate') },
+        { text: 'Inappropriate content', onPress: () => submitReport('inappropriate') },
+        { text: 'Something else', onPress: () => submitReport('other') },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  };
+
   const handleDeleteSession = (id: string) => {
     Alert.alert(
       'Delete Chat',
@@ -539,6 +574,9 @@ export default function ChatScreen() {
               style={[styles.headerIconBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
               onPress={() => { loadSessions(); setShowHistory(true); }}
               activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Open chat history"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="menu" size={18} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -559,7 +597,7 @@ export default function ChatScreen() {
                     { color: theme.textTertiary },
                   ]}
                   numberOfLines={1}
-                  allowFontScaling={false}
+                  maxFontSizeMultiplier={1.3}
                 >
                   {isCompact ? 'Your AI nutrition coach' : 'Recipes, swaps, nutrition advice & more'}
                 </Text>
@@ -574,6 +612,9 @@ export default function ChatScreen() {
               ]}
               onPress={() => router.push('/(tabs)/meals/saved')}
               activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={`Saved recipes, ${savedRecipes.length}`}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="bookmark" size={14} color={theme.primary} />
               {!isCompact && (
@@ -591,6 +632,9 @@ export default function ChatScreen() {
                 ]}
                 onPress={handleNewChat}
                 activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="New chat"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="add" size={16} color={theme.primary} />
                 {!isCompact && <Text style={[styles.savedPillText, { color: theme.text }]}>New</Text>}
@@ -654,6 +698,8 @@ export default function ChatScreen() {
                     onPress={() => router.push(`/(tabs)/meals/saved-recipe/${encodeURIComponent(saved.id)}`)}
                     activeOpacity={0.7}
                     style={{ flex: 1 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open saved recipe ${saved.title}`}
                   >
                     <Text style={[styles.savedTitle, { color: theme.text }]}>{saved.title}</Text>
                     <Text style={[styles.savedMeta, { color: theme.textTertiary }]}>
@@ -664,6 +710,9 @@ export default function ChatScreen() {
                   <TouchableOpacity
                     onPress={() => removeRecipe(saved.id)}
                     style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove saved recipe ${saved.title}`}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="trash-outline" size={16} color={theme.error} />
                   </TouchableOpacity>
@@ -816,6 +865,16 @@ export default function ChatScreen() {
                     <Text style={[styles.messageText, { color: theme.text }]}>
                       {payload?.message || msg.content}
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => handleReportMessage(payload?.message || msg.content || '')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Report this response"
+                      hitSlop={8}
+                      style={styles.reportButton}
+                    >
+                      <Ionicons name="flag-outline" size={11} color={theme.textTertiary} />
+                      <Text style={[styles.reportButtonText, { color: theme.textTertiary }]}>Report</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
@@ -833,6 +892,8 @@ export default function ChatScreen() {
                       });
                       router.push('/(tabs)/chat/recipe');
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open recipe ${recipe.title || 'Healthified Recipe'}`}
                   >
                     <Card style={styles.recipeCard} padding={Spacing.md}>
                       <View style={styles.recipeHeader}>
@@ -846,6 +907,9 @@ export default function ChatScreen() {
                           <TouchableOpacity
                             style={[styles.iconBtn, { backgroundColor: theme.surfaceHighlight }]}
                             onPress={() => toggleSaveRecipe(key, recipe)}
+                            accessibilityRole="button"
+                            accessibilityLabel={isSaved ? `Unsave recipe ${recipe.title || ''}` : `Save recipe ${recipe.title || ''}`}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
                             <Ionicons
                               name={isSaved ? 'bookmark' : 'bookmark-outline'}
@@ -858,6 +922,9 @@ export default function ChatScreen() {
                             onPress={() =>
                               isEditing ? cancelRecipeEdit() : startRecipeEdit(key, recipe)
                             }
+                            accessibilityRole="button"
+                            accessibilityLabel={isEditing ? 'Cancel editing recipe' : 'Edit recipe'}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
                             <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
                           </TouchableOpacity>
@@ -1264,7 +1331,12 @@ export default function ChatScreen() {
             <View style={styles.photoPreviewRow}>
               <Image source={{ uri: attachedPhoto.uri }} style={styles.photoPreviewThumb} />
               <Text style={[styles.photoPreviewLabel, { color: theme.textSecondary }]} numberOfLines={1}>Photo attached</Text>
-              <TouchableOpacity onPress={() => setAttachedPhoto(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={() => setAttachedPhoto(null)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Remove attached photo"
+              >
                 <Ionicons name="close-circle" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -1275,6 +1347,9 @@ export default function ChatScreen() {
                 onPress={() => Keyboard.dismiss()}
                 activeOpacity={0.7}
                 style={styles.keyboardDismissBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss keyboard"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="chevron-down-outline" size={22} color={theme.textTertiary} />
               </TouchableOpacity>
@@ -1292,6 +1367,9 @@ export default function ChatScreen() {
               disabled={isLoading}
               activeOpacity={0.7}
               style={styles.photoButton}
+              accessibilityRole="button"
+              accessibilityLabel="Attach photo"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
                 name="camera-outline"
@@ -1316,7 +1394,7 @@ export default function ChatScreen() {
               maxLength={500}
               onSubmitEditing={handleSend}
               returnKeyType="send"
-              allowFontScaling={false}
+              maxFontSizeMultiplier={1.4}
             />
             <Pressable
               onPress={handleSend}
@@ -1600,6 +1678,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md + 2,
     borderRadius: BorderRadius.xl,
+  },
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 8,
+    opacity: 0.6,
+  },
+  reportButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   userBubbleContent: {
     alignSelf: 'flex-end',

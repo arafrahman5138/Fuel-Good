@@ -134,6 +134,8 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             style={[styles.topBarBtn, { backgroundColor: theme.surfaceElevated }]}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
           >
             <Ionicons name="settings-outline" size={20} color={theme.text} />
           </TouchableOpacity>
@@ -146,6 +148,8 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.avatarTouchable}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
           >
             <View style={{ ...Shadows.interactive(false), borderRadius: BorderRadius.full }}>
               <LinearGradient colors={['#22C55E', '#059669', '#0891B2'] as const} style={[styles.avatar, { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }]}>
@@ -220,6 +224,8 @@ export default function ProfileScreen() {
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile/quests' as any)}
                 style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                accessibilityRole="button"
+                accessibilityLabel="Open Quests and Streaks"
               >
                 <View style={styles.statRow}>
                   <View style={[styles.statIcon, { backgroundColor: theme.accentMuted }]}>
@@ -242,6 +248,8 @@ export default function ProfileScreen() {
                           activeOpacity={0.7}
                           onPress={() => setDetailAchievement(a)}
                           style={[styles.recentBadge, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Achievement: ${a.name}`}
                         >
                           <View style={[styles.recentIcon, { backgroundColor: theme.surfaceHighlight }]}>
                             <Ionicons name={a.icon as any} size={20} color={theme.primary} />

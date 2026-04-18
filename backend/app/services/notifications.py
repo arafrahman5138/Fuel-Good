@@ -352,6 +352,8 @@ def run_notification_cycle(
     effective_batch_limit = batch_limit or settings.notification_cron_batch_size
     effective_user_limit = user_limit or settings.notification_cron_user_limit
 
+    _retry_failed_deliveries(now_utc)
+
     db = SessionLocal()
     try:
         user_query = db.query(User.id).order_by(User.last_active_date.desc())
@@ -439,6 +441,50 @@ def send_test_notification_to_user(
         _send_expo_push(db, token, delivery)
         deliveries.append(delivery)
     return deliveries
+
+
+def _retry_failed_deliveries(now_utc: datetime, max_batch: int = 100) -> int:
+    """Re-send previously failed deliveries whose next_retry_at has elapsed.
+
+    Keeps notifications reliable in the face of transient network/APNs failures
+    without requiring an external job queue. Deliveries that exhausted the
+    retry budget keep `status="failed"` but are no longer attempted.
+    """
+    sent = 0
+    db = SessionLocal()
+    try:
+        due = (
+            db.query(NotificationDelivery, UserPushToken)
+            .join(UserPushToken, UserPushToken.id == NotificationDelivery.push_token_id)
+            .filter(
+                NotificationDelivery.status == "failed",
+                NotificationDelivery.next_retry_at.isnot(None),
+                NotificationDelivery.next_retry_at <= now_utc,
+                NotificationDelivery.retry_count < MAX_DELIVERY_RETRIES,
+                UserPushToken.enabled.is_(True),
+                UserPushToken.invalidated_at.is_(None),
+            )
+            .order_by(NotificationDelivery.next_retry_at.asc())
+            .limit(max_batch)
+            .all()
+        )
+        for delivery, token in due:
+            try:
+                _send_expo_push(db, token, delivery)
+                if delivery.status == "sent":
+                    sent += 1
+                db.commit()
+            except Exception:
+                db.rollback()
+                logger.exception(
+                    "notification_retry.failed delivery_id=%s",
+                    getattr(delivery, "id", "unknown"),
+                )
+    finally:
+        db.close()
+    if due:
+        logger.info("notification_retry.processed attempted=%s sent=%s", len(due), sent)
+    return sent
 
 
 async def notification_scheduler_loop(poll_seconds: int = 900) -> None:
@@ -1020,6 +1066,27 @@ def _pick_template(category: str, user_id: str, context: dict[str, Any]) -> tupl
     return variant["title"].format(**context), variant["body"].format(**context)
 
 
+MAX_DELIVERY_RETRIES = 3
+_RETRY_BACKOFF_MINUTES = (5, 15, 60)
+# Error codes from Expo that indicate a permanent failure; never retry these.
+_PERMANENT_EXPO_ERRORS = {
+    "DeviceNotRegistered",
+    "InvalidCredentials",
+    "MessageTooBig",
+    "MessageRateExceeded",
+}
+
+
+def _schedule_delivery_retry(delivery: NotificationDelivery) -> None:
+    current = delivery.retry_count or 0
+    if current >= MAX_DELIVERY_RETRIES:
+        delivery.next_retry_at = None
+        return
+    minutes = _RETRY_BACKOFF_MINUTES[min(current, len(_RETRY_BACKOFF_MINUTES) - 1)]
+    delivery.retry_count = current + 1
+    delivery.next_retry_at = datetime.now(UTC) + timedelta(minutes=minutes)
+
+
 def _send_expo_push(db: Session, token: UserPushToken, delivery: NotificationDelivery) -> None:
     headers = {"Content-Type": "application/json"}
     expo_access_token = getattr(settings, "expo_push_access_token", "")
@@ -1050,29 +1117,39 @@ def _send_expo_push(db: Session, token: UserPushToken, delivery: NotificationDel
             if error_code == "DeviceNotRegistered":
                 token.enabled = False
                 token.invalidated_at = datetime.now(UTC)
+            if error_code not in _PERMANENT_EXPO_ERRORS:
+                _schedule_delivery_retry(delivery)
+            else:
+                delivery.next_retry_at = None
             logger.warning(
-                "expo_push.failed delivery_id=%s token_id=%s status_code=%s error=%s",
+                "expo_push.failed delivery_id=%s token_id=%s status_code=%s error=%s retry_count=%s next_retry=%s",
                 delivery.id,
                 token.id,
                 response.status_code,
                 delivery.failure_reason,
+                delivery.retry_count,
+                delivery.next_retry_at.isoformat() if delivery.next_retry_at else "none",
             )
         else:
             delivery.status = "sent"
             delivery.sent_at = datetime.now(UTC)
+            delivery.next_retry_at = None
             logger.info(
-                "expo_push.sent delivery_id=%s token_id=%s status_code=%s",
+                "expo_push.sent delivery_id=%s token_id=%s status_code=%s retry_count=%s",
                 delivery.id,
                 token.id,
                 response.status_code,
+                delivery.retry_count,
             )
     except Exception as exc:
         delivery.status = "failed"
         delivery.failure_reason = str(exc)
+        _schedule_delivery_retry(delivery)
         logger.exception(
-            "expo_push.exception delivery_id=%s token_id=%s",
+            "expo_push.exception delivery_id=%s token_id=%s retry_count=%s",
             delivery.id,
             token.id,
+            delivery.retry_count,
         )
 
     db.flush()

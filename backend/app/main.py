@@ -34,6 +34,48 @@ DEFAULT_DEV_SECRET = "dev-secret-key-change-in-production"
 app_logger = logging.getLogger("fuelgood.api")
 
 
+def _configure_sentry() -> None:
+    if not settings.sentry_dsn:
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    except ImportError:
+        app_logger.warning("sentry_sdk not installed; skipping Sentry init")
+        return
+
+    def _scrub_event(event, hint):
+        # Belt and suspenders: drop request body + cookies + auth headers so
+        # emails / passwords / tokens never leave our infra.
+        request = event.get("request") or {}
+        headers = request.get("headers") or {}
+        for key in list(headers.keys()):
+            if key.lower() in {"authorization", "cookie", "x-api-key"}:
+                headers[key] = "[scrubbed]"
+        if "data" in request:
+            request["data"] = "[scrubbed]"
+        if "cookies" in request:
+            request["cookies"] = "[scrubbed]"
+        return event
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.environment,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        profiles_sample_rate=settings.sentry_profiles_sample_rate,
+        send_default_pii=False,
+        before_send=_scrub_event,
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            StarletteIntegration(transaction_style="endpoint"),
+            SqlalchemyIntegration(),
+        ],
+    )
+    app_logger.info(json.dumps({"event": "sentry.initialized", "env": settings.environment}))
+
+
 def _configure_logging() -> None:
     level_name = (settings.log_level or "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)
@@ -45,6 +87,7 @@ def _configure_logging() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _configure_logging()
+    _configure_sentry()
     _validate_security_settings()
     ensure_legacy_schema_columns()
     _sync_official_meals_on_startup()

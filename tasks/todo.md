@@ -200,3 +200,50 @@ These increase time-in-onboarding and emotional investment.
 - **Secondary:** Onboarding completion rate (hook → paywall)
 - **Tertiary:** Time in onboarding (target: 10-15 min)
 - **Per-screen:** Drop-off rate at each step
+
+---
+
+# iOS App Store Audit — Implementation Pass 1 (2026-04-16)
+
+Full audit: `tasks/ios-app-store-readiness-audit.md`.
+
+## Shipped
+
+### App Store submission blockers
+- [x] **B3** Terms/Privacy links on onboarding paywall (`app/onboarding-v2/paywall.tsx`)
+- [x] **B3/High** Auto-renew disclosure copy on onboarding paywall (all 3 dismiss states)
+- [x] **B2** Privacy Manifest via `expo-build-properties` plugin (`app.json`) — covers tracking, collected data types, required-reason APIs for Sentry / PostHog / RevenueCat / Supabase / RN core
+- [x] **B5** AI chat report-abuse UI: frontend bubble-level "Report" button + `/chat/report` backend endpoint persisting via `record_notification_event`
+- [x] **B6** Deleted `frontend/tmp_probe.js`, `tmp_signup.js`, `tmp_toggle_signup.js`; added `frontend/tmp_*.js` to `.gitignore`
+- [x] **B7** Camera/photos pre-permission rationale: new "Enable Camera in Settings" denied-state UI + `Linking.openSettings()` fallback; permission-denied alerts now offer Open Settings action
+
+### Backend operation blockers
+- [x] **B8** `.gitignore` `backend/real_food.db` and `backend/*.db`; `git rm --cached` the committed DB
+- [x] **B10** Notification scheduler retry logic: `retry_count` + `next_retry_at` columns on `notification_deliveries`; exponential backoff (5m → 15m → 60m, max 3 attempts); `_retry_failed_deliveries` runs at top of every cycle; `_PERMANENT_EXPO_ERRORS` set (DeviceNotRegistered etc) marked non-retryable
+
+### High-priority polish
+- [x] Global `ErrorBoundary` at app root (`components/ErrorBoundary.tsx`, wrapped in `app/_layout.tsx`) — shows a branded fallback with "Try again" + "Contact support" actions; reports to Sentry via `reportClientError`
+- [x] Replaced `allowFontScaling={false}` with `maxFontSizeMultiplier` in chat header + input (a11y)
+- [x] Account-deletion error handling upgraded: UI no longer logs out on API failure; shows support email with mailto action
+- [x] Backend file-upload validation order: magic bytes are now the single source of truth (`image/product` + `image/meal` endpoints); `detected_mime` used for storage, `content_type` demoted to hint
+- [x] DB pool bumped to `pool_size=20, max_overflow=30, pool_timeout=30`
+- [x] Server-side Sentry wired: `sentry-sdk[fastapi]==2.19.2` in requirements, `_configure_sentry()` in lifespan, new env vars in `render.yaml` (`SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`)
+
+## Still needed before submission (not code-fixable in-repo)
+
+- [ ] **B1 RevenueCat production API key**: still `test_pkQnpZsWQMeDLvqlLlVnHXtGiKk` in `eas.json`. Replace with prod key from RevenueCat dashboard before first store build.
+- [ ] **B4 Publish legal URLs**: `docs/legal/privacy-policy.md`, `terms-of-service.md` must be live at `fuelgood.app/privacy`, `/terms`, `/support` — deploy to website host.
+- [ ] **B9 Cascade delete migration**: add `ondelete='CASCADE'` to every FK referencing `users.id` via Alembic, test in staging. Current account-deletion path relies on implicit cascade.
+- [ ] **apple-app-site-association** hosted at `fuelgood.app/.well-known/`.
+- [ ] **Sentry dSYM auto-upload**: `eas.json` has `SENTRY_DISABLE_AUTO_UPLOAD=true` — flip after validating SENTRY_AUTH_TOKEN in build env.
+- [ ] **RevenueCat production key**: expected also in `render.yaml` `REVENUECAT_SECRET_API_KEY` (sync from dashboard).
+- [ ] **Install new npm dep**: run `npx expo install expo-build-properties` locally to materialize `expo-build-properties@~1.0.9` in `node_modules`.
+- [ ] **Install new pip dep**: `sentry-sdk[fastapi]==2.19.2` — picked up on next Render deploy via `buildCommand`.
+
+## Follow-up (medium)
+
+- [ ] Accessibility label sweep across screens (only `GlassTabBar` covered today).
+- [ ] Skeleton + error + retry state for every data-fetching screen.
+- [ ] 6-digit password reset → 8-digit or 12-char alphanumeric.
+- [ ] Move to Redis rate limiter before horizontal scale.
+- [ ] PII (user_id) out of logs; use request-id correlation.

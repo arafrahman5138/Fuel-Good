@@ -46,7 +46,19 @@ interface MenuItem {
   glow: string;
 }
 
-function MenuCard({ children, onPress, style, testID }: { children: React.ReactNode; onPress: () => void; style?: any; testID?: string }) {
+function MenuCard({
+  children,
+  onPress,
+  style,
+  testID,
+  accessibilityLabel,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style?: any;
+  testID?: string;
+  accessibilityLabel?: string;
+}) {
   const press = usePressScale();
   return (
     <Animated.View style={[press.animatedStyle, style]}>
@@ -56,6 +68,8 @@ function MenuCard({ children, onPress, style, testID }: { children: React.ReactN
         onPress={onPress}
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
       >
         {children}
       </TouchableOpacity>
@@ -165,6 +179,9 @@ export default function MealsScreen() {
             ]}
             onPress={() => setActiveView(null)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Eat menu"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons
               name="chevron-back"
@@ -239,6 +256,7 @@ export default function MealsScreen() {
               testID={`meals-hub-${item.id}`}
               onPress={() => setActiveView(item.id)}
               style={[styles.cardOuter, { width: CARD_WIDTH }]}
+              accessibilityLabel={`Open ${item.label}, ${item.subtitle}`}
             >
               <View
                 style={[

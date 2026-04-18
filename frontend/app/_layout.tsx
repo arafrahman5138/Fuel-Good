@@ -20,6 +20,7 @@ import { billingService, isEntitlementStale } from '../services/billing';
 import { registerNotificationListeners, syncPushTokenWithBackend } from '../services/notifications';
 import { subscribeToBillingChanges } from '../services/supabase';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -272,7 +273,7 @@ function RootLayout() {
   }, [isLoading]);
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style={mode === 'light' ? 'dark' : 'light'} />
       <OfflineBanner />
       <Stack
@@ -328,7 +329,7 @@ function RootLayout() {
           }}
         />
       </Stack>
-    </>
+    </ErrorBoundary>
   );
 }
 

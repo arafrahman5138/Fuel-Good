@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     social_request_timeout_seconds: float = Field(default=10.0, ge=1.0, le=30.0)
     log_level: str = "INFO"
     enable_structured_logging: bool = True
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
+    sentry_profiles_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     run_notification_scheduler: bool = False
     notification_runner_secret: str = ""
     notification_cron_batch_size: int = 100

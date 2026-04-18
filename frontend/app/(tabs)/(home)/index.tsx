@@ -20,6 +20,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Card } from '../../../components/GradientCard';
+import { SkeletonCard } from '../../../components/SkeletonLoader';
+import { DataErrorState } from '../../../components/DataErrorState';
 
 import { XPToast } from '../../../components/XPToast';
 import { FlexUnlockedToast } from '../../../components/FlexUnlockedToast';
@@ -134,6 +136,7 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const currentPlan = useMealPlanStore((s) => s.currentPlan);
   const loadCurrentPlan = useMealPlanStore((s) => s.loadCurrentPlan);
+  const mealPlanLoadError = useMealPlanStore((s) => s.loadError);
   const dailyMES = useMetabolicBudgetStore((s) => s.dailyScore);
   const scoreHistory = useMetabolicBudgetStore((s) => s.scoreHistory);
 
@@ -619,6 +622,8 @@ export default function HomeScreen() {
         activeOpacity={0.85}
         onPress={() => router.push(`/(tabs)/(home)/recipe/${item.id}` as any)}
         style={{ marginRight: Spacing.md }}
+        accessibilityRole="button"
+        accessibilityLabel={`Open recipe ${item.title}${timeLabel ? `, ${timeLabel}` : ''}${item.difficulty ? `, ${item.difficulty}` : ''}`}
       >
         <View style={[s.recCard, { width: CARD_WIDTH, height: CARD_WIDTH * 1.25 }]}>
           {resolvedImage ? (
@@ -700,6 +705,8 @@ export default function HomeScreen() {
                   borderColor: theme.border,
                 },
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Selected date ${selectedCalendarLabel}, scroll to top`}
             >
               <Ionicons name="calendar-outline" size={14} color={theme.primary} />
               <Text style={[styles.calendarPillText, { color: theme.text }]}>{selectedCalendarLabel}</Text>
@@ -712,6 +719,9 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile/quests' as any)}
                 activeOpacity={0.7}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
+                accessibilityRole="button"
+                accessibilityLabel={`Open quests, current streak ${fuelStreak?.current_streak ?? 0} days`}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
                 {(fuelStreak?.current_streak ?? 0) > 0 && (
@@ -724,6 +734,8 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open profile"
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -753,14 +765,28 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
         {isInitialLoading && (
-          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 120 }}>
-            <ActivityIndicator size="large" color={theme.primary} />
+          <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, gap: Spacing.md }}>
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
           </View>
         )}
-        {loadError && !isInitialLoading && (
+        {!isInitialLoading && (loadError || mealPlanLoadError) && !dailySummary && !currentPlan && (
+          <DataErrorState
+            thing="dashboard"
+            onRetry={async () => {
+              setLoadError(false);
+              await onRefresh();
+            }}
+          />
+        )}
+        {!isInitialLoading && (loadError || mealPlanLoadError) && (dailySummary || currentPlan) && (
           <TouchableOpacity
             onPress={() => { setLoadError(false); onRefresh(); }}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, marginHorizontal: Spacing.xl, marginBottom: 4, backgroundColor: theme.warning + '18', borderRadius: BorderRadius.md }}
+            accessibilityRole="button"
+            accessibilityLabel="Some data couldn't load. Tap to retry."
           >
             <Ionicons name="cloud-offline-outline" size={14} color={theme.warning} style={{ marginRight: 6 }} />
             <Text style={{ fontSize: FontSize.sm, color: theme.warning }}>Some data couldn't load. Tap to retry.</Text>
@@ -787,6 +813,9 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile/quests' as any)}
                 activeOpacity={0.7}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
+                accessibilityRole="button"
+                accessibilityLabel={`Open quests, current streak ${fuelStreak?.current_streak ?? 0} days`}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="flame" size={16} color={theme.accent} />
                 {(fuelStreak?.current_streak ?? 0) > 0 && (
@@ -799,6 +828,8 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile' as any)}
                 style={[styles.profileButton, Shadows.sm(isDarkTheme)]}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open profile"
               >
                 <LinearGradient
                   colors={['#22C55E', '#16A34A']}
@@ -874,6 +905,8 @@ export default function HomeScreen() {
                     activeOpacity={0.85}
                     onPress={() => setSelectedDayKey(day.dayKey)}
                     style={[styles.weekItem, { width: DAY_PILL_WIDTH }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${day.label} ${day.date}${isToday ? ', today' : ''}${isSelected ? ', selected' : ''}`}
                   >
                     <Text
                       style={[
@@ -944,6 +977,8 @@ export default function HomeScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/(tabs)/meals?tab=plan' as any)}
               style={s.todayHeader}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${planCardTitle}`}
             >
               <View style={[s.planHeaderIcon, { backgroundColor: theme.primary + '14' }]}>
                 <Ionicons name="calendar" size={16} color={theme.primary} />
@@ -997,6 +1032,8 @@ export default function HomeScreen() {
                         activeOpacity={0.7}
                         onPress={() => meal.recipe_data?.id && router.push(`/(tabs)/(home)/recipe/${meal.recipe_data.id}` as any)}
                         style={s.mealRowBody}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open recipe ${recipeName}, ${meal.meal_type}${isLogged ? ', logged' : ''}`}
                       >
                         <View style={[s.mealIcon, { backgroundColor: isLogged ? '#22C55E18' : theme.surfaceHighlight }]}>
                           <Ionicons
@@ -1032,8 +1069,9 @@ export default function HomeScreen() {
                           disabled={isLogging}
                           style={[s.logBtn, { backgroundColor: theme.primary + '14' }]}
                           activeOpacity={0.7}
-                          accessibilityLabel="Log meal"
+                          accessibilityLabel={`Log ${recipeName}`}
                           accessibilityRole="button"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                           <Ionicons
                             name={isLogging ? 'hourglass-outline' : 'add'}
@@ -1078,6 +1116,8 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onPress={() => router.push('/(tabs)/meals?tab=plan' as any)}
                   activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create meal plan"
                 >
                   <LinearGradient
                     colors={[theme.primary, theme.primary + 'CC'] as any}
@@ -1174,6 +1214,8 @@ export default function HomeScreen() {
                       }
                     }}
                     style={[styles.recentMealChip, { backgroundColor: isDarkTheme ? theme.surfaceElevated : '#F5F5F0', borderColor: theme.border }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log ${label} again`}
                   >
                     <Text style={[styles.recentMealLabel, { color: theme.text }]} numberOfLines={1}>{label}</Text>
                     {fuelScore != null && (

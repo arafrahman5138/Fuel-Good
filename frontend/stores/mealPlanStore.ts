@@ -43,6 +43,7 @@ interface MealPlanState {
   isGenerating: boolean;
   isLoading: boolean;
   hasLoaded: boolean;
+  loadError: boolean;
   selectedDay: string;
   setCurrentPlan: (plan: MealPlan) => void;
   setGenerating: (generating: boolean) => void;
@@ -64,14 +65,15 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
   isGenerating: false,
   isLoading: false,
   hasLoaded: false,
+  loadError: false,
   selectedDay: getTodayName(),
-  setCurrentPlan: (currentPlan) => set({ currentPlan, hasLoaded: true }),
+  setCurrentPlan: (currentPlan) => set({ currentPlan, hasLoaded: true, loadError: false }),
   setGenerating: (isGenerating) => set({ isGenerating }),
   setSelectedDay: (selectedDay) => set({ selectedDay }),
   loadCurrentPlan: async (forceReload = false) => {
     if (get().isLoading) return;
     if (get().hasLoaded && !forceReload) return;
-    set({ isLoading: true });
+    set({ isLoading: true, loadError: false });
     try {
       const plan = await mealPlanApi.getCurrent();
       if (plan?.items?.length) {
@@ -83,16 +85,18 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
 
         if (weekStart && weekStart < twoWeeksAgo) {
           // Plan is stale — don't display it, let user generate a new one
-          set({ currentPlan: null, hasLoaded: true });
+          set({ currentPlan: null, hasLoaded: true, loadError: false });
         } else {
-          set({ currentPlan: plan, hasLoaded: true });
+          set({ currentPlan: plan, hasLoaded: true, loadError: false });
         }
       } else {
-        set({ hasLoaded: true });
+        // No plan on server — treated as an empty state (not an error).
+        set({ hasLoaded: true, loadError: false });
       }
     } catch {
-      // No saved plan — that's fine, user will generate one
-      // Don't set hasLoaded so user can retry
+      // Network / server error — surface so the UI can show a retry affordance.
+      // Don't set hasLoaded so caller (or retry) can try again.
+      set({ loadError: true });
     } finally {
       set({ isLoading: false });
     }

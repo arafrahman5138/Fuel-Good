@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState
 import { billingService } from '../../services/billing';
 import { authApi, billingApi, metabolicApi } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/Config';
 
 type PlanChoice = 'annual' | 'weekly';
 
@@ -100,6 +102,10 @@ export default function PaywallScreen() {
   const ctaScale = useRef(new Animated.Value(0.97)).current;
 
   const headline = getHeadline();
+  const selectedPlanRenewalPrice =
+    selectedPlan === 'annual'
+      ? `${pricing.annualDisplayPrice}/year`
+      : `${pricing.monthlyDisplayPrice}/month`;
 
   // R17: fetch canonical pricing once on mount. Derives annual-as-monthly for
   // the subline copy that used to be hardcoded "$5/month".
@@ -265,7 +271,14 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Dismiss X */}
-      <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.dismissButton}
+        onPress={handleDismiss}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss paywall"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
         <Ionicons name="close" size={22} color="#6B7280" />
       </TouchableOpacity>
 
@@ -330,6 +343,8 @@ export default function PaywallScreen() {
                 <TouchableOpacity
                   style={[styles.priceCard, styles.priceCardSelected]}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Annual plan, $11.99 per year, less than $1 per month"
                 >
                   <View style={styles.priceCardContent}>
                     <View style={styles.radioOuter}>
@@ -367,6 +382,8 @@ export default function PaywallScreen() {
                   style={[styles.priceCard, selectedPlan === 'annual' && styles.priceCardSelected]}
                   activeOpacity={0.8}
                   onPress={() => setSelectedPlan('annual')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select annual plan, ${pricing.annualDisplayPrice} per year${selectedPlan === 'annual' ? ', selected' : ''}`}
                 >
                   {paywallDismissCount === 0 && (
                     <View style={styles.bestValueBadge}>
@@ -396,6 +413,8 @@ export default function PaywallScreen() {
                   style={[styles.priceCard, selectedPlan === 'weekly' && styles.priceCardSelected]}
                   activeOpacity={0.8}
                   onPress={() => setSelectedPlan('weekly')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select monthly plan, ${pricing.monthlyDisplayPrice} per month${selectedPlan === 'weekly' ? ', selected' : ''}`}
                 >
                   <View style={styles.priceCardContent}>
                     <View style={styles.radioOuter}>
@@ -447,10 +466,30 @@ export default function PaywallScreen() {
             still possible via the back/skip gesture and still increments the
             counter for analytics, but the UI no longer changes based on it. */}
         <Text style={styles.reassuranceText}>Cancel anytime. No charge until day 8.</Text>
+        <Text style={styles.renewalDisclosure}>
+          After the 7-day free trial, your subscription auto-renews at {selectedPlanRenewalPrice}
+          {' '}until cancelled. Manage or cancel anytime in your Apple ID subscription settings.
+        </Text>
 
         <TouchableOpacity onPress={handleRestore} activeOpacity={0.7} style={styles.restoreButton}>
           <Text style={styles.restoreText}>Restore purchases</Text>
         </TouchableOpacity>
+
+        <View style={styles.legalLinksRow}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLinkText}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>·</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.progressWrapper}>
           <OnboardingProgress total={12} current={11} />
@@ -696,6 +735,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     textDecorationLine: 'underline',
+  },
+  renewalDisclosure: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 4,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: '#4B5563',
   },
   progressWrapper: {
     alignItems: 'center',

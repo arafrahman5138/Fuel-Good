@@ -127,3 +127,9 @@ services:
         sync: false
       - key: CHAT_QUOTA_EXEMPT_EMAILS
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.05"
+      - key: SENTRY_PROFILES_SAMPLE_RATE
+        value: "0.0"

@@ -497,9 +497,6 @@ async def analyze_product_image(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if image.content_type not in ALLOWED_IMAGE_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Packaged food scan requires an image upload.")
-
     image_bytes = await image.read()
     await image.close()
     if not image_bytes:
@@ -509,7 +506,10 @@ async def analyze_product_image(
 
     detected_mime = _validate_image_magic_bytes(image_bytes)
     if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a supported image format.")
+        raise HTTPException(
+            status_code=400,
+            detail="Packaged food scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
+        )
 
     try:
         storage_ref = None
@@ -520,14 +520,14 @@ async def analyze_product_image(
                     namespace="label-scans",
                     bucket=settings.supabase_storage_label_scans_bucket,
                     image_bytes=image_bytes,
-                    mime_type=image.content_type,
+                    mime_type=detected_mime,
                 )
             except Exception:
                 logger.warning("Label scan image storage request failed; continuing without stored image", exc_info=True)
 
         result = await analyze_product_label_image(
             image_bytes=image_bytes,
-            mime_type=image.content_type,
+            mime_type=detected_mime,
             capture_type=(capture_type or "front_label").strip() or "front_label",
         )
         record = ProductLabelScan(
@@ -582,9 +582,6 @@ async def scan_meal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if image.content_type not in ALLOWED_IMAGE_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Meal scan requires an image upload.")
-
     image_bytes = await image.read()
     await image.close()
     if not image_bytes:
@@ -594,14 +591,17 @@ async def scan_meal(
 
     detected_mime = _validate_image_magic_bytes(image_bytes)
     if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a supported image format.")
+        raise HTTPException(
+            status_code=400,
+            detail="Meal scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
+        )
 
     try:
         result = await analyze_meal_scan(
             db=db,
             user_id=current_user.id,
             image_bytes=image_bytes,
-            mime_type=image.content_type,
+            mime_type=detected_mime,
             context={
                 "meal_type": meal_type,
                 "portion_size": portion_size,
@@ -631,7 +631,7 @@ async def scan_meal(
                 namespace="meal-scans",
                 bucket=settings.supabase_storage_meal_scans_bucket,
                 image_bytes=image_bytes,
-                mime_type=image.content_type,
+                mime_type=detected_mime,
             )
         except SupabaseStorageUnavailable:
             logger.exception("Supabase storage unavailable during meal scan")
