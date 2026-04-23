@@ -413,7 +413,6 @@
     {"name": "cereal", "nova": 4, "role": "carb", "tags": ["added_sugar", "refined_flour"]},
     {"name": "kids cereal", "nova": 4, "role": "carb", "tags": ["added_sugar", "refined_flour"]},
     {"name": "sugary cereal", "nova": 4, "role": "carb", "tags": ["added_sugar", "refined_flour"]},
-    {"name": "protein bar", "nova": 4, "role": "protein", "tags": ["protein_isolate"]},
     {"name": "granola bar", "nova": 4, "role": "carb", "tags": ["added_sugar"]},
     {"name": "energy bar", "nova": 4, "role": "carb", "tags": ["added_sugar"]},
     {"name": "chips", "nova": 4, "role": "other", "tags": ["seed_oil"]},
