@@ -1,7 +1,7 @@
 """Add metabolic profile safety flags (lactation / HTN / IBD / ED-recovery).
 
-Revision ID: c7d8e9f0a1b2
-Revises: b5c6d7e8f9a0
+Revision ID: d1a2b3c4e5f6
+Revises: c7d8e9f0a1b2
 Create Date: 2026-04-16
 
 Batch 2 of the fix plan (see tasks/persona-qa-report-2026-04-16.md findings
@@ -14,6 +14,11 @@ physiological + life-stage states the app was unsafe for as-shipped:
   ED recovery → frontend intuitive_mode = true (hide streaks/Fuel/targets)
 
 All columns nullable or default False so existing rows are unaffected.
+
+Note: this migration originally shared revision ID c7d8e9f0a1b2 with
+``cascade_scan_favorites_and_notification_retry.py`` (a separate change
+that landed two days earlier). Re-keyed to d1a2b3c4e5f6 and chained
+after the cascade migration so alembic has a single linear head.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -21,8 +26,8 @@ from sqlalchemy import inspect
 
 
 # revision identifiers
-revision = "c7d8e9f0a1b2"
-down_revision = "b5c6d7e8f9a0"
+revision = "d1a2b3c4e5f6"
+down_revision = "c7d8e9f0a1b2"
 branch_labels = None
 depends_on = None
 
