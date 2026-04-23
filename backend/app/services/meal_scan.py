@@ -14,6 +14,11 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.nutrition import FoodLog
 from app.models.recipe import Recipe
+from app.services.gemini_client import (
+    GeminiCallFailed,
+    call_gemini_with_fallback,
+    extract_text_from_response,
+)
 from app.services.metabolic_engine import (
     build_glycemic_nutrition_input,
     classify_meal_context,
@@ -458,11 +463,17 @@ ALIASES = {
     "vermicelli": "rice noodles",
 }
 
-MEAL_SCAN_PROMPT = """You analyze a meal photo for a nutrition app.
+MEAL_SCAN_PROMPT = """You analyze a photo for a nutrition app that scores how "whole food" a meal is.
+The user may photograph a prepared meal, a packaged-food label, a drink, or something else entirely.
+Your FIRST job is to classify what kind of photo this is, then extract the appropriate data.
+
 Return strict JSON only with this exact shape:
 {
+  "scan_type": "meal",
+  "scan_type_confidence": 0.0,
   "not_food": false,
   "not_food_reason": "",
+  "is_beverage": false,
   "multi_dish": false,
   "dishes": [
     {
@@ -472,6 +483,9 @@ Return strict JSON only with this exact shape:
           "name": "component or ingredient",
           "role": "protein|carb|veg|fat|sauce|dessert|other|fruit",
           "portion_factor": 1.0,
+          "mass_fraction": 0.0,
+          "nova": 1,
+          "methods": [],
           "visible": true,
           "confidence": 0.0
         }
@@ -500,6 +514,9 @@ Return strict JSON only with this exact shape:
       "name": "component or ingredient",
       "role": "protein|carb|veg|fat|sauce|dessert|other|fruit",
       "portion_factor": 1.0,
+      "mass_fraction": 0.0,
+      "nova": 1,
+      "methods": [],
       "visible": true,
       "confidence": 0.0
     }
@@ -514,11 +531,41 @@ Return strict JSON only with this exact shape:
 }
 
 Rules:
-- If the image clearly does not contain food (e.g. keys, phone, hands, objects, scenery), set not_food to true and not_food_reason to a short description of what you see. Leave all other fields as defaults.
+- scan_type: classify the photo into one of four kinds. This is AUTHORITATIVE — the other fields follow from it.
+    * "meal"     — a prepared meal, plate of food, bowl, sandwich, etc. ready to eat. This is the common case. Extract components as described below.
+    * "label"    — a packaged food product. The dominant subject is branded packaging, a nutrition-facts panel, an ingredient list, or a UPC barcode. Boxes, bags, bottles, cans, wrappers. Return scan_type="label" and LEAVE components/nutrition empty — the server will re-analyze with a label extractor. You may still set meal_label to the product name you see.
+    * "beverage" — ONLY a drink is visible (coffee, latte, smoothie, juice, cocktail, plain water). No solid food on the plate.
+    * "not_food" — keys, phone, hands, scenery, a restaurant menu page, a receipt, an empty plate, a person, etc. Set not_food_reason to a short description.
+- scan_type_confidence: 0-1, how sure you are of the classification. Drop below 0.7 only when the image is ambiguous (e.g. a meal kit box that shows some prepared food on the cover).
+- Edge cases:
+    * A HELD packaged snack bar still counts as "label" (the subject is the product).
+    * A plated meal next to a water glass is still "meal" (water is incidental).
+    * A protein shake in a branded bottle is "label" (the bottle is the subject) unless the image is clearly of the drink poured out, in which case "beverage".
+    * A photo of a restaurant menu is "not_food".
+- If scan_type is "not_food", set not_food=true. Leave all other fields at defaults.
+- If scan_type is "beverage", set is_beverage=true and describe the drink as a single component. Do NOT set not_food for drinks.
+- If scan_type is "label", you may skip the full components + nutrition extraction — the server will re-call a label-specific extractor. Setting meal_label to the visible product name (e.g. "Lay's Classic Potato Chips") is still helpful.
+- For scan_type "meal" (the common case), extract components and nutrition as the rest of the rules describe.
 - If multiple DISTINCT dishes are visible (e.g. a plate of pasta AND a separate bowl of salad, or meal prep containers with different items), set multi_dish to true and populate the dishes array with one entry per dish. Still fill the top-level components with ALL components combined.
 - If it's a single dish (even with multiple components like rice + chicken + veggies), set multi_dish to false and leave dishes as an empty array.
-- prefer concrete food names over vague labels
+- prefer concrete food names over vague labels (e.g. "grilled chicken breast" not "meat"; "pizza dough" not "crust"; "pepperoni" not "cured meat topping")
 - use 0.25 to 1.5 for portion_factor
+- mass_fraction: estimate each component's share of the meal by weight (0.0-1.0). The sum of mass_fractions across top-level components should be close to 1.0. If unsure, leave at 0.0 and the server will default to equal weighting.
+- nova: assign a NOVA processing level per component:
+    1 = unprocessed / minimally processed whole food (grilled chicken, broccoli, brown rice, plain yogurt, raw fruit)
+    2 = processed culinary ingredient (olive oil, butter, honey, salt, table sugar, vinegar)
+    3 = processed food (cheese, cured meat, canned fish in oil, bread, pasta, pizza dough, white rice, french fries, bacon, ham)
+    4 = ultra-processed (chicken nuggets, pepperoni, hot dogs, sugary cereals, energy bars with isolates, soft drinks, flavored yogurt, american / processed cheese, margarine)
+  Err HIGHER when in doubt — recognizable processing (breading, frying, curing, flaking, extruding) bumps NOVA to 3 or 4. A pizza slice should have: pizza_dough (nova 3, refined_flour), mozzarella (nova 3), pepperoni (nova 4, cured_meat).
+- methods: list applicable cooking methods per component — e.g. ["grilled"], ["fried"], ["battered"], ["baked"], ["raw"], ["breaded"], ["deep-fried"], ["cured"].
+- possible_hidden_ingredients: aggressively list processing signals the dish probably contains even if not directly visible. Use tags from: refined_flour, seed_oil, seed_oil_fried, added_sugar, cured_meat, processed_cheese, sodium_high. Examples:
+    * Any pizza → refined_flour (dough), processed_cheese (mozz in US pizzas), and cured_meat if pepperoni/sausage/bacon visible.
+    * Any carbonara / amatriciana → refined_flour (spaghetti), cured_meat (guanciale/pancetta/bacon).
+    * Any cheeseburger → refined_flour (bun), processed_cheese (unless explicitly fresh/real), seed_oil_fried (if fries visible or patty griddle-fried in commercial oil).
+    * Any french fries / tater tots / fried chicken / fried calamari → seed_oil_fried.
+    * Any sandwich with deli meat → refined_flour (bread), cured_meat.
+    * Any ramen / instant noodles → refined_flour, sodium_high.
+    * Any breakfast pastry / donut / pancake with syrup → refined_flour, added_sugar.
 - if uncertain, choose medium confidence and say unknown less often than inventing ingredients
 - meal_label should be consumer friendly
 - use role "fruit" for fruit components (apple, banana, grapes, berries, melon, etc.)
@@ -559,13 +606,8 @@ async def _call_gemini_meal_extractor(
     mime_type: str,
     context: dict[str, Any],
 ) -> dict[str, Any]:
-    api_key = settings.google_api_key or settings.gemini_api_key
-    if not api_key:
-        raise RuntimeError("Gemini API key is not configured.")
-
     prompt = MEAL_SCAN_PROMPT + "\n\nContext:\n" + json.dumps(context, indent=2)
     encoded = base64.b64encode(image_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.scan_model or settings.gemini_model}:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
@@ -581,19 +623,19 @@ async def _call_gemini_meal_extractor(
             "responseMimeType": "application/json",
         },
     }
-    async with httpx.AsyncClient(timeout=40.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-    candidates = data.get("candidates") or []
-    if not candidates:
-        raise RuntimeError("No scan candidate returned.")
-    parts = (((candidates[0] or {}).get("content") or {}).get("parts") or [])
-    text_part = next((part.get("text") for part in parts if part.get("text")), None)
-    if not text_part:
-        raise RuntimeError("No scan payload returned.")
-    return _extract_json(text_part)
+    try:
+        result = await call_gemini_with_fallback(payload=payload)
+    except GeminiCallFailed as exc:
+        logger.warning("Gemini meal scan failed after retry+fallback: %s", exc)
+        raise
+    text_part = extract_text_from_response(result.json)
+    parsed = _extract_json(text_part)
+    # Stamp which model actually served the response so the router can
+    # include it in confidence / scoring decisions.
+    parsed.setdefault("_gemini_meta", {})
+    parsed["_gemini_meta"]["model"] = result.model
+    parsed["_gemini_meta"]["attempts"] = result.attempts
+    return parsed
 
 
 def _eligible_pairing_recipe(recipe: Recipe | None) -> bool:
@@ -1258,23 +1300,63 @@ async def analyze_meal_scan(
     # ------------------------------------------------------------------
     extracted = await _call_gemini_meal_extractor(image_bytes, mime_type, context)
 
+    # Self-classification short-circuits. The upgraded prompt returns scan_type
+    # as the authoritative classifier; the legacy not_food / is_beverage flags
+    # are still populated for backwards compat.
+    scan_type = str(extracted.get("scan_type") or "").strip().lower() or None
+
     # Reject non-food images immediately
-    if extracted.get("not_food"):
+    if scan_type == "not_food" or extracted.get("not_food"):
         return {
+            "scan_type": "not_food",
             "is_not_food": True,
             "not_food_reason": str(extracted.get("not_food_reason") or "No food detected in image"),
             "meal_label": "Not a food item",
             "confidence": 0.0,
         }
 
+    # Packaged-food label short-circuit: delegate to the label extractor on
+    # the same image. Lazy import to avoid circular dependency — label scan
+    # never imports meal scan back.
+    # Exception: when the caller passes force_scan_type="meal" in context, the
+    # user has explicitly overridden the classifier (deep-buried "was this a
+    # prepared meal?" link on the product result card) — skip the label
+    # delegation and run the full meal pipeline on the image.
+    force_scan_type = str((context or {}).get("force_scan_type") or "").strip().lower()
+    if scan_type == "label" and force_scan_type != "meal":
+        from app.services.product_label_scan import analyze_product_label_image
+        label_result = await analyze_product_label_image(image_bytes, mime_type)
+        return {
+            "scan_type": "label",
+            "label": label_result,
+            # Copy a few fields for legacy /meal endpoint callers that expect them.
+            "meal_label": label_result.get("product_name") or "Packaged food",
+            "confidence": float(label_result.get("confidence") or 0.0),
+        }
+
     components = _stable_visible_components(extracted.get("components") or [])
     estimated_ingredients = [_titleize_name(str(component.get("name", "")).strip()) for component in components if component.get("name")]
     normalized_ingredients = [_normalize_name(name) for name in estimated_ingredients]
-    hidden_ingredients = [
-        str(item.get("name", "")).strip()
-        for item in (extracted.get("possible_hidden_ingredients") or [])
-        if item.get("name") and float(item.get("confidence", 0) or 0) >= 0.55
-    ]
+    # Phase 1 audit fix: the upgraded prompt asks Gemini to list processing
+    # TAGS (refined_flour, seed_oil, etc.) in possible_hidden_ingredients.
+    # Filter these tag-style names out of the ingredient list so they don't
+    # double-count via the legacy flag detector. They're surfaced separately
+    # through the dish classifier + NOVA tag pipeline.
+    _PROCESSING_TAG_NAMES = {
+        "refined_flour", "seed_oil", "seed_oil_fried", "added_sugar",
+        "cured_meat", "processed_cheese", "sodium_high", "protein_isolate",
+    }
+    hidden_ingredients: list[str] = []
+    hidden_processing_tags: list[str] = []
+    for item in (extracted.get("possible_hidden_ingredients") or []):
+        name = str(item.get("name", "")).strip()
+        if not name or float(item.get("confidence", 0) or 0) < 0.55:
+            continue
+        key = name.lower().replace(" ", "_")
+        if key in _PROCESSING_TAG_NAMES:
+            hidden_processing_tags.append(key)
+        else:
+            hidden_ingredients.append(name)
 
     raw_meal_label = str(extracted.get("meal_label") or "Scanned meal").strip()
     source_context = str(
@@ -1522,11 +1604,24 @@ async def analyze_meal_scan(
     # ------------------------------------------------------------------
     # Build result
     # ------------------------------------------------------------------
-    models_used = [settings.scan_model or settings.gemini_model]
+    # Use the actual model that served the response (it may have been the
+    # fallback if the primary 503'd).
+    primary_model = (
+        (extracted.get("_gemini_meta") or {}).get("model")
+        or settings.scan_model
+        or settings.gemini_model
+    )
+    models_used = [primary_model]
     if ensemble_used:
         models_used.append("claude-sonnet")
 
+    # Stamp the self-classification so downstream callers (router, smart
+    # endpoint) can dispatch without having to re-read raw extractor fields.
+    resolved_scan_type = scan_type if scan_type in ("meal", "beverage") else "meal"
+
     result = {
+        "scan_type": resolved_scan_type,
+        "is_beverage": bool(extracted.get("is_beverage") or resolved_scan_type == "beverage"),
         "meal_label": meal_label,
         "meal_type": meal_type,
         "meal_context": meal_context,

@@ -17,3 +17,4 @@ langchain-google-genai
 langchain-ollama
 langgraph==0.2.45
 python-dotenv==1.0.1
+pillow==10.4.0

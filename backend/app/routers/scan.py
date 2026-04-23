@@ -12,6 +12,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from enum import Enum
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -39,6 +40,9 @@ from app.services.whole_food_scoring import analyze_whole_food_product
 from app.routers.whole_food_scan import WholeFoodAnalyzeRequest, _extract_product_payload
 from app.config import get_settings
 from app.services.fuel_score import compute_fuel_score
+from app.services.image_quality import probe_image_quality
+from app.services import scan_cache
+from app.services.meal_scan import MEAL_SCAN_PROMPT_VERSION
 
 import httpx
 
@@ -268,6 +272,71 @@ async def _store_scan_image(
         "signed_url": signed["signed_url"],
         "signed_url_expires_in": signed["expires_in"],
     }
+
+
+async def _persist_label_from_analysis(
+    *,
+    db: Session,
+    user_id: str,
+    storage_ref: dict | None,
+    result: dict[str, Any],
+    capture_type: str = "front_label",
+) -> dict[str, Any]:
+    """Create a ProductLabelScan row and return the serialized response dict."""
+    record = ProductLabelScan(
+        user_id=user_id,
+        capture_type=capture_type,
+        image_url=(storage_ref or {}).get("signed_url"),
+        image_bucket=(storage_ref or {}).get("bucket"),
+        image_path=(storage_ref or {}).get("path"),
+        image_mime_type=(storage_ref or {}).get("mime_type"),
+        product_name=result.get("product_name"),
+        brand=result.get("brand"),
+        ingredients_text=result.get("ingredients_text"),
+        confidence=float(result.get("confidence", 0) or 0),
+        confidence_breakdown=result.get("confidence_breakdown") or {},
+        analysis=result,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return {
+        **result,
+        "scan_id": str(record.id),
+        "image": await _storage_reference_async(
+            bucket=record.image_bucket,
+            path=record.image_path,
+            mime_type=record.image_mime_type,
+            fallback_url=record.image_url,
+        ),
+    }
+
+
+async def _store_scan_image_safely(
+    *,
+    user_id: str,
+    namespace: str,
+    bucket: str,
+    image_bytes: bytes,
+    mime_type: str,
+) -> dict[str, Any] | None:
+    """Phase 3 helper: wrap _store_scan_image so background-task failures
+    don't crash the scan. Mirrors the error classes the original caller handled."""
+    try:
+        return await _store_scan_image(
+            user_id=user_id,
+            namespace=namespace,
+            bucket=bucket,
+            image_bytes=image_bytes,
+            mime_type=mime_type,
+        )
+    except SupabaseStorageUnavailable:
+        logger.exception("Supabase storage unavailable during meal scan")
+    except httpx.HTTPError:
+        logger.exception("Meal scan image storage request failed; continuing without stored image")
+    except Exception:
+        logger.exception("Unexpected meal scan image storage failure; continuing without stored image")
+    return None
 
 
 def _serialize_storage_reference(
@@ -596,25 +665,63 @@ async def scan_meal(
             detail="Meal scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
         )
 
-    try:
-        result = await analyze_meal_scan(
-            db=db,
-            user_id=current_user.id,
-            image_bytes=image_bytes,
-            mime_type=detected_mime,
-            context={
-                "meal_type": meal_type,
-                "portion_size": portion_size,
-                "source_context": source_context,
-            },
+    # Phase 3: cache lookup — identical photo within TTL returns instantly.
+    cached = scan_cache.get_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION)
+
+    # Phase 3: image quality probe (~30ms, CPU-bound) runs in a thread. The
+    # big parallelism win is the Supabase upload — we kick it off as a
+    # background task so it runs alongside the Gemini call rather than after.
+    quality = await asyncio.to_thread(probe_image_quality, image_bytes)
+
+    storage_task: asyncio.Future | None = None
+    if not cached and is_supabase_storage_configured():
+        storage_task = asyncio.ensure_future(
+            _store_scan_image_safely(
+                user_id=current_user.id,
+                namespace="meal-scans",
+                bucket=settings.supabase_storage_meal_scans_bucket,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+            )
         )
-    except Exception as exc:
-        logger.exception("LLM meal scan failed, returning degraded result")
-        result = _build_degraded_meal_scan_result(
-            meal_type=meal_type,
-            portion_size=portion_size,
-            source_context=source_context,
-        )
+
+    if cached:
+        result = cached
+    else:
+        try:
+            result = await analyze_meal_scan(
+                db=db,
+                user_id=current_user.id,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+                context={
+                    "meal_type": meal_type,
+                    "portion_size": portion_size,
+                    "source_context": source_context,
+                },
+            )
+        except Exception:
+            logger.exception("LLM meal scan failed, returning degraded result")
+            result = _build_degraded_meal_scan_result(
+                meal_type=meal_type,
+                portion_size=portion_size,
+                source_context=source_context,
+            )
+        else:
+            # Cache successful (non-degraded, non-not-food) results so the next
+            # scan of the same photo is instant.
+            if not result.get("is_degraded") and not result.get("is_not_food"):
+                scan_cache.set_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION, result)
+
+    # Attenuate AI confidence by image quality signal — the AI is overconfident
+    # about blurry / dim photos, so we halve its confidence when the local probe
+    # flags the image.
+    if quality.get("confidence_multiplier", 1.0) < 1.0:
+        raw_conf = float(result.get("confidence") or 0)
+        result["confidence"] = round(raw_conf * quality["confidence_multiplier"], 3)
+        result["image_quality"] = quality
+        if quality.get("review_required"):
+            result["review_required"] = True
 
     # Non-food image — return immediately without persisting a scan record
     if result.get("is_not_food"):
@@ -623,22 +730,76 @@ async def scan_meal(
             "not_food_reason": result.get("not_food_reason", "No food detected in image"),
         }
 
+    # Packaged-food label: the meal classifier decided this image is actually
+    # a branded label, and analyze_meal_scan delegated to the label extractor.
+    # Return the label result without persisting a ScannedMealLog row — the
+    # smart endpoint handles label persistence properly.
+    if (result.get("scan_type") == "label") or ("label" in result and result.get("scan_type") != "meal"):
+        label_payload = result.get("label") or {}
+        return {
+            "scan_type": "label",
+            "label": label_payload,
+            "is_label_redirect": True,
+            "meal_label": label_payload.get("product_name") or "Packaged food",
+        }
+
+    # Beverage-only photo — return a lightweight scored response without
+    # persisting a ScannedMealLog (a latte isn't a meal).
+    if result.get("is_beverage"):
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            components=result.get("components") or [],
+            source_context=result.get("source_context"),
+            meal_label=result.get("meal_label"),
+            nutrition=result.get("nutrition_estimate"),
+            confidence=result.get("confidence"),
+            source_model=result.get("source_model"),
+            is_beverage=True,
+        )
+        return {
+            "is_beverage": True,
+            "meal_label": result.get("meal_label", "Beverage"),
+            "fuel_score": fuel_result.score,
+            "fuel_tier": fuel_result.tier,
+            "fuel_reasoning": fuel_result.reasoning,
+            "confidence": result.get("confidence"),
+        }
+
+    # Phase 2 audit fix (Bug H): when Gemini fails entirely we return the
+    # degraded payload inline WITHOUT persisting a ScannedMealLog. The
+    # Recent carousel stays honest; the client shows a "Try again /
+    # Describe instead" card that can re-POST to this endpoint.
+    if result.get("is_degraded"):
+        return {
+            "is_degraded": True,
+            "meal_label": result.get("meal_label", "Scanned meal"),
+            "degraded_reason": result.get(
+                "degraded_reason",
+                "AI analysis temporarily unavailable. Try again or describe your meal.",
+            ),
+            "meal_type": result.get("meal_type"),
+            "portion_size": result.get("portion_size"),
+            "source_context": result.get("source_context"),
+            "retry_options": {
+                "retry_same_photo": True,
+                "describe_instead": True,
+                "fallback_model_suggested": True,
+            },
+            "confidence": 0.0,
+        }
+
+    # Phase 3: collect the parallel Supabase upload result if we kicked one off.
     storage_ref = None
-    if is_supabase_storage_configured():
+    if storage_task is not None:
         try:
-            storage_ref = await _store_scan_image(
-                user_id=current_user.id,
-                namespace="meal-scans",
-                bucket=settings.supabase_storage_meal_scans_bucket,
-                image_bytes=image_bytes,
-                mime_type=detected_mime,
-            )
-        except SupabaseStorageUnavailable:
-            logger.exception("Supabase storage unavailable during meal scan")
-        except httpx.HTTPError:
-            logger.exception("Meal scan image storage request failed; continuing without stored image")
+            storage_ref = await storage_task
         except Exception:
-            logger.exception("Unexpected meal scan image storage failure; continuing without stored image")
+            logger.exception("Meal scan storage task failed; continuing without stored image")
+    elif cached and is_supabase_storage_configured():
+        # Cache hit path — the image was uploaded on the original scan, so we
+        # skip re-upload here. The cached result already carries its own
+        # storage_ref if one was previously persisted.
+        pass
 
     # ── Fuel Score for scanned meal ──
     # Skip fuel scoring for degraded results (LLM failure fallback) —
@@ -651,9 +812,14 @@ async def scan_meal(
                 source_type="scan",
                 nutrition=result.get("nutrition_estimate"),
                 components=result.get("components") or [],
+                normalized_ingredients=result.get("normalized_ingredients"),
                 source_context=result.get("source_context"),
                 whole_food_status=result.get("whole_food_status"),
                 whole_food_flags=result.get("whole_food_flags"),
+                meal_label=result.get("meal_label"),
+                dishes=result.get("dishes"),
+                confidence=result.get("confidence"),
+                source_model=result.get("source_model"),
             )
             scan_fuel_score = fuel_result.score
             scan_fuel_reasoning = fuel_result.reasoning
@@ -718,6 +884,537 @@ async def scan_meal(
         fallback_url=scan.image_url,
     )
     return serialized
+
+
+@router.post("/smart")
+async def scan_smart(
+    image: UploadFile = File(...),
+    meal_type: Optional[str] = Form(default=None),
+    portion_size: Optional[str] = Form(default=None),
+    source_context: Optional[str] = Form(default=None),
+    force_scan_type: Optional[str] = Form(default=None),
+    capture_type: Optional[str] = Form(default="front_label"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Unified scan endpoint — classifies the image server-side and routes
+    to either the meal or the label pipeline. Returns a discriminated
+    response so the client never has to decide the scan type up front.
+
+    ``force_scan_type=label|meal`` bypasses the classifier for the
+    deep-buried "we read this wrong" override path on the result card.
+    """
+    image_bytes = await image.read()
+    await image.close()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
+
+    detected_mime = _validate_image_magic_bytes(image_bytes)
+    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
+        )
+
+    force = (force_scan_type or "").strip().lower() or None
+    cap_type = (capture_type or "front_label").strip() or "front_label"
+
+    # ── Force-label override: skip the meal classifier ──
+    if force == "label":
+        storage_ref = None
+        if is_supabase_storage_configured():
+            try:
+                storage_ref = await _store_scan_image(
+                    user_id=current_user.id,
+                    namespace="label-scans",
+                    bucket=settings.supabase_storage_label_scans_bucket,
+                    image_bytes=image_bytes,
+                    mime_type=detected_mime,
+                )
+            except Exception:
+                logger.warning("Label scan image storage request failed in force path", exc_info=True)
+        try:
+            label_result = await analyze_product_label_image(
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+                capture_type=cap_type,
+            )
+        except Exception:
+            logger.exception("Forced label scan failed")
+            raise HTTPException(status_code=502, detail="Could not read that label. Try a closer, well-lit photo of the ingredients list.")
+        persisted = await _persist_label_from_analysis(
+            db=db,
+            user_id=str(current_user.id),
+            storage_ref=storage_ref,
+            result=label_result,
+            capture_type=cap_type,
+        )
+        return {"scan_type": "label", "label": persisted}
+
+    # ── Standard path: meal classifier self-routes ──
+    cached = scan_cache.get_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION)
+    quality = await asyncio.to_thread(probe_image_quality, image_bytes)
+
+    # Kick Supabase upload off in parallel (unknown namespace yet — use meal
+    # bucket; the image is the same regardless of classification).
+    storage_task: asyncio.Future | None = None
+    if not cached and is_supabase_storage_configured():
+        storage_task = asyncio.ensure_future(
+            _store_scan_image_safely(
+                user_id=current_user.id,
+                namespace="meal-scans",
+                bucket=settings.supabase_storage_meal_scans_bucket,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+            )
+        )
+
+    if cached:
+        result = cached
+    else:
+        try:
+            result = await analyze_meal_scan(
+                db=db,
+                user_id=current_user.id,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+                context={
+                    "meal_type": meal_type,
+                    "portion_size": portion_size,
+                    "source_context": source_context,
+                    # When the caller explicitly forced "meal", the deep-override
+                    # UI expects us to bypass the self-classifier's label routing.
+                    "force_scan_type": force,
+                },
+            )
+        except Exception:
+            logger.exception("Smart scan meal extractor failed, returning degraded result")
+            result = _build_degraded_meal_scan_result(
+                meal_type=meal_type,
+                portion_size=portion_size,
+                source_context=source_context,
+            )
+        else:
+            if (
+                not result.get("is_degraded")
+                and not result.get("is_not_food")
+                and result.get("scan_type") != "label"
+            ):
+                scan_cache.set_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION, result)
+
+    if quality.get("confidence_multiplier", 1.0) < 1.0:
+        raw_conf = float(result.get("confidence") or 0)
+        result["confidence"] = round(raw_conf * quality["confidence_multiplier"], 3)
+        result["image_quality"] = quality
+        if quality.get("review_required"):
+            result["review_required"] = True
+
+    scan_type = str(result.get("scan_type") or "").strip().lower()
+    if not scan_type:
+        if result.get("is_not_food"):
+            scan_type = "not_food"
+        elif result.get("is_beverage"):
+            scan_type = "beverage"
+        elif result.get("is_degraded"):
+            scan_type = "degraded"
+        else:
+            scan_type = "meal"
+
+    # ── not_food: no persistence ──
+    if scan_type == "not_food":
+        return {
+            "scan_type": "not_food",
+            "not_food": {"reason": result.get("not_food_reason", "No food detected in image")},
+        }
+
+    # ── beverage: compute fuel score on the beverage scale, no persistence ──
+    if scan_type == "beverage":
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            components=result.get("components") or [],
+            source_context=result.get("source_context"),
+            meal_label=result.get("meal_label"),
+            nutrition=result.get("nutrition_estimate"),
+            confidence=result.get("confidence"),
+            source_model=result.get("source_model"),
+            is_beverage=True,
+        )
+        return {
+            "scan_type": "beverage",
+            "beverage": {
+                "meal_label": result.get("meal_label", "Beverage"),
+                "fuel_score": fuel_result.score,
+                "fuel_tier": fuel_result.tier,
+                "fuel_reasoning": fuel_result.reasoning,
+                "confidence": result.get("confidence"),
+            },
+        }
+
+    # ── degraded: no persistence ──
+    if scan_type == "degraded":
+        return {
+            "scan_type": "degraded",
+            "degraded": {
+                "meal_label": result.get("meal_label", "Scanned meal"),
+                "degraded_reason": result.get(
+                    "degraded_reason",
+                    "AI analysis temporarily unavailable. Try again or describe your meal.",
+                ),
+                "retry_options": {"retry_same_photo": True, "describe_instead": True},
+            },
+        }
+
+    # ── label: persist to ProductLabelScan, discard the parallel meal upload ──
+    if scan_type == "label":
+        label_result = result.get("label") or {}
+        # The meal-scan code path uploaded to the meal-scans bucket. Re-upload
+        # into the label-scans bucket so the persisted label scan carries its
+        # image in the right place.
+        label_storage_ref = None
+        if is_supabase_storage_configured():
+            try:
+                label_storage_ref = await _store_scan_image(
+                    user_id=current_user.id,
+                    namespace="label-scans",
+                    bucket=settings.supabase_storage_label_scans_bucket,
+                    image_bytes=image_bytes,
+                    mime_type=detected_mime,
+                )
+            except Exception:
+                logger.warning("Label re-upload failed; continuing without stored image", exc_info=True)
+        # Wait on (but discard) the meal-bucket upload so we don't leak a task.
+        if storage_task is not None:
+            try:
+                await storage_task
+            except Exception:
+                pass
+        persisted = await _persist_label_from_analysis(
+            db=db,
+            user_id=str(current_user.id),
+            storage_ref=label_storage_ref,
+            result=label_result,
+            capture_type=cap_type,
+        )
+        return {"scan_type": "label", "label": persisted}
+
+    # ── meal: the common case. Run fuel scoring, persist, return ──
+    storage_ref = None
+    if storage_task is not None:
+        try:
+            storage_ref = await storage_task
+        except Exception:
+            logger.exception("Smart meal scan storage task failed; continuing without stored image")
+
+    scan_fuel_score = None
+    scan_fuel_reasoning: list[str] = []
+    try:
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            nutrition=result.get("nutrition_estimate"),
+            components=result.get("components") or [],
+            normalized_ingredients=result.get("normalized_ingredients"),
+            source_context=result.get("source_context"),
+            whole_food_status=result.get("whole_food_status"),
+            whole_food_flags=result.get("whole_food_flags"),
+            meal_label=result.get("meal_label"),
+            dishes=result.get("dishes"),
+            confidence=result.get("confidence"),
+            source_model=result.get("source_model"),
+        )
+        scan_fuel_score = fuel_result.score
+        scan_fuel_reasoning = fuel_result.reasoning
+    except Exception:
+        logger.warning("Fuel score computation failed for smart scan", exc_info=True)
+
+    scan = ScannedMealLog(
+        user_id=current_user.id,
+        image_url=(storage_ref or {}).get("signed_url"),
+        image_bucket=(storage_ref or {}).get("bucket"),
+        image_path=(storage_ref or {}).get("path"),
+        image_mime_type=(storage_ref or {}).get("mime_type"),
+        meal_label=result["meal_label"],
+        scan_mode="meal",
+        meal_context=result["meal_context"],
+        meal_type=result["meal_type"],
+        portion_size=result["portion_size"],
+        source_context=result["source_context"],
+        estimated_ingredients=result["estimated_ingredients"],
+        normalized_ingredients=result["normalized_ingredients"],
+        nutrition_estimate={
+            **(result["nutrition_estimate"] or {}),
+            "whole_food_summary": result.get("whole_food_summary"),
+        },
+        whole_food_status=result["whole_food_status"],
+        whole_food_flags=result["whole_food_flags"],
+        suggested_swaps=result["suggested_swaps"],
+        upgrade_suggestions=result["upgrade_suggestions"],
+        recovery_plan=result["recovery_plan"],
+        mes_score=(result["mes"] or {}).get("score"),
+        mes_tier=(result["mes"] or {}).get("tier"),
+        mes_sub_scores=(result["mes"] or {}).get("sub_scores") or {},
+        pairing_opportunity=bool(result.get("pairing_opportunity")),
+        pairing_recommended_recipe_id=result.get("pairing_recommended_recipe_id"),
+        pairing_recommended_title=result.get("pairing_recommended_title"),
+        pairing_projected_mes=result.get("pairing_projected_mes"),
+        pairing_projected_delta=result.get("pairing_projected_delta"),
+        pairing_reasons=result.get("pairing_reasons") or [],
+        pairing_timing=result.get("pairing_timing"),
+        confidence=result["confidence"],
+        confidence_breakdown=result["confidence_breakdown"],
+        source_model=result["source_model"],
+        grounding_source=result.get("grounding_source"),
+        grounding_candidates=result.get("grounding_candidates") or [],
+        prompt_version=result.get("prompt_version"),
+        matched_recipe_id=result.get("matched_recipe_id"),
+        matched_recipe_confidence=result.get("matched_recipe_confidence"),
+        fuel_score=scan_fuel_score,
+    )
+    db.add(scan)
+    db.commit()
+    db.refresh(scan)
+    serialized = _serialize_scan(scan)
+    serialized["fuel_reasoning"] = scan_fuel_reasoning
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    return {"scan_type": "meal", "meal": serialized}
+
+
+def _sse_event(event: str, payload: dict[str, Any]) -> bytes:
+    """Encode a named SSE event with JSON data."""
+    return f"event: {event}\ndata: {json.dumps(payload)}\n\n".encode("utf-8")
+
+
+@router.post("/meal/stream")
+async def scan_meal_stream(
+    image: UploadFile = File(...),
+    meal_type: Optional[str] = Form(default=None),
+    portion_size: Optional[str] = Form(default=None),
+    source_context: Optional[str] = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Phase 3: SSE streaming endpoint for meal scans.
+
+    Emits named events at natural pipeline boundaries so the client can
+    render progress incrementally instead of waiting for one blob. Events:
+      * ``quality``     — instant local probe (brightness/blur).
+      * ``cached``      — fired only when the result came from the LRU cache.
+      * ``components``  — extracted ingredients + roles once Gemini returns.
+      * ``final``       — full scored payload matching the blocking endpoint.
+      * ``degraded``    — AI failed after retry + fallback.
+      * ``not_food`` / ``beverage`` — lightweight short-circuit responses.
+
+    The body of each event mirrors the blocking endpoint so clients can
+    share their result parser.
+    """
+    image_bytes = await image.read()
+    await image.close()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
+
+    detected_mime = _validate_image_magic_bytes(image_bytes)
+    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Meal scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
+        )
+
+    async def stream():
+        # Fan-out: quality + upload + extraction all kick off in parallel.
+        cached = scan_cache.get_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION)
+        quality_task = asyncio.ensure_future(asyncio.to_thread(probe_image_quality, image_bytes))
+
+        storage_task: asyncio.Future | None = None
+        if not cached and is_supabase_storage_configured():
+            storage_task = asyncio.ensure_future(
+                _store_scan_image_safely(
+                    user_id=current_user.id,
+                    namespace="meal-scans",
+                    bucket=settings.supabase_storage_meal_scans_bucket,
+                    image_bytes=image_bytes,
+                    mime_type=detected_mime,
+                )
+            )
+
+        # Quality finishes almost instantly (~30ms) — emit it first so the
+        # client has something to render before Gemini responds.
+        quality = await quality_task
+        yield _sse_event("quality", quality)
+
+        if cached:
+            yield _sse_event("cached", {"prompt_version": MEAL_SCAN_PROMPT_VERSION})
+            result = cached
+        else:
+            try:
+                result = await analyze_meal_scan(
+                    db=db,
+                    user_id=current_user.id,
+                    image_bytes=image_bytes,
+                    mime_type=detected_mime,
+                    context={
+                        "meal_type": meal_type,
+                        "portion_size": portion_size,
+                        "source_context": source_context,
+                    },
+                )
+            except Exception:
+                logger.exception("LLM meal scan failed in stream, returning degraded result")
+                result = _build_degraded_meal_scan_result(
+                    meal_type=meal_type,
+                    portion_size=portion_size,
+                    source_context=source_context,
+                )
+            else:
+                if not result.get("is_degraded") and not result.get("is_not_food"):
+                    scan_cache.set_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION, result)
+
+        # Attenuate AI confidence by image quality (same logic as blocking endpoint).
+        if quality.get("confidence_multiplier", 1.0) < 1.0:
+            raw_conf = float(result.get("confidence") or 0)
+            result["confidence"] = round(raw_conf * quality["confidence_multiplier"], 3)
+            result["image_quality"] = quality
+            if quality.get("review_required"):
+                result["review_required"] = True
+
+        # Short-circuit events for the non-meal branches.
+        if result.get("is_not_food"):
+            yield _sse_event("not_food", {
+                "not_food_reason": result.get("not_food_reason", "No food detected in image"),
+            })
+            return
+
+        if result.get("is_beverage"):
+            fuel_result = compute_fuel_score(
+                source_type="scan",
+                components=result.get("components") or [],
+                source_context=result.get("source_context"),
+                meal_label=result.get("meal_label"),
+                nutrition=result.get("nutrition_estimate"),
+                confidence=result.get("confidence"),
+                source_model=result.get("source_model"),
+                is_beverage=True,
+            )
+            yield _sse_event("beverage", {
+                "meal_label": result.get("meal_label", "Beverage"),
+                "fuel_score": fuel_result.score,
+                "fuel_tier": fuel_result.tier,
+                "fuel_reasoning": fuel_result.reasoning,
+                "confidence": result.get("confidence"),
+            })
+            return
+
+        if result.get("is_degraded"):
+            yield _sse_event("degraded", {
+                "meal_label": result.get("meal_label", "Scanned meal"),
+                "degraded_reason": result.get("degraded_reason", "AI analysis temporarily unavailable."),
+                "retry_options": {
+                    "retry_same_photo": True,
+                    "describe_instead": True,
+                },
+            })
+            return
+
+        # Emit components as a progress checkpoint so the client can populate
+        # the skeleton card before the full Fuel scoring pass runs.
+        yield _sse_event("components", {
+            "meal_label": result.get("meal_label"),
+            "components": result.get("components") or [],
+            "confidence": result.get("confidence"),
+        })
+
+        # Fuel scoring + persistence.
+        scan_fuel_score = None
+        scan_fuel_reasoning: list[str] = []
+        try:
+            fuel_result = compute_fuel_score(
+                source_type="scan",
+                nutrition=result.get("nutrition_estimate"),
+                components=result.get("components") or [],
+                source_context=result.get("source_context"),
+                whole_food_status=result.get("whole_food_status"),
+                whole_food_flags=result.get("whole_food_flags"),
+                meal_label=result.get("meal_label"),
+                dishes=result.get("dishes"),
+                confidence=result.get("confidence"),
+                source_model=result.get("source_model"),
+            )
+            scan_fuel_score = fuel_result.score
+            scan_fuel_reasoning = fuel_result.reasoning
+        except Exception:
+            logger.warning("Fuel score computation failed in stream", exc_info=True)
+
+        storage_ref = None
+        if storage_task is not None:
+            try:
+                storage_ref = await storage_task
+            except Exception:
+                logger.exception("Stream storage task failed; continuing without stored image")
+
+        scan = ScannedMealLog(
+            user_id=current_user.id,
+            image_url=(storage_ref or {}).get("signed_url"),
+            image_bucket=(storage_ref or {}).get("bucket"),
+            image_path=(storage_ref or {}).get("path"),
+            image_mime_type=(storage_ref or {}).get("mime_type"),
+            meal_label=result["meal_label"],
+            scan_mode="meal",
+            meal_context=result["meal_context"],
+            meal_type=result["meal_type"],
+            portion_size=result["portion_size"],
+            source_context=result["source_context"],
+            estimated_ingredients=result["estimated_ingredients"],
+            normalized_ingredients=result["normalized_ingredients"],
+            nutrition_estimate={
+                **(result["nutrition_estimate"] or {}),
+                "whole_food_summary": result.get("whole_food_summary"),
+            },
+            whole_food_status=result["whole_food_status"],
+            whole_food_flags=result["whole_food_flags"],
+            suggested_swaps=result["suggested_swaps"],
+            upgrade_suggestions=result["upgrade_suggestions"],
+            recovery_plan=result["recovery_plan"],
+            mes_score=(result["mes"] or {}).get("score"),
+            mes_tier=(result["mes"] or {}).get("tier"),
+            mes_sub_scores=(result["mes"] or {}).get("sub_scores") or {},
+            pairing_opportunity=bool(result.get("pairing_opportunity")),
+            pairing_recommended_recipe_id=result.get("pairing_recommended_recipe_id"),
+            pairing_recommended_title=result.get("pairing_recommended_title"),
+            pairing_projected_mes=result.get("pairing_projected_mes"),
+            pairing_projected_delta=result.get("pairing_projected_delta"),
+            pairing_reasons=result.get("pairing_reasons") or [],
+            pairing_timing=result.get("pairing_timing"),
+            confidence=result["confidence"],
+            confidence_breakdown=result["confidence_breakdown"],
+            source_model=result["source_model"],
+            grounding_source=result.get("grounding_source"),
+            grounding_candidates=result.get("grounding_candidates") or [],
+            prompt_version=result.get("prompt_version"),
+            matched_recipe_id=result.get("matched_recipe_id"),
+            matched_recipe_confidence=result.get("matched_recipe_confidence"),
+            fuel_score=scan_fuel_score,
+        )
+        db.add(scan)
+        db.commit()
+        db.refresh(scan)
+        serialized = _serialize_scan(scan)
+        serialized["fuel_reasoning"] = scan_fuel_reasoning
+        serialized["image"] = await _storage_reference_async(
+            bucket=scan.image_bucket,
+            path=scan.image_path,
+            mime_type=scan.image_mime_type,
+            fallback_url=scan.image_url,
+        )
+        yield _sse_event("final", serialized)
+
+    return StreamingResponse(stream(), media_type="text/event-stream")
 
 
 @router.patch("/meal/{scan_id}")

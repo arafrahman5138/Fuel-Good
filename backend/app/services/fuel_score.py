@@ -28,6 +28,8 @@ from app.services.whole_food_scoring import (
     EMULSIFIERS_AND_GUMS,
     PROTEIN_ISOLATES,
 )
+from app.services.nova import NOVA_PENALTY, resolve_nova
+from app.services.dish_classifier import classify_dish
 
 
 # ── Tier definitions ─────────────────────────────────────────────────
@@ -83,6 +85,12 @@ def compute_fuel_score(
     whole_food_flags: list[dict[str, Any]] | None = None,
     ingredients_text: str | None = None,
     title: str | None = None,
+    meal_label: str | None = None,
+    dishes: list[dict[str, Any]] | None = None,
+    confidence: float | None = None,
+    source_model: str | None = None,
+    is_beverage: bool = False,
+    normalized_ingredients: list[str] | None = None,
 ) -> FuelScoreResult:
     """Compute a Fuel Score (0–100) for a meal.
 
@@ -94,6 +102,9 @@ def compute_fuel_score(
     - ``source_context``: "home" | "restaurant" | "packaged" — scan context hint
     - ``whole_food_status`` / ``whole_food_flags``: from existing scan pipeline
     - ``ingredients_text``: raw comma-separated ingredient text (for manual / food_db)
+    - ``meal_label`` / ``dishes``: used by the dish-classifier to inject implicit flags
+    - ``confidence`` / ``source_model``: gate the honest 100-ceiling
+    - ``is_beverage``: drinks score on a separate truncated scale
     """
     if source_type in ("recipe", "meal_plan", "cook_mode"):
         return _score_recipe(ingredients)
@@ -104,6 +115,12 @@ def compute_fuel_score(
             nutrition=nutrition,
             whole_food_status=whole_food_status,
             whole_food_flags=whole_food_flags,
+            meal_label=meal_label,
+            dishes=dishes,
+            confidence=confidence,
+            source_model=source_model,
+            is_beverage=is_beverage,
+            normalized_ingredients=normalized_ingredients,
         )
     else:
         return _score_manual(
@@ -135,127 +152,313 @@ def _score_scan(
     nutrition: dict[str, Any] | None,
     whole_food_status: str | None,
     whole_food_flags: list[dict[str, Any]] | None,
+    meal_label: str | None = None,
+    dishes: list[dict[str, Any]] | None = None,
+    confidence: float | None = None,
+    source_model: str | None = None,
+    is_beverage: bool = False,
+    normalized_ingredients: list[str] | None = None,
 ) -> FuelScoreResult:
     ctx = (source_context or "").lower()
-    # Starting point depends on where the meal came from
-    if ctx in ("home", "homemade"):
-        score = 85.0
-        reasoning = ["Homemade meals start with a high base score."]
-    elif ctx in ("restaurant", "takeout", "fast_food"):
-        score = 65.0
-        reasoning = ["Restaurant and takeout meals tend to use more processed ingredients."]
-    else:
-        score = 75.0
-        reasoning = ["Scored as a general meal."]
-
+    components = list(components or [])
+    whole_food_flags = list(whole_food_flags or [])
+    reasoning: list[str] = []
     flags: list[str] = []
-    components = components or []
 
-    # ── Component-level adjustments ──
+    # ── Beverage path: caffeinated / sweetened drinks on a separate scale ──
+    if is_beverage:
+        return _score_beverage(components=components, nutrition=nutrition)
+
+    # ── Components missing → synthesize from normalized_ingredients ──
+    #    Some live analyze_meal_scan outputs (especially from the fallback
+    #    Gemini model) leave ``components`` empty but do emit a flat
+    #    ``normalized_ingredients`` list. Build equal-weight synthetic
+    #    components so the scorer can still work — the NOVA dict will
+    #    infer roles from the ingredient names.
+    if not components and normalized_ingredients:
+        clean = [n for n in normalized_ingredients if isinstance(n, str) and n.strip()]
+        if clean:
+            share = 1.0 / len(clean)
+            components = [
+                {"name": name, "role": None, "mass_fraction": share, "confidence": 0.6}
+                for name in clean
+            ]
+
+    if not components:
+        return FuelScoreResult(
+            score=55.0,
+            tier="mixed",
+            tier_label="Mixed",
+            flags=[],
+            reasoning=["Not enough detail to score this meal accurately."],
+            source_path="scan",
+        )
+
+    # ── Dish-type implicit flag injection ──
+    dish_info = classify_dish(meal_label=meal_label, dishes=dishes)
+    nova_floor_by_role = dish_info["nova_floor_by_role"]
+    for implicit in dish_info["flags"]:
+        already = any(
+            (existing or {}).get("tag") == implicit.get("tag")
+            for existing in whole_food_flags
+        )
+        if not already:
+            whole_food_flags.append(implicit)
+
+    # ── Resolve NOVA per component ──
+    #    Components may already carry `nova` from Gemini — accept it as a hint
+    #    but let the dictionary and role-floor win when they're stricter.
+    resolved: list[dict[str, Any]] = []
     has_dessert_component = False
     for comp in components:
-        name = (comp.get("name") or "").lower()
-        role = (comp.get("role") or "").lower()
-
-        # Dessert/sweet components signal an indulgent meal
+        role = (comp.get("role") or "").lower() or None
+        # If the component arrived without a role, infer one from the NOVA
+        # dictionary (e.g. "peanut butter" → fat, "oats" → whole_carb).
+        lookup = resolve_nova(comp)
+        if role is None and lookup.get("role"):
+            role = str(lookup["role"]).lower()
         if role == "dessert":
             has_dessert_component = True
 
-        # Cooking method quality
-        has_negative = False
-        for method in NEGATIVE_METHODS:
-            if method in name:
-                score -= 8
-                flags.append(f"Fried/breaded: {name}")
-                reasoning.append(f"Fried or breaded preparation lowers ingredient quality.")
-                has_negative = True
-                break
-        if not has_negative:
-            for method in POSITIVE_METHODS:
-                if method in name:
-                    score += 3
-                    reasoning.append(f"Healthy cooking method like grilling or baking.")
-                    break
+        model_nova = _coerce_nova(comp.get("nova"))
+        dict_nova = lookup["nova"]
+        role_floor = nova_floor_by_role.get(role or "", 0)
+        final_nova = max(model_nova or 0, dict_nova, role_floor) if (model_nova or dict_nova) else (role_floor or dict_nova)
+        final_nova = max(1, min(4, final_nova or 1))
 
-        # Refined vs whole carb source
-        if role == "carb":
-            if any(hint in name for hint in REFINED_CARB_HINTS):
-                score -= 6
-                flags.append(f"Refined carb: {name}")
-                reasoning.append(f"Contains refined carbs like white bread or pasta.")
-            elif any(hint in name for hint in WHOLE_CARB_HINTS):
-                score += 4
-                reasoning.append(f"Includes whole-grain or complex carb sources.")
+        weight_raw = comp.get("mass_fraction")
+        try:
+            weight = float(weight_raw) if weight_raw not in (None, "") else None
+        except (TypeError, ValueError):
+            weight = None
 
-    # Dessert/sweet penalty — only for processed desserts
+        resolved.append({
+            **comp,
+            "role": role,  # reflect any inferred role back into the component
+            "_nova": final_nova,
+            "_tags": lookup["tags"],
+            "_weight": weight,
+            "_matched": lookup["matched"],
+        })
+
+    # ── Convert component tags into whole_food_flags ──
+    #    HIGH severity only when the offending ingredient dominates the plate
+    #    (>= 30% weight). Garnish-level presence gets MEDIUM.
+    _TAG_LABELS = {
+        "seed_oil_fried": "Fried in seed oil",
+        "cured_meat": "Cured / processed meat",
+        "added_sugar": "Added sugar",
+        "protein_isolate": "Protein isolate",
+        "refined_flour": "Refined flour",
+        "processed_cheese": "Processed cheese",
+        "seed_oil": "Seed oil",
+        "sodium_high": "High sodium / ultra-processed base",
+    }
+    # Refined flour on its own is a common feature of okay meals (white rice
+    # next to salmon and greens). It becomes a cheat-meal signal only when it
+    # combines with other red flags — which the tier-cap logic handles via
+    # flag count, so we keep refined_flour at MEDIUM severity.
+    _ALWAYS_HIGH = {"seed_oil_fried", "cured_meat", "protein_isolate"}
+    _WEIGHT_SCALED_HIGH = {"added_sugar", "processed_cheese"}
+    seen_flag_tags = {(f or {}).get("tag") for f in whole_food_flags if (f or {}).get("tag")}
+    for c in resolved:
+        for tag in c.get("_tags") or []:
+            if tag in seen_flag_tags:
+                continue
+            label = _TAG_LABELS.get(tag)
+            if not label:
+                continue
+            weight = c.get("_weight") or 0.0
+            if tag in _ALWAYS_HIGH:
+                severity = "high"
+            elif tag in _WEIGHT_SCALED_HIGH:
+                severity = "high" if weight >= 0.35 else "medium"
+            else:
+                severity = "medium"
+            seen_flag_tags.add(tag)
+            whole_food_flags.append({"label": label, "severity": severity, "tag": tag, "source": "nova_dict"})
+
+    # Equal-weight fallback when mass_fractions are missing/zero
+    declared_weights = [c["_weight"] for c in resolved if isinstance(c["_weight"], (int, float)) and c["_weight"] > 0]
+    if resolved and sum(declared_weights) >= 0.5:
+        # Normalize to sum to 1.0
+        total = sum(declared_weights) or 1.0
+        for c in resolved:
+            w = c["_weight"]
+            c["_weight"] = (float(w) / total) if isinstance(w, (int, float)) and w > 0 else 0.0
+        # Give any zero-weight components a token share
+        zero_count = sum(1 for c in resolved if c["_weight"] == 0.0)
+        if zero_count:
+            slack = 0.1
+            for c in resolved:
+                if c["_weight"] == 0.0:
+                    c["_weight"] = slack / zero_count
+            # Re-normalize
+            total = sum(c["_weight"] for c in resolved) or 1.0
+            for c in resolved:
+                c["_weight"] = c["_weight"] / total
+    elif resolved:
+        share = 1.0 / len(resolved)
+        for c in resolved:
+            c["_weight"] = share
+
+    # ── NOVA-weighted base score ──
+    score = 100.0
+    nova_penalty_total = 0.0
+    for c in resolved:
+        nova_penalty_total += c["_weight"] * NOVA_PENALTY.get(c["_nova"], 0.0)
+
+        # Cooking-method modifiers (per component, weighted)
+        name_lower = (c.get("name") or "").lower()
+        methods = [m.lower() for m in (c.get("methods") or []) if isinstance(m, str)]
+        fried = any(m in ("fried", "deep-fried", "deep fried") for m in methods) or any(m in name_lower for m in NEGATIVE_METHODS)
+        battered = any(m in ("battered", "breaded") for m in methods) or "battered" in name_lower or "breaded" in name_lower
+        if fried:
+            score -= 6 * c["_weight"]
+        elif battered:
+            score -= 4 * c["_weight"]
+        else:
+            healthy = any(m in POSITIVE_METHODS for m in methods) or any(m in name_lower for m in POSITIVE_METHODS)
+            if healthy:
+                score += 2 * c["_weight"]
+
+    score -= nova_penalty_total
+    if nova_penalty_total >= 15:
+        reasoning.append(f"Contains heavily processed components (NOVA-weighted penalty −{nova_penalty_total:.0f}).")
+    elif nova_penalty_total >= 5:
+        reasoning.append(f"Some processed components bring the score down (−{nova_penalty_total:.0f}).")
+
+    # ── Balance bonus: protein + veg + whole_carb trio ──
+    roles_present = {c.get("role") or "" for c in resolved}
+    if {"protein", "veg"}.issubset(roles_present) and ("whole_carb" in roles_present or "fruit" in roles_present):
+        score += 3
+        reasoning.append("Balanced plate (protein + vegetables + whole carb).")
+
+    # ── Dessert penalty — only when dessert is processed ──
     if has_dessert_component:
-        has_processing_flags = bool(whole_food_flags and any(
-            str((f or {}).get("severity", "")) in ("high", "medium") for f in whole_food_flags
-        ))
-        if has_processing_flags or whole_food_status == "fail":
-            score -= 15
-            score = min(score, 65)
-            flags.append("Dessert / sweet treat")
-            reasoning.append("This dessert contains processed ingredients.")
+        processed_dessert = any(c.get("role") == "dessert" and c["_nova"] >= 3 for c in resolved)
+        if processed_dessert:
+            score -= 10
+            flags.append("Processed dessert")
+            reasoning.append("Contains a processed sweet component.")
 
-    # ── Whole-food flag penalties (from scan pipeline) ──
-    if whole_food_flags:
-        high_flags = [f for f in whole_food_flags if str((f or {}).get("severity", "")) == "high"]
-        med_flags = [f for f in whole_food_flags if str((f or {}).get("severity", "")) == "medium"]
-        if high_flags:
-            penalty = min(20, len(high_flags) * 8)
-            score -= penalty
-            flags.extend(str(f.get("label", "Unknown flag")) for f in high_flags[:3])
-            reasoning.append(f"Contains {len(high_flags)} heavily processed ingredient{'s' if len(high_flags) > 1 else ''} like seed oils or artificial additives.")
-        if med_flags:
-            penalty = min(10, len(med_flags) * 3)
-            score -= penalty
-            reasoning.append(f"Some moderately processed ingredients detected (gums, emulsifiers, etc.).")
+    # ── Whole-food flag surfacing (for UI) ──
+    high_flags = [f for f in whole_food_flags if str((f or {}).get("severity", "")) == "high"]
+    med_flags = [f for f in whole_food_flags if str((f or {}).get("severity", "")) == "medium"]
+    if high_flags:
+        flags.extend(str(f.get("label", "Unknown flag")) for f in high_flags[:3])
+    if med_flags and len(flags) < 4:
+        flags.extend(str(f.get("label", "")) for f in med_flags[:2])
 
-    # ── Whole-food status shortcut ──
-    if whole_food_status == "fail":
-        score = min(score, 45)
-        reasoning.append("Too many processed ingredients — this isn't a whole-food meal.")
-    elif whole_food_status == "warn":
-        score = min(score, 70)
-        reasoning.append("Some processed ingredients bring this below whole-food standards.")
-
-    # ── Nutrition-based adjustments ──
+    # ── Nutrition-based adjustments (smaller now that NOVA does the heavy lifting) ──
     if nutrition:
         sugar = float(nutrition.get("sugar_g", 0) or nutrition.get("sugar", 0) or 0)
         fiber = float(nutrition.get("fiber_g", 0) or nutrition.get("fiber", 0) or 0)
         protein = float(nutrition.get("protein_g", 0) or nutrition.get("protein", 0) or 0)
 
         if sugar > 20:
-            score -= 8
+            score -= 6
             flags.append("High sugar")
-            reasoning.append(f"High sugar content ({sugar:.0f}g) — this spikes blood sugar and adds empty calories.")
         elif sugar > 12:
-            score -= 4
-            reasoning.append(f"Moderate sugar ({sugar:.0f}g) — more than ideal for a single meal.")
+            score -= 3
 
         if fiber >= 8:
-            score += 4
-            reasoning.append(f"Good fiber content ({fiber:.0f}g) helps slow digestion.")
+            score += 3
         elif fiber >= 4:
-            score += 2
-            reasoning.append(f"Decent fiber ({fiber:.0f}g) adds some digestive benefit.")
+            score += 1
 
         if protein >= 25:
-            score += 3
-            reasoning.append(f"Strong protein ({protein:.0f}g) supports satiety and recovery.")
+            score += 2
 
-    # ── Clean meal boost ──
-    # If a homemade meal has zero processing flags and passes whole-food
-    # checks, it deserves the same 100 as a curated recipe.
+    # ── Tier caps (severity + count + ultra-processed majority) ──
+    high_count = len(high_flags)
+    med_count = len(med_flags)
+    any_high_severity = bool(high_count) or whole_food_status == "fail"
+
+    weighted_nova = sum(c["_weight"] * c["_nova"] for c in resolved) if resolved else 0.0
+
+    # A plate is "whole-food dominant" when its weighted NOVA is mostly 1-2
+    # AND no NOVA ≥3 component exceeds a small mass share. Trace processed
+    # ingredients (a splash of soy sauce, a bit of honey, a teaspoon of
+    # sugar in a marinade) shouldn't tank an otherwise whole-food plate.
+    major_processed_share = sum(
+        (c["_weight"] or 0) for c in resolved if c["_nova"] >= 3
+    )
+    # "Whole-food-dominant" means the bulk of the plate is NOVA 1-2 and
+    # processed ingredients are trace or garnish-level. A salmon + rice +
+    # veg meal with a glaze of soy sauce qualifies; a cheeseburger + fries
+    # does not.
+    whole_food_dominant = weighted_nova < 1.8 and major_processed_share < 0.3
+
+    cap = 100
+    if high_count >= 2:
+        cap = min(cap, 30)
+    elif high_count == 1:
+        if whole_food_dominant:
+            # Trace HIGH-severity ingredient in a mostly-whole-food meal:
+            # surface the flag but don't tank the score.
+            cap = min(cap, 82)
+        elif med_count >= 2:
+            cap = min(cap, 35)
+        elif med_count == 1:
+            cap = min(cap, 50)
+        else:
+            cap = min(cap, 55)
+    elif med_count >= 4:
+        cap = min(cap, 50)
+    elif med_count == 3:
+        cap = min(cap, 60)
+    elif med_count == 2:
+        cap = min(cap, 70) if not whole_food_dominant else min(cap, 82)
+    elif med_count == 1:
+        cap = min(cap, 85)
+    if weighted_nova >= 3.25:
+        cap = min(cap, 28)
+    elif weighted_nova >= 2.9:
+        cap = min(cap, 40)
+    elif weighted_nova >= 2.7:
+        cap = min(cap, 48)
+    elif weighted_nova >= 2.4:
+        cap = min(cap, 60)
+    elif weighted_nova >= 2.1:
+        cap = min(cap, 75)
+
+    # NOVA-4 majority rule: any single component ≥50% at NOVA 4 (sugary cereal,
+    # instant noodles, processed meat on its own) caps severely — the dish is
+    # defined by an ultra-processed centerpiece.
+    if any((c["_weight"] or 0) >= 0.5 and c["_nova"] == 4 for c in resolved):
+        cap = min(cap, 25)
+
+    if whole_food_status == "fail":
+        cap = min(cap, 45)
+    elif whole_food_status == "warn":
+        cap = min(cap, 70)
+
+    if score > cap:
+        score = float(cap)
+        if any_high_severity:
+            reasoning.append("High-severity processing flags cap this below whole-food tier.")
+
+    # ── Honest 100-ceiling (Bug A fix) ──
+    #    Require every component NOVA 1, or weighted NOVA ≤ 1.3 with no NOVA ≥ 3.
+    all_nova_one = bool(resolved) and all(c["_nova"] == 1 for c in resolved)
+    near_all_nova_one = (
+        bool(resolved)
+        and weighted_nova <= 1.3
+        and all(c["_nova"] <= 2 for c in resolved)
+    )
+    conf_ok = (confidence is None) or (float(confidence) >= 0.75)
+    not_degraded = source_model != "degraded_fallback"
     if (
-        not flags
-        and whole_food_status in ("pass", None)
-        and ctx in ("home", "homemade")
+        (all_nova_one or near_all_nova_one)
+        and not any_high_severity
         and not has_dessert_component
+        and conf_ok
+        and not_degraded
+        and ctx in ("home", "homemade", "")
     ):
         score = max(score, 100.0)
-        reasoning.append("No processed ingredients detected — clean whole-food meal.")
+        reasoning.append("Every component is whole-food grade — honest 100.")
 
     score = max(0.0, min(100.0, round(score, 1)))
     tier, tier_label = _tier_for_score(score)
@@ -266,6 +469,65 @@ def _score_scan(
         tier_label=tier_label,
         flags=flags[:5],
         reasoning=reasoning[:6],
+        source_path="scan",
+    )
+
+
+def _coerce_nova(value: Any) -> int | None:
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return None
+    return n if n in (1, 2, 3, 4) else None
+
+
+def _score_beverage(
+    *,
+    components: list[dict[str, Any]],
+    nutrition: dict[str, Any] | None,
+) -> FuelScoreResult:
+    """Drinks score on a truncated scale: 0 for soda, ~60 for plain coffee/tea, ~70 for a plain latte.
+
+    Solid-food scoring pushes drinks toward 100 because they appear to have
+    "no processed components" — a latte should not outscore a salmon plate.
+    """
+    nutrition = nutrition or {}
+    sugar = float(nutrition.get("sugar_g", 0) or nutrition.get("sugar", 0) or 0)
+    name_lower = " ".join((c.get("name") or "").lower() for c in components or [])
+
+    # Base: plain coffee / tea / water = 60. Milk-based = 65. Juice/smoothie = 55.
+    if any(tok in name_lower for tok in ("espresso", "black coffee", "americano", "cold brew", "plain tea", "green tea")):
+        score = 62.0
+        reasoning = ["Plain coffee / tea — scored on the beverage scale."]
+    elif any(tok in name_lower for tok in ("latte", "cappuccino", "flat white", "macchiato")):
+        score = 65.0
+        reasoning = ["Milk-based espresso drink — scored on the beverage scale."]
+    elif any(tok in name_lower for tok in ("smoothie", "juice")):
+        score = 55.0
+        reasoning = ["Liquid fruit drinks lack whole-food satiety signals."]
+    elif any(tok in name_lower for tok in ("soda", "cola", "energy drink", "sports drink")):
+        score = 12.0
+        reasoning = ["Sweetened beverages are the most processed form of calories."]
+    else:
+        score = 55.0
+        reasoning = ["Beverage — scored on a truncated scale."]
+
+    if sugar > 20:
+        score -= 15
+    elif sugar > 10:
+        score -= 8
+    elif sugar > 5:
+        score -= 3
+
+    # Beverages never earn the solid-food 100 ceiling.
+    score = max(0.0, min(70.0, round(score, 1)))
+    tier, tier_label = _tier_for_score(score)
+    return FuelScoreResult(
+        score=score,
+        tier=tier,
+        tier_label=tier_label,
+        flags=[],
+        reasoning=reasoning[:3],
         source_path="scan",
     )
 

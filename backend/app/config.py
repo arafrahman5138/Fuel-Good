@@ -66,6 +66,13 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     chat_model: str = "gemini-2.5-flash"
     scan_model: str = "gemini-2.5-flash"
+    # Phase 2: fallback model + retry/timeout budget for resilience. When
+    # scan_model returns 5xx or times out, the pipeline retries once and then
+    # switches to this smaller / usually-less-overloaded model.
+    scan_fallback_model: str = "gemini-2.5-flash-lite"
+    scan_per_call_timeout_s: float = 8.0
+    scan_race_threshold_ms: int = 3000
+    scan_max_retries: int = 1
     embedding_provider: str = "gemini"
     embedding_model: str = "gemini-embedding-001"
     embedding_dimension: int = 768

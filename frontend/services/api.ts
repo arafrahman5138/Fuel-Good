@@ -557,6 +557,43 @@ export const wholeFoodScanApi = {
     if (data.source_context) form.append('source_context', data.source_context);
     return api.upload<any>('/scan/meal', form);
   },
+  /**
+   * Unified scan endpoint — server auto-classifies the image and returns a
+   * discriminated response:
+   *   { scan_type: "meal",     meal:     {...} }
+   *   { scan_type: "label",    label:    {...} }
+   *   { scan_type: "beverage", beverage: {...} }
+   *   { scan_type: "not_food", not_food: { reason } }
+   *   { scan_type: "degraded", degraded: {...} }
+   *
+   * Pass forceScanType to bypass the classifier (used by the "was this a
+   * label?" override on the result card).
+   */
+  analyzeSmart: (data: {
+    imageUri: string;
+    imageName?: string | null;
+    imageType?: string | null;
+    meal_type?: string;
+    portion_size?: string;
+    source_context?: string;
+    forceScanType?: 'meal' | 'label';
+    captureType?: string;
+  }) => {
+    const form = new FormData();
+    const imageType = wholeFoodScanApi.inferImageMimeType(data.imageUri, data.imageType);
+    const extension = imageType.split('/')[1] || 'jpg';
+    form.append('image', {
+      uri: data.imageUri,
+      name: data.imageName || `scan.${extension}`,
+      type: imageType,
+    } as any);
+    if (data.meal_type) form.append('meal_type', data.meal_type);
+    if (data.portion_size) form.append('portion_size', data.portion_size);
+    if (data.source_context) form.append('source_context', data.source_context);
+    if (data.forceScanType) form.append('force_scan_type', data.forceScanType);
+    if (data.captureType) form.append('capture_type', data.captureType);
+    return api.upload<any>('/scan/smart', form);
+  },
   updateMeal: (scanId: string, data: {
     meal_label: string;
     meal_type: string;

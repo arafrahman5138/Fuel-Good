@@ -331,6 +331,23 @@ export default function ScanScreen() {
   const [sourceContext, setSourceContext] = useState<SourceContext>('home');
   const [mealResult, setMealResult] = useState<MealResult | null>(null);
   const [notFoodReason, setNotFoodReason] = useState<string | null>(null);
+  const [degradedScan, setDegradedScan] = useState<{
+    reason: string;
+    lastImage: { uri: string; fileName?: string | null; mimeType?: string | null };
+  } | null>(null);
+  const [beverageResult, setBeverageResult] = useState<{
+    label: string;
+    fuelScore: number;
+    fuelTier: string;
+    reasoning: string[];
+  } | null>(null);
+  // Remember the last analyzed image so the deep-buried "was this a label?"
+  // override can re-submit with force_scan_type bypassed.
+  const [lastScanImage, setLastScanImage] = useState<{
+    uri: string;
+    fileName?: string | null;
+    mimeType?: string | null;
+  } | null>(null);
   const [mealLabelDraft, setMealLabelDraft] = useState('');
   const [ingredientDrafts, setIngredientDrafts] = useState<string[]>([]);
   const [addIngredientText, setAddIngredientText] = useState('');
@@ -661,6 +678,8 @@ export default function ScanScreen() {
     setMealImageMeta({});
     setMealResult(null);
     setNotFoodReason(null);
+    setDegradedScan(null);
+    setBeverageResult(null);
     setMealLabelDraft('');
     setIngredientDrafts([]);
     setAddIngredientText('');
@@ -789,33 +808,80 @@ export default function ScanScreen() {
     }
   };
 
-  const analyzeMealWithUri = async (image: { uri: string; fileName?: string | null; mimeType?: string | null }) => {
+  /**
+   * Unified analyze entry — the server auto-classifies the image as meal,
+   * label, beverage, not-food, or degraded. Based on the discriminated
+   * response we flip scanMode so the existing result renderers just work.
+   *
+   * `forceScanType` is used by the deep-buried "was this a label?" override
+   * on the meal result card to bypass the classifier.
+   */
+  const analyzeMealWithUri = async (
+    image: { uri: string; fileName?: string | null; mimeType?: string | null },
+    options?: { forceScanType?: 'meal' | 'label' },
+  ) => {
     setIsLoading(true);
     setScanStep('result');
     setNotFoodReason(null);
+    setDegradedScan(null);
+    setBeverageResult(null);
+    setLastScanImage(image);
     try {
-      const raw = await wholeFoodScanApi.analyzeMeal({
+      const raw = await wholeFoodScanApi.analyzeSmart({
         imageUri: image.uri,
         imageName: image.fileName,
         imageType: image.mimeType,
         meal_type: mealType,
         portion_size: portionSize,
         source_context: sourceContext,
+        forceScanType: options?.forceScanType,
       });
-      if (raw?.is_not_food) {
-        setNotFoodReason(raw.not_food_reason || "That doesn't look like food.");
+      const scanType = String(raw?.scan_type || '');
+
+      if (scanType === 'not_food') {
+        setNotFoodReason(raw?.not_food?.reason || "That doesn't look like food.");
         return;
       }
-      const next = normalizeMealResult(raw);
+      if (scanType === 'beverage') {
+        const bev = raw?.beverage || {};
+        setBeverageResult({
+          label: bev.meal_label || 'Beverage',
+          fuelScore: Number(bev.fuel_score || 0),
+          fuelTier: String(bev.fuel_tier || 'mixed'),
+          reasoning: Array.isArray(bev.fuel_reasoning) ? bev.fuel_reasoning : [],
+        });
+        return;
+      }
+      if (scanType === 'degraded') {
+        setDegradedScan({
+          reason: raw?.degraded?.degraded_reason || "We couldn't read this meal clearly. Try again or describe it.",
+          lastImage: image,
+        });
+        return;
+      }
+      if (scanType === 'label') {
+        // Server classified the image as a packaged food — flip the result
+        // screen into product mode and render the label result.
+        const labelPayload = raw?.label || {};
+        setScanMode('product');
+        setProductResult(labelPayload);
+        setProductName(String(labelPayload.product_name || ''));
+        setBrand(String(labelPayload.brand || ''));
+        setIngredientsText(String(labelPayload.ingredients_text || ''));
+        return;
+      }
+      // Default: meal
+      const mealPayload = raw?.meal || raw;
+      setScanMode('meal');
+      const next = normalizeMealResult(mealPayload);
       setMealResult(next);
       setMealLabelDraft(next.meal_label);
       setIngredientDrafts(next.estimated_ingredients || []);
-      // Sync meal type chip with the AI's classification (e.g. desserts → snack)
       if (next.meal_type && (['breakfast', 'lunch', 'dinner', 'snack'] as MealKind[]).includes(next.meal_type as MealKind)) {
         setMealType(next.meal_type as MealKind);
       }
     } catch (err: any) {
-      Alert.alert('Meal scan failed', err?.message || 'Unable to analyze that meal right now.');
+      Alert.alert('Scan failed', err?.message || 'Unable to analyze that photo right now.');
       setScanStep('capture');
     } finally {
       setIsLoading(false);
@@ -1261,87 +1327,39 @@ export default function ScanScreen() {
           </View>
         )}
 
-          {/* Bottom controls */}
+          {/* Bottom controls — unified scan (server decides meal vs label) */}
         <View style={styles.captureControls}>
-          {/* Mode switcher */}
-          <View style={styles.modeRail}>
-            {modes.map((item) => {
-              const active = scanMode === item.key;
-              return (
-                <TouchableOpacity
-                  key={item.key}
-                  testID={`scan-mode-${item.key}`}
-                  onPress={() => handleModeChange(item.key)}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.modePill,
-                    active && styles.modePillActive,
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={16} color={active ? '#16A34A' : 'rgba(255,255,255,0.7)'} />
-                  <Text style={[styles.modePillText, active && styles.modePillTextActive]}>{item.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          {/* Small "Scan barcode" link above the shutter — barcode stays an
+              explicit affordance since it's a different code path (not a
+              photo of a label). */}
+          <View style={{ alignItems: 'center', marginBottom: Spacing.sm }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: Spacing.md,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: 'rgba(0,0,0,0.35)',
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Scan barcode"
+            >
+              <Ionicons name="barcode-outline" size={14} color="rgba(255,255,255,0.85)" />
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '500' }}>
+                Scan barcode
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {scanMode === 'product' && (
-            <View style={styles.captureHintCard}>
-              <View style={[styles.captureHintHeader, { justifyContent: 'space-between' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name={shoppingMode ? 'cart-outline' : 'sparkles-outline'} size={16} color="#34D399" />
-                  <Text style={styles.captureHintTitle}>{shoppingMode ? 'Shopping mode' : 'Packaged food'}</Text>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setShoppingMode(!shoppingMode)}
-                  style={[styles.shoppingToggle, shoppingMode && styles.shoppingToggleActive]}
-                >
-                  <Ionicons name="cart-outline" size={12} color={shoppingMode ? '#FFFFFF' : 'rgba(255,255,255,0.6)'} />
-                  <Text style={[styles.shoppingToggleText, shoppingMode && styles.shoppingToggleTextActive]}>
-                    {shoppingMode ? 'ON' : 'Shop'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.captureHintCopy}>
-                {shoppingMode
-                  ? 'Scan products to compare. Get a quick buy/skip verdict and build your comparison list.'
-                  : 'Snap the ingredients label for an instant verdict, or use barcode if the package is easy to scan.'}
-              </Text>
-              <View style={styles.captureHintActions}>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }}
-                  style={styles.captureHintButton}
-                >
-                  <Ionicons name="barcode-outline" size={16} color="#FFFFFF" />
-                  <Text style={styles.captureHintButtonText}>Use barcode</Text>
-                </TouchableOpacity>
-                {shoppingMode && compareList.length > 0 && (
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => setShowCompareSheet(true)}
-                    style={[styles.captureHintButton, { backgroundColor: 'rgba(34,197,94,0.25)' }]}
-                  >
-                    <Ionicons name="git-compare-outline" size={16} color="#34D399" />
-                    <Text style={[styles.captureHintButtonText, { color: '#34D399' }]}>Compare ({compareList.length})</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-
-          {/* Shutter row */}
+          {/* Shutter row — library, capture, describe. No mode branching. */}
           <View style={styles.shutterRow}>
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => {
-                if (scanMode === 'meal') {
-                  pickMealImage('library');
-                } else {
-                  pickProductImage('library');
-                }
-              }}
+              onPress={() => pickMealImage('library')}
               style={styles.shutterSideBtn}
               accessibilityRole="button"
               accessibilityLabel="Choose photo from library"
@@ -1351,16 +1369,10 @@ export default function ScanScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => {
-                if (scanMode === 'meal') {
-                  captureMealPhoto();
-                } else {
-                  captureProductPhoto();
-                }
-              }}
+              onPress={captureMealPhoto}
               style={styles.shutterBtn}
               accessibilityRole="button"
-              accessibilityLabel={scanMode === 'meal' ? 'Capture meal photo' : 'Capture product photo'}
+              accessibilityLabel="Scan"
             >
               {isLoading ? (
                 <ActivityIndicator color="#16A34A" />
@@ -1368,29 +1380,16 @@ export default function ScanScreen() {
                 <View style={styles.shutterBtnInner} />
               )}
             </TouchableOpacity>
-            {scanMode === 'product' ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => { setBarcodeValue(''); setShowBarcodeSheet(true); }}
-                style={styles.shutterSideBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Enter barcode"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="barcode-outline" size={20} color="rgba(255,255,255,0.8)" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setShowDescribeMealSheet(true)}
-                style={styles.shutterSideBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Describe meal"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowDescribeMealSheet(true)}
+              style={styles.shutterSideBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Describe meal"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -1658,6 +1657,64 @@ export default function ScanScreen() {
               >
                 <Ionicons name="camera-outline" size={18} color="#FFF" />
                 <Text style={styles.notFoodRetakeBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      }
+      if (degradedScan) {
+        return (
+          <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl }}>
+            <View style={[styles.notFoodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.notFoodIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="cloud-offline-outline" size={36} color="#D97706" />
+              </View>
+              <Text style={[styles.notFoodTitle, { color: theme.text }]}>We couldn't read that meal</Text>
+              <Text style={[styles.notFoodBody, { color: theme.textSecondary }]}>
+                {degradedScan.reason}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  const lastImage = degradedScan.lastImage;
+                  setDegradedScan(null);
+                  void analyzeMealWithUri(lastImage);
+                }}
+                style={[styles.notFoodRetakeBtn, { backgroundColor: theme.primary }]}
+              >
+                <Ionicons name="refresh-outline" size={18} color="#FFF" />
+                <Text style={styles.notFoodRetakeBtnText}>Try again with same photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setDegradedScan(null); setScanStep('capture'); }}
+                style={[styles.notFoodRetakeBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, marginTop: Spacing.sm }]}
+              >
+                <Ionicons name="create-outline" size={18} color={theme.text} />
+                <Text style={[styles.notFoodRetakeBtnText, { color: theme.text }]}>Describe instead</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      }
+      if (beverageResult) {
+        return (
+          <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl }}>
+            <View style={[styles.notFoodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.notFoodIconWrap, { backgroundColor: '#E0F2FE' }]}>
+                <Ionicons name="cafe-outline" size={36} color="#0284C7" />
+              </View>
+              <Text style={[styles.notFoodTitle, { color: theme.text }]}>{beverageResult.label}</Text>
+              <Text style={[styles.notFoodBody, { color: theme.textSecondary }]}>
+                Fuel {Math.round(beverageResult.fuelScore)} · drinks score on a separate scale from whole-food meals.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setBeverageResult(null); setScanStep('capture'); }}
+                style={[styles.notFoodRetakeBtn, { backgroundColor: theme.primary }]}
+              >
+                <Ionicons name="camera-outline" size={18} color="#FFF" />
+                <Text style={styles.notFoodRetakeBtnText}>Scan another</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2056,6 +2113,27 @@ export default function ScanScreen() {
             )}
           </View>
         )}
+
+        {/* Deep-buried override: re-analyze the same photo as a packaged food
+            label. Only shown once we have a meal result and know which image
+            was used. The main card stays clean — this is a quiet correction. */}
+        {lastScanImage && (
+          <View style={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, alignItems: 'center' }}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                if (!lastScanImage) return;
+                setMealResult(null);
+                void analyzeMealWithUri(lastScanImage, { forceScanType: 'label' });
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, textDecorationLine: 'underline' }}>
+                Was this a packaged food label? Re-analyze
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     );
   };
@@ -2331,6 +2409,24 @@ export default function ScanScreen() {
               <Text style={[styles.footerButtonSecondaryText, { color: theme.textSecondary }]}>Scan another</Text>
             </TouchableOpacity>
           </View>
+          {/* Deep-buried override — re-analyze as a prepared meal. */}
+          {lastScanImage && (
+            <View style={{ paddingTop: Spacing.sm, alignItems: 'center' }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (!lastScanImage) return;
+                  setProductResult(null);
+                  void analyzeMealWithUri(lastScanImage, { forceScanType: 'meal' });
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, textDecorationLine: 'underline' }}>
+                  Was this a prepared meal? Re-analyze
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
     );

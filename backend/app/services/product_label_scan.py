@@ -8,6 +8,11 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.gemini_client import (
+    GeminiCallFailed,
+    call_gemini_with_fallback,
+    extract_text_from_response,
+)
 from app.services.whole_food_scoring import analyze_whole_food_product
 
 
@@ -28,6 +33,7 @@ Return strict JSON only with this exact shape:
     "carbs_g": 0,
     "sodium_mg": 0
   },
+  "product_nova": 1,
   "confidence": 0.0,
   "confidence_breakdown": {
     "ocr": 0.0,
@@ -44,6 +50,13 @@ Rules:
 - ingredients_text should be a plain comma-separated string when visible
 - do not invent brand or nutrition facts
 - confidence must reflect how readable the label is
+- product_nova: classify the overall product by processing level:
+    1 = unprocessed / minimally processed (plain yogurt, raw nuts, plain oats, frozen veg without additives)
+    2 = processed culinary ingredient (olive oil, butter, honey, maple syrup, vinegar, salt)
+    3 = processed food (canned beans, cheeses, cured meats, canned fish, plain bread, fermented vegetables)
+    4 = ultra-processed (most packaged snacks, kids cereals, protein/energy bars with isolates, sugary beverages, flavored yogurts, processed cheese, frozen entrees, commercial plant milks, health-washed bars with cane sugar + rice flour + seed oils + soy lecithin)
+  Err HIGHER when the product name is a health-marketed bar/bowl/shake and the label has even one of: seed oil, cane sugar, syrup, isolate, artificial sweetener, gum/emulsifier.
+- notes: call out any ultra-processed red flags you spotted — e.g. "contains soy protein isolate", "sweetened with sucralose", "includes canola oil", "first ingredient is sugar".
 """
 
 
@@ -89,13 +102,8 @@ async def _call_gemini_product_label_extractor(
     mime_type: str,
     capture_type: str,
 ) -> dict[str, Any]:
-    api_key = settings.google_api_key or settings.gemini_api_key
-    if not api_key:
-        raise RuntimeError("Gemini API key is not configured.")
-
     prompt = PRODUCT_LABEL_SCAN_PROMPT + "\n\nContext:\n" + json.dumps({"capture_type": capture_type}, indent=2)
     encoded = base64.b64encode(image_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
@@ -111,19 +119,12 @@ async def _call_gemini_product_label_extractor(
             "responseMimeType": "application/json",
         },
     }
-    async with httpx.AsyncClient(timeout=40.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-    candidates = data.get("candidates") or []
-    if not candidates:
-        raise RuntimeError("No product scan candidate returned.")
-    parts = (((candidates[0] or {}).get("content") or {}).get("parts") or [])
-    text_part = next((part.get("text") for part in parts if part.get("text")), None)
-    if not text_part:
-        raise RuntimeError("No product scan payload returned.")
-    return _extract_json(text_part)
+    result = await call_gemini_with_fallback(payload=payload)
+    text_part = extract_text_from_response(result.json)
+    parsed = _extract_json(text_part)
+    parsed.setdefault("_gemini_meta", {})
+    parsed["_gemini_meta"]["model"] = result.model
+    return parsed
 
 
 def _recoverable_score_override(result: dict[str, Any]) -> dict[str, Any]:

@@ -175,10 +175,24 @@ def _split_ingredients(ingredients_text: str | None) -> list[str]:
 
 
 def _find_matches(ingredients: list[str], terms: set[str]) -> list[str]:
+    """Find ingredient strings that match any term in the dictionary.
+
+    Phase 1 fix for audit bug D: label OCR garbles words ("Soy Wey Protein
+    Isolate" for "Soy Whey Protein Isolate"). We run exact word-boundary
+    matching first (fast, precise), then fall through to Levenshtein-based
+    fuzzy matching for short ingredient strings that look like OCR noise.
+    """
     compiled = {term: re.compile(r"\b" + re.escape(term) + r"\b") for term in terms}
     matches: list[str] = []
     for item in ingredients:
         if any(pattern.search(item) for pattern in compiled.values()):
+            matches.append(item)
+            continue
+        # Fuzzy match — only fire when the ingredient is non-trivially long
+        # so we don't false-positive on short words.
+        if len(item) < 5:
+            continue
+        if _fuzzy_match_any(item, terms):
             matches.append(item)
     seen: set[str] = set()
     deduped: list[str] = []
@@ -187,6 +201,65 @@ def _find_matches(ingredients: list[str], terms: set[str]) -> list[str]:
             deduped.append(item)
             seen.add(item)
     return deduped
+
+
+def _fuzzy_match_any(item: str, terms: set[str]) -> bool:
+    """Return True if ``item`` fuzzy-matches any term in ``terms``.
+
+    We split ``item`` into word windows and match each window against the
+    term set. This catches multi-word OCR garble like "soy wey protein
+    isolate" matching "soy protein isolate" even though the middle token
+    ("wey") doesn't appear in the reference.
+    """
+    words = re.findall(r"[a-z]+", item)
+    if not words:
+        return False
+    for term in terms:
+        term_len = len(term.split())
+        if term_len == 0:
+            continue
+        # Single-word terms: check each word directly at edit distance ≤ 1.
+        if term_len == 1:
+            for w in words:
+                if len(w) >= 4 and _edit_distance_le(w, term, 1):
+                    return True
+            continue
+        # Multi-word terms: slide a window of width term_len over the item.
+        for i in range(len(words) - term_len + 1):
+            window = " ".join(words[i:i + term_len])
+            # Allow edit distance proportional to term length (≤ 2 for 2-3 words)
+            allowed = 2 if term_len <= 3 else 3
+            if _edit_distance_le(window, term, allowed):
+                return True
+    return False
+
+
+def _edit_distance_le(a: str, b: str, limit: int) -> bool:
+    """Levenshtein distance bounded — returns True iff distance ≤ ``limit``.
+
+    Cheap early-exit implementation (O(len(a) * len(b))) — only run on short
+    strings and bounded by ``limit`` so it doesn't dominate the scan pipeline.
+    """
+    if abs(len(a) - len(b)) > limit:
+        return False
+    if a == b:
+        return True
+    if limit <= 0:
+        return False
+    # Standard DP
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        curr = [i] + [0] * len(b)
+        min_row = i
+        for j, cb in enumerate(b, 1):
+            cost = 0 if ca == cb else 1
+            curr[j] = min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost)
+            if curr[j] < min_row:
+                min_row = curr[j]
+        if min_row > limit:
+            return False
+        prev = curr
+    return prev[-1] <= limit
 
 
 def _get_float(payload: dict[str, Any], *keys: str) -> float:
@@ -360,7 +433,10 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     # don't suppress the bonus on their own because some legitimate
     # minimally-processed foods (e.g., a sparkling water with "natural flavor")
     # contain one ambiguous token.
-    has_major_red_flag = bool(is_bev or seed_oils or added_sugars or refined_flours)
+    # Phase 1 audit-bug fix: isolates and artificial additives also count as
+    # "major red flags" — a 4-ingredient protein bar with soy isolate + sucralose
+    # no longer gets the short-ingredient-list bonus.
+    has_major_red_flag = bool(is_bev or seed_oils or added_sugars or refined_flours or isolates or additives)
 
     if ingredient_count == 0:
         score -= 14
@@ -459,6 +535,26 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     # drink still shouldn't read "solid" tier).
     if is_bev:
         score = min(score, float(ULTRA_PROCESSED_BEVERAGE_CEILING))
+
+    # Phase 1 audit-bug fix (Bug E): tier floors driven by concerns + red flags.
+    # Previously a protein bar with isolates + sucralose could still land in
+    # the "whole_food" tier if its macros were balanced. A product the
+    # classifier flagged as concerning cannot honestly read "whole food".
+    #
+    # Cap severity scales with how many categories of red flags co-occur:
+    # a "healthwashed" single-red-flag product sits in mixed (≤60); a
+    # product combining serious flags with added sugar or refined flour
+    # is ultra-processed and capped in the 30s.
+    serious_flags = bool(isolates or additives or seed_oils)
+    also_sweetened = bool(added_sugars or refined_flours)
+    if serious_flags and also_sweetened:
+        score = min(score, 34.9)  # ultra_processed tier
+    elif serious_flags:
+        score = min(score, 59.9)  # below whole_food (85) and solid (70) tiers
+    elif added_sugars or refined_flours:
+        score = min(score, 69.9)  # below solid (70)
+    elif concerns:
+        score = min(score, 84.9)  # below whole_food (85)
 
     score = max(0.0, min(100.0, round(score, 1)))
 

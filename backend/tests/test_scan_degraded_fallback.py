@@ -85,15 +85,18 @@ class ScanDegradedFallbackTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
+        # Phase 2 audit fix (Bug H): degraded scans are NOT persisted as
+        # "Scanned meal" rows that pollute the Recent carousel. They return a
+        # lightweight payload with a retry CTA and the client re-invokes if
+        # the user wants to try again.
         self.assertTrue(body.get("is_degraded"))
         self.assertEqual(body.get("meal_type"), "dinner")
         self.assertEqual(body.get("portion_size"), "large")
         self.assertEqual(body.get("source_context"), "restaurant")
-        self.assertEqual(body.get("source_model"), "degraded_fallback")
-        self.assertEqual(body.get("whole_food_status"), "unknown")
-        self.assertEqual(body.get("estimated_ingredients"), [])
-        self.assertEqual(body.get("normalized_ingredients"), [])
-        self.assertIn("id", body)
+        self.assertIn("degraded_reason", body)
+        self.assertIn("retry_options", body)
+        # No ScannedMealLog row should have been created — the carousel stays honest.
+        self.assertNotIn("id", body)
 
     def test_meal_scan_continues_when_storage_upload_fails(self) -> None:
         user = self._create_user("storage@example.com")
