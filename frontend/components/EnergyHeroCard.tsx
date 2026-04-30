@@ -27,7 +27,10 @@ const TIER_CONFIGS = [
   { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const, lightGradient: ['#f0fdf4', '#dcfce7', '#f0fdf4'] as const },
   { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
   { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const, lightGradient: ['#fff7ed', '#fed7aa', '#fff7ed'] as const },
-  { min: 0, label: 'Flex Day', color: '#EF4444', darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const, lightGradient: ['#fef2f2', '#fecaca', '#fef2f2'] as const },
+  // Pass-5 F5: was red (#EF4444 + crimson gradient) — too punitive given "Flex Day"
+  // is a feature, not a failure. Softened to deep amber. Keeps the tier visually
+  // distinct from "Mixed" (#FB923C) but stops bleeding red across the home hero.
+  { min: 0, label: 'Flex Day', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
 ];
 
 const DARK_EMPTY_GRADIENT = ['#111118', '#1a1a24', '#111118'] as const;
@@ -63,14 +66,21 @@ function getContextTagline(
   if (weeklyTargetMet) {
     return { text: 'Weekly target crushed — you earned this', color: '#22C55E' };
   }
-  if (energyPrediction && ENERGY_TAGLINES[energyPrediction]) {
+  // Pass-5 F3 fix: only let the MES-derived energyPrediction override the tagline
+  // when the Fuel ring is also painting amber/red. Otherwise the badge reads
+  // "Elite Fuel" (green) while the tagline reads "Low fuel — eat something
+  // nourishing" (red), which contradicts itself on the same hero card.
+  // Fuel is the headline score; if it's Strong+ (>=75 → green ring), the tagline
+  // must stay positive and fall through to the Fuel-tier copy below.
+  if (energyPrediction && ENERGY_TAGLINES[energyPrediction] && fuelScore < 75) {
     return ENERGY_TAGLINES[energyPrediction];
   }
   if (fuelScore >= 90) return { text: "Elite day — you're in the zone", color: '#22C55E' };
   if (fuelScore >= 75) return { text: 'Strong fuel — your body is thanking you', color: '#4ADE80' };
   if (fuelScore >= 60) return { text: 'Decent day — one clean meal pushes you higher', color: '#F59E0B' };
   if (fuelScore >= 40) return { text: 'Mixed fuel — a whole-food meal turns this around', color: '#FB923C' };
-  return { text: 'Flex day — get back on track with something nourishing', color: '#EF4444' };
+  // Pass-5 F5: tier color softened from red to amber, tagline color follows.
+  return { text: 'Flex day — get back on track with something nourishing', color: '#F59E0B' };
 }
 
 // ── MES tier label ──────────────────────────────────────────────────────────

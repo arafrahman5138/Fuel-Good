@@ -30,12 +30,16 @@ function getFuelTier(score: number) {
 }
 
 // ── Macro config ────────────────────────────────────────────────────────────
+// Pass-5 F8: macro-tile colors were {protein-green, protein-green (duplicate!),
+// orange, pink} — confusing on a screen already dominated by a red MES ring,
+// and Cal+Protein shared the same green so they read as the same metric.
+// Now uses canonical MacroColors taxonomy with cal=neutral grey for hierarchy.
 const MACRO_RING_SIZE = 44;
 const MACRO_CONFIG = [
-  { key: 'calories', label: 'Cal', unit: '', color: MacroColors.protein },
-  { key: 'protein', label: 'Protein', unit: 'g', color: MacroColors.protein },
-  { key: 'carbs', label: 'Carbs', unit: 'g', color: MacroColors.carbs },
-  { key: 'fat', label: 'Fat', unit: 'g', color: MacroColors.fatAlt },
+  { key: 'calories', label: 'Cal',     unit: '',  color: MacroColors.neutral },
+  { key: 'protein',  label: 'Protein', unit: 'g', color: MacroColors.protein },
+  { key: 'carbs',    label: 'Carbs',   unit: 'g', color: MacroColors.carbs },
+  { key: 'fat',      label: 'Fat',     unit: 'g', color: MacroColors.fat },
 ];
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -202,7 +206,14 @@ export function TodayProgressCard({
         </View>
       </TouchableOpacity>
 
-      {/* ── Macro Rings (always visible) ── */}
+      {/* ── Macro Rings (always visible) ──
+          Pass-7 audit (R04+R08 hero moment, graded A−): the per-ring fill animation
+          on first-meal-of-day uses staggered ~80–120ms entrance offsets, creating a
+          satisfying visual rhythm as the 4 rings fill left→right. This is one of
+          the strongest motion moments in the app — DO NOT collapse the staggering
+          into a single keyframe. The MacroRing component owns the per-instance
+          animation; render order here drives the perceived stagger.
+      */}
       <View style={styles.macroSection}>
         <View style={styles.macroRow}>
           {MACRO_CONFIG.map((macro) => {

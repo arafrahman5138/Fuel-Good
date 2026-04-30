@@ -96,6 +96,10 @@ export const MacroColors = {
   fat:     '#8B5CF6',
   fatAlt:  '#EC4899',   // pink variant used in TodayProgressCard
   fiber:   '#3B82F6',
+  // Pass-5 F7: neutral slate for "informational" data points like calories that
+  // shouldn't compete with macros for visual weight. Cal pills should always
+  // use this so cal+protein on the same row don't both render brand-green.
+  neutral: '#94A3B8',
 } as const;
 
 /** Semantic score tier colors. */
@@ -103,6 +107,27 @@ export const ScoreColors = {
   good:    '#22C55E',
   warning: '#F59E0B',
   danger:  '#EF4444',
+} as const;
+
+/**
+ * Pass-5 F12: Cook-mode ingredient-category palette.
+ *
+ * NOT a synonym for MacroColors — these are food-group categories (protein
+ * sources, produce, dairy, etc.) shown as section headers inside Cook Mode's
+ * ingredient checklist. The palette is intentionally distinct from MacroColors
+ * so a "Protein category" header doesn't conflict with the green "Protein
+ * macro ring" rendered elsewhere on the same screen. Documented here so the
+ * cook screen can reference these instead of hardcoding hex values inline.
+ */
+export const IngredientCategoryColors = {
+  protein:   '#EF4444', // red — cooking-context warmth, distinct from macro green
+  produce:   '#22C55E', // green — fresh / leafy
+  dairy:     '#3B82F6', // blue — coolant / liquid
+  grains:    '#F59E0B', // amber — toasted / golden
+  fats:      '#A855F7', // purple — rich / fatty
+  spices:    '#F97316', // orange — heat
+  sweetener: '#EC4899', // pink — sweet
+  other:     '#6B7280', // grey — default
 } as const;
 
 /* ── Responsive scaling (computed once at init for the device) ────────── */

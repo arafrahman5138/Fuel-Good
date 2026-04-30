@@ -8,9 +8,15 @@
 #
 # IMPORTANT – migration behaviour:
 #   buildCommand  installs deps only (NO alembic)
-#   preDeployCommand runs alembic upgrade head against the live DB
+#   preDeployCommand runs alembic upgrade heads against the live DB
 # This ensures migrations always execute against the real DATABASE_URL
 # rather than the ephemeral build environment.
+#
+# 2026-04-30: switched `head` → `heads` (plural) to match backend/start.sh and
+# tolerate prod's alembic_version table having multiple recorded heads from past
+# branch divergence (the singular form failed with "Multiple head revisions are
+# present"). The mainline migration tree is single-head locally; `heads`
+# is a no-op when only one head exists and idempotent when several do.
 
 services:
   - type: web
@@ -20,7 +26,7 @@ services:
     rootDir: backend
     plan: starter
     buildCommand: pip install -r requirements.txt
-    preDeployCommand: "PYTHONPATH=. alembic upgrade head"
+    preDeployCommand: "PYTHONPATH=. alembic upgrade heads"
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: false

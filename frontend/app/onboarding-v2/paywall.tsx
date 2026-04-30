@@ -207,7 +207,9 @@ export default function PaywallScreen() {
   };
 
   const handlePurchase = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Pass-6 haptics audit: was Medium. Per Apple HIG, financial commitments warrant
+    // Heavy impact — purchase is a high-stakes action and should feel weighty.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsLoading(true);
     analytics.trackEvent('onboarding_trial_started', { plan: selectedPlan, dismiss_count: paywallDismissCount });
 

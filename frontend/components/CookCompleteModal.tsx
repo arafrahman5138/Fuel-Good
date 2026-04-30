@@ -48,6 +48,13 @@ export function CookCompleteModal({
   // Checkmark scale reveal
   const { animatedStyle: checkStyle } = useScaleReveal(visible, 0.4, { speed: 12, bounciness: 14 });
 
+  // Pass-6 P0 #2: XP row scale-bounce. Pass 6 graded the celebration B−, calling out
+  // "no XP bounce" as one of the missing animations. Per the recommendation: scale
+  // 0 → 1.2 → 1.0 over ~600ms with spring overshoot. Delayed ~280ms so it fires
+  // AFTER the card slide-up and checkmark draw — sequenced reveal feels intentional.
+  const { animatedStyle: xpStyle } = useScaleReveal(visible, 0, { speed: 14, bounciness: 16 });
+  const xpDelayedOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (visible) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -57,10 +64,19 @@ export function CookCompleteModal({
         friction: 8,
         useNativeDriver: true,
       }).start();
+      // XP fade-in with delay so it lands after the checkmark settles.
+      xpDelayedOpacity.setValue(0);
+      Animated.timing(xpDelayedOpacity, {
+        toValue: 1,
+        duration: 260,
+        delay: 280,
+        useNativeDriver: true,
+      }).start();
     } else {
       slideAnim.setValue(320);
+      xpDelayedOpacity.setValue(0);
     }
-  }, [visible, slideAnim]);
+  }, [visible, slideAnim, xpDelayedOpacity]);
 
   const totalMin = (prepMin ?? 0) + (cookMin ?? 0);
 
@@ -102,11 +118,18 @@ export function CookCompleteModal({
             )}
           </View>
 
-          {/* XP earned note */}
-          <View style={[styles.xpRow, { backgroundColor: theme.primaryMuted }]}>
+          {/* XP earned note — Pass-6 P0 #2: scale-bounce + delayed fade-in so it
+              lands as the third beat after card slide-up and checkmark draw. */}
+          <Animated.View
+            style={[
+              styles.xpRow,
+              { backgroundColor: theme.primaryMuted, opacity: xpDelayedOpacity },
+              xpStyle,
+            ]}
+          >
             <Ionicons name="flash" size={14} color={theme.primary} />
             <Text style={[styles.xpText, { color: theme.primary }]}>+50 XP earned</Text>
-          </View>
+          </Animated.View>
 
           {/* Action buttons */}
           <View style={styles.actions}>
@@ -116,8 +139,10 @@ export function CookCompleteModal({
               fullWidth
               onPress={onLogAndFinish}
             />
+            {/* Pass-5 F15: was "Exit Without Logging" — slightly awkward verb phrasing
+                for the most-likely-skipped path. Shortened to "Skip logging". */}
             <Button
-              title="Exit Without Logging"
+              title="Skip logging"
               variant="ghost"
               fullWidth
               onPress={onExitWithoutLogging}

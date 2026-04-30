@@ -38,10 +38,13 @@ const TIER_CONFIGS = [
     darkGradient: ['#160902', '#3d1408', '#9a3412'] as const,
   },
   {
+    // Pass-5 F5: was red (#EF4444) — too punitive for a tier label that includes
+    // legitimate "flex day" usage. Softened to deep amber so red is reserved for
+    // actual penalty states (e.g. macro overshoot indicators in Today's Fuel).
     min: 0,
     label: 'Flex Day',
-    color: '#EF4444',
-    darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const,
+    color: '#F59E0B',
+    darkGradient: ['#160d02', '#3d2108', '#78350f'] as const,
   },
 ];
 

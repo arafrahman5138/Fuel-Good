@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -443,6 +444,10 @@ export default function HomeScreen() {
   const handleLogPlannedMeal = async (meal: any) => {
     const recipe = meal.recipe_data;
     if (!meal.id) return;
+    // Pass-6 Gap G1: meal-log gesture had no haptic feedback at all despite being
+    // the daily hero action. Light impact on tap confirms the press; Success on
+    // completion celebrates the log (fired below after the API succeeds).
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoggingMealId(meal.id);
     try {
       let preferredPairing: any = null;
@@ -486,7 +491,11 @@ export default function HomeScreen() {
         });
       }
 
-      // Immediate feedback
+      // Immediate feedback — Pass-6 Gap G1 paired with the Light tap above.
+      // Success notification on confirmed log matches the same pattern Scan tab
+      // already uses (scan/index.tsx:418, 510, 535, 574) — meaningful meal action
+      // celebrates with Success haptic.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setLoggedMealIds((prev) => new Set(prev).add(meal.id));
       // Refresh nutrition + fuel data
       loadDailyNutrition(selectedDayKey);

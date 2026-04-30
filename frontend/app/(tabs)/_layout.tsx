@@ -31,6 +31,12 @@ export default function TabLayout() {
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        // Pass-6 P0 #1 (worst single audit finding): tab transitions had ZERO motion.
+        // 'shift' enables React Navigation 7's horizontal slide between tabs (~250ms,
+        // outgoing slides toward inactive direction, incoming slides in from active).
+        // RN 7.x BottomTabs respects iOS Reduce Motion automatically — no extra guard
+        // needed. If 'shift' feels too aggressive, swap to 'fade' for a subtler cue.
+        animation: 'shift',
         // Keep these for the custom bar to read
         tabBarActiveTintColor: theme.tabBar.active,
         tabBarInactiveTintColor: theme.tabBar.inactive,

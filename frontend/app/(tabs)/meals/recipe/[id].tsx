@@ -813,9 +813,11 @@ export default function RecipeDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Image */}
+        {/* Hero Image — Pass-5 F14: added a hairline bottom border so the photo
+            visually separates from the white card content below in light mode.
+            Was looking like a soft white-on-white fade on light backgrounds. */}
         {activeRecipe.image_url ? (
-          <View style={{ marginBottom: Spacing.md }}>
+          <View style={{ marginBottom: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }}>
             <MealImage
               imageUrl={activeRecipe.image_url}
               title={activeRecipe.title}

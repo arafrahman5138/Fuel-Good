@@ -87,7 +87,9 @@ export default function LiveScanScreen() {
 
   const showResult = () => {
     setPhase('result');
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    // Pass-6 haptics audit: was Warning, which implies caution/risk. The demo scan
+    // shows a successful scan completion — Success is the correct semantic.
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setScanCompleted(true);
     analytics.trackEvent('onboarding_scan_completed');
 

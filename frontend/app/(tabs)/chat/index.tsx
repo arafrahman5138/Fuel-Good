@@ -33,7 +33,7 @@ import { useChatStore } from '../../../stores/chatStore';
 import { useSavedRecipesStore } from '../../../stores/savedRecipesStore';
 import { useGamificationStore } from '../../../stores/gamificationStore';
 import { chatApi, type ChatContext } from '../../../services/api';
-import { BorderRadius, FontSize, Layout, Spacing } from '../../../constants/Colors';
+import { BorderRadius, FontSize, Layout, MacroColors, Spacing } from '../../../constants/Colors';
 import { ChatHistoryDrawer } from '../../../components/ChatHistoryDrawer';
 import { Shadows } from '../../../constants/Shadows';
 import { useThemeStore } from '../../../stores/themeStore';
@@ -222,7 +222,28 @@ export default function ChatScreen() {
     return Platform.OS === 'web';
   };
 
-  const addAssistantPayload = (payload: any) => {
+  // Detects backend responses that came back empty or visibly truncated mid-sentence.
+  // Pass-5 audit (F2) found that the freeform Healthify path can return:
+  //   - empty content with no recipe (transient LLM/timeout error), OR
+  //   - 100-200 chars of prose that ends mid-word/clause with no terminator (max_tokens hit).
+  // We promote these to the same retry UX as network errors — better than displaying garbage.
+  const isUnusableAssistantResponse = (
+    message: string,
+    hasRecipe: boolean,
+  ): boolean => {
+    const trimmed = (message || '').trim();
+    // No recipe and no message at all → definitely unusable.
+    if (!hasRecipe && trimmed.length === 0) return true;
+    // No recipe, has prose, but the prose ends without a sentence-terminating punctuation
+    // mark and is shorter than ~30 words → almost certainly truncated.
+    if (!hasRecipe && trimmed.length > 0 && trimmed.length < 200) {
+      const endsClean = /[.!?…)\]"']\s*$/.test(trimmed);
+      if (!endsClean) return true;
+    }
+    return false;
+  };
+
+  const addAssistantPayload = (payload: any): { ok: boolean } => {
     const rawRecipe = payload?.healthified_recipe || payload?.recipe;
     if (!rawRecipe) {
       console.warn('[Healthify] No recipe in payload:', JSON.stringify(payload)?.slice(0, 300));
@@ -236,6 +257,13 @@ export default function ChatScreen() {
     if (!normalized.recipe) {
       console.warn('[Healthify] normalizeAssistantPayload returned no recipe. Content preview:', (payload?.message?.content || payload?.message || '').slice(0, 200));
     }
+    // Pass-5 F2: short-circuit on empty/truncated responses so the user gets a
+    // retry CTA instead of a mid-sentence fragment. Caller should treat ok=false
+    // the same as a thrown error.
+    if (isUnusableAssistantResponse(normalized.message, Boolean(normalized.recipe))) {
+      console.warn('[Healthify] Detected unusable response (empty or truncated). Surfacing retry UI.');
+      return { ok: false };
+    }
     addMessage({
       role: 'assistant',
       content: normalized.message,
@@ -244,6 +272,7 @@ export default function ChatScreen() {
       nutrition: normalized.nutrition,
       mes_score: payload?.mes_score || null,
     });
+    return { ok: true };
   };
 
   const submitChatMessage = async (userMessage: string, chatContext?: ChatContext) => {
@@ -276,7 +305,10 @@ export default function ChatScreen() {
                   }
                 }
               }
-              addAssistantPayload(done.payload);
+              const result = addAssistantPayload(done.payload);
+              if (!result.ok) {
+                throw new Error('healthify_response_unusable');
+              }
             }
           },
           ctx,
@@ -284,8 +316,13 @@ export default function ChatScreen() {
       } else {
         const response = await chatApi.healthify(userMessage, sessionId || undefined, ctx);
         if (response.session_id) setSessionId(response.session_id);
-        addAssistantPayload(response);
+        const result = addAssistantPayload(response);
+        if (!result.ok) {
+          throw new Error('healthify_response_unusable');
+        }
       }
+      // Pass-5 F2: only award XP after a confirmed-good response. Previously this fired
+      // even when the response was empty/truncated, granting XP for nothing.
       awardXP(25, 'healthify').then((res) => {
         if (res.xp_gained > 0) showQuestToast(`+${res.xp_gained} XP · Healthify`);
       }).catch(() => {});
@@ -294,7 +331,9 @@ export default function ChatScreen() {
       const friendlyMessage =
         /quota|rate.?limit|resourceexhausted|429/i.test(rawMessage)
           ? "The AI provider quota is currently exceeded. Please try again later."
-          : "Something went wrong. Tap to try again.";
+          : /healthify_response_unusable/i.test(rawMessage)
+            ? "Response was interrupted. Tap to try again."
+            : "Something went wrong. Tap to try again.";
       addMessage({ role: 'assistant', content: friendlyMessage, isError: true } as any);
     } finally {
       setLoading(false);
@@ -1228,9 +1267,19 @@ export default function ChatScreen() {
                         {(() => {
                           const calDiff = Number(payload.nutrition.healthified_estimate.calories || 0) - Number(payload.nutrition.original_estimate.calories || 0);
                           const protDiff = Number(payload.nutrition.healthified_estimate.protein || 0) - Number(payload.nutrition.original_estimate.protein || 0);
+                          // Pass-5 F7: split cal/protein colors per MacroColors.
+                          // Cal = neutral slate (informational), Protein = brand green (key macro).
+                          // Previously both were tertiary grey, which read as "both green" against
+                          // the dark card chrome and didn't differentiate the two metrics.
                           return (
-                            <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>
-                              {calDiff <= 0 ? calDiff : `+${calDiff}`} cal, {protDiff >= 0 ? `+${protDiff}` : protDiff}g protein
+                            <Text style={{ fontSize: FontSize.xs }}>
+                              <Text style={{ color: MacroColors.neutral }}>
+                                {calDiff <= 0 ? calDiff : `+${calDiff}`} cal
+                              </Text>
+                              <Text style={{ color: theme.textTertiary }}>, </Text>
+                              <Text style={{ color: MacroColors.protein }}>
+                                {protDiff >= 0 ? `+${protDiff}` : protDiff}g protein
+                              </Text>
                             </Text>
                           );
                         })()}

@@ -79,6 +79,10 @@ function generateInsights(
   const carbHeadroom = remaining?.carb_headroom_g ?? remaining?.sugar_headroom_g ?? 0;
 
   // ─── Tier-specific headline ───
+  // Pass-5 F10: every locally-generated insight now carries an `action` so the
+  // "Ask Healthify" CTA renders consistently across all 4 cards. Audit flagged
+  // CTA appearing on cards 1+2 but not 3+4 — caused by missing `action` on the
+  // protein/fiber/carb nudges below.
   if (tier === 'optimal') {
     insights.push({
       icon: 'trophy',
@@ -86,6 +90,7 @@ function generateInsights(
       body: `You're at ${Math.round(displayScore)} — keep this momentum through your next meal.`,
       accent: '#34C759',
       accentBg: 'rgba(52, 199, 89, 0.12)',
+      action: { type: 'chat', query: 'How can I keep my optimal fuel through my next meal?' },
     });
   } else if (tier === 'good' || tier === 'stable') {
     insights.push({
@@ -94,6 +99,7 @@ function generateInsights(
       body: `Score is ${Math.round(displayScore)}. A protein-rich meal could push you into optimal territory.`,
       accent: '#4A90D9',
       accentBg: 'rgba(74, 144, 217, 0.12)',
+      action: { type: 'chat', query: 'Suggest a protein-rich meal that pushes my score higher' },
     });
   } else if (tier === 'moderate' || tier === 'shaky') {
     insights.push({
@@ -102,6 +108,7 @@ function generateInsights(
       body: `Your MES is ${Math.round(displayScore)}. Focus on protein and fiber in your next meal.`,
       accent: '#FF9500',
       accentBg: 'rgba(255, 149, 0, 0.12)',
+      action: { type: 'chat', query: 'Suggest a high-protein high-fiber meal' },
     });
   } else {
     insights.push({
@@ -112,6 +119,7 @@ function generateInsights(
         : `Score is ${Math.round(displayScore)}. A balanced meal with protein and fiber can recover it fast.`,
       accent: '#FF4444',
       accentBg: 'rgba(255, 68, 68, 0.12)',
+      action: { type: 'chat', query: 'Suggest a clean balanced recovery meal' },
     });
   }
 
@@ -125,6 +133,7 @@ function generateInsights(
         : 'A moderate portion of lean protein will close this gap.',
       accent: '#22C55E',
       accentBg: 'rgba(34, 197, 94, 0.10)',
+      action: { type: 'chat', query: `Suggest a meal with about ${Math.round(proteinLeft)}g protein` },
     });
   }
 
@@ -136,6 +145,7 @@ function generateInsights(
       body: 'Add veggies, legumes, or whole grains to hit your fiber floor.',
       accent: '#10B981',
       accentBg: 'rgba(16, 185, 129, 0.10)',
+      action: { type: 'chat', query: 'Suggest a high-fiber side or snack' },
     });
   }
 
@@ -147,6 +157,7 @@ function generateInsights(
       body: 'You\'re close to your ceiling. Opt for low-carb sides in your next meal.',
       accent: '#F59E0B',
       accentBg: 'rgba(245, 158, 11, 0.10)',
+      action: { type: 'chat', query: 'Suggest a low-carb side or main' },
     });
   }
 
@@ -274,7 +285,11 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
               <View
                 style={[
                   styles.insightRow,
-                  !isLast && { borderBottomWidth: 1, borderBottomColor: theme.surfaceHighlight },
+                  // Pass-5 F9: bumped divider from surfaceHighlight (#24242E in dark)
+                  // to theme.border (#2A2A35) so insight cards visibly separate
+                  // instead of running together. Audit flagged "cards run into each
+                  // other with only icon distinction".
+                  !isLast && { borderBottomWidth: 1, borderBottomColor: theme.border },
                 ]}
               >
                 {/* Colored accent bar */}

@@ -29,7 +29,7 @@ import { CookCompleteModal } from '../../components/CookCompleteModal';
 import { useTheme } from '../../hooks/useTheme';
 import { nutritionApi, recipeApi, gameApi } from '../../services/api';
 import { trackBehaviorEvent } from '../../services/notifications';
-import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
+import { BorderRadius, FontSize, IngredientCategoryColors, Spacing } from '../../constants/Colors';
 import { formatIngredientDisplayLine } from '../../utils/ingredientFormat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -98,15 +98,19 @@ type ActiveTimer = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Pass-5 F12: colors moved to constants/Colors.ts as `IngredientCategoryColors`
+// so the palette is documented as an intentional separate taxonomy from
+// MacroColors. See note there for why protein-category red is correct here even
+// though protein-macro is green elsewhere.
 const INGREDIENT_CATEGORIES: Record<string, { label: string; icon: string; color: string; order: number }> = {
-  protein:   { label: 'Protein',            icon: 'fish-outline',       color: '#EF4444', order: 0 },
-  produce:   { label: 'Produce',            icon: 'leaf-outline',       color: '#22C55E', order: 1 },
-  dairy:     { label: 'Dairy',              icon: 'water-outline',      color: '#3B82F6', order: 2 },
-  grains:    { label: 'Grains',             icon: 'nutrition-outline',  color: '#F59E0B', order: 3 },
-  fats:      { label: 'Fats & Oils',        icon: 'flask-outline',      color: '#A855F7', order: 4 },
-  spices:    { label: 'Spices & Seasonings',icon: 'flame-outline',      color: '#F97316', order: 5 },
-  sweetener: { label: 'Sweeteners',         icon: 'cafe-outline',       color: '#EC4899', order: 6 },
-  other:     { label: 'Other',              icon: 'cube-outline',       color: '#6B7280', order: 7 },
+  protein:   { label: 'Protein',            icon: 'fish-outline',       color: IngredientCategoryColors.protein,   order: 0 },
+  produce:   { label: 'Produce',            icon: 'leaf-outline',       color: IngredientCategoryColors.produce,   order: 1 },
+  dairy:     { label: 'Dairy',              icon: 'water-outline',      color: IngredientCategoryColors.dairy,     order: 2 },
+  grains:    { label: 'Grains',             icon: 'nutrition-outline',  color: IngredientCategoryColors.grains,    order: 3 },
+  fats:      { label: 'Fats & Oils',        icon: 'flask-outline',      color: IngredientCategoryColors.fats,      order: 4 },
+  spices:    { label: 'Spices & Seasonings',icon: 'flame-outline',      color: IngredientCategoryColors.spices,    order: 5 },
+  sweetener: { label: 'Sweeteners',         icon: 'cafe-outline',       color: IngredientCategoryColors.sweetener, order: 6 },
+  other:     { label: 'Other',              icon: 'cube-outline',       color: IngredientCategoryColors.other,     order: 7 },
 };
 
 const STICKY_NAV_HEIGHT = 72;
@@ -457,7 +461,11 @@ export default function CookModeScreen() {
   const onStepChange = useCallback((newStep: number) => {
     const isAdvancing = newStep > currentStep;
     if (isAdvancing) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Pass-6 haptics audit: was Notification.Success, which implied intermediate steps
+      // were celebratory. That conflicted with onboarding-v2/generating-plan.tsx:72 which
+      // uses Light for the same per-step gesture. Standardized to Light for intermediate
+      // step advances; Success is reserved for the final "Done" button (see CTA below).
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (!isLabelStep(currentStepText)) {
         setCompletedSteps(prev => new Set(prev).add(currentStep));
       }
@@ -696,14 +704,17 @@ export default function CookModeScreen() {
               </View>
             )}
 
-            {/* AI Help button */}
+            {/* AI Help button — Pass-5 F6: was orange-on-tan which failed WCAG AA in
+                light mode (~3.5:1 contrast). Switched to brand-green (theme.success
+                + primaryMuted) since Cook is a positive/celebration surface anyway,
+                not a warning. Passes AA in both light and dark modes. */}
             <TouchableOpacity
               onPress={() => askAssistant()}
-              style={[styles.helpButton, { backgroundColor: theme.accentMuted }]}
+              style={[styles.helpButton, { backgroundColor: theme.primaryMuted }]}
               activeOpacity={0.7}
             >
-              <Ionicons name="bulb" size={18} color={theme.accent} />
-              <Text style={[styles.helpButtonText, { color: theme.accent }]}>
+              <Ionicons name="bulb" size={18} color={theme.success} />
+              <Text style={[styles.helpButtonText, { color: theme.success }]}>
                 Get tips for this step
               </Text>
             </TouchableOpacity>
@@ -897,6 +908,10 @@ export default function CookModeScreen() {
             if (!isDoneStep) {
               onStepChange(Math.min(allSteps.length - 1, currentStep + 1));
             } else {
+              // Pass-6 G8 / Pass-7: final step Done is the celebratory moment, not the
+              // intermediate Next taps. Fires Success here; intermediate Next taps in
+              // onStepChange now fire Light.
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               setShowCompleteModal(true);
             }
           }}

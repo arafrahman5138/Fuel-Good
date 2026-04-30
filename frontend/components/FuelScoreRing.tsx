@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../hooks/useTheme';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
 
@@ -36,6 +37,14 @@ interface FuelScoreRingProps {
   showMes?: boolean;
   /** Controlled: called when user taps to toggle. */
   onToggle?: () => void;
+  /**
+   * Pass-5 F4: Color used when score === 0 (empty state). The default red
+   * "Flex Day" tier was confusing on first launch — it signaled "danger" while
+   * the supporting copy ("Your day is a blank slate") signaled "opportunity".
+   * Callers that have a true empty state should pass a neutral/cool color here.
+   * Defaults to a slate grey so any caller forgetting to pass it stops bleeding red.
+   */
+  emptyStateColor?: string;
 }
 
 export function FuelScoreRing({
@@ -48,6 +57,7 @@ export function FuelScoreRing({
   mesTierColor,
   showMes: showMesProp,
   onToggle,
+  emptyStateColor = '#94A3B8', // slate — neutral cool for empty state
 }: FuelScoreRingProps) {
   const theme = useTheme();
   const tierCfg = getTierConfig(score);
@@ -112,11 +122,24 @@ export function FuelScoreRing({
 
   const resolvedTrack = trackColor ?? theme.surfaceHighlight;
 
-  // Active ring color: fuel color or MES color when toggled
-  const activeRingColor = showMes && mesTierColor ? mesTierColor : tierCfg.color;
+  // Active ring color: fuel color or MES color when toggled.
+  // Pass-5 F4: when no data has been logged (score === 0 and not toggled to MES),
+  // use the neutral empty-state color instead of the red "Flex Day" tier.
+  const activeRingColor = showMes && mesTierColor
+    ? mesTierColor
+    : (!showMes && score === 0)
+      ? emptyStateColor
+      : tierCfg.color;
 
   const handleToggle = () => {
     if (!canToggle) return;
+
+    // Pass-6 Gap G2 + Pass-7 RM accessibility fix: ring tap-to-toggle had zero haptic
+    // feedback, so users with Reduce Motion enabled (which disables the visible
+    // shrink/expand animation) got no feedback at all that the tap registered.
+    // selectionAsync is the correct semantic for picker-like toggle gestures
+    // (Fuel ↔ MES is a state pick) and fires regardless of RM setting.
+    Haptics.selectionAsync();
 
     // Quick shrink then expand to signal the swap
     Animated.sequence([

@@ -318,8 +318,11 @@ export default function SettingsScreen() {
                 </View>
                 <View style={styles.settingsInfo}>
                   <Text style={[styles.settingsLabel, { color: theme.text }]}>Body Composition</Text>
+                  {/* Pass-5 F11: was "Not set — default ISM". The acronym was undefined
+                      anywhere visible in the app, so new users saw jargon. Expanded
+                      to the full term so the meaning is guessable in context. */}
                   <Text style={[styles.settingsDesc, { color: theme.textTertiary }]} numberOfLines={1}>
-                    {profile.body_fat_pct ? `${profile.body_fat_pct}% body fat` : 'Not set — default ISM'}
+                    {profile.body_fat_pct ? `${profile.body_fat_pct}% body fat` : 'Not set — default Insulin Sensitivity Multiplier'}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />

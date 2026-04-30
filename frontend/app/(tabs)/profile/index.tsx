@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 // Card import removed — profile uses flat Views for a cleaner, non-nested layout
 import { XPBar } from '../../../components/XPBar';
@@ -26,7 +26,7 @@ import { AchievementTile, type Achievement } from '../../../components/Achieveme
 import { AchievementDetailSheet } from '../../../components/AchievementDetailSheet';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
-import { gameApi } from '../../../services/api';
+import { authApi, gameApi } from '../../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../../constants/Colors';
 import { Shadows } from '../../../constants/Shadows';
 import { XP_PER_LEVEL } from '../../../constants/Config';
@@ -36,6 +36,7 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const [activeSegment, setActiveSegment] = useState<ProfileSegment>('overview');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loadingAchievements, setLoadingAchievements] = useState(false);
@@ -88,17 +89,37 @@ export default function ProfileScreen() {
     }
   };
 
+  // Pass-5 V1+F-new: Profile screen was showing stale XP/streak because the auth
+  // store is only populated at login. Cooking + Healthify sessions update server-side
+  // xp_points, but the local store never refetched. Refresh on every focus + on
+  // pull-to-refresh so the dashboard reflects the truth.
+  const refreshUserProfile = useCallback(async () => {
+    try {
+      const profile = await authApi.getProfile();
+      if (profile) setUser(profile);
+    } catch {
+      // Silent failure — keep cached store; next focus will retry.
+    }
+  }, [setUser]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadAchievements();
+    await Promise.all([refreshUserProfile(), loadAchievements()]);
     setRefreshing(false);
-  }, []);
+  }, [refreshUserProfile]);
 
   useEffect(() => {
     if (achievements.length === 0) {
       loadAchievements();
     }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Fire-and-forget: refresh user profile every time the screen comes into focus.
+      refreshUserProfile();
+    }, [refreshUserProfile])
+  );
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const unlockedAchievements = achievements.filter((a) => a.unlocked);

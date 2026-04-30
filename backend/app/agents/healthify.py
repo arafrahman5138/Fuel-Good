@@ -1221,7 +1221,12 @@ async def _generate_healthified_payload(
 async def _answer_general_question(
     user_input: str, history: List[dict], user_context: str = ""
 ) -> dict[str, Any]:
-    llm = get_llm("chat", max_tokens=1024)
+    # 4096 tokens matches the main Healthify path (line ~1182). 1024 was too low for
+    # "Show me X recipe" prompts that prompt the LLM to include long message prose
+    # plus optional recipe/nutrition fields inside the strict-JSON envelope —
+    # truncation mid-string left users with mid-sentence fragments. See
+    # tasks/ui-audit-pass5.md (F1).
+    llm = get_llm("chat", max_tokens=4096)
     system_prompt = GENERAL_PROMPT
     if user_context:
         system_prompt = f"{GENERAL_PROMPT}\n\n{user_context}"
