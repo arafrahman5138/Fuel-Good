@@ -205,26 +205,61 @@ def ensure_legacy_schema_columns() -> None:
         ("notification_deliveries", "next_retry_at", "ALTER TABLE notification_deliveries ADD COLUMN next_retry_at TIMESTAMP"),
     ]
     embed_dim = int(settings.embedding_dimension)
-    with engine.begin() as conn:
-        try:
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        except Exception as exc:
-            logger.warning("ensure_legacy_schema: pgvector extension creation skipped: %s", exc)
 
-        # Create missing tables
+    # Each DDL runs in its own SAVEPOINT so a failure (e.g. an index that
+    # references a not-yet-added column) doesn't poison the whole transaction
+    # with `InFailedSqlTransaction` and silently skip every subsequent step.
+    # Bug history: with one outer transaction, a stale CREATE INDEX on
+    # notification_deliveries(next_retry_at) failed before the column-add
+    # loop ran, which aborted the transaction and left prod missing every
+    # legacy column the safety net was supposed to backfill (notably
+    # notification_deliveries.retry_count, breaking /auth/me).
+    def _safe_ddl(conn, sql_text: str, label: str, params: dict | None = None) -> None:
+        try:
+            with conn.begin_nested():
+                conn.execute(text(sql_text), params or {})
+        except Exception as exc:
+            logger.warning("ensure_legacy_schema: %s skipped: %s", label, exc)
+
+    with engine.begin() as conn:
+        _safe_ddl(conn, "CREATE EXTENSION IF NOT EXISTS vector", "pgvector extension")
+
+        # Step 1: Create missing tables (must come before columns/indexes).
         for table_name, ddl in table_ddls:
             try:
-                exists = conn.execute(text(
-                    "SELECT 1 FROM information_schema.tables "
-                    "WHERE table_schema = 'public' AND table_name = :t"
-                ), {"t": table_name}).scalar()
-                if not exists:
-                    conn.execute(text(ddl))
-                    logger.info("ensure_legacy_schema: created table %s", table_name)
+                with conn.begin_nested():
+                    exists = conn.execute(text(
+                        "SELECT 1 FROM information_schema.tables "
+                        "WHERE table_schema = 'public' AND table_name = :t"
+                    ), {"t": table_name}).scalar()
+                    if not exists:
+                        conn.execute(text(ddl))
+                        logger.info("ensure_legacy_schema: created table %s", table_name)
             except Exception as exc:
                 logger.warning("ensure_legacy_schema: table %s skipped: %s", table_name, exc)
 
-        # Create indexes for new tables
+        # Step 2: Add missing columns BEFORE creating indexes that reference them.
+        for table, col, ddl in migrations:
+            try:
+                with conn.begin_nested():
+                    rows = conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name = :table AND column_name = :col"
+                    ), {"table": table, "col": col}).fetchall()
+                    if not rows:
+                        conn.execute(text(ddl))
+            except Exception as exc:
+                logger.warning("ensure_legacy_schema: %s.%s skipped: %s", table, col, exc)
+
+        # Step 3: pgvector column on recipe_embeddings (depends on extension).
+        _safe_ddl(
+            conn,
+            "ALTER TABLE recipe_embeddings ADD COLUMN IF NOT EXISTS embedding vector(:dim)",
+            "recipe_embeddings.embedding",
+            {"dim": embed_dim},
+        )
+
+        # Step 4: Indexes (depend on tables AND columns existing).
         for idx_sql in [
             "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_user_id ON chat_usage_events(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_chat_usage_events_created_at ON chat_usage_events(created_at)",
@@ -237,36 +272,10 @@ def ensure_legacy_schema_columns() -> None:
             "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_user_id ON weekly_fuel_summaries(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_weekly_fuel_summaries_week_start ON weekly_fuel_summaries(week_start)",
             "CREATE INDEX IF NOT EXISTS ix_notification_deliveries_next_retry_at ON notification_deliveries(next_retry_at)",
+            "CREATE INDEX IF NOT EXISTS ix_users_provider_subject ON users(provider_subject)",
+            "CREATE INDEX IF NOT EXISTS ix_users_revenuecat_customer_id ON users(revenuecat_customer_id)",
         ]:
-            try:
-                conn.execute(text(idx_sql))
-            except Exception as exc:
-                logger.warning("ensure_legacy_schema: index skipped: %s", exc)
-
-        for table, col, ddl in migrations:
-            try:
-                rows = conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name = :table AND column_name = :col"
-                ), {"table": table, "col": col}).fetchall()
-                if not rows:
-                    conn.execute(text(ddl))
-            except Exception as exc:
-                logger.warning("ensure_legacy_schema: %s.%s skipped: %s", table, col, exc)
-        try:
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_provider_subject ON users(provider_subject)"))
-        except Exception as exc:
-            logger.warning("ensure_legacy_schema: ix_users_provider_subject skipped: %s", exc)
-        try:
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_revenuecat_customer_id ON users(revenuecat_customer_id)"))
-        except Exception as exc:
-            logger.warning("ensure_legacy_schema: ix_users_revenuecat_customer_id skipped: %s", exc)
-        try:
-            conn.execute(text(
-                "ALTER TABLE recipe_embeddings ADD COLUMN IF NOT EXISTS embedding vector(:dim)"
-            ), {"dim": embed_dim})
-        except Exception as exc:
-            logger.warning("ensure_legacy_schema: recipe_embeddings.embedding skipped: %s", exc)
+            _safe_ddl(conn, idx_sql, "index")
 
 
 def ensure_pgvector_schema() -> None:
