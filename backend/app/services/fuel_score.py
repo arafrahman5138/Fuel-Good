@@ -185,6 +185,23 @@ def _score_scan(
             ]
 
     if not components:
+        # Fall back to nutrition-based scoring when we have macros but no
+        # structured components (e.g. degraded scan, manual log re-route,
+        # legacy callers passing nutrition only).
+        if nutrition:
+            manual_result = _score_manual(
+                nutrition=nutrition,
+                ingredients_text=None,
+                title=meal_label,
+            )
+            return FuelScoreResult(
+                score=manual_result.score,
+                tier=manual_result.tier,
+                tier_label=manual_result.tier_label,
+                flags=manual_result.flags,
+                reasoning=manual_result.reasoning,
+                source_path="scan",
+            )
         return FuelScoreResult(
             score=55.0,
             tier="mixed",

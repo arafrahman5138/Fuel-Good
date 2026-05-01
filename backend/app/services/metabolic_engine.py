@@ -835,13 +835,23 @@ def calc_tdee(profile: MetabolicProfileInput) -> float:
     else:
         bmr = 10 * w_kg + 6.25 * h_cm - 5 * profile.age - 161
 
+    # Multipliers were originally textbook values (1.2 / 1.55 / 1.725 / 1.9)
+    # but the onboarding labels describe one tier *lower* than each multiplier
+    # represented (e.g., "Regularly active · 3-5 workouts/week" maps to ACTIVE,
+    # but 1.725 is the textbook "hard exercise 6-7 days/week" tier). Users
+    # therefore got TDEE values ~10-15% higher than their actual lifestyle.
+    # Rebalanced so each tier's multiplier matches what the label promises:
+    #   sedentary  (Mostly sedentary)              → 1.2  (unchanged)
+    #   moderate   (Lightly active, 1-3 workouts)  → 1.375
+    #   active     (Regularly active, 3-5 workouts)→ 1.55
+    #   athletic   (Athlete / daily training)      → 1.725
     multipliers = {
         ActivityLevel.SEDENTARY: 1.2,
-        ActivityLevel.MODERATE: 1.55,
-        ActivityLevel.ACTIVE: 1.725,
-        ActivityLevel.ATHLETIC: 1.9,
+        ActivityLevel.MODERATE: 1.375,
+        ActivityLevel.ACTIVE: 1.55,
+        ActivityLevel.ATHLETIC: 1.725,
     }
-    return round(bmr * multipliers.get(profile.activity_level, 1.55), 1)
+    return round(bmr * multipliers.get(profile.activity_level, 1.375), 1)
 
 
 def calc_protein_target_g(profile: MetabolicProfileInput) -> float:
