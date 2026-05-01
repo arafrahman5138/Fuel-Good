@@ -320,7 +320,10 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
       source_type: 'meal_plan',
       source_id: meal.id,
       meal_type: meal.meal_type,
-      servings: 1,
+      // Use the plan's effective servings so the food log captures the
+      // full planned portion (e.g. a 2-serving lunch logs 860 kcal,
+      // not 430). Backend multiplies per-serving nutrition by this.
+      servings: meal.servings || 1,
       quantity: 1,
       group_id: groupId,
       group_mes_score: combinedScore,
