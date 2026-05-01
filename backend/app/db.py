@@ -203,6 +203,18 @@ def ensure_legacy_schema_columns() -> None:
         ("scanned_meal_logs", "fuel_score", "ALTER TABLE scanned_meal_logs ADD COLUMN fuel_score FLOAT"),
         ("notification_deliveries", "retry_count", "ALTER TABLE notification_deliveries ADD COLUMN retry_count INTEGER DEFAULT 0 NOT NULL"),
         ("notification_deliveries", "next_retry_at", "ALTER TABLE notification_deliveries ADD COLUMN next_retry_at TIMESTAMP"),
+        # metabolic_profiles safety flags — alembic d1a2b3c4e5f6. Belt-and-
+        # braces in case the migration didn't actually apply (it didn't on
+        # prod due to the c7d8e9f0a1b2 revision-id rename leaving alembic
+        # confused about what was already applied).
+        ("metabolic_profiles", "lactating", "ALTER TABLE metabolic_profiles ADD COLUMN lactating BOOLEAN DEFAULT FALSE"),
+        ("metabolic_profiles", "months_postpartum", "ALTER TABLE metabolic_profiles ADD COLUMN months_postpartum INTEGER"),
+        ("metabolic_profiles", "hypertension", "ALTER TABLE metabolic_profiles ADD COLUMN hypertension BOOLEAN DEFAULT FALSE"),
+        ("metabolic_profiles", "systolic_mmhg", "ALTER TABLE metabolic_profiles ADD COLUMN systolic_mmhg INTEGER"),
+        ("metabolic_profiles", "diastolic_mmhg", "ALTER TABLE metabolic_profiles ADD COLUMN diastolic_mmhg INTEGER"),
+        ("metabolic_profiles", "ibd_active_flare", "ALTER TABLE metabolic_profiles ADD COLUMN ibd_active_flare BOOLEAN DEFAULT FALSE"),
+        ("metabolic_profiles", "low_residue_required", "ALTER TABLE metabolic_profiles ADD COLUMN low_residue_required BOOLEAN DEFAULT FALSE"),
+        ("metabolic_profiles", "eating_disorder_recovery", "ALTER TABLE metabolic_profiles ADD COLUMN eating_disorder_recovery BOOLEAN DEFAULT FALSE"),
     ]
     embed_dim = int(settings.embedding_dimension)
 
