@@ -776,14 +776,6 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
-        {isInitialLoading && (
-          <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, gap: Spacing.md }}>
-            <SkeletonCard lines={2} />
-            <SkeletonCard lines={4} />
-            <SkeletonCard lines={3} />
-            <SkeletonCard lines={3} />
-          </View>
-        )}
         {!isInitialLoading && (loadError || mealPlanLoadError) && !dailySummary && !currentPlan && (
           <DataErrorState
             thing="dashboard"
@@ -949,6 +941,15 @@ export default function HomeScreen() {
           </Animated.View>
         </Animated.View>
 
+        {isInitialLoading ? (
+          <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.md }}>
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
+          </View>
+        ) : (
+        <>
         {/* ── Energy Hero ─────────────────────────────────────────────── */}
         <EnergyHeroCard
           fuelScore={fuelScoreValue}
@@ -1330,6 +1331,8 @@ export default function HomeScreen() {
         </Card>
 
         <View style={{ height: Spacing.huge }} />
+        </>
+        )}
       </Animated.ScrollView>
     </ScreenContainer>
   );
