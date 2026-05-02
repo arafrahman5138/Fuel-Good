@@ -506,8 +506,10 @@ export default function ChronometerScreen() {
 
   return (
     <ScreenContainer safeArea={false} padded={false}>
-      {showStickyHeader ? (
-        <Animated.View
+      {/* Always rendered so opacity/translateY can run on the native driver.
+          pointerEvents toggles via the threshold-crossing listener. */}
+      <Animated.View
+          pointerEvents={showStickyHeader ? 'box-none' : 'none'}
           style={[
             styles.stickyChronoHeader,
             {
@@ -559,7 +561,6 @@ export default function ChronometerScreen() {
             </TouchableOpacity>
           </View>
         </Animated.View>
-      ) : null}
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
@@ -567,7 +568,9 @@ export default function ChronometerScreen() {
         contentInsetAdjustmentBehavior="never"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          // Native driver — every interpolation downstream (hero scale/
+          // opacity, sticky header opacity/translate) runs on the UI thread.
+          { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
@@ -659,11 +662,15 @@ export default function ChronometerScreen() {
           })}
         </View>
 
-        {loading ? (
+        {/* Stale-while-revalidate: only show the loading spinner if we have
+            NO data to display. When cached data exists, render it immediately
+            and let the in-flight refresh swap in updated values silently —
+            the RefreshControl above the ScrollView surfaces the activity. */}
+        {loading && !fuelWeekly && !dailyMES?.score ? (
           <View style={styles.center}>
             <ActivityIndicator size="small" color={theme.primary} />
           </View>
-        ) : error ? (
+        ) : error && !fuelWeekly && !dailyMES?.score ? (
           <Card style={{ marginTop: Spacing.xl }}>
             <View style={{ alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.lg }}>
               <Ionicons name="cloud-offline-outline" size={36} color={theme.textTertiary} />

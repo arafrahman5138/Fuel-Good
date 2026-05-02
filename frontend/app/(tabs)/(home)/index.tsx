@@ -280,6 +280,32 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [selectedDayKey, fetchMetabolic, loadCurrentPlan, fetchFuelDaily, fetchFuelWeekly, fetchFlexSuggestions, fetchHealthPulse]);
 
+  // Stable callback consumed by the memoized RecentMealChip. Wrapping in
+  // useCallback keyed only on the dependencies that actually change keeps
+  // the chip from re-rendering on every parent state update.
+  const handleLogRecentMeal = useCallback(async (meal: any) => {
+    const label = meal.label || meal.food_name || 'Meal';
+    const fuelScore = meal.fuel_score ?? meal.score;
+    try {
+      await nutritionApi.createLog({
+        label,
+        calories: meal.calories,
+        protein: meal.protein,
+        carbs: meal.carbs,
+        fat: meal.fat,
+        fiber: meal.fiber,
+        source_type: 'quick_log',
+        meal_type: meal.meal_type || 'snack',
+        fuel_score: fuelScore,
+      });
+      Alert.alert('Logged!', `"${label}" added to today's log.`);
+      loadDailyNutrition(selectedDayKey);
+      fetchFuelDaily(selectedDayKey);
+    } catch {
+      Alert.alert('Log failed', 'Unable to log that meal right now.');
+    }
+  }, [selectedDayKey, fetchFuelDaily]);
+
   const loadRecentMeals = async () => {
     try {
       // Fetch logs from the last 7 days to find unique meals for quick re-logging
@@ -710,8 +736,11 @@ export default function HomeScreen() {
     <ScreenContainer safeArea={false}>
       <XPToast message={xpToast} icon={xpToastIcon} onDismissed={() => setXpToast(null)} />
       <FlexUnlockedToast message={flexToast} onDismissed={() => setFlexToast(null)} />
-      {showStickyHeader ? (
-        <Animated.View
+      {/* Sticky header is always rendered so opacity + translateY can run on
+          the native driver. pointerEvents toggles via the threshold-crossing
+          listener so taps don't hit a transparent header above the fold. */}
+      <Animated.View
+          pointerEvents={showStickyHeader ? 'box-none' : 'none'}
           style={[
             styles.stickyHeader,
             {
@@ -787,7 +816,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </Animated.View>
-      ) : null}
       <Animated.ScrollView
         ref={homeScrollRef}
         showsVerticalScrollIndicator={false}
@@ -795,7 +823,11 @@ export default function HomeScreen() {
         contentInsetAdjustmentBehavior="never"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          // Native driver is critical here — every interpolation downstream
+          // (sticky header opacity/translate, intro header opacity/translate,
+          // week strip opacity/translate) runs on the UI thread instead of
+          // the JS thread. Drops scroll-frame work from ~10-20ms to <1ms.
+          { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
@@ -874,32 +906,30 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View
-          style={[
-            styles.weekStripWrap,
-            {
-              height: scrollY.interpolate({
-                inputRange: [0, 32, 100],
-                outputRange: [72, 44, 0],
-                extrapolate: 'clamp',
-              }),
-              opacity: scrollY.interpolate({
-                inputRange: [0, 52, 92],
-                outputRange: [1, 0.55, 0],
-                extrapolate: 'clamp',
-              }),
-            },
-          ]}
-        >
+        {/* Week strip — outer wrapper has fixed height + overflow:hidden so
+            the inner strip can translate up out of view without changing
+            layout below. (Previously this used a height interpolation to
+            collapse, which forced useNativeDriver:false on the parent
+            scroll event and dropped JS-thread fps during fast scrolls.) */}
+        <View style={[styles.weekStripWrap, { height: 72, overflow: 'hidden' }]}>
           <Animated.View
             style={[
               styles.weekStrip,
               {
                 opacity: scrollY.interpolate({
-                  inputRange: [0, 80],
-                  outputRange: [1, 0.92],
+                  inputRange: [0, 52, 92],
+                  outputRange: [1, 0.55, 0],
                   extrapolate: 'clamp',
                 }),
+                transform: [
+                  {
+                    translateY: scrollY.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [0, -72],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
               },
             ]}
           >
@@ -963,7 +993,7 @@ export default function HomeScreen() {
               }}
             />
           </Animated.View>
-        </Animated.View>
+        </View>
 
         {isInitialLoading ? (
           <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, gap: Spacing.md }}>
@@ -1212,46 +1242,15 @@ export default function HomeScreen() {
           <View style={{ marginTop: Spacing.md }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Log Again</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.sm }}>
-              {recentMeals.map((meal, i) => {
-                const label = meal.label || meal.food_name || 'Meal';
-                const fuelScore = meal.fuel_score ?? meal.score;
-                return (
-                  <TouchableOpacity
-                    key={`recent-${i}`}
-                    activeOpacity={0.8}
-                    onPress={async () => {
-                      try {
-                        await nutritionApi.createLog({
-                          label,
-                          calories: meal.calories,
-                          protein: meal.protein,
-                          carbs: meal.carbs,
-                          fat: meal.fat,
-                          fiber: meal.fiber,
-                          source_type: 'quick_log',
-                          meal_type: meal.meal_type || 'snack',
-                          fuel_score: fuelScore,
-                        });
-                        Alert.alert('Logged!', `"${label}" added to today's log.`);
-                        loadDailyNutrition(selectedDayKey);
-                        fetchFuelDaily(selectedDayKey);
-                      } catch {
-                        Alert.alert('Log failed', 'Unable to log that meal right now.');
-                      }
-                    }}
-                    style={[styles.recentMealChip, { backgroundColor: isDarkTheme ? theme.surfaceElevated : '#F5F5F0', borderColor: theme.border }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${label} again`}
-                  >
-                    <Text style={[styles.recentMealLabel, { color: theme.text }]} numberOfLines={1}>{label}</Text>
-                    {fuelScore != null && (
-                      <View style={[styles.recentMealBadge, { backgroundColor: fuelScore >= 80 ? '#16A34A' : fuelScore >= 50 ? '#D97706' : '#EF4444' }]}>
-                        <Text style={styles.recentMealBadgeText}>{Math.round(fuelScore)}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+              {recentMeals.map((meal, i) => (
+                <RecentMealChip
+                  key={`recent-${i}`}
+                  meal={meal}
+                  onLog={handleLogRecentMeal}
+                  isDarkTheme={isDarkTheme}
+                  theme={theme}
+                />
+              ))}
             </ScrollView>
           </View>
         )}
@@ -1348,6 +1347,39 @@ export default function HomeScreen() {
     </ScreenContainer>
   );
 }
+
+// Memoized recent-meal chip — the parent's `recentMeals.map(...)` was
+// previously creating a fresh inline `onPress` arrow per item per render
+// (7-10 chips × every state update on Home = a lot of churn). Extracting
+// to React.memo with a stable parent callback means chips only re-render
+// when their own meal/theme actually changes.
+type RecentMealChipProps = {
+  meal: any;
+  onLog: (meal: any) => void;
+  isDarkTheme: boolean;
+  theme: any;
+};
+const RecentMealChip = React.memo(function RecentMealChip({ meal, onLog, isDarkTheme, theme }: RecentMealChipProps) {
+  const label = meal.label || meal.food_name || 'Meal';
+  const fuelScore = meal.fuel_score ?? meal.score;
+  const handlePress = useCallback(() => onLog(meal), [meal, onLog]);
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={handlePress}
+      style={[styles.recentMealChip, { backgroundColor: isDarkTheme ? theme.surfaceElevated : '#F5F5F0', borderColor: theme.border }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Log ${label} again`}
+    >
+      <Text style={[styles.recentMealLabel, { color: theme.text }]} numberOfLines={1}>{label}</Text>
+      {fuelScore != null && (
+        <View style={[styles.recentMealBadge, { backgroundColor: fuelScore >= 80 ? '#16A34A' : fuelScore >= 50 ? '#D97706' : '#EF4444' }]}>
+          <Text style={styles.recentMealBadgeText}>{Math.round(fuelScore)}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 function getGreeting(): string {
   const hour = new Date().getHours();

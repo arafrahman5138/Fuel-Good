@@ -299,7 +299,10 @@ export default function ProfileScreen() {
           ) : (
             /* ── ACHIEVEMENTS ──────────────────────────────────── */
             <View style={{ gap: Spacing.sm }}>
-              {loadingAchievements ? (
+              {/* Stale-while-revalidate: spinner only when we have nothing
+                  to show. If achievements are already loaded, render them
+                  immediately even while a background refresh runs. */}
+              {loadingAchievements && achievements.length === 0 ? (
                 <ActivityIndicator
                   size="large"
                   color={theme.primary}

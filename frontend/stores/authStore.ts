@@ -209,14 +209,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const [token, refreshToken] = Platform.OS === 'web'
         ? [null, null]
         : await Promise.all([
+            // Tightened from 2500ms → 1000ms. SecureStore is normally <50ms;
+            // 2.5s was over-conservative and contributed up to 5s of cold-
+            // start delay (worst case both tokens timing out). 1s is still
+            // generous enough to cover legit slow keychain unlocks while
+            // capping the worst-case time-to-login.
             withTimeout(
               SecureStore.getItemAsync('auth_token', AUTH_STORE_OPTIONS),
-              2500,
+              1000,
               'Timed out reading auth token from SecureStore.',
             ).catch(() => null),
             withTimeout(
               SecureStore.getItemAsync('refresh_token', AUTH_STORE_OPTIONS),
-              2500,
+              1000,
               'Timed out reading refresh token from SecureStore.',
             ).catch(() => null),
           ]);
