@@ -212,16 +212,22 @@ export default function ChronometerScreen() {
     setLoading(true);
     setError(null);
     try {
+      // Await all data the visible sections depend on — fuel-view (the
+      // default tab) gates every card on fuelWeekly && fuelSettings, so
+      // if fetchFuel is fire-and-forget, loading=false fires before the
+      // store has data and the screen renders blank until the unawaited
+      // fetch resolves. fetchCalendar feeds the prev-week trend so it
+      // also blocks first paint. flex-suggestions is non-critical.
       const [data, , mesSuggestionsData] = await Promise.all([
         nutritionApi.getDaily(selectedDayKey),
         fetchMetabolic(selectedDayKey),
         metabolicApi.getMealSuggestions(undefined, 4).catch(() => [] as MealSuggestion[]),
         fetchProfile(),
+        fetchFuel(selectedDayKey),
+        fetchCalendar(),
       ]);
       setDaily(data);
       setMesSuggestions(mesSuggestionsData || []);
-      fetchFuel(selectedDayKey);
-      fetchCalendar();
       fetchFlexSuggestions(selectedDayKey);
     } catch (e: any) {
       setError(e?.message || 'Unable to load nutrition data.');
