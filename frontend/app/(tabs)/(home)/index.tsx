@@ -1329,8 +1329,6 @@ export default function HomeScreen() {
             {dailyTip}
           </Text>
         </Card>
-
-        <View style={{ height: Spacing.huge }} />
         </>
         )}
       </Animated.ScrollView>
