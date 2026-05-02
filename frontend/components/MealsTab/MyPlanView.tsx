@@ -131,7 +131,9 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
   const stepContentAnim = useRef(new Animated.Value(1)).current;
   const plannerScrollRef = useRef<RNScrollView | null>(null);
   const ctaBottomOffset = Math.max(insets.bottom, 12) + FLOATING_TAB_BAR_HEIGHT + 18;
-  const createPlanBottomPadding = ctaBottomOffset + Spacing.xl;
+  // Planner screen is a full-screen overlay without the floating tab bar,
+  // so the tab-bar clearance isn't needed — just safe-area + small buffer.
+  const createPlanBottomPadding = Math.max(insets.bottom, 12) + Spacing.xl;
 
   useEffect(() => {
     Animated.timing(plannerEnterAnim, {
@@ -940,7 +942,7 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
       ) : null}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: ctaBottomOffset + Spacing.xl }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: ctaBottomOffset }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -1326,7 +1328,6 @@ export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = 
             );
           })
         )}
-        <View style={{ height: Spacing.huge }} />
       </ScrollView>
 
       <Modal
