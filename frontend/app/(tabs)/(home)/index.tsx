@@ -269,7 +269,9 @@ export default function HomeScreen() {
       loadRecommended(),
       loadCurrentPlan(),
       loadDailyNutrition(selectedDayKey),
-      fetchMetabolic(selectedDayKey),
+      // force:true bypasses the focus-cache TTL — pull-to-refresh should
+      // always hit the network even if data was just fetched.
+      fetchMetabolic(selectedDayKey, { force: true }),
       fetchFuelDaily(selectedDayKey),
       fetchFuelWeekly(selectedDayKey),
       fetchFlexSuggestions(selectedDayKey),
@@ -530,6 +532,28 @@ export default function HomeScreen() {
   const fatTarget = Math.round(dailySummary?.comparison?.fat?.target ?? 0);
   const fiberConsumed = Math.round(dailySummary?.comparison?.fiber?.consumed ?? 0);
   const fiberTarget = Math.round(dailySummary?.comparison?.fiber?.target ?? 0);
+  // Memoize macro objects so the React.memo wrapper on TodayProgressCard
+  // can shallow-compare and skip re-render when the underlying numbers
+  // haven't changed. Without this, fresh `{ consumed, target }` objects
+  // are created on every parent render and defeat the memo entirely.
+  const caloriesObj = useMemo(() => ({ consumed: calorieConsumed, target: calorieTarget }), [calorieConsumed, calorieTarget]);
+  const proteinObj = useMemo(() => ({ consumed: proteinConsumed, target: proteinTarget }), [proteinConsumed, proteinTarget]);
+  const carbsObj = useMemo(() => ({ consumed: carbsConsumed, target: carbsTarget }), [carbsConsumed, carbsTarget]);
+  const fatObj = useMemo(() => ({ consumed: fatConsumed, target: fatTarget }), [fatConsumed, fatTarget]);
+  // Memoize the projected log list — without this, .map() builds a fresh
+  // array every render, defeating React.memo on TodayProgressCard.
+  const todayLogsForCard = useMemo(() => (dailySummary?.logs ?? []).map((l) => ({
+    id: l.id ?? '',
+    title: l.title ?? '',
+    meal_type: l.meal_type,
+    source_type: l.source_type,
+    source_id: l.source_id,
+    group_id: l.group_id,
+    group_mes_score: l.group_mes_score,
+    group_mes_tier: l.group_mes_tier,
+    fuel_score: l.fuel_score,
+    nutrition_snapshot: l.nutrition_snapshot,
+  })), [dailySummary?.logs]);
   // Daily MES — for Today's Fuel card
   const dailyMesScore = Math.round(dailyMES?.score?.display_score ?? dailyMES?.score?.total_score ?? 0);
   const dailyMesTierKey = dailyMES?.score?.display_tier ?? dailyMES?.score?.tier ?? 'critical';
@@ -1147,27 +1171,16 @@ export default function HomeScreen() {
 
         {/* ── Today's Fuel ────────────────────────────────────────────── */}
         <TodayProgressCard
-          logs={(dailySummary?.logs ?? []).map((l) => ({
-            id: l.id ?? '',
-            title: l.title ?? '',
-            meal_type: l.meal_type,
-            source_type: l.source_type,
-            source_id: l.source_id,
-            group_id: l.group_id,
-            group_mes_score: l.group_mes_score,
-            group_mes_tier: l.group_mes_tier,
-            fuel_score: l.fuel_score,
-            nutrition_snapshot: l.nutrition_snapshot,
-          }))}
+          logs={todayLogsForCard}
           mealScores={mealScores}
           fuelTarget={fuelSettings?.fuel_target}
           todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
           todayMesScore={dailyMesScore}
           todayMesTierColor={dailyMesTierColor}
-          calories={{ consumed: calorieConsumed, target: calorieTarget }}
-          protein={{ consumed: proteinConsumed, target: proteinTarget }}
-          carbs={{ consumed: carbsConsumed, target: carbsTarget }}
-          fat={{ consumed: fatConsumed, target: fatTarget }}
+          calories={caloriesObj}
+          protein={proteinObj}
+          carbs={carbsObj}
+          fat={fatObj}
           title={fuelCardTitle}
         />
 

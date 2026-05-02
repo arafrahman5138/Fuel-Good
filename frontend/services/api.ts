@@ -249,8 +249,28 @@ class ApiClient {
     }
   }
 
+  /**
+   * In-flight request map for GET deduplication. Two callers asking for
+   * the same endpoint within milliseconds share a single underlying fetch
+   * (and therefore a single network round-trip + a single token refresh
+   * dance on 401). Production logs showed ~50% of tab-focus traffic was
+   * exact-duplicate GETs, so this is a high-leverage win. Mutations are
+   * never deduped — sending two POSTs is intentional.
+   */
+  private inflightGets: Map<string, Promise<any>> = new Map();
+
   async get<T>(endpoint: string): Promise<T> {
-    return this.requestWithRefresh<T>('GET', endpoint);
+    const key = endpoint;
+    const existing = this.inflightGets.get(key);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+    const promise = this.requestWithRefresh<T>('GET', endpoint).finally(() => {
+      // Clean up regardless of success/failure so the next call goes to network.
+      this.inflightGets.delete(key);
+    });
+    this.inflightGets.set(key, promise);
+    return promise;
   }
 
   async post<T>(endpoint: string, body?: unknown): Promise<T> {

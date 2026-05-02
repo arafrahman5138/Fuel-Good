@@ -132,7 +132,7 @@ function buildDisplayItems(logs: DailyLog[]): DisplayItem[] {
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
-export function TodayProgressCard({
+function TodayProgressCardImpl({
   logs,
   mealScores,
   fuelTarget,
@@ -616,3 +616,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+// Wrap in React.memo so the parent Home tab can pass stable (memoized)
+// props and skip re-rendering this large card on unrelated state updates.
+export const TodayProgressCard = React.memo(TodayProgressCardImpl);
+

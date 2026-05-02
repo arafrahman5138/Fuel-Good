@@ -90,7 +90,10 @@ function getMealPlanDisplayTier(recipe: any): string {
   return String(recipe?.composite_display_tier || recipe?.mes_display_tier || 'critical');
 }
 
-export function MyPlanView({ plannerMode = false }: { plannerMode?: boolean } = {}) {
+// Wrapped in React.memo at the bottom of this file. The component is
+// large (~2000 lines) and was re-rendering whenever the parent Meals tab
+// updated state, even when its only prop (plannerMode) hadn't changed.
+function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const user = useAuthStore((s) => s.user);
@@ -2080,3 +2083,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+export const MyPlanView = React.memo(MyPlanViewImpl);
+

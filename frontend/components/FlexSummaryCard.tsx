@@ -20,7 +20,7 @@ interface FlexSummaryCardProps {
   flexUsed: number;
 }
 
-export function FlexSummaryCard({
+function FlexSummaryCardImpl({
   flexAvailable,
   flexBudget,
   flexUsed,
@@ -139,3 +139,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export const FlexSummaryCard = React.memo(FlexSummaryCardImpl);
+

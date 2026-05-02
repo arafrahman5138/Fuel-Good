@@ -186,7 +186,7 @@ const miniStyles = StyleSheet.create({
 });
 
 // ── Component ────────────────────────────────────────────────────────────────
-export function EnergyHeroCard({
+function EnergyHeroCardImpl({
   fuelScore,
   mesScore,
   mesTierColor,
@@ -388,3 +388,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+export const EnergyHeroCard = React.memo(EnergyHeroCardImpl);
+

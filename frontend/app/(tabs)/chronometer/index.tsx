@@ -204,11 +204,12 @@ export default function ChronometerScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refresh();
+    // Pull-to-refresh always bypasses the store's focus-cache TTL.
+    await refresh({ force: true });
     setRefreshing(false);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { force?: boolean }) => {
     setLoading(true);
     setError(null);
     try {
@@ -220,10 +221,10 @@ export default function ChronometerScreen() {
       // also blocks first paint. flex-suggestions is non-critical.
       const [data, , mesSuggestionsData] = await Promise.all([
         nutritionApi.getDaily(selectedDayKey),
-        fetchMetabolic(selectedDayKey),
+        fetchMetabolic(selectedDayKey, opts),
         metabolicApi.getMealSuggestions(undefined, 4).catch(() => [] as MealSuggestion[]),
         fetchProfile(),
-        fetchFuel(selectedDayKey),
+        fetchFuel(selectedDayKey, opts),
         fetchCalendar(),
       ]);
       setDaily(data);
@@ -246,7 +247,8 @@ export default function ChronometerScreen() {
     const unsubscribe = subscribeToChronometerChanges(userId, selectedDayKey, () => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
-        refresh().catch(() => {});
+        // A meal log was inserted/updated/deleted — bypass focus-cache.
+        refresh({ force: true }).catch(() => {});
       }, 350);
     });
     return () => {
@@ -668,7 +670,7 @@ export default function ChronometerScreen() {
               <Text style={{ color: theme.text, fontSize: FontSize.md, fontWeight: '700' }}>Something went wrong</Text>
               <Text style={{ color: theme.textSecondary, fontSize: FontSize.sm, textAlign: 'center' }}>{error}</Text>
               <TouchableOpacity
-                onPress={refresh}
+                onPress={() => refresh({ force: true })}
                 style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, marginTop: Spacing.xs }}
               >
                 <Text style={{ color: theme.primary, fontSize: FontSize.sm, fontWeight: '700' }}>Retry</Text>

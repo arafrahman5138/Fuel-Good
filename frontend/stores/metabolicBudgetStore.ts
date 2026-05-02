@@ -228,6 +228,9 @@ interface MetabolicBudgetState {
   _inflightBudget: Promise<void> | null;
   _inflightScore: Promise<void> | null;
   _inflightAll: Promise<void> | null;
+  // Focus-cache: tracks the last fetchAll completion per dateKey so
+  // tab refocus within the TTL skips the network round-trip.
+  _lastFetchedAt: Record<string, number>;
 
   // Actions
   fetchBudget: () => Promise<void>;
@@ -240,9 +243,13 @@ interface MetabolicBudgetState {
   fetchProfile: () => Promise<void>;
   saveProfile: (data: Partial<MetabolicProfile>) => Promise<void>;
   patchProfile: (data: Partial<MetabolicProfile>) => Promise<void>;
-  fetchAll: (date?: string) => Promise<void>;
+  fetchAll: (date?: string, opts?: { force?: boolean }) => Promise<void>;
   fetchCompositeMES: (foodLogIds: string[]) => Promise<CompositeMES | null>;
 }
+
+// Time window during which a repeat fetchAll for the same dateKey is
+// considered fresh and skipped. Pull-to-refresh / change events bypass.
+const FOCUS_CACHE_TTL_MS = 60_000;
 
 export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) => ({
   budget: null,
@@ -257,6 +264,7 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
   _inflightBudget: null,
   _inflightScore: null,
   _inflightAll: null,
+  _lastFetchedAt: {},
 
   fetchBudget: async () => {
     const state = get();
@@ -363,8 +371,19 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
     }
   },
 
-  fetchAll: async (date) => {
+  fetchAll: async (date, opts) => {
     const state = get();
+    const dateKey = date ?? '_default';
+    // Focus-cache: skip the round-trip if a previous fetchAll for this
+    // dateKey settled within the TTL and we have data. Pull-to-refresh
+    // and change events pass force:true.
+    if (!opts?.force) {
+      const last = state._lastFetchedAt[dateKey];
+      const hasData = !!(state.budget && state.dailyScore);
+      if (last && hasData && Date.now() - last < FOCUS_CACHE_TTL_MS) {
+        return;
+      }
+    }
     if (state._inflightAll) return state._inflightAll;
     const promise = (async () => {
       set({ loading: true });
@@ -376,6 +395,7 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
           get().fetchStreak(),
           get().fetchScoreHistory(),
         ]);
+        set({ _lastFetchedAt: { ...get()._lastFetchedAt, [dateKey]: Date.now() } });
       } finally {
         set({ loading: false });
       }

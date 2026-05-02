@@ -118,6 +118,10 @@ interface FuelState {
   flexSuggestions: SmartFlex | null;
   loading: boolean;
   error: string | null;
+  // Focus-cache: tracks the last fetchAll completion per dateKey so
+  // useFocusEffect re-firing on tab return doesn't trigger an immediate
+  // re-fetch when the data is fresh.
+  _lastFetchedAt: Record<string, number>;
 
   fetchSettings: () => Promise<void>;
   updateSettings: (target: number, mealsPerWeek: number) => Promise<void>;
@@ -128,8 +132,13 @@ interface FuelState {
   fetchCalendar: (month?: string) => Promise<void>;
   fetchFlexSuggestions: (date?: string) => Promise<void>;
   logManualFlex: (data: { meal_type?: string; tag?: string; date?: string }) => Promise<ManualFlexResult | null>;
-  fetchAll: (date?: string) => Promise<void>;
+  fetchAll: (date?: string, opts?: { force?: boolean }) => Promise<void>;
 }
+
+// Time window during which a repeat fetchAll for the same dateKey is
+// considered fresh and skipped. Pull-to-refresh and meal logs bypass via
+// `force: true`.
+const FOCUS_CACHE_TTL_MS = 60_000;
 
 export const useFuelStore = create<FuelState>((set, get) => ({
   settings: null,
@@ -141,6 +150,7 @@ export const useFuelStore = create<FuelState>((set, get) => ({
   flexSuggestions: null,
   loading: false,
   error: null,
+  _lastFetchedAt: {},
 
   fetchSettings: async () => {
     try {
@@ -229,7 +239,18 @@ export const useFuelStore = create<FuelState>((set, get) => ({
     }
   },
 
-  fetchAll: async (date?: string) => {
+  fetchAll: async (date?: string, opts?: { force?: boolean }) => {
+    const dateKey = date ?? '_default';
+    // Focus-cache: if a previous fetchAll for this dateKey completed
+    // within the TTL and we have data in the store, skip the network
+    // round-trip entirely. Pull-to-refresh + change events pass force:true.
+    if (!opts?.force) {
+      const last = get()._lastFetchedAt[dateKey];
+      const hasData = !!(get().settings && get().weekly);
+      if (last && hasData && Date.now() - last < FOCUS_CACHE_TTL_MS) {
+        return;
+      }
+    }
     set({ loading: true, error: null });
     try {
       const results = await Promise.allSettled([
@@ -247,6 +268,7 @@ export const useFuelStore = create<FuelState>((set, get) => ({
         streak: val(results[3]) ?? get().streak,
         healthPulse: val(results[4]) ?? get().healthPulse,
         loading: false,
+        _lastFetchedAt: { ...get()._lastFetchedAt, [dateKey]: Date.now() },
       });
       const failed = results.filter(r => r.status === 'rejected');
       if (failed.length === results.length) {
