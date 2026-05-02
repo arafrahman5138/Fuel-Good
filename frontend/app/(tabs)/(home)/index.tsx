@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Image,
   View,
   Text,
   StyleSheet,
@@ -13,6 +12,9 @@ import {
   FlatList,
   useWindowDimensions,
 } from 'react-native';
+// Use expo-image for remote recipe-card thumbnails — memory+disk cache,
+// async decode off the JS thread.
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -693,7 +695,9 @@ export default function HomeScreen() {
               <Image
                 source={{ uri: resolvedImage }}
                 style={StyleSheet.absoluteFill}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
               <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.6)'] as const}

@@ -5,7 +5,12 @@
  * image_url is available. Handles loading states smoothly.
  */
 import React, { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+// expo-image gives memory+disk cache, async decode off the JS thread,
+// concurrent fetches, and a smooth fade-in transition. Plain RN Image
+// re-fetches on every mount and decodes synchronously, which contributes
+// to the "feels sluggish" sensation when scrolling lists of meal cards.
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { resolveImageUrl } from '../utils/imageUrl';
@@ -72,7 +77,9 @@ export function MealImage({
         <Image
           source={{ uri: resolvedUrl }}
           style={[styles.image, { width, height, borderRadius }]}
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
           onError={() => setFailed(true)}
         />
       </View>
