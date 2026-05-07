@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+# Tap the "New Chat" row (with icon)
+- tapOn:
+    point: "50%,25%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-new-chat"
+# Explain my score
+- tapOn: ".*Explain my score.*"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-explain-score"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-explain-scroll"

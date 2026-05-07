@@ -1,0 +1,123 @@
+appId: com.fuelgood.ios
+---
+# Screen 1: "You already know something is off"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# We're on "What brought you here?" — screen 2
+- extendedWaitUntil:
+    visible: "I want more energy"
+    timeout: 8000
+- tapOn: "I want more energy"
+- tapOn: "I want to cook more real food"
+- tapOn: "Continue"
+
+# Screen 3: ultra-processed frequency
+- extendedWaitUntil:
+    visible: "A few times a week"
+    timeout: 8000
+- tapOn: "A few times a week"
+- tapOn: "Continue"
+
+# Screen 4: snapshot
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 6000
+- tapOn: "Continue"
+
+# Screen 5: fuel philosophy
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 6000
+- tapOn: "Continue"
+
+# Screen 6: flex
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 6000
+- tapOn: "Continue"
+
+# Screen 7: flavors
+- extendedWaitUntil:
+    visible: ".*Savory"
+    timeout: 8000
+- tapOn: ".*Savory"
+- tapOn: ".*Spicy"
+- tapOn: ".*Umami"
+- tapOn: "Continue"
+
+# Screen 8: dietary
+- extendedWaitUntil:
+    visible: "No Restrictions"
+    timeout: 8000
+- tapOn: "No Restrictions"
+- tapOn: "Continue"
+
+# Screen 9: protein prefs
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 6000
+- tapOn: "Continue"
+
+# Screen 10: body stats
+- extendedWaitUntil:
+    visible: "e.g. 165"
+    timeout: 8000
+- tapOn: "e.g. 165"
+- inputText: "145"
+- tapOn: "Weight"
+- tapOn: "e.g. 5"
+- inputText: "5"
+- tapOn: "Weight"
+- tapOn: "e.g. 7"
+- inputText: "6"
+- tapOn: "Weight"
+- tapOn: "e.g. 30"
+- inputText: "30"
+- tapOn: "Weight"
+- tapOn: "Female"
+- scroll
+- tapOn: ".*Lightly.*|.*Moderately.*"
+- tapOn: ".*Maintain.*|.*Metabolic reset.*|.*Lose body fat.*"
+- tapOn: "Continue"
+
+# Screen 11: energy / health flags
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 8000
+- tapOn: "Continue"
+
+# Screen 12: personal targets
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 8000
+- tapOn: "Continue"
+
+# Screen 13: meal reveal
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 8000
+- tapOn: "Continue"
+
+# Screen 14: commitment
+- extendedWaitUntil:
+    visible: ".*all in.*"
+    timeout: 8000
+- tapOn: ".*all in.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Start my free trial|Continue"
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Premium modal
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/04-home-final"

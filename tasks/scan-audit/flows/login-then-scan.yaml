@@ -1,0 +1,17 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "you@example.com"
+- inputText: "newtester0418x@example.com"
+- hideKeyboard
+- tapOn: "Enter password"
+- inputText: "ScanAudit123!"
+- hideKeyboard
+- tapOn: "Sign In"
+- extendedWaitUntil:
+    visible: "Araf"
+    timeout: 25000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-00-home"

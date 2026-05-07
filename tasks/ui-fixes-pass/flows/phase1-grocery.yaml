@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "30%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-fixes-pass/phase1-meals-hub-updated"
+- tapOn: "Open Grocery, Shopping list"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-fixes-pass/phase1-grocery"

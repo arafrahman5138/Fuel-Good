@@ -1,0 +1,35 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "11%,10%"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap fuel weekly ring
+- tapOn:
+    point: "50%,25%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/13-fuel-weekly-populated"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/13-fuel-weekly-scroll"
+- tapOn:
+    point: "11%,10%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Try Track → Metabolic toggle
+- tapOn:
+    point: "52%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Metabolic"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/14-track-metabolic-populated"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/14-track-metabolic-scroll"

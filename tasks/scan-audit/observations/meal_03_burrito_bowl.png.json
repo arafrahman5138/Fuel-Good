@@ -1,0 +1,136 @@
+{
+  "id": "bbee7496-9776-4fcd-9bef-4461e233515e",
+  "meal_label": "Chicken Burrito Bowl",
+  "meal_type": "lunch",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Grilled Chicken Breast",
+    "Rice",
+    "Black Beans",
+    "Guacamole",
+    "Corn Salsa",
+    "Lime",
+    "Queso Fresco"
+  ],
+  "normalized_ingredients": [
+    "grilled chicken breast",
+    "rice",
+    "black beans",
+    "guacamole",
+    "corn salsa",
+    "lime",
+    "queso fresco",
+    "cilantro",
+    "onion",
+    "tomato"
+  ],
+  "nutrition_estimate": {
+    "calories": 732.5,
+    "protein": 44.9,
+    "carbs": 70.7,
+    "fat": 29.9,
+    "fiber": 15.5,
+    "sugar_g": 5.1,
+    "glycemic_profile": {
+      "primary_carb_source": "legume",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "ingredients": [
+      "grilled chicken breast",
+      "rice",
+      "black beans",
+      "guacamole",
+      "corn salsa",
+      "lime",
+      "queso fresco",
+      "cilantro",
+      "onion",
+      "tomato"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": {
+    "primary_carb_source": "legume",
+    "processing_level": "intact",
+    "resistant_starch_prep": "none",
+    "override_inference": false,
+    "notes": null
+  },
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "Pair this with Kale and White Bean Salad before the meal for about +6.4 MES."
+  ],
+  "recovery_plan": [
+    "Aim for about 40g protein at your next meal.",
+    "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+    "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+  ],
+  "mes": {
+    "score": 74.7,
+    "tier": "good",
+    "sub_scores": {
+      "gis": 45.9,
+      "pas": 75.1,
+      "fs": 100.0,
+      "fas": 91.9
+    },
+    "ingredient_gis_adjustment": 0.0,
+    "ingredient_gis_reasons": []
+  },
+  "snack_profile": null,
+  "confidence": 0.8,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.76,
+    "nutrition": 0.76,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": true,
+  "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+  "pairing_recommended_title": "Kale and White Bean Salad",
+  "pairing_projected_mes": 81.1,
+  "pairing_projected_delta": 6.4,
+  "pairing_reasons": [
+    "fiber-rich side",
+    "acidic element",
+    "healthy fat",
+    "vegetable-forward side",
+    "eat before meal"
+  ],
+  "pairing_timing": "before_meal",
+  "fuel_score": 100.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Healthy cooking method like grilling or baking.",
+    "Includes whole-grain or complex carb sources.",
+    "Good fiber content (16g) helps slow digestion.",
+    "Strong protein (45g) supports satiety and recovery.",
+    "No processed ingredients detected \u2014 clean whole-food meal."
+  ],
+  "image": null
+}

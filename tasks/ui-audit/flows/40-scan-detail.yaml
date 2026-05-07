@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "75%,65%"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/60-scan-02-camera-or-permission"

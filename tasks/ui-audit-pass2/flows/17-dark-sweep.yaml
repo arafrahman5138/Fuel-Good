@@ -1,0 +1,36 @@
+appId: com.fuelgood.ios
+---
+# Toggle to Dark
+- swipe:
+    direction: DOWN
+    duration: 500
+- swipe:
+    direction: DOWN
+    duration: 500
+- tapOn: ".*Dark"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/50-settings-dark"
+# Home
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/10-home-pass2"
+# Quick actions
+- tapOn: "Open quick actions"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/60-quick-actions-pass2"
+# Close menu
+- tapOn:
+    point: "50%,5%"
+- waitForAnimationToEnd:
+    timeout: 1000
+# Tap New Chat AI via quick actions again
+- tapOn: "Open quick actions"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*New Chat with AI.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-fresh"

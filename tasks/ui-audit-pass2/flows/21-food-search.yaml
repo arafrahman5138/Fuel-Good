@@ -1,0 +1,19 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap Today's Fuel to open nested view
+- tapOn: "Today's Fuel"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/15-todays-fuel"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/15-todays-fuel-scroll"
+- tapOn:
+    point: "10%,10%"
+- waitForAnimationToEnd:
+    timeout: 1500

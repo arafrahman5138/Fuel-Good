@@ -2,6 +2,88 @@
 
 ---
 
+# Month-1 Target-User Test — Replay (2026-04-23)
+
+**Goal:** Re-run the month-long prime-target-user test from 2026-04-16 with a **fresh target-user persona** to validate which P0 fixes landed, re-score on the same rubric, and capture a new delta-vs-baseline report.
+
+**Baseline:** [month1-target-user-assessment.md](tasks/month1-target-user-assessment.md) (Alex Chen, 2026-04-16, Composite 7.2/10)
+
+## New Target User — Maya Patel
+
+Fits the **prime target segment** identified in the 04-16 report ("wellness-curious high-earner, Attia-adjacent, tired of calorie counting") but distinct from Alex so findings are fresh, not confirmation-biased.
+
+- **Maya Patel, 32F**, Senior Product Designer at a Series-B SaaS, NYC, $175k + equity
+- Partner is a line cook — cares about ingredient depth, not just macros
+- **Health flags:** mild PCOS (activates insulin-resistant pathway in metabolic engine)
+- **Activity:** runs 4x/wk (half-marathon last fall), yoga Sundays
+- **Goal:** weight maintenance + sustained energy through sprints; anti-restriction framing
+- **Reading:** *Outlive*, *The Glucose Goddess*, *Atomic Habits*; Huberman + Attia listener
+- **Current apps:** WHOOP 3+ yrs, Yuka daily, quit MyFitnessPal 2018, tried Noom 2 wks (shamed → churned)
+- **Cooking:** 5x/wk (Sunday meal prep), Sweetgreen 2x/wk, weekend dining out
+- **Dietary:** omnivore with strong pescatarian lean; dislikes lamb
+- **Flavor preferences:** Mediterranean, Japanese, Mexican
+- **Price tolerance:** $14.99/mo; would prefer $99/yr annual
+- **Quote:** *"I'm not trying to lose weight — I'm trying to stop feeling like shit when I wake up."*
+
+**Why this persona is the right differential:**
+- Exercises PCOS pathway (Alex didn't) — tests insulin-resistant carb-curve math
+- Female in prime target segment — original was male-skewed
+- Runner → tests workout-logging / active-day adjustments
+- Cohabitating with a chef → higher bar on recipe quality
+- Same archetype (high-earning, wellness-curious, anti-Noom) so retention lens stays apples-to-apples
+
+## Plan
+
+### Phase 1 — Setup (~20 min)
+- [ ] Add `maya` entry to `runs/personas/personas.json`
+- [ ] Provision account + capture computed metabolic budget → verify PCOS → IR carb curve
+- [ ] Confirm simulator + Expo + backend connectivity
+
+### Phase 2 — Live Week 1 Walkthrough on Simulator (~90 min)
+Maestro-driven end-to-end → `runs/captures/maya/`
+- [ ] Onboarding (PCOS handling)
+- [ ] Paywall
+- [ ] Meal reveal (P0 #2 — liked-protein filter)
+- [ ] Home / Today's Plan (one-tap log)
+- [ ] Flex Budget (P0 #4 — "Needs Work" day-0 copy)
+- [ ] Meal plan builder (Include/Avoid, Maya-specific swaps)
+- [ ] Scanner (P0 #3 — tab-level) + 5 realistic scans
+- [ ] Healthify chat × 4 prompts (P0 #1 — recipe card schema enforcement)
+- [ ] Cook mode (one recipe end-to-end)
+- [ ] Days 2-7 via API time-travel
+
+### Phase 3 — Weeks 2-4 Projection (~30 min)
+- [ ] Recipe catalog count (vs 79 baseline)
+- [ ] Breakfast unique-meal count (vs 8 baseline)
+- [ ] Maya's 4-week rotation uniqueness
+- [ ] Day-28 renewal forecast
+
+### Phase 4 — Market Research Refresh (~30 min, parallel subagent)
+- [ ] Competitor landscape changes since April 2026
+- [ ] New entrants in anti-calorie-counting segment
+- [ ] ZOE / WHOOP nutrition / MacroFactor moves
+- [ ] PCOS-specialist nutrition apps
+
+### Phase 5 — Report (~45 min)
+- [ ] Write `tasks/month1-target-user-assessment-2026-04-23.md`
+- [ ] Same rubric: Utility / Polish / Habit / Moat + composite
+- [ ] Delta vs 04-16 P0 items (shipped / regressed / untouched)
+- [ ] Updated P0/P1/P2 recommendations
+- [ ] Maya's renewal forecast
+- [ ] Appendix: screenshots + flow paths
+
+### Phase 6 — Lessons
+- [ ] Update `tasks/lessons.md` with methodology improvements
+
+## Success criteria
+- [ ] Full end-to-end walkthrough captured
+- [ ] Every 04-16 P0 explicitly verified: fixed / regressed / untouched
+- [ ] New composite score w/ justification
+- [ ] Maya persona persisted for future reuse
+- [ ] Honest verdict on whether 04-16 recommendations materially moved the needle
+
+---
+
 # UI Enhancement Plan — "Make It Feel Premium"
 
 ## Audit Summary

@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Liked Proteins.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-fixes-pass/phase3-protein-tristate"
+- tapOn: "Chicken"
+- waitForAnimationToEnd:
+    timeout: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase3-protein-liked"
+- tapOn: "Chicken"
+- waitForAnimationToEnd:
+    timeout: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase3-protein-avoided"
+- tapOn: "Beef"
+- waitForAnimationToEnd:
+    timeout: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase3-protein-mixed"

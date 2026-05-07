@@ -1,0 +1,41 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Flavor Profile.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/55-flavor-profile"
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Allergies.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/56-allergies"
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Liked Proteins.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/57-liked-proteins"
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Household Size.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/58-household-size"
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Push Notifications.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/59-notifications"
+- tapOn:
+    point: "10%,10%"
+- waitForAnimationToEnd:
+    timeout: 1500

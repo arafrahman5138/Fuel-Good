@@ -1,0 +1,44 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-00-home"
+
+- openLink: fuelgood://scan
+- extendedWaitUntil:
+    visible: "Choose photo from library"
+    timeout: 20000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-01-capture-meal-mode"
+
+# product mode pill is right side — try tapOn with regex matching any "Packaged"
+- tapOn: "Packaged.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-02-capture-product-mode"
+
+- tapOn: "Enter barcode"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-03-barcode-sheet"
+
+- swipe:
+    start: "50%,50%"
+    end: "50%,95%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- tapOn: "Scan Food"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Describe meal"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-04-describe-meal-sheet"

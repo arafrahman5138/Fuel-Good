@@ -1,0 +1,8 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Search: chicken, avocado..."
+- inputText: "chicken breast"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/17-food-search-submitted"

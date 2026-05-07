@@ -1,0 +1,67 @@
+{
+  "product_name": "20g ROTIEN",
+  "brand": null,
+  "barcode": null,
+  "source": "label_image",
+  "capture_type": "ingredients",
+  "ingredients_text": "Soy Wey Protein Isolate, Vegetable Glyciate, Vegetable Com Fiber, Erun Piolte, Erythytitol, Cocoa Cocoa Butter, Almond Butter, Sunflower Flavors, Sucralose, Salt, Steviol Glycydes",
+  "confidence": 0.7,
+  "confidence_breakdown": {
+    "ocr": 0.8,
+    "ingredients": 0.7,
+    "nutrition": 0.7,
+    "metadata": 0.6
+  },
+  "recoverable": false,
+  "notes": [
+    "Calories value seems unusually high (12400).",
+    "Fat and Carbohydrates values are not visible.",
+    "Sodium value is not visible."
+  ],
+  "score": 94.0,
+  "tier": "whole_food",
+  "verdict": "Great choice",
+  "summary": "This looks very close to a real-food product with minimal processing.",
+  "recommended_action": "This is a strong pantry pick for a whole-food lifestyle.",
+  "highlights": [
+    "Good fiber per serving.",
+    "Strong protein per serving."
+  ],
+  "concerns": [
+    "Contains artificial additives or preservatives."
+  ],
+  "reasoning": [
+    "Artificial additives found: sucralose."
+  ],
+  "ingredient_count": 11,
+  "nutrition_snapshot": {
+    "calories": 12400.0,
+    "protein_g": 20.0,
+    "fiber_g": 5.0,
+    "sugar_g": 10.0,
+    "carbs_g": 0.0,
+    "sodium_mg": 0.0
+  },
+  "processing_flags": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [
+      "sucralose"
+    ],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "flag_explanations": [
+    {
+      "title": "Artificial Additives",
+      "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+      "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+      "detected": [
+        "sucralose"
+      ]
+    }
+  ],
+  "scan_id": "1d746da2-9864-400b-8b67-31b8540bf065",
+  "image": null
+}

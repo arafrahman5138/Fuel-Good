@@ -1,0 +1,27 @@
+appId: com.fuelgood.ios
+---
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+# Tap Fuel Score card (weekly breakdown)
+- tapOn: ".*FUEL.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-06-fuel-weekly"
+- back
+- waitForAnimationToEnd:
+    timeout: 1200
+# Tap Flex card
+- tapOn: ".*flex meals available.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-07-flex"
+- back
+- waitForAnimationToEnd:
+    timeout: 1200

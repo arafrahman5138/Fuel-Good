@@ -1,0 +1,29 @@
+appId: com.fuelgood.ios
+---
+# Tap settings gear top right
+- tapOn:
+    point: "92%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/21-settings-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/21b-settings-mid"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/21c-settings-low"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/21d-settings-bottom"

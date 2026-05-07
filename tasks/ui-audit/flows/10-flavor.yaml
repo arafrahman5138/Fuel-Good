@@ -1,0 +1,8 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Savory"
+- tapOn: ".*Spicy"
+- tapOn: ".*Umami"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500

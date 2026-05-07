@@ -1,0 +1,6 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Log & Finish"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/05-post-log"

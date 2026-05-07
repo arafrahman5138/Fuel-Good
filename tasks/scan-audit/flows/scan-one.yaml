@@ -1,0 +1,91 @@
+appId: com.fuelgood.ios
+env:
+  MODE: "meal"
+  SCREENSHOT: "tasks/scan-audit/screenshots/result"
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 8000
+# Skip sign-in when already authed (home shows "Today's Fuel" or "Create Meal Plan")
+- runFlow:
+    when:
+      visible: "Sign In"
+    commands:
+      - tapOn:
+          text: "you@example.com"
+      - inputText: "wholefoodlabs@gmail.com"
+      - tapOn:
+          text: "Enter password"
+      - inputText: "ScanAudit2026!"
+      - hideKeyboard
+      - tapOn:
+          text: "Sign In"
+      - waitForAnimationToEnd:
+          timeout: 20000
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+# If not already on scan, navigate in
+- runFlow:
+    when:
+      notVisible:
+        id: "scan-close"
+    commands:
+      - scroll
+      - scroll
+      - scroll
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn:
+          id: "home-scan-tile"
+      - waitForAnimationToEnd:
+          timeout: 6000
+# Switch mode if needed
+- runFlow:
+    when:
+      true: ${MODE == "product"}
+    commands:
+      - tapOn:
+          id: "scan-mode-product"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- runFlow:
+    when:
+      true: ${MODE == "meal"}
+    commands:
+      - tapOn:
+          id: "scan-mode-meal"
+      - waitForAnimationToEnd:
+          timeout: 1500
+# Open picker and pick newest photo (top-left)
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "54,225"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Wait for analysis overlay to clear: result screens show "Tips" or "Why this score" or product action buttons
+- extendedWaitUntil:
+    visible:
+      text: "Analyzing your meal|Analyzing label|Looks good|Recompute|Scan another|Log to Chronometer|Try again|Extracted label"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: ${SCREENSHOT}
+# Go back to capture for next scan: tap X (scan-close) which exits to parent, then we re-enter on next iteration
+- runFlow:
+    when:
+      visible:
+        id: "scan-close"
+    commands:
+      - tapOn:
+          id: "scan-close"
+      - waitForAnimationToEnd:
+          timeout: 2500

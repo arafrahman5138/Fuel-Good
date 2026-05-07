@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap "+" next to Chicken Sausage Kale Scramble (first meal in Today's Plan)
+- tapOn:
+    text: "Log Chicken Sausage Kale Scramble"
+- waitForAnimationToEnd:
+    timeout: 5000

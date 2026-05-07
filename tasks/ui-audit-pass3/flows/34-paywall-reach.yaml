@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*all in.*"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Start my free trial"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/27-paywall-or-home"

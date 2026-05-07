@@ -1,0 +1,14 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/18-home-after-1-meal"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/18b-home-top-after-meal"

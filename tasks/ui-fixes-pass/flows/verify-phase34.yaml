@@ -1,0 +1,20 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Liked Proteins"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-fixes-pass/phase34-protein-tristate"
+- tapOn: "Chicken"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-fixes-pass/phase34-protein-liked"
+- tapOn: "Chicken"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-fixes-pass/phase34-protein-avoided"

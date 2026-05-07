@@ -1,0 +1,29 @@
+appId: com.fuelgood.ios
+---
+# Coach - tap a quick start
+- tapOn: ".*Steak and Eggs"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/40-coach-02-response"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/40-coach-02b-response-scroll"
+# Open chat drawer via menu icon (top-left)
+- tapOn:
+    point: "8%,14%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/40-coach-03-history"
+- tapOn:
+    point: "85%,50%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Profile
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/50-profile-01-overview"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/50-profile-02-scrolled"

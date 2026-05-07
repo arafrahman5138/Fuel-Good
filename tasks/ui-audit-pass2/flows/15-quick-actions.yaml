@@ -1,0 +1,24 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Open quick actions
+- tapOn: "Open quick actions"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/60-quick-actions-pass2"
+# Tap Log Meal
+- tapOn: ".*Log Meal.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/61-log-meal"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/61-log-meal-scroll"
+- tapOn:
+    point: "10%,10%"
+- waitForAnimationToEnd:
+    timeout: 1500

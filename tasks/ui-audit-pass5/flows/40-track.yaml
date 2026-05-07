@@ -1,0 +1,32 @@
+appId: com.fuelgood.ios
+---
+# Track tab — center-ish bottom
+- tapOn:
+    point: "50%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/50-track-fuel-default"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/50b-track-fuel-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/50c-track-fuel-scroll-2"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800

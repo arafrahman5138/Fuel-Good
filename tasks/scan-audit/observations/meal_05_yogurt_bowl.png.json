@@ -1,0 +1,129 @@
+{
+  "id": "d4285929-23cb-4ff9-81b8-a17adbd3ea9e",
+  "meal_label": "Yogurt with Granola and Berries",
+  "meal_type": "breakfast",
+  "meal_context": "snack",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Yogurt",
+    "Granola",
+    "Strawberries",
+    "Blueberries",
+    "Chia",
+    "Honey"
+  ],
+  "normalized_ingredients": [
+    "yogurt",
+    "granola",
+    "strawberries",
+    "blueberries",
+    "chia",
+    "honey",
+    "nuts",
+    "oats",
+    "sugar"
+  ],
+  "nutrition_estimate": {
+    "calories": 348.3,
+    "protein": 7.4,
+    "carbs": 66.8,
+    "fat": 7.2,
+    "fiber": 5.5,
+    "sugar_g": 22.3,
+    "glycemic_profile": {
+      "primary_carb_source": "oats",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "ingredients": [
+      "yogurt",
+      "granola",
+      "strawberries",
+      "blueberries",
+      "chia",
+      "honey",
+      "nuts",
+      "oats",
+      "sugar"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": {
+    "primary_carb_source": "oats",
+    "processing_level": "intact",
+    "resistant_starch_prep": "none",
+    "override_inference": false,
+    "notes": null
+  },
+  "whole_food_status": "warn",
+  "whole_food_flags": [
+    {
+      "ingredient": "sugar",
+      "reason": "added sugar",
+      "severity": "high",
+      "inferred": false
+    }
+  ],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [
+      "sugar"
+    ],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "Choose a snack with less added sugar or pair the sweet item with protein.",
+    "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+  ],
+  "recovery_plan": [
+    "Let your next meal do the heavy lifting with a real protein anchor.",
+    "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs.",
+    "Keep the rest of the day a little cleaner so you preserve your remaining 200g carb room."
+  ],
+  "mes": null,
+  "snack_profile": {
+    "is_snack": true,
+    "is_healthy_snack": false,
+    "label": "Snack"
+  },
+  "confidence": 0.86,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.9,
+    "nutrition": 0.9,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": false,
+  "pairing_recommended_recipe_id": null,
+  "pairing_recommended_title": null,
+  "pairing_projected_mes": null,
+  "pairing_projected_delta": null,
+  "pairing_reasons": [],
+  "pairing_timing": null,
+  "fuel_score": 64.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Contains 1 heavily processed ingredient like seed oils or artificial additives.",
+    "Some processed ingredients bring this below whole-food standards.",
+    "High sugar content (22g) \u2014 this spikes blood sugar and adds empty calories.",
+    "Decent fiber (6g) adds some digestive benefit."
+  ],
+  "image": null
+}

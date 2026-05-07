@@ -1,0 +1,28 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "92%,93%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Coach"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-with-history"
+- tapOn:
+    point: "10%,10%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-drawer-open"
+- tapOn: "New Chat"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-new-chat"
+- tapOn: "Explain my score"
+- waitForAnimationToEnd:
+    timeout: 12000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-explain-score"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/40-coach-explain-scroll"

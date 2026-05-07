@@ -1,0 +1,26 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "10%,7%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- tapOn:
+    point: "10%,7%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- tapOn:
+    point: "10%,7%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- tapOn:
+    point: "30%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Open Meals, Full recipes"
+- waitForAnimationToEnd:
+    timeout: 4500
+- tapOn:
+    point: "25%,45%"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-fixes-pass/phase4-recipe-tags"

@@ -1,0 +1,103 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "89f192e2-31ac-4af3-b9a4-259bb70e211c",
+    "meal_label": "Pepperoni Pizza",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Pizza Dough",
+      "Tomato Sauce",
+      "Mozzarella Cheese",
+      "Pepperoni"
+    ],
+    "normalized_ingredients": [
+      "pizza dough",
+      "tomato sauce",
+      "mozzarella cheese",
+      "pepperoni"
+    ],
+    "nutrition_estimate": {
+      "calories": 655.0,
+      "protein": 32.8,
+      "carbs": 69.0,
+      "fat": 26.4,
+      "fiber": 5.9,
+      "sugar_g": 2.0,
+      "ingredients": [
+        "pizza dough",
+        "tomato sauce",
+        "mozzarella cheese",
+        "pepperoni"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Add a bean, lentil, or vegetable side to raise fiber.",
+      "Start with a salad or vegetables before the starch so the meal hits more gently.",
+      "Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "A 10-minute walk after this meal can help flatten the glycemic hit."
+    ],
+    "mes": {
+      "score": 57.2,
+      "tier": "moderate",
+      "sub_scores": {
+        "gis": 34.5,
+        "pas": 51.6,
+        "fs": 63.9,
+        "fas": 89.1
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.82,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.9,
+      "nutrition": 0.9,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": "usda",
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 35.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221230).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

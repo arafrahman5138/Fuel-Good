@@ -1,0 +1,23 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    below: "Full Name"
+    index: 0
+- eraseText: 50
+- inputText: "Tester"
+- tapOn:
+    below:
+      text: "Email"
+- eraseText: 60
+- inputText: "audit041826a@example.com"
+- tapOn:
+    below: "Password"
+- inputText: "TestPass12345!"
+- hideKeyboard
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03-signup-filled"
+- tapOn:
+    text: "Create Account"
+    index: 1
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onboarding-step1"

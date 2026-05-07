@@ -1,0 +1,38 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element: ".*Sign out.*"
+    direction: DOWN
+- takeScreenshot: "tasks/ui-audit/screenshots/light/50-settings-bottom"
+- tapOn: ".*Sign out.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible: "Sign Out"
+    commands:
+      - tapOn: "Sign Out"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/00-01-login"
+- tapOn: "Forgot password?"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/00-02-forgot-password"
+- tapOn: "Back to sign in"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "82%,89%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/00-03-signup"

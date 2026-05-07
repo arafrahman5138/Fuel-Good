@@ -1,0 +1,78 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "9e78e490-f575-473c-93cf-51818dea741b",
+    "meal_label": "Cheeseburger with Fries",
+    "meal_type": "lunch",
+    "meal_context": "snack",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [],
+    "normalized_ingredients": [],
+    "nutrition_estimate": {
+      "calories": 0.0,
+      "protein": 0.0,
+      "carbs": 0.0,
+      "fat": 0.0,
+      "fiber": 0.0,
+      "sugar_g": 0.0,
+      "ingredients": [],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Review the detected ingredients before relying on this estimate.",
+      "Adjust the portion size if the scan under- or over-estimated the plate."
+    ],
+    "recovery_plan": [
+      "Treat this as a rough estimate until you confirm the ingredients and portion.",
+      "After review, rescore so the MES reflects the corrected meal."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.63,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.8,
+      "grounding": 0.35,
+      "nutrition": 0.35,
+      "ensemble_applied": false,
+      "estimate_mode": "low",
+      "review_required": true
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 55.0,
+    "fuel_reasoning": [
+      "Not enough detail to score this meal accurately."
+    ],
+    "image": null
+  }
+}

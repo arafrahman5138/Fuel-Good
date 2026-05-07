@@ -1,0 +1,12 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Search Foods"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/17-food-search"
+- tapOn:
+    point: "50%,18%"
+- inputText: "chicken"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/17-food-search-results"

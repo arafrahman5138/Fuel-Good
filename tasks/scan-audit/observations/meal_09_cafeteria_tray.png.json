@@ -1,0 +1,60 @@
+{
+  "id": "aa3b7bcf-3ad9-4102-8f52-754a220fe882",
+  "meal_label": "Scanned meal",
+  "meal_type": "lunch",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [],
+  "normalized_ingredients": [],
+  "nutrition_estimate": {
+    "calories": 450,
+    "protein": 25,
+    "carbs": 40,
+    "fat": 18,
+    "fiber": 5,
+    "sugar": 8,
+    "whole_food_summary": "We couldn't confidently analyze this meal yet."
+  },
+  "glycemic_profile": null,
+  "whole_food_status": "unknown",
+  "whole_food_flags": [],
+  "suggested_swaps": {},
+  "upgrade_suggestions": [
+    "Retake the photo in brighter light for a more accurate meal scan."
+  ],
+  "recovery_plan": [
+    "You can edit the meal name, ingredients, and portion size after this scan finishes."
+  ],
+  "mes": null,
+  "snack_profile": null,
+  "confidence": 0.1,
+  "confidence_breakdown": {
+    "extraction": 0.0,
+    "portion": 0.0,
+    "grounding": 0.0,
+    "nutrition": 0.0,
+    "estimate_mode": "fallback",
+    "review_required": true
+  },
+  "source_model": "degraded_fallback",
+  "grounding_source": null,
+  "grounding_candidates": [],
+  "prompt_version": null,
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "We couldn't confidently analyze this meal yet.",
+  "pairing_opportunity": false,
+  "pairing_recommended_recipe_id": null,
+  "pairing_recommended_title": null,
+  "pairing_projected_mes": null,
+  "pairing_projected_delta": null,
+  "pairing_reasons": [],
+  "pairing_timing": null,
+  "fuel_score": null,
+  "fuel_reasoning": [],
+  "image": null,
+  "is_degraded": true,
+  "degraded_reason": "AI analysis temporarily unavailable. You can correct this scan manually."
+}

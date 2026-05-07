@@ -1,0 +1,53 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Suein moo",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Pasteurized Grade A Whole Milk, Pasterreized Cream, Live Active Cultures (S. Thermoplicus, L. Acidaphilus, Bifidus, L Casei)",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.9,
+      "nutrition": 0.9,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [],
+    "score": 100.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "summary": "This looks very close to a real-food product with minimal processing.",
+    "recommended_action": "This is a strong pantry pick for a whole-food lifestyle.",
+    "highlights": [
+      "Relatively short ingredient list.",
+      "Strong protein per serving.",
+      "Reasonable sugar level per serving.",
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [],
+    "reasoning": [],
+    "ingredient_count": 9,
+    "nutrition_snapshot": {
+      "calories": 160.0,
+      "protein_g": 15.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 7.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "scan_id": "9ad298e5-ba2b-41f8-ab1f-e02dd91b178a",
+    "image": null
+  }
+}

@@ -1,0 +1,21 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/53-settings-bottom-pass2"
+- tapOn: ".*Manage Subscription.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/70-manage-subscription"

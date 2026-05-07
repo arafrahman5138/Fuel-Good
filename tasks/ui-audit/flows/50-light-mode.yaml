@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+# Navigate to Profile → Settings
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap settings gear (top-right)
+- tapOn:
+    point: "88%,14%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Light"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/50-profile-04-settings"

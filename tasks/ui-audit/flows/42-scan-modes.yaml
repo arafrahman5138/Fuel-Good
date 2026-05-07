@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "75%,85%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/60-scan-03-packaged"
+- tapOn:
+    point: "9%,12%"
+- waitForAnimationToEnd:
+    timeout: 1500

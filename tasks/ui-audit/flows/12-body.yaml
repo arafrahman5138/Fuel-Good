@@ -1,0 +1,14 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "e.g. 165"
+- inputText: "170"
+- tapOn: "e.g. 5"
+- inputText: "5"
+- tapOn: "e.g. 7"
+- inputText: "10"
+- tapOn: "e.g. 30"
+- inputText: "30"
+- tapOn: "Male"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500

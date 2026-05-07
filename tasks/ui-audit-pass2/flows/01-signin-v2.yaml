@@ -1,0 +1,26 @@
+appId: com.fuelgood.ios
+---
+# Toggle to Sign In mode
+- tapOn:
+    point: "75%,92%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/00-01-login-light-fresh"
+- tapOn: "you@example.com"
+- inputText: "newtester0418x@example.com"
+- tapOn: "Enter password"
+- inputText: "TestPass12345!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/00-home-after-signin"

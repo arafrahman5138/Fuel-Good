@@ -1,0 +1,14 @@
+appId: com.fuelgood.ios
+---
+# Assumes we're on the scan capture screen in Product mode.
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: "54,225"
+- extendedWaitUntil:
+    visible:
+      text: "Scan another"
+    timeout: 60000
+- takeScreenshot: ${output.screenshotPath}

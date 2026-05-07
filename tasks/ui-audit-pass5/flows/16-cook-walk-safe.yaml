@@ -1,0 +1,51 @@
+appId: com.fuelgood.ios
+---
+# We're on Recipe Detail. Tap Cook
+- tapOn:
+    point: "15%,88%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11-cook-step1-fresh"
+
+# Step 2
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/12-cook-step2"
+
+# Step 3
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/13-cook-step3"
+
+# What's at the end? (3-step recipe — could be a Log&Finish or Finish CTA)
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/13b-cook-step3-end"
+
+# Try the final CTA
+- runFlow:
+    when:
+      visible: ".*Log.*Finish.*"
+    commands:
+      - tapOn: ".*Log.*Finish.*"
+      - waitForAnimationToEnd:
+          timeout: 6000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-post-cook"
+
+- runFlow:
+    when:
+      visible: ".*Finish.*"
+    commands:
+      - tapOn: ".*Finish.*"
+      - waitForAnimationToEnd:
+          timeout: 6000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-post-cook-finish"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-post-cook-via-next"

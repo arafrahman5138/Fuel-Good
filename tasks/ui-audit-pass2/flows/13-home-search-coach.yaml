@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap MES breakdown via Metabolic toggle on Track
+- tapOn: ".*Track"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Metabolic"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/30-track-metabolic"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/30-track-metabolic-scroll"

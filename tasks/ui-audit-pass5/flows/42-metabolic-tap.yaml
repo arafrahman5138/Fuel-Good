@@ -1,0 +1,21 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "75%,17%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/51-track-metabolic"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/51b-track-metabolic-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/51c-track-metabolic-scroll-2"

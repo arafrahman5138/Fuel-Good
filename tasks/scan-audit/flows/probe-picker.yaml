@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- takeScreenshot: "tasks/scan-audit/screenshots/before-lib-tap"
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "tasks/scan-audit/screenshots/after-lib-tap-a"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/scan-audit/screenshots/after-lib-tap-b"

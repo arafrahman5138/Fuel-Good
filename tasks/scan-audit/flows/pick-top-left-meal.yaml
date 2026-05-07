@@ -1,0 +1,17 @@
+appId: com.fuelgood.ios
+---
+# Assumes we're on the scan capture screen in Meal mode.
+# Taps the Choose Photo button, then taps the newest (top-left) photo,
+# then waits for analysis to complete and screenshots the result.
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 5000
+# Photos picker shows grid. iOS 26 top-left photo center ≈ (54, 225) on iPhone 17 Pro.
+- tapOn:
+    point: "54,225"
+- extendedWaitUntil:
+    visible:
+      text: "Log to Chronometer"
+    timeout: 60000
+- takeScreenshot: ${output.screenshotPath}

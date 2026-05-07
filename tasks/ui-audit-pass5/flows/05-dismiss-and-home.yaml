@@ -1,0 +1,37 @@
+appId: com.fuelgood.ios
+---
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/06-home-clean-final"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/06b-home-scroll-1"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/06c-home-scroll-2"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/06d-home-top"

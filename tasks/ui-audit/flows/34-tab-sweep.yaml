@@ -1,0 +1,43 @@
+appId: com.fuelgood.ios
+---
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+# Tap Meals tab
+- tapOn: ".*Meals"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-01-hub-v2"
+# Tap New Plan dropdown to open plan switch
+- tapOn: "New Plan"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-04-builder-v2"
+- tapOn:
+    point: "5%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Go to Track tab
+- tapOn: ".*Track"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/30-track-01-dashboard"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/30-track-02-scroll1"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/30-track-03-scroll2"
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+# Go to Coach tab
+- tapOn: ".*Coach"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/40-coach-01-chat"

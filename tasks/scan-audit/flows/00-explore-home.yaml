@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "tasks/scan-audit/screenshots/00-home-initial"

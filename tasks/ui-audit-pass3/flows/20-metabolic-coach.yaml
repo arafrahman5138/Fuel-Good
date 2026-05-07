@@ -1,0 +1,12 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "11%,94%"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap the flame badge top-right (streak/energy)
+- tapOn:
+    point: "74%,9%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/12-flame-tapped"

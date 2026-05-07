@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+# Tap day row for a detail view
+- tapOn: ".*Mon.*Apr 13.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-06b-fuel-daydetail"
+# Back to weekly
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1000
+# Back to home
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-back-to-dashboard"

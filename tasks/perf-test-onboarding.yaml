@@ -1,0 +1,33 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- scroll
+- scroll
+- scroll
+- tapOn:
+    point: 26%,69%
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/perf-step-1"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/perf-step-2"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/perf-step-3"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/perf-step-4"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/perf-step-5"

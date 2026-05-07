@@ -1,0 +1,12 @@
+appId: com.fuelgood.ios
+---
+# Already on Meals → scroll to see more
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-01-hub"
+- tapOn: "New Plan"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-new-plan"
+- tapOn:
+    point: "5%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

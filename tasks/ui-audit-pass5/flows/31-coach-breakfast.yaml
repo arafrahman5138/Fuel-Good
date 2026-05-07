@@ -1,0 +1,40 @@
+appId: com.fuelgood.ios
+---
+# Tap "+ New" to start a new chat
+- tapOn:
+    text: ".*New.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/40-coach-new-chat"
+
+- tapOn:
+    text: "Ask about any food.*"
+- waitForAnimationToEnd:
+    timeout: 800
+- inputText: "Show me a high-protein breakfast recipe"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/41-coach-breakfast-typed"
+
+# Send button
+- tapOn:
+    point: "92%,90%"
+- waitForAnimationToEnd:
+    timeout: 30000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/42-coach-breakfast-response"
+
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/42b-coach-breakfast-scrolled"
+
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/42c-coach-breakfast-scrolled-2"

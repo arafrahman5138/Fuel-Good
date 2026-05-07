@@ -1,0 +1,110 @@
+{
+  "id": "efec89f9-8333-48de-87c1-da1e16695734",
+  "meal_label": "Spaghetti Carbonara",
+  "meal_type": "lunch",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Spaghetti",
+    "Guanciale",
+    "Pecorino Romano Cheese",
+    "Egg Yolk",
+    "Black Pepper"
+  ],
+  "normalized_ingredients": [
+    "spaghetti",
+    "guanciale",
+    "pecorino romano cheese",
+    "egg yolk",
+    "black pepper"
+  ],
+  "nutrition_estimate": {
+    "calories": 396.1,
+    "protein": 21.0,
+    "carbs": 48.5,
+    "fat": 13.8,
+    "fiber": 5.9,
+    "sugar_g": 0.1,
+    "ingredients": [
+      "spaghetti",
+      "guanciale",
+      "pecorino romano cheese",
+      "egg yolk",
+      "black pepper"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": null,
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+    "Pair this with Kale and White Bean Salad before the meal for about +15.5 MES.",
+    "Add a more protein-forward base next time so the meal holds you longer."
+  ],
+  "recovery_plan": [
+    "Aim for about 40g protein at your next meal.",
+    "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+    "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+  ],
+  "mes": {
+    "score": 51.3,
+    "tier": "moderate",
+    "sub_scores": {
+      "gis": 56.9,
+      "pas": 24.5,
+      "fs": 63.9,
+      "fas": 74.0
+    },
+    "ingredient_gis_adjustment": 0.0,
+    "ingredient_gis_reasons": []
+  },
+  "snack_profile": null,
+  "confidence": 0.71,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.57,
+    "nutrition": 0.57,
+    "ensemble_applied": false,
+    "estimate_mode": "medium",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": true,
+  "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+  "pairing_recommended_title": "Kale and White Bean Salad",
+  "pairing_projected_mes": 66.8,
+  "pairing_projected_delta": 15.5,
+  "pairing_reasons": [
+    "fiber-rich side",
+    "acidic element",
+    "healthy fat",
+    "vegetable-forward side",
+    "eat before meal"
+  ],
+  "pairing_timing": "before_meal",
+  "fuel_score": 100.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Decent fiber (6g) adds some digestive benefit.",
+    "No processed ingredients detected \u2014 clean whole-food meal."
+  ],
+  "image": null
+}

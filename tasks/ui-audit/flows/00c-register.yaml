@@ -1,0 +1,13 @@
+appId: host.exp.Exponent
+---
+- tapOn: "Your name"
+- inputText: "Audit Tester"
+- tapOn: "you@example.com"
+- inputText: "audit-2026-04-18-t1113@example.com"
+- tapOn: "Enter password"
+- inputText: "TestPass12345!"
+- hideKeyboard
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/01-01-onboarding-first"

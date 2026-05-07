@@ -1,0 +1,30 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "e.g. 165"
+- inputText: "170"
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "e.g. 5"
+- inputText: "5"
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "e.g. 7"
+- inputText: "10"
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "e.g. 30"
+- inputText: "32"
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Male"
+- scroll
+- tapOn: ".*Lightly"
+- tapOn: ".*Metabolic reset.*"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/23-next-screen"

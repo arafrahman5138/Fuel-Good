@@ -1,0 +1,15 @@
+appId: host.exp.Exponent
+---
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-01-login"
+- tapOn: "Forgot password?"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-02-forgot-password"
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "85%,93%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03-signup"

@@ -1,0 +1,8 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    start: "50%,5%"
+    end: "50%,95%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/scan-audit/screenshots/after-dismiss"

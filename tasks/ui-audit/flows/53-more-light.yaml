@@ -1,0 +1,39 @@
+appId: com.fuelgood.ios
+---
+# From Coach, hit menu for history
+- tapOn:
+    point: "8%,14%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/40-coach-history-drawer"
+- tapOn:
+    point: "85%,50%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Scan modal in light
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "92%,93%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/60-quick-actions"
+- tapOn:
+    point: "75%,73%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/60-scan-camera"
+- tapOn:
+    point: "9%,12%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Plan builder in light
+- tapOn: "Create meal plan"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/11-plan-builder"
+- tapOn:
+    point: "5%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

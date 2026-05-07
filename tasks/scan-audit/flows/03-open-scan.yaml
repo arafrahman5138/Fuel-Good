@@ -1,0 +1,10 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 4000
+- openLink: fuelgood://scan
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/scan-audit/screenshots/03-scan-capture"

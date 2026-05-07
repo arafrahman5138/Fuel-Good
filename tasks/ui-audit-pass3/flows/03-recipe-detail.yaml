@@ -1,0 +1,21 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Butter Chicken Bowl"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/03-recipe-detail-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/03-recipe-detail-scroll1"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/03-recipe-detail-scroll2"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/03-recipe-detail-scroll3"

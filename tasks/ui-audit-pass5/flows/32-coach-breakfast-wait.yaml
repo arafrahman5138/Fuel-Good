@@ -1,0 +1,19 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 25000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/43-coach-breakfast-final"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/43b-coach-breakfast-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/43c-coach-breakfast-scroll-2"

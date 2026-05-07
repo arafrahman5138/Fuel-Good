@@ -1,0 +1,15 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    direction: DOWN
+    duration: 500
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 1000
+# Try tap Today's Plan card
+- tapOn: "Today's Plan"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/11-todays-plan-tapped"

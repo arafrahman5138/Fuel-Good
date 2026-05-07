@@ -1,0 +1,16 @@
+appId: com.fuelgood.ios
+---
+- runFlow:
+    when:
+      visible: "Premium Active"
+    commands:
+      - tapOn: "OK"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-01-dashboard"
+- swipe:
+    direction: DOWN
+    duration: 300
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-02-pulled"

@@ -1,0 +1,13 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- tapOn:
+    point: "7%,7%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/profile-return"

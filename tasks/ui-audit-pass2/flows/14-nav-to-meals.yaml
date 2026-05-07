@@ -1,0 +1,23 @@
+appId: com.fuelgood.ios
+---
+# Close drawer
+- tapOn:
+    point: "95%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Meals"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Open Meals, Full recipes"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/20-meals-browse-pass2"
+# Wait more for recipes to load
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/20-meals-browse-wait"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/20-meals-browse-scroll-pass2"

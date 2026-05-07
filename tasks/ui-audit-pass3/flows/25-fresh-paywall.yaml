@@ -1,0 +1,29 @@
+appId: com.fuelgood.ios
+---
+# Toggle to signup
+- tapOn:
+    point: "82%,92%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Your name"
+- inputText: "Paywall Tester"
+- tapOn:
+    point: "50%,52%"
+- inputText: "pw-0420-test@example.com"
+- tapOn:
+    point: "50%,62%"
+- inputText: "Pwtest12345!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 12000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/20-post-fresh-signup"

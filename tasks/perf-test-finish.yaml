@@ -1,0 +1,10 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "Start my free trial"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "tasks/perf-after-finish"

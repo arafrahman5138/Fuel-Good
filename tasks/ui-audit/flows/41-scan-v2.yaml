@@ -1,0 +1,20 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "92%,93%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/60-quick-actions"
+# Scan is second menu item
+- tapOn:
+    point: "75%,73%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/60-scan-02"

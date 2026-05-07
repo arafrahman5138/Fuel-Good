@@ -1,0 +1,26 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "82%,92%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Your name"
+- inputText: "EmptyRing"
+- tapOn: "you@example.com"
+- inputText: "emptyring-0420@example.com"
+- tapOn: "Enter password"
+- inputText: "EmptyRing12345!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 8000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- takeScreenshot: "tasks/ui-fixes-pass/onb-first"

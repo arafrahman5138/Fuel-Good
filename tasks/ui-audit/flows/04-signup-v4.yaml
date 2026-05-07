@@ -1,0 +1,15 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "50%,66%"
+- waitForAnimationToEnd:
+    timeout: 800
+- inputText: "TestPass12345!"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03b-signup-filled"
+- tapOn:
+    text: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-01-first"

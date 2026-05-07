@@ -1,0 +1,85 @@
+{
+  "id": "db77f09a-bae1-4bd4-9654-cdb533be2304",
+  "meal_label": "Latte",
+  "meal_type": "snack",
+  "meal_context": "snack",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Coffee",
+    "Milk Foam"
+  ],
+  "normalized_ingredients": [
+    "coffee",
+    "milk foam"
+  ],
+  "nutrition_estimate": {
+    "calories": 101.0,
+    "protein": 7.1,
+    "carbs": 12.0,
+    "fat": 4.0,
+    "fiber": 0.0,
+    "sugar_g": 2.2,
+    "ingredients": [
+      "coffee",
+      "milk foam"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": null,
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "If you want this snack to hold you longer, add a little protein like yogurt, cheese, or nuts.",
+    "Add a little fiber next time with berries, chia, nuts, or crunchy vegetables."
+  ],
+  "recovery_plan": [
+    "Let your next meal do the heavy lifting with a real protein anchor.",
+    "Use your next meal to catch up on fiber with vegetables, beans, lentils, or chia."
+  ],
+  "mes": null,
+  "snack_profile": {
+    "is_snack": true,
+    "is_healthy_snack": true,
+    "label": "Healthy snack"
+  },
+  "confidence": 0.86,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.9,
+    "nutrition": 0.9,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": false,
+  "pairing_recommended_recipe_id": null,
+  "pairing_recommended_title": null,
+  "pairing_projected_mes": null,
+  "pairing_projected_delta": null,
+  "pairing_reasons": [],
+  "pairing_timing": null,
+  "fuel_score": 100.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "No processed ingredients detected \u2014 clean whole-food meal."
+  ],
+  "image": null
+}

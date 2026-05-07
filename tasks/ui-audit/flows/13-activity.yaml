@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- scroll
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-11b-body-activity"
+- tapOn: ".*sedentary.*"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500

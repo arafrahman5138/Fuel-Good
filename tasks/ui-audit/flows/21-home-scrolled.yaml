@@ -1,0 +1,10 @@
+appId: com.fuelgood.ios
+---
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-02-scroll1"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-03-scroll2"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-04-scroll3"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-05-scroll4"

@@ -1,0 +1,13 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "89%,11%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Liked Proteins"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-fixes-pass/phase3-protein-tristate"

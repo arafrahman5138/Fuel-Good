@@ -1,0 +1,24 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "you@example.com"
+- inputText: "pw0420test@example.com"
+- tapOn: "Email"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Enter password"
+- inputText: "Pwtest12345!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/20-signup-filled"
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/20-post-fresh-signup-v2"

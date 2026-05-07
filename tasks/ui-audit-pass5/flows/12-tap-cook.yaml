@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "15%,93%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/_after-cook-tap"

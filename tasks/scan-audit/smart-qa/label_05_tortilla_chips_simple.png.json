@@ -1,0 +1,65 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Stone Ground Whole Corn",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Stone Ground Whole Corn, Sunflower Oil, Sea Salt",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.9,
+      "nutrition": 0.9,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [],
+    "score": 59.9,
+    "tier": "mixed",
+    "verdict": "Mixed bag",
+    "summary": "This product has some redeeming qualities, but it is noticeably processed.",
+    "recommended_action": "Okay occasionally, but not ideal as a staple.",
+    "highlights": [
+      "Reasonable sugar level per serving."
+    ],
+    "concerns": [
+      "Contains industrial seed oils."
+    ],
+    "reasoning": [
+      "Seed oils found: sunflower oil."
+    ],
+    "ingredient_count": 3,
+    "nutrition_snapshot": {
+      "calories": 140.0,
+      "protein_g": 2.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 3.0,
+      "sodium_mg": 110.0
+    },
+    "processing_flags": {
+      "seed_oils": [
+        "sunflower oil"
+      ],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Seed Oils",
+        "explanation": "Industrial seed oils like canola, soybean, and sunflower oil are high in omega-6 fatty acids. Excess omega-6 can promote inflammation when not balanced with omega-3s. Look for olive oil, avocado oil, coconut oil, or butter instead.",
+        "look_for": "Olive oil, avocado oil, coconut oil, butter, ghee",
+        "detected": [
+          "sunflower oil"
+        ]
+      }
+    ],
+    "scan_id": "1d51b70f-6881-4d7c-abd2-f7a539e2c726",
+    "image": null
+  }
+}

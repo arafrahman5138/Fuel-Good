@@ -1,0 +1,23 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Create Meal Plan"
+- waitForAnimationToEnd:
+    timeout: 3500
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/11-plan-step1-scrolled"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/11-plan-step2-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/11-plan-step2-bottom"

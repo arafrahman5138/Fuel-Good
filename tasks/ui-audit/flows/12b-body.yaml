@@ -1,0 +1,13 @@
+appId: com.fuelgood.ios
+---
+- eraseText: 5
+- tapOn: "Age"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Male"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500

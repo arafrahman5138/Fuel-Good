@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*coaching breakdown.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/15-full-coaching"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/15-full-coaching-scroll"

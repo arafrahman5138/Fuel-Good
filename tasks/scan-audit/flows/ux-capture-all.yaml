@@ -1,0 +1,46 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Araf"
+    timeout: 30000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-00-home"
+
+- openLink: fuelgood://scan
+- extendedWaitUntil:
+    visible: "Choose photo from library"
+    timeout: 15000
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-01-capture-meal-mode"
+
+- tapOn: "Packaged Food"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-02-capture-product-mode"
+
+- tapOn: "Enter barcode"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-03-barcode-sheet"
+- tapOn: "Dismiss barcode sheet"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- tapOn: "Scan Food"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn: "Describe meal"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-04-describe-meal-sheet"
+- tapOn: "Dismiss describe meal sheet"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- tapOn: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 4500
+- takeScreenshot: "tasks/scan-audit/screenshots/ux-05-photo-picker"

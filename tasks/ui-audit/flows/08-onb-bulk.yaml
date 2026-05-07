@@ -1,0 +1,8 @@
+appId: com.fuelgood.ios
+---
+# Screen 3: How often do you eat ultra-processed food
+- tapOn: "A few times a week"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-04"

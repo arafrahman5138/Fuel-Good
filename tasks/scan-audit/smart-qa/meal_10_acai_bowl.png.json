@@ -1,0 +1,110 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "4067b484-9ac4-4621-9220-9fe7f688a1d9",
+    "meal_label": "Acai Bowl",
+    "meal_type": "breakfast",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Acai Puree",
+      "Strawberries",
+      "Blueberries",
+      "Banana",
+      "Granola",
+      "Coconut Flakes",
+      "Honey Drizzle"
+    ],
+    "normalized_ingredients": [
+      "acai puree",
+      "strawberries",
+      "blueberries",
+      "banana",
+      "granola",
+      "coconut flakes",
+      "honey drizzle"
+    ],
+    "nutrition_estimate": {
+      "calories": 1005.0,
+      "protein": 13.7,
+      "carbs": 151.7,
+      "fat": 42.5,
+      "fiber": 19.7,
+      "sugar_g": 25.1,
+      "ingredients": [
+        "acai puree",
+        "strawberries",
+        "blueberries",
+        "banana",
+        "granola",
+        "coconut flakes",
+        "honey drizzle"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Add a more protein-forward base next time so the meal holds you longer.",
+      "Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "A 10-minute walk after this meal can help flatten the glycemic hit."
+    ],
+    "mes": {
+      "score": 45.1,
+      "tier": "low",
+      "sub_scores": {
+        "gis": 0.0,
+        "pas": 10.0,
+        "fs": 100.0,
+        "fas": 98.1
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.82,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.9,
+      "grounding": 0.81,
+      "nutrition": 0.81,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": "usda",
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 70.0,
+    "fuel_reasoning": [
+      "Some processed components bring the score down (\u22127)."
+    ],
+    "image": null
+  }
+}

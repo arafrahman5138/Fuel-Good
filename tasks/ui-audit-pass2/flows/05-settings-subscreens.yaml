@@ -1,0 +1,58 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/53-settings-top"
+- tapOn: "Dietary Preferences"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/54-dietary-prefs"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Flavor Profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/55-flavor-profile"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Allergies"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/56-allergies"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Liked Proteins"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/57-liked-proteins"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Household Size"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/58-household-size"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Push Notifications"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/59-notifications"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

@@ -1,0 +1,54 @@
+appId: com.fuelgood.ios
+---
+# Navigate to Coach tab — bottom tab, ~70% from left
+- tapOn:
+    point: "70%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/30-coach-init"
+
+# Tap input and ask Healthify a pizza recipe
+- tapOn:
+    text: "Ask about any food.*"
+- waitForAnimationToEnd:
+    timeout: 800
+- inputText: "Healthify a pizza recipe"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/31-coach-pizza-typed"
+
+# Tap send button (right side of input)
+- tapOn:
+    point: "92%,90%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/32-coach-pizza-loading"
+
+# Wait for response (LLM call can take 10-30s)
+- waitForAnimationToEnd:
+    timeout: 30000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/33-coach-pizza-response"
+
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/33b-coach-pizza-scrolled"
+
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/33c-coach-pizza-scrolled-2"
+
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/33d-coach-pizza-scrolled-3"

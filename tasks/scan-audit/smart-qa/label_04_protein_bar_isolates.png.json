@@ -1,0 +1,81 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "20g PROTEIN",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Soy Wey Protein Isolate, Vegetable Glyciate, Vegetable Com Fiber, Erun Piette, Erythritol, Cocoa Butter, Almond Butter, Sunflower Flavors, Sucralose, Salt, Steviol Glycides",
+    "confidence": 0.8,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.8,
+      "nutrition": 0.7,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [
+      "contains soy protein isolate",
+      "sweetened with sucralose",
+      "contains steviol glycosides"
+    ],
+    "score": 59.9,
+    "tier": "mixed",
+    "verdict": "Mixed bag",
+    "summary": "This product has some redeeming qualities, but it is noticeably processed.",
+    "recommended_action": "Okay occasionally, but not ideal as a staple.",
+    "highlights": [
+      "Good fiber per serving.",
+      "Strong protein per serving."
+    ],
+    "concerns": [
+      "Contains artificial additives or preservatives.",
+      "Uses protein isolates rather than mostly intact foods."
+    ],
+    "reasoning": [
+      "Artificial additives found: sucralose."
+    ],
+    "ingredient_count": 11,
+    "nutrition_snapshot": {
+      "calories": 12400.0,
+      "protein_g": 20.0,
+      "fiber_g": 5.0,
+      "sugar_g": 10.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [
+        "sucralose"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": [
+        "soy wey protein isolate"
+      ]
+    },
+    "flag_explanations": [
+      {
+        "title": "Artificial Additives",
+        "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+        "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+        "detected": [
+          "sucralose"
+        ]
+      },
+      {
+        "title": "Protein Isolates",
+        "explanation": "Protein isolates are heavily processed extractions \u2014 the protein is stripped from the whole food. While not harmful, they indicate a highly engineered product rather than real food. Whole-food protein sources are preferable.",
+        "look_for": "Whole eggs, Greek yogurt, nuts, legumes, real meat for protein",
+        "detected": [
+          "soy wey protein isolate"
+        ]
+      }
+    ],
+    "scan_id": "99f7ea4e-6f8d-4da3-9892-5440de893976",
+    "image": null
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "WHOLE GRAINS NO HIGH FRUCTOSE CORN SYRUP",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Whole Grain Rolled Oats, Cane Sugar, Cane Sugar, Rice Flour, Honey, Soy Lecic, Natural Flavor, Salt, Mixed Tocchporols (for freshness), Molalsas",
+    "confidence": 0.8,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.8,
+      "nutrition": 0.8,
+      "metadata": 0.7
+    },
+    "recoverable": false,
+    "notes": [
+      "contains cane sugar",
+      "contains honey",
+      "contains soy lecithin"
+    ],
+    "score": 69.9,
+    "tier": "mixed",
+    "verdict": "Mixed bag",
+    "summary": "This product has some redeeming qualities, but it is noticeably processed.",
+    "recommended_action": "Okay occasionally, but not ideal as a staple.",
+    "highlights": [
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [
+      "Contains added sugars."
+    ],
+    "reasoning": [
+      "Added sugar ingredients found: cane sugar."
+    ],
+    "ingredient_count": 11,
+    "nutrition_snapshot": {
+      "calories": 150.0,
+      "protein_g": 3.0,
+      "fiber_g": 0.0,
+      "sugar_g": 9.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "cane sugar"
+      ],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+        "detected": [
+          "cane sugar"
+        ]
+      }
+    ],
+    "scan_id": "4fd8db5e-998f-4e0c-a361-60d2f67d585a",
+    "image": null
+  }
+}

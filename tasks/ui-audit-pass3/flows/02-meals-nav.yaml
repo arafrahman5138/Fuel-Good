@@ -1,0 +1,16 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "32%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/01-meals-hub-v2"
+- tapOn: "Open Meals, Full recipes"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/02-browse-populated"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/02-browse-scroll1"

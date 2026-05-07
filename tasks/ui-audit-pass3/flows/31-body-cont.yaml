@@ -1,0 +1,19 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Lightly active"
+- swipe:
+    direction: UP
+    duration: 300
+- tapOn: ".*Metabolic reset.*"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/23-next"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/24-next"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/25-next"

@@ -1,0 +1,129 @@
+{
+  "id": "7fc2de8d-104d-42dc-8d7e-5432c105144e",
+  "meal_label": "Overnight Oats with Berries and Banana",
+  "meal_type": "breakfast",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Oats",
+    "Banana",
+    "Raspberries",
+    "Peanut Butter",
+    "Chia",
+    "Cinnamon"
+  ],
+  "normalized_ingredients": [
+    "oats",
+    "banana",
+    "raspberries",
+    "peanut butter",
+    "chia",
+    "cinnamon",
+    "milk or yogurt"
+  ],
+  "nutrition_estimate": {
+    "calories": 577.0,
+    "protein": 15.3,
+    "carbs": 108.2,
+    "fat": 14.6,
+    "fiber": 15.8,
+    "sugar_g": 34.5,
+    "glycemic_profile": {
+      "primary_carb_source": "oats",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "ingredients": [
+      "oats",
+      "banana",
+      "raspberries",
+      "peanut butter",
+      "chia",
+      "cinnamon",
+      "milk or yogurt"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": {
+    "primary_carb_source": "oats",
+    "processing_level": "intact",
+    "resistant_starch_prep": "none",
+    "override_inference": false,
+    "notes": null
+  },
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "Pair this with Kale and White Bean Salad before the meal for about +9.3 MES.",
+    "Add a more protein-forward base next time so the meal holds you longer.",
+    "Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES."
+  ],
+  "recovery_plan": [
+    "Aim for about 40g protein at your next meal.",
+    "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+    "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+  ],
+  "mes": {
+    "score": 42.9,
+    "tier": "low",
+    "sub_scores": {
+      "gis": 12.7,
+      "pas": 12.4,
+      "fs": 100.0,
+      "fas": 78.0
+    },
+    "ingredient_gis_adjustment": 0.0,
+    "ingredient_gis_reasons": []
+  },
+  "snack_profile": null,
+  "confidence": 0.85,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.88,
+    "nutrition": 0.88,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": true,
+  "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+  "pairing_recommended_title": "Kale and White Bean Salad",
+  "pairing_projected_mes": 52.2,
+  "pairing_projected_delta": 9.3,
+  "pairing_reasons": [
+    "fiber-rich side",
+    "acidic element",
+    "healthy fat",
+    "vegetable-forward side",
+    "eat before meal"
+  ],
+  "pairing_timing": "before_meal",
+  "fuel_score": 85.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Includes whole-grain or complex carb sources.",
+    "High sugar content (34g) \u2014 this spikes blood sugar and adds empty calories.",
+    "Good fiber content (16g) helps slow digestion."
+  ],
+  "image": null
+}

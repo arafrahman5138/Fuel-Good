@@ -1,0 +1,31 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    text: "Your name"
+- eraseText: 20
+- inputText: "Tester"
+# Tap Full Name label to blur keyboard
+- tapOn:
+    text: "Full Name"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "you@example.com"
+- inputText: "newtester0418x@example.com"
+- tapOn:
+    text: "Email"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "Enter password"
+- inputText: "TestPass12345!"
+- tapOn:
+    text: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03b-signup-filled"
+- tapOn:
+    text: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 12000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-01-first"

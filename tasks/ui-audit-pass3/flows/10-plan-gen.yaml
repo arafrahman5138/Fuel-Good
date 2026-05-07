@@ -1,0 +1,28 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "11%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Create Plan"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/07-plan-builder-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/07-plan-builder-bottom"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/07-plan-step2"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/07-plan-step2-scroll"

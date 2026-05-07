@@ -1,0 +1,35 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-top"
+- tapOn: "Metabolic"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-metabolic-v2"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-metabolic-scroll-v2"
+# Home for metabolic coach
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+- swipe:
+    direction: DOWN
+    duration: 400
+# Tap Healthify
+- tapOn: ".*pizza"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/41-healthify-pizza"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/41-healthify-pizza-scroll"

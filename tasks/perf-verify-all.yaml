@@ -1,0 +1,61 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/verify-1-home-initial"
+
+# Tap Retry to clear the error banner (user has no data, which triggers
+# the dashboard error). After retry the SWR pattern keeps cards visible
+# during the in-flight refresh — that's the Phase A2 win.
+- tapOn:
+    text: "Retry"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/verify-2-after-retry"
+
+# Phase A1: scroll down to test scroll smoothness.
+# The native-driver migration means the week strip should slide up
+# smoothly even on a physical device. In the simulator we just verify
+# the layout works without errors.
+- scroll
+- takeScreenshot: "tasks/verify-3-home-scrolled"
+- scroll
+- takeScreenshot: "tasks/verify-4-home-deeper-scroll"
+
+# Phase A2: pull-to-refresh
+- swipe:
+    direction: DOWN
+    duration: 800
+- takeScreenshot: "tasks/verify-5-during-refresh"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/verify-6-after-refresh"
+
+# Focus-cache test — Home → Track → Home in <60s.
+# The 2nd Home visit should fire NO new API calls (focus-cache hit).
+- tapOn:
+    point: 51%,93%
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/verify-7-track-tab"
+
+- tapOn:
+    point: 13%,93%
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/verify-8-home-return"
+
+- tapOn:
+    point: 32%,93%
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/verify-9-meals-tab"
+
+- tapOn:
+    point: 13%,93%
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/verify-10-home-final"

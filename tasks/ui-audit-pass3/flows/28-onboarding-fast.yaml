@@ -1,0 +1,47 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Not Now"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 2: brought you here
+- tapOn: "I want more energy"
+- tapOn: "I want to cook more real food"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 3: how often ultra-processed
+- tapOn: "A few times a week"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+# Screen 4: snapshot
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 5: philosophy
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 6: flex
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 7: flavors (need 2-4)
+- tapOn: ".*Savory"
+- tapOn: ".*Spicy"
+- tapOn: ".*Umami"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 8: dietary
+- tapOn: "No Restrictions"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Screen 9: protein prefs - just continue
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500

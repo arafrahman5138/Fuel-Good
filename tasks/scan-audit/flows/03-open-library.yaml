@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/scan-audit/screenshots/06-photo-library"

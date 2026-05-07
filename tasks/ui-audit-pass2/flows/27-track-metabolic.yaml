@@ -1,0 +1,33 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Track"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Metabolic"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-metabolic"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-metabolic-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-metabolic-scroll2"
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- tapOn: "Fuel"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap a date in calendar
+- tapOn: "20"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/30-track-day-detail"

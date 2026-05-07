@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      text: "Scan"
+    timeout: 60000
+- takeScreenshot: "tasks/scan-audit/screenshots/02-home-fresh"

@@ -1,0 +1,10 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "7%,7%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/53-settings-top"

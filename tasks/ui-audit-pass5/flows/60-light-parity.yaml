@@ -1,0 +1,119 @@
+appId: com.fuelgood.ios
+---
+# Currently on Track Metabolic — capture
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L51-track-metabolic"
+
+# Switch to Fuel
+- tapOn:
+    point: "25%,17%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L50-track-fuel"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L50b-track-fuel-scroll"
+
+# Home
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L18-home"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L18b-home-scroll"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+
+# Recipe detail (tap Chicken Sausage)
+- tapOn:
+    text: "Open recipe Chicken Sausage Kale Scramble.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L10-recipe-detail"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L10b-recipe-scroll"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+
+# Cook mode
+- tapOn:
+    point: "15%,88%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L11-cook-step1"
+
+# Exit cook (tap X top-right)
+- tapOn:
+    point: "92%,9%"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Coach
+- tapOn:
+    point: "70%,96%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L52-coach-response"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L52b-coach-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L52c-coach-scroll-2"
+
+# Home and then profile
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L20-profile"
+
+# Settings
+- tapOn:
+    text: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22-settings"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22b-settings-scroll"

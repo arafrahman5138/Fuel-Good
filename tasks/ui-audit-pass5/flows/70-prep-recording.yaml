@@ -1,0 +1,15 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "8%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "8%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/_home-pre-record"

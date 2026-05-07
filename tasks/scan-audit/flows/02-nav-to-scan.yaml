@@ -1,0 +1,17 @@
+appId: com.fuelgood.ios
+---
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible:
+    text: "Scan Food"
+- takeScreenshot: "tasks/scan-audit/screenshots/04-home-with-scan-tile"
+- tapOn:
+    text: "Scan Food"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "tasks/scan-audit/screenshots/05-scan-capture-meal"

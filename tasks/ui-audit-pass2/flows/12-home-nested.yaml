@@ -1,0 +1,28 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/10-home-scrolled-pass2"
+# Tap Scan Food card
+- tapOn: ".*Scan Food.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/60-scan-from-home"
+- tapOn:
+    point: "9%,12%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap Healthify a Craving card
+- tapOn: ".*Healthify a Craving.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/11-healthify-craving"
+- tapOn:
+    point: "9%,12%"
+- waitForAnimationToEnd:
+    timeout: 1500

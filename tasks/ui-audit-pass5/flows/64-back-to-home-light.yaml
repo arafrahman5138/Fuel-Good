@@ -1,0 +1,44 @@
+appId: com.fuelgood.ios
+---
+# Tap back chevron top-left
+- tapOn:
+    point: "8%,8%"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Now tap Home tab (10%, 96%)
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L18-home-final"
+
+# Profile
+- extendedWaitUntil:
+    visible: "Open profile"
+    timeout: 8000
+- tapOn:
+    text: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L20-profile"
+
+# Settings
+- tapOn:
+    text: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22-settings"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22b-settings-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22c-settings-bottom"

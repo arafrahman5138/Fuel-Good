@@ -1,0 +1,49 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    text: "Open recipe Chicken Sausage Kale Scramble.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10-recipe-detail-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10b-recipe-mid"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10c-recipe-low"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10d-recipe-bottom"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap Cook - it's the small ghost button at bottom left, above tab bar
+- tapOn:
+    point: "15%,88%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11-cook-step1"

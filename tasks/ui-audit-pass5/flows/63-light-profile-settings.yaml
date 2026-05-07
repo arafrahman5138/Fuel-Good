@@ -1,0 +1,33 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+# We're on Home — capture profile via avatar
+- extendedWaitUntil:
+    visible: "Open profile"
+    timeout: 8000
+- tapOn:
+    text: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L20-profile"
+
+- tapOn:
+    text: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22-settings"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22b-settings-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L22c-settings-bottom"

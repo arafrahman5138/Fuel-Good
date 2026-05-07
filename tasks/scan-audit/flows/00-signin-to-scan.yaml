@@ -1,0 +1,39 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Sign In"
+    commands:
+      - tapOn:
+          text: "you@example.com"
+      - inputText: "wholefoodlabs@gmail.com"
+      - tapOn:
+          text: "Enter password"
+      - inputText: "ScanAudit2026!"
+      - hideKeyboard
+      - tapOn:
+          text: "Sign In"
+      - waitForAnimationToEnd:
+          timeout: 20000
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- scroll
+- scroll
+- scroll
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/scan-audit/screenshots/04-home-with-scan-tile"
+- tapOn:
+    id: "home-scan-tile"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "tasks/scan-audit/screenshots/05-scan-capture-meal"

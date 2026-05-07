@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+# Screen 2: What brought you here? - select options
+- tapOn: "I want more energy"
+- tapOn: "I want to cook more real food"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-03"

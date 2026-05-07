@@ -1,0 +1,33 @@
+appId: com.fuelgood.ios
+---
+# Go to profile -> settings -> log out
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2000
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/light/50-settings-scrolled"
+- scrollUntilVisible:
+    element: ".*Sign out.*"
+    direction: DOWN
+- tapOn: ".*Sign out.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Confirm if dialog
+- runFlow:
+    when:
+      visible: "Confirm"
+    commands:
+      - tapOn: "Confirm"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/00-01-login"

@@ -1,0 +1,18 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-02"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-03"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-04"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-05"

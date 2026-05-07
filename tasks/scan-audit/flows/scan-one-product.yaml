@@ -1,0 +1,37 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: fuelgood://scan
+- extendedWaitUntil:
+    visible:
+      text: "Packaged Food"
+    timeout: 15000
+- tapOn:
+    text: "Packaged Food"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-picker"
+- tapOn:
+    point: "17%,25%"
+- extendedWaitUntil:
+    visible:
+      text: "Analyzing"
+    timeout: 10000
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-analyzing"
+- extendedWaitUntil:
+    notVisible:
+      text: "Analyzing"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result"
+- scroll
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result-scroll1"
+- scroll
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result-scroll2"

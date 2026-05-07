@@ -1,0 +1,17 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "11%,94%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-fixes-pass/phase2-home-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase2-home-with-coach"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase2-home-scrolled"

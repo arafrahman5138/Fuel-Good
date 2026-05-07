@@ -1,0 +1,31 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Lightly.*"
+- tapOn: ".*Metabolic reset.*"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 4500
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/23-metab"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/24-targets"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/25-plan-preview"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/26-commit"
+- tapOn: ".*all in.*"
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/26-commit-selected"
+- tapOn: "Start my free trial"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/27-paywall"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/27-paywall-scroll"

@@ -1,0 +1,10 @@
+appId: host.exp.Exponent
+---
+- tapOn: "Back to sign in"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "85%,92%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03-signup"

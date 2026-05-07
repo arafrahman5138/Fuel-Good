@@ -1,0 +1,11 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Open Today's Plan"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/11-todays-plan-detail"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass3/screenshots/dark/11-todays-plan-scroll"

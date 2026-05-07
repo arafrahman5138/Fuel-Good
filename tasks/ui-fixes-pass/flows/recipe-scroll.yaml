@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- takeScreenshot: "tasks/ui-fixes-pass/phase4-recipe-tags-scroll"

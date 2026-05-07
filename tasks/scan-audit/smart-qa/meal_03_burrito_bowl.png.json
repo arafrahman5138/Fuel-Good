@@ -1,0 +1,119 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "6e7308a5-9f6b-482e-9ef7-a2f7810eedda",
+    "meal_label": "Chicken Burrito Bowl",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Grilled Chicken Breast",
+      "Black Beans",
+      "Cilantro Lime Rice",
+      "Corn Salsa",
+      "Guacamole",
+      "Queso Fresco"
+    ],
+    "normalized_ingredients": [
+      "grilled chicken breast",
+      "black beans",
+      "cilantro lime rice",
+      "corn salsa",
+      "guacamole",
+      "queso fresco"
+    ],
+    "nutrition_estimate": {
+      "calories": 991.0,
+      "protein": 60.0,
+      "carbs": 89.6,
+      "fat": 44.9,
+      "fiber": 9.4,
+      "sugar_g": 5.8,
+      "glycemic_profile": {
+        "primary_carb_source": "legume",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "grilled chicken breast",
+        "black beans",
+        "cilantro lime rice",
+        "corn salsa",
+        "guacamole",
+        "queso fresco"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "legume",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Start with a salad or vegetables before the starch so the meal hits more gently."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 77.9,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 24.6,
+        "pas": 100.0,
+        "fs": 86.2,
+        "fas": 96.3
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.84,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.8,
+      "grounding": 0.82,
+      "nutrition": 0.82,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": "usda",
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 70.0,
+    "fuel_reasoning": [
+      "Some processed components bring the score down (\u221210)."
+    ],
+    "image": null
+  }
+}

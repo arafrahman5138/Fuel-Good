@@ -1,0 +1,14 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1000
+# Tap the Fuel ring to toggle Fuel ↔ MES
+# Ring is in the green hero card, roughly at 22% horizontal, 22% vertical
+- tapOn:
+    point: "22%,22%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- tapOn:
+    point: "22%,22%"
+- waitForAnimationToEnd:
+    timeout: 1200

@@ -1,0 +1,83 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/50-profile-overview"
+# Tap Achievements toggle
+- tapOn: "Achievements"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/51-achievements"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/51-achievements-scroll"
+- tapOn: "Overview"
+- waitForAnimationToEnd:
+    timeout: 1200
+# Tap Quests & Streaks
+- tapOn: "Quests & Streaks"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/52-quests"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/52-quests-scroll"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Back to profile, open settings
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/53-settings-top"
+# Tap Dietary Preferences
+- tapOn: ".*Dietary Preferences.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/54-dietary-prefs"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Flavor Profile
+- tapOn: ".*Flavor Profile.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/55-flavor-profile"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Allergies
+- tapOn: ".*Allergies.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/56-allergies"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Liked Proteins
+- tapOn: ".*Liked Proteins.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/57-liked-proteins"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Household Size
+- tapOn: ".*Household Size.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/light/58-household-size"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

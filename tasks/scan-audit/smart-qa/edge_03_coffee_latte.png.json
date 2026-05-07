@@ -1,0 +1,12 @@
+{
+  "scan_type": "beverage",
+  "beverage": {
+    "meal_label": "Latte",
+    "fuel_score": 65.0,
+    "fuel_tier": "mixed",
+    "fuel_reasoning": [
+      "Milk-based espresso drink \u2014 scored on the beverage scale."
+    ],
+    "confidence": 0.59
+  }
+}

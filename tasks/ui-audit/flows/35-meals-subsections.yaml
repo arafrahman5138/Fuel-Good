@@ -1,0 +1,47 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "Open Meals, Full recipes"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-02-browse"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-02b-browse-scroll"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open Meal Prep, Components"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-03-mealprep"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open Desserts, Sweet treats"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-04-desserts"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open Saved, On this device"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-05-saved"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Open Grocery, Shopping list"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/20-meals-06-grocery"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

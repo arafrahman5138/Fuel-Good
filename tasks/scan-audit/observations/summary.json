@@ -1,0 +1,637 @@
+[
+  {
+    "image": "meal_01_healthy_plate.png",
+    "route": "meal",
+    "duration_s": 6.3,
+    "http": 200,
+    "label": "Grilled Chicken with Quinoa and Broccoli",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 62.5,
+    "mes_tier": "moderate",
+    "confidence": 0.87,
+    "ingredients": [
+      "Grilled Chicken Breast",
+      "Quinoa",
+      "Broccoli",
+      "Lemon Wedge"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +12.4 MES.",
+      "Add a bean, lentil, or vegetable side to raise fiber.",
+      "Start with a salad or vegetables before the starch so the meal hits more gently."
+    ],
+    "calories": 627.5,
+    "protein": 40.9,
+    "carbs": 67.0,
+    "fat": 19.7,
+    "fiber": 7.3,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_02_diner_burger.png",
+    "route": "meal",
+    "duration_s": 11.6,
+    "http": 200,
+    "label": "Cheeseburger with Fries",
+    "fuel_score": 86.0,
+    "status": "pass",
+    "mes": 76.3,
+    "mes_tier": "good",
+    "confidence": 0.82,
+    "ingredients": [
+      "Sesame Seed Bun",
+      "Beef",
+      "Melted Cheese",
+      "Lettuce",
+      "Tomato Slice",
+      "Crinkle Cut Fries",
+      "Ketchup"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +4.2 MES.",
+      "Ask for grilled, roasted, or olive-oil based prep instead of fryer oil."
+    ],
+    "calories": 1448.8,
+    "protein": 51.2,
+    "carbs": 58.4,
+    "fat": 140.0,
+    "fiber": 19.4,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_03_burrito_bowl.png",
+    "route": "meal",
+    "duration_s": 6.1,
+    "http": 200,
+    "label": "Chicken Burrito Bowl",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 74.7,
+    "mes_tier": "good",
+    "confidence": 0.8,
+    "ingredients": [
+      "Grilled Chicken Breast",
+      "Rice",
+      "Black Beans",
+      "Guacamole",
+      "Corn Salsa",
+      "Lime",
+      "Queso Fresco"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +6.4 MES."
+    ],
+    "calories": 732.5,
+    "protein": 44.9,
+    "carbs": 70.7,
+    "fat": 29.9,
+    "fiber": 15.5,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_04_pasta_carbonara.png",
+    "route": "meal",
+    "duration_s": 4.3,
+    "http": 200,
+    "label": "Spaghetti Carbonara",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 51.3,
+    "mes_tier": "moderate",
+    "confidence": 0.71,
+    "ingredients": [
+      "Spaghetti",
+      "Guanciale",
+      "Pecorino Romano Cheese",
+      "Egg Yolk",
+      "Black Pepper"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair this with Kale and White Bean Salad before the meal for about +15.5 MES.",
+      "Add a more protein-forward base next time so the meal holds you longer."
+    ],
+    "calories": 396.1,
+    "protein": 21.0,
+    "carbs": 48.5,
+    "fat": 13.8,
+    "fiber": 5.9,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_05_yogurt_bowl.png",
+    "route": "meal",
+    "duration_s": 7.9,
+    "http": 200,
+    "label": "Yogurt with Granola and Berries",
+    "fuel_score": 64.0,
+    "status": "warn",
+    "mes": null,
+    "mes_tier": null,
+    "confidence": 0.86,
+    "ingredients": [
+      "Yogurt",
+      "Granola",
+      "Strawberries",
+      "Blueberries",
+      "Chia",
+      "Honey"
+    ],
+    "flags": [
+      "added sugar"
+    ],
+    "upgrade_suggestions": [
+      "Choose a snack with less added sugar or pair the sweet item with protein.",
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "calories": 348.3,
+    "protein": 7.4,
+    "carbs": 66.8,
+    "fat": 7.2,
+    "fiber": 5.5,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_06_pizza_slice.png",
+    "route": "meal",
+    "duration_s": 10.0,
+    "http": 200,
+    "label": "Pepperoni Pizza",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 38.2,
+    "mes_tier": "low",
+    "confidence": 0.86,
+    "ingredients": [
+      "Pizza Dough",
+      "Tomato Sauce",
+      "Mozzarella Cheese",
+      "Pepperoni"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +18.2 MES.",
+      "Add a more protein-forward base next time so the meal holds you longer.",
+      "Add a bean, lentil, or vegetable side to raise fiber."
+    ],
+    "calories": 476.0,
+    "protein": 16.1,
+    "carbs": 67.7,
+    "fat": 15.2,
+    "fiber": 4.5,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_07_salmon_rice.png",
+    "route": "meal",
+    "duration_s": 4.3,
+    "http": 200,
+    "label": "Salmon with Rice and Bok Choy",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 61.2,
+    "mes_tier": "moderate",
+    "confidence": 0.8,
+    "ingredients": [
+      "Salmon",
+      "Rice",
+      "Bok Choy",
+      "Sesame Seeds",
+      "Lemon",
+      "Garlic",
+      "Soy Sauce Glaze"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +11.9 MES.",
+      "Add a bean, lentil, or vegetable side to raise fiber.",
+      "Start with a salad or vegetables before the starch so the meal hits more gently."
+    ],
+    "calories": 701.5,
+    "protein": 27.4,
+    "carbs": 48.9,
+    "fat": 44.7,
+    "fiber": 7.0,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_08_oats_berries.png",
+    "route": "meal",
+    "duration_s": 6.4,
+    "http": 200,
+    "label": "Overnight Oats with Berries and Banana",
+    "fuel_score": 85.0,
+    "status": "pass",
+    "mes": 42.9,
+    "mes_tier": "low",
+    "confidence": 0.85,
+    "ingredients": [
+      "Oats",
+      "Banana",
+      "Raspberries",
+      "Peanut Butter",
+      "Chia",
+      "Cinnamon"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +9.3 MES.",
+      "Add a more protein-forward base next time so the meal holds you longer.",
+      "Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES."
+    ],
+    "calories": 577.0,
+    "protein": 15.3,
+    "carbs": 108.2,
+    "fat": 14.6,
+    "fiber": 15.8,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_09_cafeteria_tray.png",
+    "route": "meal",
+    "duration_s": 2.6,
+    "http": 200,
+    "label": "Scanned meal",
+    "fuel_score": null,
+    "status": "unknown",
+    "mes": null,
+    "mes_tier": null,
+    "confidence": 0.1,
+    "ingredients": [],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Retake the photo in brighter light for a more accurate meal scan."
+    ],
+    "calories": 450,
+    "protein": 25,
+    "carbs": 40,
+    "fat": 18,
+    "fiber": 5,
+    "is_not_food": null,
+    "is_degraded": true,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "meal_10_acai_bowl.png",
+    "route": "meal",
+    "duration_s": 5.3,
+    "http": 200,
+    "label": "Acai Bowl",
+    "fuel_score": 81.0,
+    "status": "pass",
+    "mes": null,
+    "mes_tier": null,
+    "confidence": 0.83,
+    "ingredients": [
+      "Acai Puree",
+      "Strawberries",
+      "Blueberries",
+      "Banana",
+      "Granola",
+      "Shredded Coconut",
+      "Honey Drizzle"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "This works fine as a light snack. No major upgrade needed."
+    ],
+    "calories": 979.0,
+    "protein": 11.6,
+    "carbs": 199.9,
+    "fat": 21.9,
+    "fiber": 20.6,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "label_01_greek_yogurt_clean.png",
+    "route": "label",
+    "duration_s": 6.6,
+    "http": 200,
+    "product_name": "Suein moo*",
+    "brand": null,
+    "score": 100.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "ingredient_count": 10,
+    "confidence": 0.9,
+    "highlights": [
+      "Relatively short ingredient list.",
+      "Strong protein per serving.",
+      "Reasonable sugar level per serving.",
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [],
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "Pasteurized Grade A Whole Milk, Pasteurized Cream, Live Active Cultures (S. Thermophilus, L. Acidophilus, Bifidus, L. Casei)",
+    "nutrition": {
+      "calories": 160.0,
+      "protein_g": 15.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 7.0,
+      "sodium_mg": 0.0
+    }
+  },
+  {
+    "image": "label_02_sugary_cereal_ultra.png",
+    "route": "label",
+    "duration_s": 4.5,
+    "http": 200,
+    "product_name": "S",
+    "brand": null,
+    "score": 37.0,
+    "tier": "ultra_processed",
+    "verdict": "Not a great fit",
+    "ingredient_count": 16,
+    "confidence": 0.8,
+    "highlights": [],
+    "concerns": [
+      "Moderately long ingredient list.",
+      "Contains added sugars.",
+      "Uses refined flour instead of a whole-food carbohydrate source.",
+      "Contains artificial additives or preservatives."
+    ],
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "sugar",
+        "dextrose"
+      ],
+      "refined_flours": [
+        "wheat flour"
+      ],
+      "artificial_additives": [
+        "red 40",
+        "yellow 5",
+        "yellow 6",
+        "blue 1",
+        "bht for freshness"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "Corn Flour, Sugar, Whole Grain Oat Flour, Wheat Flour, Cyropp, High Fructoce Oit Crrooup Oil, Vesriadi Oil Vegetables (Soybeen and/or Palm Oil), Dextrose, Maltodiitten, Natural and Artificial. Red 40, Yellow 5, Yellow 6, Blue 1, BHT For Freshness",
+    "nutrition": {
+      "calories": 130.0,
+      "protein_g": 1.0,
+      "fiber_g": 1.0,
+      "sugar_g": 10.0,
+      "carbs_g": 12.0,
+      "sodium_mg": 180.0
+    }
+  },
+  {
+    "image": "label_03_granola_bar_healthwashed.png",
+    "route": "label",
+    "duration_s": 6.8,
+    "http": 200,
+    "product_name": "WHOLE GRAINS NO HIGH FRUCTOCE CORN SYRUP",
+    "brand": null,
+    "score": 86.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "ingredient_count": 11,
+    "confidence": 0.8,
+    "highlights": [
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [
+      "Contains added sugars."
+    ],
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "cane sugar"
+      ],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "Whole Grain Rolled Oats, Cane Sugar, Cane Sugar, Rice Flour, Honey, Soy Lecic, Natural Natural Flavor, Salt, Mixed Tocchporols (for freshness), Molalsas",
+    "nutrition": {
+      "calories": 150.0,
+      "protein_g": 3.0,
+      "fiber_g": 0.0,
+      "sugar_g": 9.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    }
+  },
+  {
+    "image": "label_04_protein_bar_isolates.png",
+    "route": "label",
+    "duration_s": 4.7,
+    "http": 200,
+    "product_name": "20g ROTIEN",
+    "brand": null,
+    "score": 94.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "ingredient_count": 11,
+    "confidence": 0.7,
+    "highlights": [
+      "Good fiber per serving.",
+      "Strong protein per serving."
+    ],
+    "concerns": [
+      "Contains artificial additives or preservatives."
+    ],
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [
+        "sucralose"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "Soy Wey Protein Isolate, Vegetable Glyciate, Vegetable Com Fiber, Erun Piolte, Erythytitol, Cocoa Cocoa Butter, Almond Butter, Sunflower Flavors, Sucralose, Salt, Steviol Glycydes",
+    "nutrition": {
+      "calories": 12400.0,
+      "protein_g": 20.0,
+      "fiber_g": 5.0,
+      "sugar_g": 10.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    }
+  },
+  {
+    "image": "label_05_tortilla_chips_simple.png",
+    "route": "label",
+    "duration_s": 7.0,
+    "http": 200,
+    "product_name": "Label scan",
+    "brand": null,
+    "score": 81.0,
+    "tier": "solid",
+    "verdict": "Mostly good",
+    "ingredient_count": 3,
+    "confidence": 0.8,
+    "highlights": [
+      "Reasonable sugar level per serving."
+    ],
+    "concerns": [
+      "Contains industrial seed oils."
+    ],
+    "processing_flags": {
+      "seed_oils": [
+        "sunflower oil"
+      ],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "Stone Ground Whole Corn, Sunflower Oil, Sea Salt",
+    "nutrition": {
+      "calories": 140.0,
+      "protein_g": 2.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 3.0,
+      "sodium_mg": 110.0
+    }
+  },
+  {
+    "image": "edge_01_blurry_dim_meal.png",
+    "route": "edge/meal",
+    "duration_s": 7.1,
+    "http": 200,
+    "label": "Chicken and Vegetable Stir Fry",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": 80.7,
+    "mes_tier": "good",
+    "confidence": 0.83,
+    "ingredients": [
+      "Chicken",
+      "Broccoli",
+      "Carrots",
+      "Snap Peas",
+      "Pepper",
+      "Onion",
+      "Stir Fry Sauce"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "Pair this with Kale and White Bean Salad before the meal for about +1.5 MES."
+    ],
+    "calories": 949.0,
+    "protein": 71.4,
+    "carbs": 72.6,
+    "fat": 44.6,
+    "fiber": 14.5,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  },
+  {
+    "image": "edge_02_restaurant_menu.png",
+    "route": "edge/label",
+    "duration_s": 5.6,
+    "http": 200,
+    "product_name": "LE COIN GOURMAND",
+    "brand": "LE COIN GOURMAND",
+    "score": 59.0,
+    "tier": "mixed",
+    "verdict": "Needs review",
+    "ingredient_count": 0,
+    "confidence": 0.7,
+    "highlights": [],
+    "concerns": [
+      "The ingredient list could not be read confidently from the label photo.",
+      "Ingredient list is missing, so the product is harder to trust."
+    ],
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "ingredients_text": "",
+    "nutrition": {
+      "calories": 0.0,
+      "protein_g": 0.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    }
+  },
+  {
+    "image": "edge_03_coffee_latte.png",
+    "route": "edge/meal",
+    "duration_s": 3.7,
+    "http": 200,
+    "label": "Latte",
+    "fuel_score": 100.0,
+    "status": "pass",
+    "mes": null,
+    "mes_tier": null,
+    "confidence": 0.86,
+    "ingredients": [
+      "Coffee",
+      "Milk Foam"
+    ],
+    "flags": [],
+    "upgrade_suggestions": [
+      "If you want this snack to hold you longer, add a little protein like yogurt, cheese, or nuts.",
+      "Add a little fiber next time with berries, chia, nuts, or crunchy vegetables."
+    ],
+    "calories": 101.0,
+    "protein": 7.1,
+    "carbs": 12.0,
+    "fat": 4.0,
+    "fiber": 0.0,
+    "is_not_food": null,
+    "is_degraded": null,
+    "multi_dish": null,
+    "dishes": []
+  }
+]

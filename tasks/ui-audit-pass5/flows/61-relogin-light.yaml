@@ -1,0 +1,52 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "you@example.com"
+- inputText: "pass5.tester+qa@qatest.fuelgood.app"
+- tapOn: "Email"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Enter password"
+- inputText: "TestPass123!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 12000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- runFlow:
+    when:
+      visible: "Don't Allow"
+    commands:
+      - tapOn: "Don't Allow"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L05-home"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/light/L05b-home-scroll"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800

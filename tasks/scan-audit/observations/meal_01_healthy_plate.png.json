@@ -1,0 +1,127 @@
+{
+  "id": "d6d5b494-3d07-4e72-9169-1fddc4733e72",
+  "meal_label": "Grilled Chicken with Quinoa and Broccoli",
+  "meal_type": "lunch",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Grilled Chicken Breast",
+    "Quinoa",
+    "Broccoli",
+    "Lemon Wedge"
+  ],
+  "normalized_ingredients": [
+    "grilled chicken breast",
+    "quinoa",
+    "broccoli",
+    "lemon wedge",
+    "oil",
+    "herbs"
+  ],
+  "nutrition_estimate": {
+    "calories": 627.5,
+    "protein": 40.9,
+    "carbs": 67.0,
+    "fat": 19.7,
+    "fiber": 7.3,
+    "sugar_g": 1.0,
+    "glycemic_profile": {
+      "primary_carb_source": "quinoa",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "ingredients": [
+      "grilled chicken breast",
+      "quinoa",
+      "broccoli",
+      "lemon wedge",
+      "oil",
+      "herbs"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": {
+    "primary_carb_source": "quinoa",
+    "processing_level": "intact",
+    "resistant_starch_prep": "none",
+    "override_inference": false,
+    "notes": null
+  },
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "Pair this with Kale and White Bean Salad before the meal for about +12.4 MES.",
+    "Add a bean, lentil, or vegetable side to raise fiber.",
+    "Start with a salad or vegetables before the starch so the meal hits more gently."
+  ],
+  "recovery_plan": [
+    "Aim for about 40g protein at your next meal.",
+    "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+    "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+  ],
+  "mes": {
+    "score": 62.5,
+    "tier": "moderate",
+    "sub_scores": {
+      "gis": 38.6,
+      "pas": 66.6,
+      "fs": 73.1,
+      "fas": 83.8
+    },
+    "ingredient_gis_adjustment": 0.0,
+    "ingredient_gis_reasons": []
+  },
+  "snack_profile": null,
+  "confidence": 0.87,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.93,
+    "nutrition": 0.93,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": true,
+  "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+  "pairing_recommended_title": "Kale and White Bean Salad",
+  "pairing_projected_mes": 74.9,
+  "pairing_projected_delta": 12.4,
+  "pairing_reasons": [
+    "fiber-rich side",
+    "acidic element",
+    "healthy fat",
+    "vegetable-forward side",
+    "eat before meal"
+  ],
+  "pairing_timing": "before_meal",
+  "fuel_score": 100.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Healthy cooking method like grilling or baking.",
+    "Includes whole-grain or complex carb sources.",
+    "Decent fiber (7g) adds some digestive benefit.",
+    "Strong protein (41g) supports satiety and recovery.",
+    "No processed ingredients detected \u2014 clean whole-food meal."
+  ],
+  "image": null
+}

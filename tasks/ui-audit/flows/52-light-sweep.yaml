@@ -1,0 +1,47 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/50-profile-01-overview"
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/10-home-01-dashboard"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit/screenshots/light/10-home-02-scroll"
+- swipe:
+    direction: DOWN
+    duration: 400
+- tapOn: ".*flex meals available.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/10-home-07-flex"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Meals"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/light/20-meals-01-hub"
+- tapOn: "Open Meals, Full recipes"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/20-meals-02-browse"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Track"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/30-track-01-dashboard"
+- tapOn: ".*Coach"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/light/40-coach-01-chat"

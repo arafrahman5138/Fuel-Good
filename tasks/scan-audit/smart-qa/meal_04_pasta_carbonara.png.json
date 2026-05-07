@@ -1,0 +1,104 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "a6eb365d-3a6e-4e4b-b4ed-bd9fe3c09793",
+    "meal_label": "Spaghetti Carbonara",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Spaghetti",
+      "Guanciale",
+      "Pecorino Romano Cheese",
+      "Egg Yolk",
+      "Black Pepper"
+    ],
+    "normalized_ingredients": [
+      "spaghetti",
+      "guanciale",
+      "pecorino romano cheese",
+      "egg yolk",
+      "black pepper"
+    ],
+    "nutrition_estimate": {
+      "calories": 989.0,
+      "protein": 69.6,
+      "carbs": 79.7,
+      "fat": 51.7,
+      "fiber": 28.1,
+      "sugar_g": 6.8,
+      "ingredients": [
+        "spaghetti",
+        "guanciale",
+        "pecorino romano cheese",
+        "egg yolk",
+        "black pepper"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 86.4,
+      "tier": "optimal",
+      "sub_scores": {
+        "gis": 49.9,
+        "pas": 100.0,
+        "fs": 100.0,
+        "fas": 91.2
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.74,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.71,
+      "nutrition": 0.71,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": "usda",
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 48.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221225).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

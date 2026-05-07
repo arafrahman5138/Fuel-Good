@@ -1,0 +1,16 @@
+appId: com.fuelgood.ios
+---
+# Back to home
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap the + icon (scan/add) in tab bar
+- tapOn:
+    point: "92%,93%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/60-scan-01-modal"

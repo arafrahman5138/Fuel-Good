@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap the "+" button next to Bang Bang Chicken Skewers in Today's Plan
+- tapOn:
+    text: "Log Bang Bang Chicken Skewers"
+- waitForAnimationToEnd:
+    timeout: 5000

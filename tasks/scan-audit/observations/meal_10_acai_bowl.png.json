@@ -1,0 +1,101 @@
+{
+  "id": "e5eb723f-905c-4ad7-85d0-50ec0c7f5db5",
+  "meal_label": "Acai Bowl",
+  "meal_type": "snack",
+  "meal_context": "snack",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Acai Puree",
+    "Strawberries",
+    "Blueberries",
+    "Banana",
+    "Granola",
+    "Shredded Coconut",
+    "Honey Drizzle"
+  ],
+  "normalized_ingredients": [
+    "acai puree",
+    "strawberries",
+    "blueberries",
+    "banana",
+    "granola",
+    "shredded coconut",
+    "honey drizzle",
+    "other fruits in puree"
+  ],
+  "nutrition_estimate": {
+    "calories": 979.0,
+    "protein": 11.6,
+    "carbs": 199.9,
+    "fat": 21.9,
+    "fiber": 20.6,
+    "sugar_g": 108.8,
+    "ingredients": [
+      "acai puree",
+      "strawberries",
+      "blueberries",
+      "banana",
+      "granola",
+      "shredded coconut",
+      "honey drizzle",
+      "other fruits in puree"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": null,
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "This works fine as a light snack. No major upgrade needed."
+  ],
+  "recovery_plan": [
+    "No real recovery needed. Just keep your next meal balanced."
+  ],
+  "mes": null,
+  "snack_profile": {
+    "is_snack": true,
+    "is_healthy_snack": false,
+    "label": "Snack"
+  },
+  "confidence": 0.83,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.84,
+    "nutrition": 0.84,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": false,
+  "pairing_recommended_recipe_id": null,
+  "pairing_recommended_title": null,
+  "pairing_projected_mes": null,
+  "pairing_projected_delta": null,
+  "pairing_reasons": [],
+  "pairing_timing": null,
+  "fuel_score": 81.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "High sugar content (109g) \u2014 this spikes blood sugar and adds empty calories.",
+    "Good fiber content (21g) helps slow digestion."
+  ],
+  "image": null
+}

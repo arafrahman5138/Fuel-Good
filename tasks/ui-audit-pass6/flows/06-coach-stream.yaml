@@ -1,0 +1,27 @@
+appId: com.fuelgood.ios
+---
+# Navigate to Coach
+- tapOn:
+    point: "70%,96%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible: ".*New.*"
+    commands:
+      - tapOn:
+          text: ".*New.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn:
+    text: "Ask about any food.*"
+- waitForAnimationToEnd:
+    timeout: 800
+- inputText: "Healthify a pizza recipe"
+- waitForAnimationToEnd:
+    timeout: 500
+# Send button
+- tapOn:
+    point: "92%,90%"
+- waitForAnimationToEnd:
+    timeout: 25000

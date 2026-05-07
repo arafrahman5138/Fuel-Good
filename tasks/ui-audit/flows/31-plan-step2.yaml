@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- scroll
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/11-plan-builder-step1-bottom"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/11-plan-builder-step2"

@@ -1,0 +1,55 @@
+appId: com.fuelgood.ios
+---
+# Tap "Get tips for this step" first
+- tapOn: ".*Get tips.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11b-cook-step1-tips"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 600
+
+# Check off a couple ingredients to show progress
+- tapOn:
+    text: "2 Links chicken sausage"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn:
+    text: "2 Large eggs"
+- waitForAnimationToEnd:
+    timeout: 500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11c-ingredients-checked"
+
+# Step 2
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/12-cook-step2"
+
+# Step 3 (final)
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/13-cook-step3"
+
+# Capture the celebration / Log&Finish
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/14-cook-finish-state"
+- runFlow:
+    when:
+      visible: "Log & Finish"
+    commands:
+      - tapOn: "Log & Finish"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-post-cook-celebration"
+- runFlow:
+    when:
+      visible: "Finish"
+    commands:
+      - tapOn: "Finish"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-post-cook-celebration-alt"

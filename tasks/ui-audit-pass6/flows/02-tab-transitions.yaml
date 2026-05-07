@@ -1,0 +1,22 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1000
+# From Home, switch through tabs to capture transitions
+# Bottom tab bar: Home(10%) Meals(30%) Track(50%) Coach(70%) (+)(90%)
+- tapOn:
+    point: "30%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "50%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "70%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500

@@ -1,0 +1,10 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "e.g. 30"
+- inputText: "32"
+- tapOn: "Weight"
+- waitForAnimationToEnd:
+    timeout: 600
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 3500

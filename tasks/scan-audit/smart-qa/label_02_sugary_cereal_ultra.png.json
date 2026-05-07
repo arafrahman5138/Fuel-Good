@@ -1,0 +1,101 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Froot Loops",
+    "brand": "Kellogg's",
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Corn Flour, Sugar, Whole Grain Oat Flour, Wheat Flour, Cyropp, High Fructose Oit Crroup Oil, Ve\u015ftriad Oil Vegetables (Soybean and/or Palm Oil), Dextrose, Maltodiitten, Natural and Artificial. Red 40, Yellow 5, Yellow 6, Blue 1, BHT For Freshness",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.9,
+      "nutrition": 0.9,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [
+      "contains high fructose corn syrup",
+      "includes soybean and/or palm oil",
+      "contains artificial colors"
+    ],
+    "score": 34.0,
+    "tier": "ultra_processed",
+    "verdict": "Not a great fit",
+    "summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "recommended_action": "Best used rarely. Look for a version with fewer ingredients and less processing.",
+    "highlights": [],
+    "concerns": [
+      "Moderately long ingredient list.",
+      "Contains added sugars.",
+      "Uses refined flour instead of a whole-food carbohydrate source.",
+      "Contains artificial additives or preservatives."
+    ],
+    "reasoning": [
+      "Added sugar ingredients found: sugar, high fructose oit crroup oil, dextrose.",
+      "Artificial additives found: red 40, yellow 5, yellow 6."
+    ],
+    "ingredient_count": 16,
+    "nutrition_snapshot": {
+      "calories": 130.0,
+      "protein_g": 1.0,
+      "fiber_g": 1.0,
+      "sugar_g": 10.0,
+      "carbs_g": 12.0,
+      "sodium_mg": 180.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "sugar",
+        "high fructose oit crroup oil",
+        "dextrose"
+      ],
+      "refined_flours": [
+        "wheat flour"
+      ],
+      "artificial_additives": [
+        "red 40",
+        "yellow 5",
+        "yellow 6",
+        "blue 1",
+        "bht for freshness"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+        "detected": [
+          "sugar",
+          "high fructose oit crroup oil",
+          "dextrose"
+        ]
+      },
+      {
+        "title": "Refined Flours",
+        "explanation": "Refined flour has been stripped of the bran and germ \u2014 the parts with fiber, vitamins, and minerals. It digests quickly like sugar. Whole grain or sprouted grain versions retain the nutrition.",
+        "look_for": "Whole wheat flour, almond flour, oat flour, sprouted grain flour",
+        "detected": [
+          "wheat flour"
+        ]
+      },
+      {
+        "title": "Artificial Additives",
+        "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+        "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+        "detected": [
+          "red 40",
+          "yellow 5",
+          "yellow 6"
+        ]
+      }
+    ],
+    "scan_id": "be6cd490-bb67-43d0-a06f-69db46a7bc81",
+    "image": null
+  }
+}

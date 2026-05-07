@@ -1,0 +1,107 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "a254d033-8eb7-4bba-8c42-377e12263056",
+    "meal_label": "Salmon with Rice and Bok Choy",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Salmon Fillet",
+      "Rice",
+      "Bok Choy",
+      "Sesame Seeds",
+      "Lemon Wedge",
+      "Garlic",
+      "Glaze Sauce"
+    ],
+    "normalized_ingredients": [
+      "salmon fillet",
+      "rice",
+      "bok choy",
+      "sesame seeds",
+      "lemon wedge",
+      "garlic",
+      "glaze sauce"
+    ],
+    "nutrition_estimate": {
+      "calories": 1343.4,
+      "protein": 52.8,
+      "carbs": 98.6,
+      "fat": 86.7,
+      "fiber": 24.1,
+      "sugar_g": 14.7,
+      "ingredients": [
+        "salmon fillet",
+        "rice",
+        "bok choy",
+        "sesame seeds",
+        "lemon wedge",
+        "garlic",
+        "glaze sauce"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 71.1,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 23.9,
+        "pas": 95.2,
+        "fs": 100.0,
+        "fas": 50.0
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.84,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.9,
+      "grounding": 0.85,
+      "nutrition": 0.85,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": "usda",
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 60.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221222)."
+    ],
+    "image": null
+  }
+}

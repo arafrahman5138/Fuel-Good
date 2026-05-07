@@ -1,0 +1,129 @@
+{
+  "id": "e5b42412-aa04-4357-b34d-6e63bf36d5b6",
+  "meal_label": "Cheeseburger with Fries",
+  "meal_type": "lunch",
+  "meal_context": "full_meal",
+  "portion_size": "medium",
+  "source_context": "home",
+  "estimated_ingredients": [
+    "Sesame Seed Bun",
+    "Beef",
+    "Melted Cheese",
+    "Lettuce",
+    "Tomato Slice",
+    "Crinkle Cut Fries",
+    "Ketchup"
+  ],
+  "normalized_ingredients": [
+    "sesame seed bun",
+    "beef",
+    "melted cheese",
+    "lettuce",
+    "tomato slice",
+    "crinkle cut fries",
+    "ketchup"
+  ],
+  "nutrition_estimate": {
+    "calories": 1448.8,
+    "protein": 51.2,
+    "carbs": 58.4,
+    "fat": 140.0,
+    "fiber": 19.4,
+    "sugar_g": 2.1,
+    "glycemic_profile": {
+      "primary_carb_source": "refined_grain",
+      "processing_level": "refined",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "ingredients": [
+      "sesame seed bun",
+      "beef",
+      "melted cheese",
+      "lettuce",
+      "tomato slice",
+      "crinkle cut fries",
+      "ketchup"
+    ],
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+  },
+  "glycemic_profile": {
+    "primary_carb_source": "refined_grain",
+    "processing_level": "refined",
+    "resistant_starch_prep": "none",
+    "override_inference": false,
+    "notes": null
+  },
+  "whole_food_status": "pass",
+  "whole_food_flags": [],
+  "suggested_swaps": {
+    "seed_oils": [],
+    "added_sugars": [],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "upgrade_suggestions": [
+    "Pair this with Kale and White Bean Salad before the meal for about +4.2 MES.",
+    "Ask for grilled, roasted, or olive-oil based prep instead of fryer oil."
+  ],
+  "recovery_plan": [
+    "Aim for about 40g protein at your next meal.",
+    "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+    "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+  ],
+  "mes": {
+    "score": 76.3,
+    "tier": "good",
+    "sub_scores": {
+      "gis": 61.2,
+      "pas": 88.4,
+      "fs": 100.0,
+      "fas": 50.0
+    },
+    "ingredient_gis_adjustment": 0.0,
+    "ingredient_gis_reasons": []
+  },
+  "snack_profile": null,
+  "confidence": 0.82,
+  "confidence_breakdown": {
+    "extraction": 0.9,
+    "portion": 0.7,
+    "grounding": 0.82,
+    "nutrition": 0.82,
+    "ensemble_applied": false,
+    "estimate_mode": "high",
+    "review_required": false
+  },
+  "source_model": "gemini-2.5-flash-lite",
+  "grounding_source": "usda",
+  "grounding_candidates": [],
+  "prompt_version": "meal_scan_v4_consensus",
+  "matched_recipe_id": null,
+  "matched_recipe_confidence": 0.0,
+  "logged_to_chronometer": false,
+  "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+  "pairing_opportunity": true,
+  "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+  "pairing_recommended_title": "Kale and White Bean Salad",
+  "pairing_projected_mes": 80.5,
+  "pairing_projected_delta": 4.2,
+  "pairing_reasons": [
+    "fiber-rich side",
+    "acidic element",
+    "healthy fat",
+    "vegetable-forward side",
+    "eat before meal"
+  ],
+  "pairing_timing": "before_meal",
+  "fuel_score": 86.0,
+  "fuel_reasoning": [
+    "Homemade meals start with a high base score.",
+    "Contains refined carbs like white bread or pasta.",
+    "Good fiber content (19g) helps slow digestion.",
+    "Strong protein (51g) supports satiety and recovery."
+  ],
+  "image": null
+}

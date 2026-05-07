@@ -1,0 +1,66 @@
+{
+  "product_name": "WHOLE GRAINS NO HIGH FRUCTOCE CORN SYRUP",
+  "brand": null,
+  "barcode": null,
+  "source": "label_image",
+  "capture_type": "ingredients",
+  "ingredients_text": "Whole Grain Rolled Oats, Cane Sugar, Cane Sugar, Rice Flour, Honey, Soy Lecic, Natural Natural Flavor, Salt, Mixed Tocchporols (for freshness), Molalsas",
+  "confidence": 0.8,
+  "confidence_breakdown": {
+    "ocr": 0.9,
+    "ingredients": 0.8,
+    "nutrition": 0.8,
+    "metadata": 0.1
+  },
+  "recoverable": false,
+  "notes": [
+    "The brand name is not visible on the label.",
+    "Fat and fiber content are not visible on the label.",
+    "Carbohydrate and sodium content are not visible on the label."
+  ],
+  "score": 86.0,
+  "tier": "whole_food",
+  "verdict": "Great choice",
+  "summary": "This looks very close to a real-food product with minimal processing.",
+  "recommended_action": "This is a strong pantry pick for a whole-food lifestyle.",
+  "highlights": [
+    "Starts with a recognizable whole-food ingredient."
+  ],
+  "concerns": [
+    "Contains added sugars."
+  ],
+  "reasoning": [
+    "Added sugar ingredients found: cane sugar."
+  ],
+  "ingredient_count": 11,
+  "nutrition_snapshot": {
+    "calories": 150.0,
+    "protein_g": 3.0,
+    "fiber_g": 0.0,
+    "sugar_g": 9.0,
+    "carbs_g": 0.0,
+    "sodium_mg": 0.0
+  },
+  "processing_flags": {
+    "seed_oils": [],
+    "added_sugars": [
+      "cane sugar"
+    ],
+    "refined_flours": [],
+    "artificial_additives": [],
+    "gums_or_emulsifiers": [],
+    "protein_isolates": []
+  },
+  "flag_explanations": [
+    {
+      "title": "Added Sugars",
+      "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+      "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+      "detected": [
+        "cane sugar"
+      ]
+    }
+  ],
+  "scan_id": "13ff3939-ba6f-43a6-b777-977bf2cc89be",
+  "image": null
+}

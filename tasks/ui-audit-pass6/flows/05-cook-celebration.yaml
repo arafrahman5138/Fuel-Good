@@ -1,0 +1,38 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1000
+# Open Beef and Potato Hash recipe, walk through cook, capture celebration
+- tapOn:
+    text: "Open recipe Beef and Potato Hash.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+# Tap Cook (small ghost button at bottom-left of recipe detail)
+- tapOn:
+    point: "15%,88%"
+- waitForAnimationToEnd:
+    timeout: 4000
+# Walk through the cook steps
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible: "Done"
+    commands:
+      - tapOn: "Done"
+      - waitForAnimationToEnd:
+          timeout: 5000
+- runFlow:
+    when:
+      visible: "Skip logging"
+    commands:
+      - tapOn: "Skip logging"
+      - waitForAnimationToEnd:
+          timeout: 2000

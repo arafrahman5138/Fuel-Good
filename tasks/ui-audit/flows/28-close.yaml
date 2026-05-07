@@ -1,0 +1,6 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "5%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

@@ -1,0 +1,76 @@
+appId: com.fuelgood.ios
+---
+# Tap on first meal in Today's Plan to open recipe detail
+- tapOn:
+    text: "Open recipe Chicken Sausage Kale Scramble.*"
+- extendedWaitUntil:
+    visible: "Cook"
+    timeout: 8000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10-recipe-detail-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10b-recipe-scrolled"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+
+# Tap Cook button
+- tapOn: "Cook"
+- extendedWaitUntil:
+    visible: ".*Step.*|.*Next.*|.*Previous.*"
+    timeout: 8000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11-cook-step1"
+
+# Try the AI tip helper if visible
+- runFlow:
+    when:
+      visible: "Get tips for this step"
+    commands:
+      - tapOn: "Get tips for this step"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11b-cook-step1-tips"
+      - swipe:
+          start: "50%,30%"
+          end: "50%,80%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+
+# Advance through steps
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/12-cook-step2"
+
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/13-cook-step3"
+
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/14-cook-step4"
+
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-cook-step5"
+
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/16-cook-step6"
+
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/17-cook-celebration"

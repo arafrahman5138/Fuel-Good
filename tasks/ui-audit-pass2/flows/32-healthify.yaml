@@ -1,0 +1,23 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Home"
+- waitForAnimationToEnd:
+    timeout: 2000
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- tapOn: ".*pizza"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/41-healthify-pizza"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/41-healthify-pizza-scroll"
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 400
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/41-healthify-pizza-scroll2"

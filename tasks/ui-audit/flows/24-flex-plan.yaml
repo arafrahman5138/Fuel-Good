@@ -1,0 +1,30 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*flex meals available.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-07-flex"
+- scroll
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-07b-flex-scrolled"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap Today's Plan
+- tapOn: "Today's Plan"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-08-todays-plan"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Tap Today's Fuel
+- tapOn: "Today's Fuel"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/10-home-09-todays-fuel"
+- tapOn:
+    point: "7%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

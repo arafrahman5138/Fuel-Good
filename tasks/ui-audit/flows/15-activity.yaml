@@ -1,0 +1,6 @@
+appId: com.fuelgood.ios
+---
+- tapOn: ".*Lightly.*"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 4000

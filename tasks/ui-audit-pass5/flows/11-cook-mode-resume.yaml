@@ -1,0 +1,130 @@
+appId: com.fuelgood.ios
+---
+# Already on Recipe Detail — capture full scrolls before entering cook
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10-recipe-detail-top"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10b-recipe-mid"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10c-recipe-low"
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/10d-recipe-bottom"
+# Scroll back up
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 800
+
+# Enter Cook Mode
+- tapOn:
+    text: "Cook"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11-cook-step1"
+
+# Try AI tip helper if visible
+- runFlow:
+    when:
+      visible: "Get tips for this step"
+    commands:
+      - tapOn: "Get tips for this step"
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/11b-cook-step1-tips"
+      - swipe:
+          start: "50%,30%"
+          end: "50%,70%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+
+# Walk through steps
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/12-cook-step2"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/13-cook-step3"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/14-cook-step4"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/15-cook-step5"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/16-cook-step6"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - waitForAnimationToEnd:
+          timeout: 2500
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/17-cook-final-step"
+
+# Look for Finish/Log&Finish
+- runFlow:
+    when:
+      visible: "Log & Finish|Finish"
+    commands:
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/18-cook-celebration"
+      - tapOn: "Log & Finish|Finish"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/19-post-cook"

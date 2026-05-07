@@ -1,0 +1,6 @@
+{
+  "scan_type": "not_food",
+  "not_food": {
+    "reason": "Restaurant menu"
+  }
+}

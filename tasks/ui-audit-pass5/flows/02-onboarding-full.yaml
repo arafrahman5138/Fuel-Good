@@ -1,0 +1,168 @@
+appId: com.fuelgood.ios
+---
+# Screen: "You already know something is off"
+- tapOn: "Continue"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# Screen: What brought you here?
+- runFlow:
+    when:
+      visible: "I want more energy"
+    commands:
+      - tapOn: "I want more energy"
+      - tapOn: "I want to cook more real food"
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: ultra-processed frequency
+- runFlow:
+    when:
+      visible: "A few times a week"
+    commands:
+      - tapOn: "A few times a week"
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: snapshot
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: fuel philosophy
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: flex
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: flavor preferences (need 2-4)
+- runFlow:
+    when:
+      visible: ".*Savory"
+    commands:
+      - tapOn: ".*Savory"
+      - tapOn: ".*Spicy"
+      - tapOn: ".*Umami"
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: dietary
+- runFlow:
+    when:
+      visible: "No Restrictions"
+    commands:
+      - tapOn: "No Restrictions"
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: protein prefs
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# Screen: body stats — weight, height, age
+- runFlow:
+    when:
+      visible: "e.g. 165"
+    commands:
+      - tapOn: "e.g. 165"
+      - inputText: "145"
+      - tapOn: "Weight"
+      - waitForAnimationToEnd:
+          timeout: 500
+      - tapOn: "e.g. 5"
+      - inputText: "5"
+      - tapOn: "Weight"
+      - waitForAnimationToEnd:
+          timeout: 500
+      - tapOn: "e.g. 7"
+      - inputText: "6"
+      - tapOn: "Weight"
+      - waitForAnimationToEnd:
+          timeout: 500
+      - tapOn: "e.g. 30"
+      - inputText: "30"
+      - tapOn: "Weight"
+      - waitForAnimationToEnd:
+          timeout: 500
+      - tapOn: "Female"
+      - scroll
+      - tapOn: ".*Moderately.*|.*Lightly.*"
+      - tapOn: ".*Maintain.*|.*Metabolic reset.*|.*Lose body fat.*"
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 4500
+
+# Screen: energy check (optional)
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 4000
+
+# Screen: personal targets
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# Screen: meal reveal
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# Screen: commitment — "Yes, I'm all in"
+- runFlow:
+    when:
+      visible: ".*all in.*"
+    commands:
+      - tapOn: ".*all in.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn: "Start my free trial|Continue"
+      - waitForAnimationToEnd:
+          timeout: 8000
+
+# Premium modal — dismiss
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- takeScreenshot: "tasks/ui-audit-pass5/screenshots/dark/03-home-after-onboarding"

@@ -1,0 +1,12 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    text: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "tasks/scan-audit/screenshots/picker-with-newest"
+- tapOn:
+    point: "66,216"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/scan-audit/screenshots/after-pick-tap"

@@ -1,0 +1,24 @@
+appId: com.fuelgood.ios
+---
+# Terminate to reset state
+- launchApp:
+    appId: com.fuelgood.ios
+    clearState: false
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "82%,89%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Your name"
+- inputText: "Tester"
+- pressKey: Enter
+- inputText: "newtester0418@example.com"
+- pressKey: Enter
+- inputText: "TestPass12345!"
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/00-03b-signup-filled"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 12000
+- takeScreenshot: "tasks/ui-audit/screenshots/dark/02-onb-01-first"

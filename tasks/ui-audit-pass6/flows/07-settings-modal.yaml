@@ -1,0 +1,20 @@
+appId: com.fuelgood.ios
+---
+# Navigate Home → Profile → Settings → back
+- tapOn:
+    point: "10%,96%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    text: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Back chevron top-left to dismiss
+- tapOn:
+    point: "8%,8%"
+- waitForAnimationToEnd:
+    timeout: 1500

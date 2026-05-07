@@ -1,0 +1,31 @@
+appId: com.fuelgood.ios
+---
+- launchApp:
+    stopApp: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: fuelgood://scan
+- extendedWaitUntil:
+    visible: "Choose photo from library"
+    timeout: 15000
+- tapOn: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 4500
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-picker"
+- tapOn:
+    point: "17%,25%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-analyzing"
+- extendedWaitUntil:
+    visible: "Log to Chronometer"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result"
+- scroll
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result-scroll1"
+- scroll
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result-scroll2"
+- scroll
+- takeScreenshot: "tasks/scan-audit/screenshots/${SLUG}-result-scroll3"

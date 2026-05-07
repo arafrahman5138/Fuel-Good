@@ -1,0 +1,23 @@
+appId: com.fuelgood.ios
+---
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 500
+- swipe:
+    start: "50%,80%"
+    end: "50%,20%"
+    duration: 500
+- tapOn: ".*Sign Out"
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible: "Sign Out"
+    commands:
+      - tapOn:
+          text: "Sign Out"
+          index: 1
+      - waitForAnimationToEnd:
+          timeout: 3000
+- takeScreenshot: "tasks/ui-fixes-pass/post-logout"

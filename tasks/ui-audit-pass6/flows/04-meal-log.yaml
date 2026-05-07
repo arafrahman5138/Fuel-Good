@@ -1,0 +1,9 @@
+appId: com.fuelgood.ios
+---
+- waitForAnimationToEnd:
+    timeout: 1000
+# Beef and Potato Hash is the only un-logged meal in Today's Plan — tap its + button
+- tapOn:
+    text: "Log Beef and Potato Hash"
+- waitForAnimationToEnd:
+    timeout: 4000

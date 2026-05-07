@@ -1,0 +1,24 @@
+appId: com.fuelgood.ios
+---
+- tapOn: "you@example.com"
+- inputText: "pass7.tester+qa@qatest.fuelgood.app"
+- tapOn: "Email"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Enter password"
+- inputText: "TestPass123!"
+- tapOn: "Password"
+- waitForAnimationToEnd:
+    timeout: 500
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 12000
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500

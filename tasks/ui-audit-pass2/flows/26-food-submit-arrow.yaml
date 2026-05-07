@@ -1,0 +1,7 @@
+appId: com.fuelgood.ios
+---
+- tapOn:
+    point: "92%,19%"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "tasks/ui-audit-pass2/screenshots/dark/17-food-search-after-arrow"
