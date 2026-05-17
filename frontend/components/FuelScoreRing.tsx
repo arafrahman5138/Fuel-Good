@@ -15,7 +15,7 @@ const FUEL_TIERS = [
   { min: 75, label: 'Strong', color: '#4ADE80', icon: 'leaf' as const },
   { min: 60, label: 'Decent', color: '#F59E0B', icon: 'cafe' as const },
   { min: 40, label: 'Mixed', color: '#FB923C', icon: 'fast-food' as const },
-  { min: 0, label: 'Flex', color: '#EF4444', icon: 'fast-food' as const },
+  { min: 0, label: 'Indulgent', color: '#EF4444', icon: 'fast-food' as const },
 ];
 
 function getTierConfig(score: number) {
@@ -38,9 +38,9 @@ interface FuelScoreRingProps {
   /** Controlled: called when user taps to toggle. */
   onToggle?: () => void;
   /**
-   * Pass-5 F4: Color used when score === 0 (empty state). The default red
-   * "Flex Day" tier was confusing on first launch — it signaled "danger" while
-   * the supporting copy ("Your day is a blank slate") signaled "opportunity".
+   * Pass-5 F4: Color used when score === 0 (empty state). The default low-tier
+   * color was confusing on first launch — it signaled "danger" while
+   * the supporting copy framed the day as an opportunity.
    * Callers that have a true empty state should pass a neutral/cool color here.
    * Defaults to a slate grey so any caller forgetting to pass it stops bleeding red.
    */
@@ -124,7 +124,7 @@ export function FuelScoreRing({
 
   // Active ring color: fuel color or MES color when toggled.
   // Pass-5 F4: when no data has been logged (score === 0 and not toggled to MES),
-  // use the neutral empty-state color instead of the red "Flex Day" tier.
+  // use the neutral empty-state color instead of the low-score tier.
   const activeRingColor = showMes && mesTierColor
     ? mesTierColor
     : (!showMes && score === 0)

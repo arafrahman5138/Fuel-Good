@@ -1091,7 +1091,7 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
           </View>
         )}
 
-        {/* Projected flex earnings */}
+        {/* Projected room-for-life fit */}
         {currentPlan?.items && currentPlan.items.length > 0 && (() => {
           const settings = useFuelStore.getState().settings;
           const expectedMeals = settings?.expected_meals_per_week ?? 21;
@@ -1102,7 +1102,7 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
             <View style={[styles.projectedFlexRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="ticket" size={14} color="#F59E0B" />
               <Text style={[styles.projectedFlexText, { color: theme.textSecondary }]}>
-                This plan earns ~{projectedFlex} flex meals
+                This plan builds room for ~{projectedFlex} real-life meals
               </Text>
             </View>
           ) : null;

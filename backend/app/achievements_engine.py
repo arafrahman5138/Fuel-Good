@@ -449,18 +449,18 @@ ACHIEVEMENT_DEFS = [
         "category": "fuel",
         "criteria": {"type": "perfect_fuel_day", "target": 5},
     },
-    # ── Flex System ──
+    # ── Room-for-life system ──
     {
-        "name": "First Flex",
-        "description": "Use your first flex meal.",
+        "name": "First Real-Life Meal",
+        "description": "Log your first intentional real-life meal.",
         "icon": "ticket",
         "xp_reward": 50,
         "category": "fuel",
         "criteria": {"type": "flex_used_count", "target": 1},
     },
     {
-        "name": "Flex Master",
-        "description": "Use all flex meals in a week while still meeting your target.",
+        "name": "Room-for-Life Master",
+        "description": "Use all real-life room in a week while still meeting your target.",
         "icon": "thumbs-up",
         "xp_reward": 100,
         "category": "fuel",
@@ -468,7 +468,7 @@ ACHIEVEMENT_DEFS = [
     },
     {
         "name": "Balance Master",
-        "description": "Use all flex meals and still end the week in Strong tier (75+).",
+        "description": "Use all real-life room and still end the week in Strong tier (75+).",
         "icon": "trophy",
         "xp_reward": 150,
         "category": "fuel",
@@ -476,15 +476,15 @@ ACHIEVEMENT_DEFS = [
     },
     {
         "name": "Clean Sweep",
-        "description": "Finish a week without using any flex meals.",
+        "description": "Finish a week without using any real-life room.",
         "icon": "shield-checkmark",
         "xp_reward": 100,
         "category": "fuel",
         "criteria": {"type": "clean_sweep"},
     },
     {
-        "name": "Flex Veteran",
-        "description": "Use flex meals for 4 consecutive weeks while staying Strong tier or above.",
+        "name": "Life Balance Veteran",
+        "description": "Use real-life room for 4 consecutive weeks while staying Strong tier or above.",
         "icon": "medal",
         "xp_reward": 200,
         "category": "fuel",
@@ -860,12 +860,12 @@ def _check_perfect_fuel_day(db: Session, user_id: str, target: int) -> bool:
 
 
 def _check_flex_master(db: Session, user_id: str) -> bool:
-    """Check if user used all flex meals in a week while still meeting their target.
+    """Check if user used all real-life room in a week while meeting target.
 
     Computes from FoodLog data directly.
     """
     from app.services.fuel_score import (
-        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        get_week_bounds, get_weekly_meal_scores, get_weekly_intentional_flex_count, compute_flex_budget,
         DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
     )
 
@@ -883,9 +883,11 @@ def _check_flex_master(db: Session, user_id: str) -> bool:
         scores = get_weekly_meal_scores(db, user_id, week_start)
         if not scores:
             break
+        intentional_flex_count = get_weekly_intentional_flex_count(db, user_id, week_start)
         budget = compute_flex_budget(
             fuel_target=fuel_target, expected_meals=expected,
             meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+            intentional_flex_count=intentional_flex_count,
         )
         if budget.target_met and budget.flex_available == 0 and budget.flex_used > 0:
             return True
@@ -894,7 +896,7 @@ def _check_flex_master(db: Session, user_id: str) -> bool:
 
 
 def _count_flex_used(db: Session, user_id: str) -> int:
-    """Count total flex meals used (meals with source_type manual_flex or below target)."""
+    """Count intentionally logged real-life meals."""
     return db.query(FoodLog).filter(
         FoodLog.user_id == user_id,
         FoodLog.source_type == "manual_flex",
@@ -902,12 +904,12 @@ def _count_flex_used(db: Session, user_id: str) -> int:
 
 
 def _check_balance_master(db: Session, user_id: str) -> bool:
-    """Check if user used all flex meals and still ended week at 75+ avg.
+    """Check if user used all real-life room and still ended week at 75+ avg.
 
     Computes from FoodLog data directly.
     """
     from app.services.fuel_score import (
-        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        get_week_bounds, get_weekly_meal_scores, get_weekly_intentional_flex_count, compute_flex_budget,
         DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
     )
 
@@ -925,9 +927,11 @@ def _check_balance_master(db: Session, user_id: str) -> bool:
         scores = get_weekly_meal_scores(db, user_id, week_start)
         if not scores:
             break
+        intentional_flex_count = get_weekly_intentional_flex_count(db, user_id, week_start)
         budget = compute_flex_budget(
             fuel_target=fuel_target, expected_meals=expected,
             meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+            intentional_flex_count=intentional_flex_count,
         )
         avg = sum(scores) / len(scores)
         if budget.flex_available == 0 and budget.flex_used > 0 and avg >= 75:
@@ -937,12 +941,12 @@ def _check_balance_master(db: Session, user_id: str) -> bool:
 
 
 def _check_clean_sweep(db: Session, user_id: str) -> bool:
-    """Check if user finished a week without using any flex meals.
+    """Check if user finished a week without using any real-life room.
 
     Computes from FoodLog data directly.
     """
     from app.services.fuel_score import (
-        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        get_week_bounds, get_weekly_meal_scores, get_weekly_intentional_flex_count, compute_flex_budget,
         DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
     )
 
@@ -961,9 +965,11 @@ def _check_clean_sweep(db: Session, user_id: str) -> bool:
         if len(scores) < 14:
             check -= timedelta(days=7)
             continue
+        intentional_flex_count = get_weekly_intentional_flex_count(db, user_id, week_start)
         budget = compute_flex_budget(
             fuel_target=fuel_target, expected_meals=expected,
             meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+            intentional_flex_count=intentional_flex_count,
         )
         if budget.flex_used == 0:
             return True
@@ -972,12 +978,12 @@ def _check_clean_sweep(db: Session, user_id: str) -> bool:
 
 
 def _check_flex_veteran(db: Session, user_id: str, target_weeks: int) -> bool:
-    """Check N consecutive weeks of flex usage while staying Strong tier.
+    """Check N consecutive weeks of real-life room usage while staying Strong tier.
 
     Computes from FoodLog data directly.
     """
     from app.services.fuel_score import (
-        get_week_bounds, get_weekly_meal_scores, compute_flex_budget,
+        get_week_bounds, get_weekly_meal_scores, get_weekly_intentional_flex_count, compute_flex_budget,
         DEFAULT_FUEL_TARGET, DEFAULT_MEALS_PER_WEEK, DEFAULT_CLEAN_PCT,
     )
 
@@ -996,9 +1002,11 @@ def _check_flex_veteran(db: Session, user_id: str, target_weeks: int) -> bool:
         scores = get_weekly_meal_scores(db, user_id, week_start)
         if not scores:
             break
+        intentional_flex_count = get_weekly_intentional_flex_count(db, user_id, week_start)
         budget = compute_flex_budget(
             fuel_target=fuel_target, expected_meals=expected,
             meal_scores=scores, week_start=week_start, clean_pct=clean_pct,
+            intentional_flex_count=intentional_flex_count,
         )
         avg = sum(scores) / len(scores)
         if avg >= 75 and budget.flex_used > 0:

@@ -99,7 +99,7 @@ export default function CommitmentScreen() {
                 <Ionicons name="flame-outline" size={40} color="#22C55E" />
               </View>
               <Text style={styles.headline}>
-                Are you ready to start{'\n'}earning your cheat meals?
+                Are you ready to eat clean,{'\n'}feel good, and live guilt free?
               </Text>
             </Animated.View>
 

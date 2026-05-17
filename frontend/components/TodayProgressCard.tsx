@@ -23,7 +23,7 @@ const FUEL_TIERS = [
   { min: 75, color: '#4ADE80', label: 'Strong' },
   { min: 60, color: '#F59E0B', label: 'Decent' },
   { min: 40, color: '#FB923C', label: 'Mixed' },
-  { min: 0, color: '#EF4444', label: 'Flex' },
+  { min: 0, color: '#EF4444', label: 'Indulgent' },
 ];
 function getFuelTier(score: number) {
   return FUEL_TIERS.find((t) => score >= t.min) ?? FUEL_TIERS[FUEL_TIERS.length - 1];
@@ -182,7 +182,7 @@ function TodayProgressCardImpl({
             </Text>
             <Text style={[styles.headerSub, { color: theme.textTertiary }]}>
               {subtitle ?? (mealCount === 0
-                ? 'No meals logged yet'
+                ? 'Start your baseline with the first log'
                 : `${mealCount} meal${mealCount > 1 ? 's' : ''} logged`)}
             </Text>
           </View>
@@ -263,7 +263,7 @@ function TodayProgressCardImpl({
             <Ionicons name="restaurant-outline" size={26} color={theme.primary} />
           </LinearGradient>
           <Text style={[styles.emptyTitle, { color: theme.primary }]}>
-            Ready to fuel up?
+            Start your clean baseline
           </Text>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             Your first meal sets the tone for the day

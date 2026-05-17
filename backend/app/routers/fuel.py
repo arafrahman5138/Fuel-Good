@@ -29,10 +29,11 @@ from app.services.fuel_score import (
     DEFAULT_FUEL_TARGET,
     DEFAULT_MEALS_PER_WEEK,
     DEFAULT_CLEAN_PCT,
-    AVG_CHEAT_MEAL_SCORE,
+    AVG_LIFE_MEAL_SCORE,
     get_week_bounds,
     get_weekly_meal_scores,
     get_weekly_snack_scores,
+    get_weekly_intentional_flex_count,
     get_daily_fuel_scores,
     compute_flex_budget,
     compute_fuel_streak,
@@ -183,19 +184,21 @@ async def get_weekly_fuel(
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
 
-    # Main meal scores (excluding snacks/desserts) for flex budget counting
+    # Main meal scores (excluding snacks/desserts) for weekly baseline counting
     main_meal_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
     # Snack/dessert scores tracked separately
     snack_scores = get_weekly_snack_scores(db, current_user.id, week_start)
     # All scores (meals + snacks) for weekly fuel average
     all_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=False)
+    intentional_flex_count = get_weekly_intentional_flex_count(db, current_user.id, week_start)
 
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
-        meal_scores=main_meal_scores,  # Only main meals count toward flex budget
+        meal_scores=main_meal_scores,  # Only main meals count toward the weekly baseline
         week_start=week_start,
         clean_pct=clean_pct,
+        intentional_flex_count=intentional_flex_count,
     )
     # Attach snack stats to budget
     budget.snacks_logged = len(snack_scores)
@@ -469,13 +472,15 @@ async def get_fuel_calendar(
         scores = _group_scores(day_logs)
         avg = round(sum(scores) / len(scores), 1) if scores else 0.0
         tier_key, _ = _tier_for_score(avg) if scores else ("unknown", "Unknown")
-        has_flex = any(s < fuel_target for s in scores) if scores else False
+        has_intentional_life_meal = any(
+            getattr(log, "source_type", None) == "manual_flex" for log in day_logs
+        )
         days.append(CalendarDayEntry(
             date=d.isoformat(),
             avg_fuel_score=avg,
             meal_count=len(scores),
             tier=tier_key,
-            is_flex=has_flex,
+            is_flex=has_intentional_life_meal,
         ))
         d += timedelta(days=1)
 
@@ -486,7 +491,7 @@ async def get_fuel_calendar(
     )
 
 
-# ── Smart Flex Suggestions ───────────────────────────────────────────
+# ── Room-for-Life Suggestions ────────────────────────────────────────
 
 @router.get("/flex-suggestions", response_model=SmartFlexResponse)
 async def get_flex_suggestions(
@@ -500,14 +505,16 @@ async def get_flex_suggestions(
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
 
-    # Use main meal scores only (exclude snacks/desserts) for flex budget
+    # Use main meal scores only (exclude snacks/desserts) for baseline availability
     main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    intentional_flex_count = get_weekly_intentional_flex_count(db, current_user.id, week_start)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
         meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
+        intentional_flex_count=intentional_flex_count,
     )
 
     # Today's scores
@@ -518,43 +525,43 @@ async def get_flex_suggestions(
     )
     today_scores = _group_scores(today_logs)
     today_avg = sum(today_scores) / len(today_scores) if today_scores else 0.0
-    had_flex_today = any(s < fuel_target for s in today_scores)
+    is_below_target_today = today_avg > 0 and today_avg < fuel_target
 
     # Determine context
     flex_remaining = budget.flex_available
     suggestions: list[FlexSuggestion] = []
 
-    if had_flex_today and today_avg < fuel_target:
-        # Post-flex: recovery suggestions
+    if is_below_target_today:
+        # Baseline repair suggestions
         context = "post_flex"
         suggestions = [
             FlexSuggestion(
                 icon="leaf",
-                title="Get Back on Track",
-                body="Your next meal can make up the difference — aim for a whole-food plate with lean protein, veggies, and complex carbs.",
+                title="Build the Next Clean Plate",
+                body="Your next meal can lift the baseline. Aim for a whole-food plate with protein, veggies, and a satisfying carb.",
                 accent="#22C55E",
             ),
             FlexSuggestion(
                 icon="water",
-                title="Hydrate & Reset",
-                body="Drink water and skip sugary drinks for the rest of the day. A clean dinner can pull your daily average back up.",
+                title="Simple Reset",
+                body="Water, a walk, and a clean dinner can make today feel steadier without turning the meal into a failure.",
                 accent="#3B82F6",
             ),
             FlexSuggestion(
                 icon="restaurant",
                 title="Scan Before You Eat",
-                body="Use the meal scanner on your next meal to stay aware of what you're eating. Knowledge is power!",
+                body="Use the meal scanner on your next meal to understand the components before you log it.",
                 accent="#8B5CF6",
             ),
         ]
     elif flex_remaining <= 0:
-        # Budget exhausted
+        # Baseline is tight
         context = "budget_low"
         suggestions = [
             FlexSuggestion(
                 icon="alert-circle",
-                title="Flex Budget Spent",
-                body=f"You've used all your flex room this week. Stick to whole-food meals (Fuel Score {fuel_target}+) for the rest of the week.",
+                title="Baseline Needs Support",
+                body=f"Your week is tight against the {fuel_target} target. A few whole-food meals can rebuild room for life.",
                 accent="#EF4444",
             ),
             FlexSuggestion(
@@ -566,7 +573,7 @@ async def get_flex_suggestions(
             FlexSuggestion(
                 icon="trending-up",
                 title="Protect Your Streak",
-                body="You're close to finishing the week strong. A few more whole-food meals and you'll hit your target!",
+                body="You're close to finishing the week strong. A few more whole-food meals can keep the baseline intact.",
                 accent="#F59E0B",
             ),
         ]
@@ -578,37 +585,37 @@ async def get_flex_suggestions(
         suggestions = [
             FlexSuggestion(
                 icon="checkmark-circle",
-                title=f"{flex_remaining} Flex Meals Available",
-                body=f"You're ahead of your target — enjoy a flex meal guilt-free. {weekend_note}",
+                title=f"{flex_remaining} real-life meals can fit",
+                body=f"You're ahead of your target, so restaurants, dessert, or takeout can fit without spiraling. {weekend_note}",
                 accent="#22C55E",
             ),
             FlexSuggestion(
                 icon="swap-horizontal",
                 title="Smart Swap Tip",
-                body="Craving takeout? Pick a restaurant option and scan it. Many score 60-70 — cheaper on your flex budget than fast food (30-40).",
+                body="Craving takeout? Pick a restaurant option and scan it. A mixed meal can still be useful data for your weekly baseline.",
                 accent="#3B82F6",
             ),
         ]
     else:
-        # Pre-flex: some room but need to be careful
+        # Some room, with baseline still forming
         context = "pre_flex"
         suggestions = [
             FlexSuggestion(
                 icon="calculator",
-                title=f"{flex_remaining} Flex Meal{'s' if flex_remaining != 1 else ''} Left",
-                body=f"You have room for {flex_remaining} lower-scoring meal{'s' if flex_remaining != 1 else ''} and still hit your {fuel_target} target this week.",
+                title=f"{flex_remaining} real-life meal{'s' if flex_remaining != 1 else ''} can fit",
+                body=f"Your baseline has room for real life, and clean next choices will keep the {fuel_target} target in reach.",
                 accent="#F59E0B",
             ),
             FlexSuggestion(
                 icon="restaurant",
                 title="Make It Count",
-                body="If you're going to flex, choose something you really enjoy. A 60-score restaurant meal costs half the flex points of a 30-score fast food meal.",
+                body="If you choose an indulgent meal, make it something you really enjoy and let the next meal be simple and clean.",
                 accent="#8B5CF6",
             ),
             FlexSuggestion(
                 icon="flash",
-                title="Earn More Flex",
-                body="Every whole-food meal (90+) earns extra flex points. Cook one more clean meal and you might unlock another flex slot.",
+                title="Build More Room",
+                body="Every whole-food meal strengthens the weekly baseline and makes real-life moments easier to fit.",
                 accent="#22C55E",
             ),
         ]
@@ -628,7 +635,7 @@ FLEX_TAG_TITLES = {
     "takeout": "Takeout",
     "dessert": "Dessert",
     "drinks": "Drinks",
-    "other": "Cheat meal",
+    "other": "Real-life meal",
 }
 
 
@@ -638,11 +645,11 @@ async def log_manual_flex_meal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """One-tap cheat meal logging without scanning."""
+    """One-tap intentional room-for-life logging without scanning."""
     import uuid
 
     day = _safe_parse_date(payload.date)
-    title = FLEX_TAG_TITLES.get(payload.tag or "", "Cheat meal")
+    title = FLEX_TAG_TITLES.get(payload.tag or "", "Real-life meal")
     if payload.tag and payload.tag not in FLEX_TAG_TITLES:
         title = payload.tag.capitalize()
 
@@ -653,7 +660,7 @@ async def log_manual_flex_meal(
         meal_type=payload.meal_type or "snack",
         source_type="manual_flex",
         title=title,
-        fuel_score=float(AVG_CHEAT_MEAL_SCORE),
+        fuel_score=float(AVG_LIFE_MEAL_SCORE),
         nutrition_snapshot={"manual_flex": True, "tag": payload.tag},
     )
     db.add(log)
@@ -664,29 +671,31 @@ async def log_manual_flex_meal(
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
-    # Use main meal scores only (exclude snacks) for flex budget
+    # Use main meal scores only (exclude snacks) for baseline availability
     main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    intentional_flex_count = get_weekly_intentional_flex_count(db, current_user.id, week_start)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
         meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
+        intentional_flex_count=intentional_flex_count,
     )
 
-    # ── Flex Snack Transparency ──
+    # ── Room-for-life transparency ──
     meal_type_val = payload.meal_type or "snack"
-    flex_counted = meal_type_val in {"breakfast", "lunch", "dinner", "meal"}
-    if flex_counted:
-        flex_note = "This meal counts toward your weekly flex budget."
+    flex_counted = True
+    if meal_type_val in {"breakfast", "lunch", "dinner", "meal"}:
+        flex_note = "Logged as room for life and included in your weekly baseline."
     else:
-        flex_note = f"Snacks and desserts are tracked but don't count against your flex budget."
+        flex_note = "Logged as room for life. Snacks and desserts are tracked separately from main meal count."
 
     return ManualFlexLogResponse(
         id=log.id,
         date=day.isoformat(),
         title=title,
-        fuel_score=float(AVG_CHEAT_MEAL_SCORE),
+        fuel_score=float(AVG_LIFE_MEAL_SCORE),
         flex_available=budget.flex_available,
         weekly_avg=budget.projected_weekly_avg,
         flex_counted=flex_counted,

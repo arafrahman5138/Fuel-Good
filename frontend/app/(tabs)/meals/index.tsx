@@ -78,10 +78,10 @@ function MenuCard({
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: 'meals', label: 'Meals', icon: 'restaurant-outline', subtitle: 'Full recipes', accent: '#22C55E', accentSoft: 'rgba(34,197,94,0.12)', glow: 'rgba(34,197,94,0.18)' },
-  { id: 'mealprep', label: 'Meal Prep', icon: 'layers-outline', subtitle: 'Components', accent: '#14B8A6', accentSoft: 'rgba(20,184,166,0.12)', glow: 'rgba(20,184,166,0.18)' },
-  { id: 'desserts', label: 'Desserts', icon: 'ice-cream-outline', subtitle: 'Sweet treats', accent: '#F59E0B', accentSoft: 'rgba(245,158,11,0.12)', glow: 'rgba(245,158,11,0.18)' },
-  { id: 'plan', label: 'My Plan', icon: 'calendar-outline', subtitle: 'Weekly plan', accent: '#3B82F6', accentSoft: 'rgba(59,130,246,0.12)', glow: 'rgba(59,130,246,0.18)' },
+  { id: 'meals', label: 'Meals', icon: 'restaurant-outline', subtitle: 'Craveable Fuel 100', accent: '#22C55E', accentSoft: 'rgba(34,197,94,0.12)', glow: 'rgba(34,197,94,0.18)' },
+  { id: 'mealprep', label: 'Meal Prep', icon: 'layers-outline', subtitle: 'Mix-and-match clean', accent: '#14B8A6', accentSoft: 'rgba(20,184,166,0.12)', glow: 'rgba(20,184,166,0.18)' },
+  { id: 'desserts', label: 'Desserts', icon: 'ice-cream-outline', subtitle: 'Sweet but Fuel Good', accent: '#F59E0B', accentSoft: 'rgba(245,158,11,0.12)', glow: 'rgba(245,158,11,0.18)' },
+  { id: 'plan', label: 'My Plan', icon: 'calendar-outline', subtitle: 'Decision relief', accent: '#3B82F6', accentSoft: 'rgba(59,130,246,0.12)', glow: 'rgba(59,130,246,0.18)' },
   { id: 'saved', label: 'Saved', icon: 'bookmark-outline', subtitle: 'On this device', accent: '#8B5CF6', accentSoft: 'rgba(139,92,246,0.12)', glow: 'rgba(139,92,246,0.18)' },
   { id: 'grocery', label: 'Grocery', icon: 'cart-outline', subtitle: 'Shopping list', accent: '#10B981', accentSoft: 'rgba(16,185,129,0.12)', glow: 'rgba(16,185,129,0.18)' },
 ];
@@ -244,7 +244,7 @@ export default function MealsScreen() {
           <Text style={[styles.heroEyebrow, { color: theme.primary }]}>Kitchen Hub</Text>
           <Text style={[styles.menuTitle, { color: theme.text }]}>Eat</Text>
           <Text style={[styles.menuSubtitle, { color: theme.textSecondary }]}>
-            What are you looking for?
+            Healthy food should actually sound good.
           </Text>
         </LinearGradient>
 

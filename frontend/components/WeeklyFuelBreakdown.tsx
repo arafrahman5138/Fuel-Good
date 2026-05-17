@@ -30,7 +30,7 @@ function getBarColor(score: number, target: number): string {
 export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: WeeklyFuelBreakdownProps) {
   const theme = useTheme();
 
-  const { bars, cleanDays, flexDays } = useMemo(() => {
+  const { bars, cleanDays, belowTargetDays } = useMemo(() => {
     // Build a Mon–Sun map from daily_breakdown
     const dayMap = new Map<string, DailyFuel>();
     for (const d of dailyBreakdown) {
@@ -46,7 +46,7 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
 
     const result: Array<{ date: string; score: number; mealCount: number; isToday: boolean }> = [];
     let clean = 0;
-    let flex = 0;
+    let belowTarget = 0;
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
@@ -59,13 +59,13 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
 
       if (mealCount > 0) {
         if (score >= fuelTarget) clean++;
-        else flex++;
+        else belowTarget++;
       }
 
       result.push({ date: key, score, mealCount, isToday });
     }
 
-    return { bars: result, cleanDays: clean, flexDays: flex };
+    return { bars: result, cleanDays: clean, belowTargetDays: belowTarget };
   }, [dailyBreakdown, fuelTarget]);
 
   const tierColor = weeklyAvg >= 90 ? '#22C55E' : weeklyAvg >= 75 ? '#4ADE80' : weeklyAvg >= 60 ? '#F59E0B' : '#EF4444';
@@ -84,7 +84,6 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
         {bars.map((bar, idx) => {
           const height = bar.mealCount > 0 ? Math.max(8, (bar.score / 100) * BAR_MAX_HEIGHT) : 0;
           const color = bar.mealCount > 0 ? getBarColor(bar.score, fuelTarget) : 'transparent';
-          const isFlex = bar.mealCount > 0 && bar.score < fuelTarget;
 
           return (
             <View key={bar.date} style={styles.barCol}>
@@ -100,16 +99,7 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
                         borderColor: bar.isToday ? theme.text : 'transparent',
                       },
                     ]}
-                  >
-                    {isFlex && (
-                      <Ionicons
-                        name="ticket"
-                        size={8}
-                        color="#fff"
-                        style={{ position: 'absolute', top: 2 }}
-                      />
-                    )}
-                  </View>
+                  />
                 ) : (
                   <View style={[styles.emptyBar, { borderColor: theme.border }]} />
                 )}
@@ -138,11 +128,11 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
             {cleanDays} clean day{cleanDays !== 1 ? 's' : ''}
           </Text>
         </View>
-        {flexDays > 0 && (
+        {belowTargetDays > 0 && (
           <View style={styles.summaryItem}>
             <View style={[styles.summaryDot, { backgroundColor: '#F59E0B' }]} />
             <Text style={[styles.summaryText, { color: theme.textSecondary }]}>
-              {flexDays} flex day{flexDays !== 1 ? 's' : ''}
+              {belowTargetDays} below target day{belowTargetDays !== 1 ? 's' : ''}
             </Text>
           </View>
         )}

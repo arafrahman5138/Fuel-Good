@@ -1,6 +1,6 @@
 # Fuel Good
 
-**Eat clean. Earn your cheat meals. Feel the difference.**
+**Eat clean. Eat food that tastes good. Feel better. Live guilt free.**
 
 ---
 
@@ -22,14 +22,14 @@ When you do that consistently, something shifts. You feel it. More energy. Sharp
 
 ## The Philosophy
 
-Fuel Good is built on a reward-based system, not a restriction-based one:
+Fuel Good is built on a weekly baseline system, not a restriction-based one:
 
-1. **Eat clean, tasty whole-food meals** throughout the week — following your plan or logging your own
-2. **Watch your Fuel Score rise** as your food quality improves
-3. **Earn Flex Meals** — guilt-free cheat meals you've genuinely earned through consistency
+1. **Eat clean, tasty whole-food meals** throughout the week — from your plan, curated recipes, restaurants, or your own kitchen
+2. **Use Fuel Score as cumulative proof** that you're eating real food most of the time
+3. **Make room for real life** — restaurants, dessert, takeout, and social meals can fit without guilt
 4. **Feel the difference** in your energy, focus, and how your body responds
 
-The psychology is simple: instead of "I can't have that," it becomes "I'm earning that." Every clean meal is a step toward your next flex meal. Every flex meal is a reward you deserve because you put in the work.
+The psychology is simple: instead of "I can't have that," it becomes "I know how this fits." A mostly clean week creates confidence. A mixed meal is useful information, not a failure. An intentional indulgence is part of life, not something the app should punish.
 
 ---
 
@@ -67,10 +67,10 @@ The score drops when processing enters the picture:
 | Tier | Weekly Avg | What it means |
 |------|-----------|---------------|
 | **Elite** | 90+ | Whole-food excellence — body is thriving |
-| **Strong** | 75-89 | Consistently clean — flex meals fully absorbed |
+| **Strong** | 75-89 | Consistently clean — real life can fit |
 | **Decent** | 60-74 | Good foundation, room for more whole foods |
-| **Mixed** | 40-59 | Too much processed — reduce and earn flex back |
-| **Flex** | <40 | Heavy processing — time to reset with clean meals |
+| **Mixed** | 40-59 | Mixed baseline — next clean meals matter |
+| **Indulgent** | <40 | Heavy processing — reset with satisfying whole-food meals |
 
 ### MES (Metabolic Energy Score) — "Will This Meal Give Me Energy?"
 
@@ -88,50 +88,50 @@ A fruit-heavy smoothie with oats and honey could be 100% whole food (**Fuel 100*
 
 Curated Fuel Good meals are **always Fuel 100** but **MES varies (typically 70-95)** depending on the meal's composition. This is intentional — it gives users two complementary signals:
 
-- **Fuel Score**: "Am I eating real food?" → earns flex meals
+- **Fuel Score**: "Am I eating real food most of the time?" → builds the weekly clean baseline
 - **MES**: "Am I eating balanced food?" → predicts how I'll feel
 
 MES is personalized to your body — age, weight, activity level, metabolic health context (insulin resistance, blood sugar sensitivity, goals) all shape your individual targets.
 
 ---
 
-## The Flex System — How Rewards Work
+## Weekly Clean Baseline — How Room for Life Works
 
-The flex system is the motivational engine of Fuel Good. It turns healthy eating from obligation into investment — every clean meal earns progress toward guilt-free indulgences.
+The weekly clean baseline is the motivational engine of Fuel Good. It turns healthy eating from obligation into confidence: eat mostly whole foods, see the baseline you are building, and know when real life can fit.
 
 ### The Math That Proves the Philosophy
 
-A typical week has 21 meals (3 per day). If a user follows their Fuel Good plan for most of those:
+A typical week has 21 meals (3 per day). If a user eats clean most of the time:
 
 ```
-17 clean meals × 100 Fuel Score  = 1,700
- 4 flex meals  ×  35 Fuel Score  =   140
+17 clean meals      × 100 Fuel Score  = 1,700
+ 4 real-life meals  ×  35 Fuel Score  =   140
 ─────────────────────────────────────────
 Weekly average: 1,840 / 21       =  87.6  → Strong tier
 ```
 
-**Even with 4 cheat meals, the weekly average stays at 87.6** — well above the 80 target. The 17 clean meals create such a strong baseline that the body absorbs the flex meals without negative impact. This is "presence of the good" in action.
+**Even with 4 real-life meals, the weekly average stays at 87.6** — well above the 80 target. The 17 clean meals create such a strong baseline that the body can handle restaurants, dessert, or takeout without the user spiraling. This is "presence of the good" in action.
 
-### Why Flex Meals Count Toward the Average
+### Why Real-Life Meals Count Toward the Average
 
-Flex meals are **not** excluded from the weekly average. They're included because the average staying high *with* flex meals is the most powerful proof of the philosophy. Users see:
+Real-life meals are **not** excluded from the weekly average. They're included because the average staying high *with* real life is the most powerful proof of the philosophy. Users see:
 
-> "Weekly avg: 87 — even with 4 flex meals, your body is well-fueled"
+> "Weekly avg: 87 — mostly clean, with room for life"
 
-This is the emotional permission users need. Not "you're allowed to cheat" but "the math proves your body handles this because you earned it."
+This is the emotional permission users need. Not "you're allowed to cheat" but "your baseline is strong enough that this fits."
 
-### How Flex Meals Are Earned
+### How Room for Life Is Shown
 
-The flex budget resets weekly. Users earn flex meals by maintaining their Fuel Score above their target (default 80) across enough meals:
+Room for life resets weekly. Users build it by maintaining a clean baseline across enough meals:
 
 - Eat whole-food meals consistently → Fuel Score stays high
-- Weekly average above target → flex meals unlock progressively
-- Each flex meal can be used guilt-free on anything — pizza, dessert, takeout, whatever
-- The weekly average absorbs flex meals without dropping below the target threshold
+- Weekly average above target → room for real life becomes visible
+- Intentional real-life meals can be logged without guilt
+- Low or mixed scan scores lower the baseline proportionally, but they do **not** automatically spend room for life
 
-### The Flex Budget Visualization
+### The Room-for-Life Visualization
 
-Users see their flex budget as a row of ticket icons that fill up as they earn them through clean eating. Each earned ticket represents a guilt-free indulgence. The visual is tangible and satisfying — like filling up a punch card where the reward is freedom to enjoy food you love.
+Users see room for life as a supporting signal, not the main scoreboard. The weekly Fuel Score answers "how is my baseline going?" Room-for-life moments answer "can restaurants, dessert, or takeout fit this week?"
 
 ---
 
@@ -165,7 +165,7 @@ It also creates a **pre-purchase decision loop** that shapes behavior before eat
 ```
 Grocery store → Scan item → See Fuel Score → Make better choice
 → Bring home better ingredients → Cook better meals
-→ Higher weekly average → Earn more flex meals
+→ Higher weekly average → More room for life
 ```
 
 The app isn't just tracking what you already ate — it's shaping what you buy in the first place. Over time, users internalize what to look for: shorter ingredient lists, recognizable ingredients, no seed oils, no refined flour. The scanner educates without lecturing.
@@ -175,7 +175,7 @@ The app isn't just tracking what you already ate — it's shaping what you buy i
 - Ingredient-by-ingredient breakdown (flagged: seed oils, refined flour, added sugars, preservatives, emulsifiers, artificial additives)
 - Suggested whole-food swaps ("Try X instead — Fuel Score: 95")
 - MES estimate (how this food impacts energy levels)
-- Whether it counts as a flex meal or a clean meal in the weekly budget
+- How it affects the weekly baseline, without automatically labeling mixed components as flex
 
 ---
 
@@ -210,55 +210,55 @@ Daily quests, XP, achievements, and streaks that make consistent healthy eating 
 │                                                             │
 │   ┌──────────┐     ┌──────────┐     ┌──────────┐          │
 │   │  Plan    │────▶│   Eat    │────▶│  Track   │          │
-│   │  meals   │     │  clean   │     │  scores  │          │
+│   │ /Choose  │     │  well    │     │ baseline │          │
 │   └──────────┘     └──────────┘     └────┬─────┘          │
 │        ▲                                  │                 │
 │        │           ┌──────────┐           │                 │
-│        │           │  Earn    │◀──────────┘                 │
-│        └───────────│  flex    │                             │
-│                    │  meals   │                             │
+│        │           │  Room    │◀──────────┘                 │
+│        └───────────│  for     │                             │
+│                    │  life    │                             │
 │                    └──────────┘                             │
 │                                                             │
-│   Clean eating ─▶ High scores ─▶ Flex earned ─▶ Repeat    │
+│   Clean eating ─▶ Strong baseline ─▶ Real life fits ─▶ Repeat │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **A typical day:**
-1. **Morning** — Open the app, see your weekly Fuel Score + flex progress + today's plan
-2. **Meals** — Cook from your plan (Fuel 100 guaranteed) or scan what you eat
+1. **Morning** — Open the app, see your weekly baseline + the easiest healthy next step
+2. **Meals** — Cook from your plan, choose a curated meal, or scan what you eat
 3. **Shopping** — At the grocery store, scan products before buying. Know the score before it's in your cart
-4. **Progress** — Watch flex meals fill up as you eat clean. See: "2 more meals → next flex earned"
-5. **Reward** — Use a flex meal when you want, knowing the math proves your body handles it
+4. **Progress** — Watch the weekly baseline strengthen as clean meals stack up
+5. **Real life** — Enjoy a restaurant meal or dessert when you want, knowing how it fits
 6. **Growth** — Complete quests, maintain streaks, unlock achievements
 
 **A typical week:**
-- Monday–Friday: Follow the meal plan, Fuel Score stays at 100 per meal
+- Monday-Friday: Follow the meal plan, curated meals, or your own whole-food meals
 - Wednesday grocery run: Scan items before buying — swap the processed pasta sauce (Fuel 25) for the one with 5 whole ingredients (Fuel 90)
-- Saturday: Pizza night with the family — Fuel Score ~30, but it's a flex meal you earned
-- Sunday: Brunch out — scan the menu item, Fuel Score ~45, another earned flex meal
+- Saturday: Pizza night with the family — Fuel Score ~30, an intentional real-life meal
+- Sunday: Brunch out — scan the menu item, understand the components, move on
 - **Weekly average: 87** — Strong tier, body thriving, zero guilt
 
 ---
 
 ## Strategic Vision: Where We're Going
 
-### Making the Reward Loop Visible
+### Making the Clean Baseline Visible
 
-The flex system should be emotionally present at every touchpoint:
+The weekly baseline should be emotionally present at every touchpoint:
 
-- **Every meal logged** → user sees how it impacts their flex progress
-- **Every flex meal earned** → celebration with visual feedback
-- **Today's plan** → shows what each meal contributes to the reward
+- **Every meal logged** → user sees how it impacts the clean baseline
+- **Every strong week** → celebration with visual feedback
+- **Today's plan** → shows the easiest clean next step
 - **Weekly summary** → proves the philosophy with real numbers
 
 ### Homepage Psychology
 
 The homepage should answer three questions in this order:
-1. **"What have I earned?"** — Flex progress, weekly score, rewards unlocked
-2. **"What should I eat next?"** — Today's plan with meals that look appetizing
-3. **"How am I doing?"** — Scores, streaks, quests (supporting data, not hero data)
+1. **"How is my week going?"** — Warm weekly baseline interpretation
+2. **"What should I eat next?"** — Plan meal, curated meal, scan/log, or Coach
+3. **"Do I have room for life?"** — Supporting permission, not the main scoreboard
 
-The reward comes first. The action comes second. The metrics come third.
+Confidence comes first. The next action comes second. Metrics support both.
 
 ### Scanner as Education Layer
 
@@ -277,16 +277,16 @@ The scanner turns Fuel Good from a logging app into a **nutrition literacy tool*
 Recipes should make users *want* to cook. This means:
 - Visual appetite appeal (food photography or rich descriptions)
 - Fuel Score prominently displayed ("Fuel 100 — pure whole food")
-- Connection to the reward: "This meal earns flex progress"
+- Connection to the baseline: "This meal strengthens your week"
 - Taste-first positioning: lead with flavor, not nutrition data
 
 ### Celebration Design
 
-Earning flex meals should feel rewarding:
-- Visual celebration when a flex meal is earned (glow, animation, satisfying feedback)
-- Congratulatory copy: "You earned this! Enjoy it guilt-free"
-- Weekly milestones: "Target crushed — 6 flex meals earned this week"
-- The dopamine of progress should rival the dopamine of the food itself
+Consistency should feel rewarding:
+- Visual celebration when the weekly baseline gets stronger
+- Congratulatory copy: "Strong baseline. Room for life."
+- Weekly milestones: "Mostly clean week — and real life fit"
+- The dopamine of progress should make whole-food choices feel desirable, not clinical
 
 ---
 
@@ -356,4 +356,4 @@ For social authentication (Google/Apple), see [OAUTH_SETUP.md](OAUTH_SETUP.md).
 
 ---
 
-*Fuel Good is not about perfection. It's about building a relationship with food where healthy is the default, indulgence is earned, and feeling good is the constant.*
+*Fuel Good is not about perfection. It's about building a relationship with food where healthy is tasty, real life fits, and feeling good is the constant.*

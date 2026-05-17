@@ -27,10 +27,10 @@ const TIER_CONFIGS = [
   { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const, lightGradient: ['#f0fdf4', '#dcfce7', '#f0fdf4'] as const },
   { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
   { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const, lightGradient: ['#fff7ed', '#fed7aa', '#fff7ed'] as const },
-  // Pass-5 F5: was red (#EF4444 + crimson gradient) — too punitive given "Flex Day"
-  // is a feature, not a failure. Softened to deep amber. Keeps the tier visually
+  // Pass-5 F5: was red (#EF4444 + crimson gradient) — too punitive for a
+  // weekly baseline story. Softened to deep amber. Keeps the tier visually
   // distinct from "Mixed" (#FB923C) but stops bleeding red across the home hero.
-  { min: 0, label: 'Flex Day', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
+  { min: 0, label: 'Indulgent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
 ];
 
 const DARK_EMPTY_GRADIENT = ['#111118', '#1a1a24', '#111118'] as const;
@@ -55,7 +55,7 @@ function getContextTagline(
   weeklyTargetMet: boolean,
 ): { text: string; color: string } {
   if (mealCount === 0) {
-    return { text: 'Your day is a blank slate — make it count', color: '#4ADE80' };
+    return { text: 'Your baseline starts with your first meal', color: '#4ADE80' };
   }
   if (mealCount <= 2) {
     if (fuelScore >= 90) return { text: 'Elite start — keep this going all day', color: '#22C55E' };
@@ -64,7 +64,7 @@ function getContextTagline(
     return { text: 'Still early — one clean meal changes everything', color: '#FB923C' };
   }
   if (weeklyTargetMet) {
-    return { text: 'Weekly target crushed — you earned this', color: '#22C55E' };
+    return { text: 'Strong baseline — room for life', color: '#22C55E' };
   }
   // Pass-5 F3 fix: only let the MES-derived energyPrediction override the tagline
   // when the Fuel ring is also painting amber/red. Otherwise the badge reads
@@ -80,7 +80,7 @@ function getContextTagline(
   if (fuelScore >= 60) return { text: 'Decent day — one clean meal pushes you higher', color: '#F59E0B' };
   if (fuelScore >= 40) return { text: 'Mixed fuel — a whole-food meal turns this around', color: '#FB923C' };
   // Pass-5 F5: tier color softened from red to amber, tagline color follows.
-  return { text: 'Flex day — get back on track with something nourishing', color: '#F59E0B' };
+  return { text: 'Indulgent day — a nourishing meal can steady the week', color: '#F59E0B' };
 }
 
 // ── MES tier label ──────────────────────────────────────────────────────────
@@ -296,8 +296,8 @@ function EnergyHeroCardImpl({
           <View style={styles.statsCol}>
             {/* Tier pill */}
             <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
-              <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
-                {hasData ? tier.label : 'Ready to fuel'}
+            <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
+                {hasData ? tier.label : 'Baseline begins'}
               </Text>
             </View>
 

@@ -1,6 +1,6 @@
 /**
- * FlexSummaryCard — Compact flex budget card for the home screen.
- * Shows ticket icons + weekly avg in one row. Taps through to the Flex screen.
+ * FlexSummaryCard — Compact room-for-life card for the home screen.
+ * Shows earned tickets as a supporting detail, not the main Fuel Score story.
  */
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -12,7 +12,7 @@ import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
 const GOLD = '#F59E0B';
 const GOLD_GLOW = '#FBBF24';
 const GREEN = '#22C55E';
-const RED = '#EF4444';
+const MUTED = '#94A3B8';
 
 interface FlexSummaryCardProps {
   flexAvailable: number;
@@ -40,8 +40,11 @@ function FlexSummaryCardImpl({
   }, [flexAvailable]);
 
   const subtitle = flexAvailable > 0
-    ? 'Use them guilt-free anytime'
-    : 'Keep eating clean to earn flex meals';
+    ? 'Your clean baseline gives you room for life'
+    : 'Keep building your clean baseline this week';
+  const headline = flexAvailable > 0
+    ? `${flexAvailable} life meal${flexAvailable !== 1 ? 's' : ''} can fit`
+    : 'Clean baseline in progress';
 
   return (
     <TouchableOpacity
@@ -73,14 +76,14 @@ function FlexSummaryCardImpl({
                       boxShadow: `0px 0px 4px ${GOLD_GLOW}59`,
                     }
                   : isUsed
-                    ? { backgroundColor: RED + '08', borderColor: RED + '25' }
+                    ? { backgroundColor: MUTED + '08', borderColor: MUTED + '25' }
                     : { backgroundColor: theme.surfaceHighlight + '60', borderColor: theme.border },
               ]}
             >
               <Ionicons
-                name={isAvailable ? 'ticket' : isUsed ? 'close-circle' : 'ticket-outline'}
+                name={isAvailable ? 'ticket' : isUsed ? 'checkmark-circle-outline' : 'ticket-outline'}
                 size={12}
-                color={isAvailable ? GOLD : isUsed ? RED + '50' : theme.textTertiary}
+                color={isAvailable ? GOLD : isUsed ? MUTED : theme.textTertiary}
               />
             </Animated.View>
           );
@@ -90,7 +93,7 @@ function FlexSummaryCardImpl({
       {/* Center: Copy */}
       <View style={styles.copy}>
         <Text style={[styles.headline, { color: theme.text }]}>
-          {flexAvailable} flex meal{flexAvailable !== 1 ? 's' : ''} available
+          {headline}
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           {subtitle}

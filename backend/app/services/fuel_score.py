@@ -8,7 +8,8 @@ Three scoring paths:
   2. Scanned meals → AI-estimated from components, context, flags
   3. Manual / food_db logs → neutral default (50), or estimated if data present
 
-Flex Budget math converts scores into "flex meals remaining" per week.
+Room-for-life math uses the weekly Fuel Score baseline to show how much
+real life can still fit without treating every lower-score scan as spent flex.
 """
 from __future__ import annotations
 
@@ -271,10 +272,9 @@ def _score_scan(
         "seed_oil": "Seed oil",
         "sodium_high": "High sodium / ultra-processed base",
     }
-    # Refined flour on its own is a common feature of okay meals (white rice
-    # next to salmon and greens). It becomes a cheat-meal signal only when it
-    # combines with other red flags — which the tier-cap logic handles via
-    # flag count, so we keep refined_flour at MEDIUM severity.
+    # Refined flour on its own is a common feature of mixed meals (white rice
+    # next to salmon and greens). It becomes a stronger processing signal only
+    # when it combines with other red flags, so keep it at MEDIUM severity here.
     _ALWAYS_HIGH = {"seed_oil_fried", "cured_meat", "protein_isolate"}
     _WEIGHT_SCALED_HIGH = {"added_sugar", "processed_cheese"}
     seen_flag_tags = {(f or {}).get("tag") for f in whole_food_flags if (f or {}).get("tag")}
@@ -671,13 +671,14 @@ def _score_manual(
 
 
 # ══════════════════════════════════════════════════════════════════════
-# Flex Budget Engine
+# Room-for-Life Budget Engine
 # ══════════════════════════════════════════════════════════════════════
 
 DEFAULT_FUEL_TARGET = 80
 DEFAULT_MEALS_PER_WEEK = 21
 DEFAULT_CLEAN_PCT = 80           # 80% clean eating goal
-AVG_CHEAT_MEAL_SCORE = 35
+AVG_LIFE_MEAL_SCORE = 35
+AVG_CHEAT_MEAL_SCORE = AVG_LIFE_MEAL_SCORE  # Backward-compatible import alias
 WEEK_RESET_DAY = 0  # Monday
 
 # Preset clean-eating tiers
@@ -704,13 +705,13 @@ class FlexBudget:
     meals_logged: int
     total_score_points: float
     avg_fuel_score: float
-    # Credit-based flex fields
+    # Credit-based room-for-life fields
     clean_pct: int                # user's clean eating goal (70/80/90)
     clean_meals_target: int       # how many clean meals needed per week
     clean_meals_logged: int       # how many clean meals logged so far
-    flex_budget: int              # total flex meals per week
-    flex_used: int                # flex meals consumed (meals below target)
-    flex_available: int           # flex meals currently available
+    flex_budget: int              # real-life meals that can fit per week
+    flex_used: int                # intentionally logged real-life meals
+    flex_available: int           # real-life meals that can still fit
     # Snack/dessert tracking (excluded from main meal count)
     snacks_logged: int = 0
     snack_avg_score: float = 0.0
@@ -732,19 +733,21 @@ def compute_flex_budget(
     meal_scores: list[float],
     week_start: date,
     clean_pct: int = DEFAULT_CLEAN_PCT,
+    intentional_flex_count: int = 0,
 ) -> FlexBudget:
-    """Compute the live flex budget using credit-based percentage model.
+    """Compute live room-for-life availability using the weekly baseline model.
 
     Credit model:
-      - User starts the week with full flex budget (projected from clean_pct).
-      - Each clean meal (score >= fuel_target) confirms the budget.
-      - Each cheat meal (score < fuel_target) spends 1 flex meal.
-      - If remaining unlogged meals can't sustain the budget, it shrinks.
+      - User starts with projected room for real life based on clean_pct.
+      - Each clean meal (score >= fuel_target) confirms the weekly baseline.
+      - Lower-score scans reduce the baseline but do not automatically spend availability.
+      - Explicitly logged life meals spend availability.
+      - If remaining unlogged meals can't sustain the baseline, availability shrinks.
 
     Example (80% / 21 meals):
       - clean_meals_target = ceil(21 * 0.80) = 17
-      - flex_budget = 21 - 17 = 4
-      - User starts with 4 available, cheat meals spend them.
+      - flex_budget = 21 - 17 = 4 real-life meals can fit
+      - availability changes as the weekly baseline becomes clearer.
     """
     meals_logged = len(meal_scores)
     total_points = sum(meal_scores)
@@ -754,9 +757,10 @@ def compute_flex_budget(
     clean_meals_target = math.ceil(expected_meals * clean_pct / 100)
     flex_budget_total = expected_meals - clean_meals_target
 
-    # Count clean vs cheat meals logged
+    # Count clean meals logged. Below-target meals influence the baseline and
+    # projected availability but are not automatically treated as flex spent.
     clean_meals_logged = sum(1 for s in meal_scores if s >= fuel_target)
-    flex_used = sum(1 for s in meal_scores if s < fuel_target)
+    flex_used = max(0, intentional_flex_count)
 
     # How many meals left to log this week
     meals_remaining = max(0, expected_meals - meals_logged)
@@ -897,6 +901,16 @@ def get_weekly_snack_scores(
     """Fetch fuel scores for snack/dessert logs only in a given week."""
     logs = _fetch_weekly_logs(db, user_id, week_start)
     return _snack_scores_from_logs(logs)
+
+
+def get_weekly_intentional_flex_count(
+    db: Session,
+    user_id: str,
+    week_start: date,
+) -> int:
+    """Count explicitly logged room-for-life meals for a given week."""
+    logs = _fetch_weekly_logs(db, user_id, week_start)
+    return sum(1 for log in logs if getattr(log, "source_type", None) == "manual_flex")
 
 
 def get_daily_fuel_scores(

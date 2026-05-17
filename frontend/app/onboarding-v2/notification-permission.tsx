@@ -77,7 +77,7 @@ export default function NotificationPermissionScreen() {
 
           <Text style={styles.headline}>Stay on track</Text>
           <Text style={styles.subtext}>
-            Get daily meal suggestions and flex meal reminders to keep your score high.
+            Get daily meal suggestions and real-life reminders to keep your baseline strong.
           </Text>
 
           {/* Preview notification */}
@@ -98,7 +98,7 @@ export default function NotificationPermissionScreen() {
             </View>
             <Text style={styles.notifTitle}>Your dinner plan is ready</Text>
             <Text style={styles.notifBody}>
-              Grilled chicken bowl — Fuel Score 96. Tap to see the recipe.
+              Smoky grilled chicken bowl — fresh, filling, Fuel 96.
             </Text>
           </Animated.View>
         </Animated.View>

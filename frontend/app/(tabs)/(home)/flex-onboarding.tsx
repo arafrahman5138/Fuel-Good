@@ -1,5 +1,5 @@
 /**
- * FlexOnboarding — Choose your clean eating goal.
+ * FlexOnboarding — Choose your weekly clean baseline goal.
  * Single-screen preset selection: Relaxed (70%), Balanced (80%), Strict (90%).
  */
 import React, { useState } from 'react';
@@ -34,14 +34,14 @@ const PRESETS: Preset[] = [
     pct: 70,
     label: 'Relaxed',
     flexMeals: 6,
-    description: 'Flexible lifestyle — enjoy more treats while still eating well most of the time',
+    description: 'Flexible lifestyle — more room for restaurants, dessert, and social meals',
     icon: 'happy-outline',
   },
   {
     pct: 80,
     label: 'Balanced',
     flexMeals: 4,
-    description: 'The sweet spot — enough treats to enjoy life, enough discipline to feel great',
+    description: 'The sweet spot — healthy most of the time, with real life built in',
     icon: 'fitness-outline',
     recommended: true,
   },
@@ -87,7 +87,7 @@ export default function FlexOnboarding() {
           </LinearGradient>
           <Text style={[styles.title, { color: theme.text }]}>How do you want to eat?</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Choose your clean eating target. This determines how many guilt-free flex meals you earn each week.
+            Choose your clean eating target. This shapes how much room real life has in your weekly baseline.
           </Text>
         </View>
 
@@ -124,7 +124,7 @@ export default function FlexOnboarding() {
                       )}
                     </View>
                     <Text style={[styles.presetFlex, { color: isActive ? GOLD : theme.textSecondary }]}>
-                      {preset.flexMeals} flex meals per week
+                      {preset.flexMeals} real-life meals can fit
                     </Text>
                   </View>
                   <View style={[styles.radio, { borderColor: isActive ? GOLD : theme.border }]}>
@@ -145,7 +145,7 @@ export default function FlexOnboarding() {
         <View style={[styles.proofCard, { backgroundColor: '#22C55E08', borderColor: '#22C55E25' }]}>
           <Ionicons name="analytics" size={16} color="#22C55E" />
           <Text style={[styles.proofText, { color: theme.textSecondary }]}>
-            {selected}% = {cleanTarget} clean meals + {activePreset.flexMeals} treats per week.{'\n'}
+            {selected}% = {cleanTarget} clean meals + {activePreset.flexMeals} real-life meals can fit.{'\n'}
             Weekly avg: ~{projectedAvg} — <Text style={{ color: '#22C55E', fontWeight: '700' }}>{tierLabel} tier</Text>
           </Text>
         </View>

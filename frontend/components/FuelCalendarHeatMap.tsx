@@ -1,6 +1,6 @@
 /**
  * FuelCalendarHeatMap — Monthly grid of daily Fuel Score cells.
- * Green/amber/red coloring at a glance. Flex meals get a diamond icon.
+ * Green/amber/red coloring at a glance. Real-life meal days get a diamond icon.
  */
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';

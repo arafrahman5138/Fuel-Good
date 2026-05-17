@@ -1,7 +1,7 @@
 /**
- * SmartFlexCard — Context-aware flex meal coach.
+ * SmartFlexCard — Context-aware room-for-life coach.
  * Styled as an AI coach card (matching MetabolicCoach).
- * Features staggered entrance animation and flex badge.
+ * Features staggered entrance animation and availability badge.
  */
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View, Text, StyleSheet } from 'react-native';
@@ -29,7 +29,7 @@ const FLEX_GOLD = '#F59E0B';
 
 const CONTEXT_SUBTITLES: Record<string, string> = {
   post_flex: 'Recovery guidance',
-  budget_low: 'Budget insights',
+  budget_low: 'Room-for-life insights',
   on_track: 'Personalized insights',
   pre_flex: 'Planning ahead',
 };

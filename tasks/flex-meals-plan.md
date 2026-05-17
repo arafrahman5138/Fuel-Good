@@ -1,197 +1,367 @@
-# Flex Meals — Reframe Plan (2026-05-06)
+# Weekly Clean Baseline — Product Reframe Plan (2026-05-08)
 
-**Goal:** Reframe the existing flex/cheat-meal feature around the *running weekly score* as the primary mental model, with discrete flex tickets as a *reward event* layered on top.
+**Goal:** Reframe Fuel Good around the weekly clean baseline: users should be able to eat healthy, minimally processed whole foods most of the time, enjoy food that tastes good, feel better, and live without guilt when real life includes takeout, dessert, restaurants, or social meals.
 
-**Outcome target:** user retention, perceived value rooted in the **presence-of-good** philosophy, and tight cross-feature pull through curated meals + Coach. The product positions itself as the only nutrition app that *gives the user permission to indulge* — track consistently, earn permission, enjoy guilt-free, come back to track again.
+**Outcome target:** retain paying customers by making the app feel useful no matter how they eat: generated meal plans, ad hoc curated meals, chat/Coach, home cooking, scanning, manual logging, restaurant meals, and desserts all feed the same weekly proof that they ate more healthy than unhealthy.
 
 ---
 
-## 1. Context — what exists today (~40% shipped)
+## 1. Product thesis
 
-The feature is more built out than it appears. Audit findings:
+> **Fuel Good helps you eat clean most of the time, however you eat.**
+
+The app should not assume every user follows a generated weekly plan. It should support three common modes equally well:
+
+1. **Planner** — uses generated weekly plans for decision relief.
+2. **Curated eater** — chooses Fuel Good meals ad hoc when they want something healthy and tasty.
+3. **Tracker/scanner** — eats their own food, scans/logs meals, and checks whether the week was mostly clean.
+
+The shared loop:
+
+```text
+Choose / Eat / Scan / Log -> Weekly Fuel Proof -> Feel Better -> Live Guilt Free
+```
+
+The weekly Fuel Score is the product's proof layer. It tells the user: "You ate clean most of the time this week." That proof creates permission to enjoy life without turning the app into food police.
+
+---
+
+## 2. Context — what exists today
 
 **Backend (mostly live):**
-- `WeeklyFuelSummary` schema includes `flex_meals_used`, `flex_budget_total`, `flex_budget_remaining` (`backend/app/models/fuel.py`)
-- `compute_flex_budget()` runs on every `/fuel/weekly` and `/fuel/health-pulse` fetch (`backend/app/services/fuel_score.py`, called from `backend/app/routers/fuel.py:193, 505`)
-- Fuel Score is already 0–100 continuous with 5-tier classification (`whole_food` ≥85, `mostly_clean` ≥70, `mixed` ≥50, `processed` ≥30, `ultra_processed` <30)
-- Manual flex logging works end-to-end: `POST /fuel/flex-log` (`backend/app/routers/fuel.py:635`) → `FoodLog` with `source_type="manual_flex"` → recomputed budget in response
-- `clean_eating_pct` (default 80%) and `expected_meals_per_week` (default 21) live on user settings
+- `WeeklyFuelSummary` includes `flex_meals_used`, `flex_budget_total`, `flex_budget_remaining` (`backend/app/models/fuel.py`).
+- `compute_flex_budget()` runs on `/fuel/weekly` and `/fuel/health-pulse` (`backend/app/services/fuel_score.py`, called from `backend/app/routers/fuel.py`).
+- Fuel Score is already 0-100 continuous with 5-tier classification (`whole_food` >=85, `mostly_clean` >=70, `mixed` >=50, `processed` >=30, `ultra_processed` <30).
+- Manual flex logging works end-to-end via `POST /fuel/flex-log`.
+- `clean_eating_pct` and `expected_meals_per_week` live on user settings.
 
 **Frontend (visible but mis-framed):**
-- 7 flex components already exist: `FlexBudgetCard`, `FlexInsightsCard`, `FlexSummaryCard`, `FlexMealsEarned`, `SmartFlexCard`, `FlexUnlockedToast`, `FlexTicketRow`
-- Dedicated flex screen at `frontend/app/(tabs)/(home)/flex.tsx` with manual cheat-meal logging UI (tag-based: pizza / burger / takeout / dessert / drinks / other)
-- Track tab (`frontend/app/(tabs)/chronometer/index.tsx`) renders the calendar with a 5-tier gradient color legend (Whole Food / Mostly Clean / Mixed / Processed / Flex) — but the gradient is only used as legend decoration, not as a continuous quantity
-- Onboarding `plan-preview.tsx` shows a `FlexTicketRow` with projected flex count derived from goal + activity
+- Flex components exist: `FlexBudgetCard`, `FlexInsightsCard`, `FlexSummaryCard`, `FlexMealsEarned`, `SmartFlexCard`, `FlexUnlockedToast`, `FlexTicketRow`.
+- Dedicated flex screen exists at `frontend/app/(tabs)/(home)/flex.tsx`.
+- Track tab renders a calendar with tier colors, but the gradient is not yet the primary weekly story.
+- Scan result UI already has correction affordances, but they are buried in the details flow.
 
-**What's broken / mis-framed:**
-1. **Scan → flex feedback loop is invisible.** Scanning a low-score meal silently spends a flex on the next `/fuel/weekly` fetch with no tie-back UI.
-2. **Tickets are framed as a depleting budget you start with**, not a reward you earn — directly contradicts presence-of-good philosophy.
-3. **Empty state shows a red "0 FUEL THIS WEEK" ring** with a red apple icon — shame-coded on day 0.
-4. **The earn mechanic is buried** as a small footer caption ("Log 3 more → earn flex points") under Today's Plan.
-5. **Coach has no inline presence on Home** — it's only a tab destination, not the assistant that closes the gap when user is below pace.
-6. **`FlexUnlockedToast` exists but is never triggered** — the celebration moment for the unlock is built and dormant.
-7. **Snacks/desserts don't count against flex** (`backend/app/routers/fuel.py:679`) — but the user mental model expects them to.
-8. **Two duplicated `FlexExplainerModal` definitions** (in `FlexMealsEarned` and `FlexInsightsCard`).
-9. **`SmartFlexCard` and `FlexMealsEarned` are subsumed by `FlexInsightsCard`** — likely dead code.
-10. **Onboarding shows projected flex but never collects a flex-mode preference** (No Flex / 1 Flex Day / 3 Flex Meals from `EARNED_FLEX_README.md` is unbuilt).
+**What's mis-framed:**
+1. Flex is too central. The product promise is broader than earning cheat meals.
+2. Low-score scans can be mentally interpreted as "you used a flex," even when the meal is mostly clean with one weaker component.
+3. Tickets read like a budget/accounting system instead of emotional permission.
+4. Empty states can feel shame-coded (`0 FUEL THIS WEEK`) before the user has done anything.
+5. Scanner trust is fragile when inferred flags are presented too confidently.
+6. Corrections exist for meal scans but are not visible enough to build user trust.
+7. Meal plans are valuable, but not every retained user will use plans as their primary behavior.
 
 ---
 
-## 2. Core philosophy commitment
+## 3. Core philosophy commitment
 
-> **Show what the user is building, not what they have left to spend.**
+> **Show the clean baseline the user is building, not a ledger of what they did wrong.**
 
-Every component on Home and Track must answer: *what direction is this user going?* Not: *how much budget do they have?* The data is identical; the emotional valence is opposite.
+Fuel Good should answer these questions in order:
 
-Concretely this means:
-- The fuel_score is the source of truth (continuous gradient, not categorical bucket).
-- Bucketing into "flex meals used" was a UX simplification that throws information away — a 75-score wrap and a 30-score donut both count as "1 flex" today, but they're nothing alike.
-- Tickets are not retired — they're repurposed.
+1. **How is my week going?**
+   "You're at 84 this week. Mostly clean."
+
+2. **What is the easiest healthy next step?**
+   Follow today's plan, cook a curated meal, scan lunch, log what you ate, or ask Coach.
+
+3. **Do I have room for life?**
+   "You've built a strong baseline. Dinner out still fits."
+
+This keeps the product intuitive for users who plan, users who cook from curated meals, and users who mostly scan/log.
 
 ---
 
-## 3. Mental model — Gradient = state, Ticket = event
+## 4. Mental model
 
-| | Gradient (state) | Ticket (event) |
+| Layer | Purpose | User-facing framing |
 |---|---|---|
-| **Cadence** | Continuous, updates every meal | Discrete, fires at thresholds |
-| **Surface** | Always visible (Home hero, Track) | Moment-based (toast, hero card when fresh) |
-| **Purpose** | Show direction + pace | Celebrate consistency reward |
-| **Framing** | "On pace for an 87 week" | "You earned a flex tonight — enjoy it" |
-| **Psychology** | Daily check-in motivation | Variable-ratio reinforcement |
-| **Maps to existing code** | `fuel_score`, `projected_weekly_avg` | `FlexUnlockedToast`, ticket UI in `FlexInsightsCard` |
+| **Weekly Fuel Score** | Cumulative cleanliness proof | "You ate clean most of the time this week." |
+| **Meal Fuel Score** | Weighted view of the meal | "Mostly clean, with one processed component." |
+| **Flagged components** | Explain what affected the score | "The bread lowered the score because it may contain refined flour/seed oils." |
+| **Corrections** | Build scanner trust | "If that's wrong, tell us what it was." |
+| **Curated meals** | Taste-first whole-food inspiration | "Want shawarma bowls tonight?" |
+| **Meal plans** | Decision relief for planners | "Your week is handled." |
+| **Coach / chat** | Turn cravings into clean options | "Make this burger craving Fuel Good." |
+| **Flex / Life meals** | Emotional permission | "Your clean baseline gives you room for life." |
 
-Tickets do **not** start the week pre-allocated. The user starts at 0 tickets and earns them through high-score meals. This is the inversion that flips the psychology from absence-of-bad to presence-of-good using the same UI element.
+Important distinction:
+
+- Fuel Score is **not** an automatic flex classifier.
+- A low or mixed component is **not** automatically a flex meal.
+- Flex is intentional: dessert, pizza night, takeout, drinks, social meals, or anything the user chooses to enjoy without guilt.
+
+Example:
+
+```text
+Meal: grilled meat + vegetables + healthy fats + processed bread
+Result: mostly clean meal, bread flagged as the weaker component
+Not: automatic cheat meal / automatic flex spent
+```
 
 ---
 
-## 4. Retention loop — how cross-feature pull works
+## 5. Taste-first clean eating
 
-1. User opens app → sees weekly gradient + "2 high-score meals from your next flex unlock"
-2. Taps prompt → **Coach** suggests three curated meals that fit the gap (this is the new contract — Coach must return curated suggestions, not just chat)
-3. User logs a curated meal → score rises → ticket unlocks with `FlexUnlockedToast`
-4. User goes out for the burger → scans it → ticket spent, no shame, score still strong because they front-loaded
-5. Next week resets, gradient persists in monthly trend, user feels both indulged and on-track
+The app should not motivate users through discipline alone. It should motivate through desire.
 
-Every step requires another feature of the app. **Curated meals is the cheapest path to earning flex. Coach is the bridge from "behind pace" to "use this curated meal."** Features stop being parallel modules and become a single mechanism.
+Fuel Good needs to repeatedly prove:
+
+> **Healthy, minimally processed whole-food meals can be craveable, easy, and normal.**
+
+That is where curated meals and chat/Coach become core retention features, not side features.
+
+### Curated meals
+- Lead with appetite appeal: flavor, cuisine, texture, comfort, and ease.
+- Use Fuel Score as reinforcement, not the headline.
+- Make whole-food meals feel like the desirable choice, not the responsible compromise.
+- Show examples that break the "healthy is boring" assumption: shawarma bowls, smash burgers, tacos, pasta, Turkish eggs, high-protein desserts, takeout-style bowls.
+
+### Coach / chat
+- Act as the clean-eating translator.
+- Turn cravings into whole-food versions: burgers, pasta, tacos, pizza-ish bowls, desserts, takeout-style meals.
+- Help users choose a realistic clean next step based on time, ingredients, preferences, and the weekly baseline.
+- Avoid lecturing. The tone should be: "You can still have something delicious; let's make it Fuel Good."
+
+### Weekly proof
+- After the user chooses a tasty clean meal, Fuel Score confirms the choice helped the week.
+- The sequence is: appetite first, action second, proof third.
+- This makes healthy eating feel rewarding before the score even appears.
 
 ---
 
-## 5. Component-level reframe
+## 6. Scan accuracy and speed strategy
+
+The scanner must be trustworthy, but it cannot feel slow. Speed is part of the product experience.
+
+**Target behavior: fast result first, smarter correction second.**
+
+### Default fast path
+- One fast vision/model pass.
+- Deterministic scoring after extraction.
+- Return a useful first result in ~3-5 seconds when possible.
+- Show meal score, main components, major flags, and confidence.
+- Do not run multiple models on every scan by default.
+
+### Selective deep path
+Run deeper analysis only when it is worth the latency/cost:
+
+- Low confidence extraction.
+- High-impact ambiguous component, such as bread/wrap/sauce/oil.
+- Hidden-ingredient assumption, such as seed oils in restaurant food.
+- Contradictory result, such as likely pizza scoring very high.
+- User taps Refine or submits a correction.
+
+### Trust ladder
+1. Extract components: protein, vegetables, starches, bread/wraps, sauces, cooking fats, dessert, drinks, portions.
+2. Score proportionally: one processed component lowers the meal, but does not define the entire meal.
+3. Mark assumptions clearly: "Assumed standard bun may contain seed oils/refined flour."
+4. Prompt correction when it matters: "If this was fresh sourdough, tell us."
+5. Recompute before logging if the user corrects it.
+6. Preserve correction metadata so future accuracy can improve.
+
+---
+
+## 7. Correction UX
+
+Corrections should feel like a normal part of trusting the scan, not like homework.
+
+**Current foundation:**
+- Meal correction API exists: `PATCH /scan/meal/{scan_id}/correct` in `backend/app/routers/scan.py`.
+- Frontend already calls it through `wholeFoodScanApi.correctMeal` in `frontend/services/api.ts`.
+- The scan screen already has a correction textbox in `frontend/app/scan/index.tsx`, but it is too buried.
+
+**Reframed UX:**
+
+Show correction prompts near the flagged component:
+
+```text
+We flagged the bread because it looked like a standard processed bun.
+If that's wrong, tell us what it was.
+```
+
+Example user correction:
+
+```text
+The bread was fresh sourdough from a local bakery, made with flour, water, salt, and starter.
+```
+
+Expected result:
+
+```text
+Updated: removed seed-oil assumption from bread.
+Refined flour may still apply unless it was whole-grain sourdough.
+```
+
+Rules:
+- Keep logging available from the first result.
+- Make correction optional and contextual.
+- Recompute score/flags quickly after correction.
+- Reuse the original extraction where possible; do not restart the entire scan unless needed.
+- Add product/barcode/label correction parity so packaged food assumptions can be fixed too.
+
+---
+
+## 8. Home hierarchy
+
+Home should not assume the generated plan is the only path. It should adapt to the user's behavior.
+
+1. **Weekly baseline hero**
+   Running weekly Fuel Score, tier, trend, and warm interpretation.
+
+2. **Best next healthy action**
+   Contextual CTA based on the user's state:
+   - Follow today's plan.
+   - Cook a craveable curated meal.
+   - Scan what you're about to eat.
+   - Log your last meal.
+   - Ask Coach to turn a craving into a clean option.
+
+3. **Curated / plan options**
+   Show generated plan meals if the user has a plan; otherwise show high-appeal curated meals. Lead with taste, then show Fuel Score as proof.
+
+4. **Real-life permission**
+   Lightweight flex/life copy only when relevant:
+   - "You've built a strong baseline. Dinner out still fits."
+   - "Mostly clean week. Enjoy dessert without spiraling."
+
+5. **Nutrition detail**
+   MES, macro/micro rings, streaks, quests, and deeper data live below the primary weekly story.
+
+---
+
+## 9. Component-level reframe
 
 | Current | Reframed | Why |
 |---|---|---|
-| Red "0 FUEL" ring on empty state | Neutral pace bar: *"First meal of the week sets your pace"* | No shame on day 0 |
-| "FUEL THIS WEEK" single number | Week timeline: 7 columns, each colored by daily avg using the existing 5-tier gradient, today highlighted, future dotted | Makes pace visible and progressive |
-| "4 flex meals available — guilt-free anytime" | Until earned: *"5 high-score meals to your next flex"* progress bar.<br>Once earned: gold ticket + *"You earned a flex tonight — enjoy it"* CTA | Tickets become event, not budget |
-| "Log 3 more → earn flex points" (footer caption) | Hero card directly under pace timeline | The unlock loop is the product |
-| Coach as separate tab | Inline pull-card on Home when below pace: *"3 high-score meals would close the gap — show me"* → curated meals carousel → log directly | Coach + curated meals stop being parallel modules |
-| Calendar with empty grid + small legend | Calendar where each past day is *filled* with its score color, weekly chip on top *"This week: 87 avg, 1 flex earned"*, "Last 4 weeks" trend strip | Long-term presence without streak fragility |
-| Scan result: just a number | Score appears in its gradient color → week timeline column animates up → if it crossed unlock threshold, gold ticket animates in | Every scan is a visible advancement |
+| Red "0 FUEL" empty state | Neutral "Week starts with your first log" | No shame before action |
+| Flex budget as hero | Weekly clean baseline as hero | Broader product promise |
+| "4 flex meals available" | "Mostly clean week. Room for life." | Avoids accounting-heavy UX |
+| Low scan implies flex | Low scan contributes to weekly average | Fuel Score is proof, not punishment |
+| Flagged ingredients as verdict | Flagged components with confidence | More accurate and teachable |
+| Hidden correction textbox | Contextual correction near flagged components | Builds trust without friction |
+| Today's plan as assumed action | Best next healthy action | Supports planners and non-planners |
+| Coach only as tab | Coach as craving-to-clean helper | Makes healthy eating feel tasty and realistic |
+| Nutrition-led recipe cards | Taste-first curated meals with Fuel proof | Motivates through desire, not discipline |
 
-## 6. Copy audit
+---
 
-| Today | Reframed |
+## 10. Copy audit
+
+| Avoid | Prefer |
 |---|---|
-| "Use them guilt-free anytime" | "Use them when you've earned them" |
-| "Your day is a blank slate" | "First meal sets the pace" |
-| "READY TO FUEL" | (delete — content-free) |
-| "0 FUEL THIS WEEK" | "Week pace begins" / on data: "On track for an 87 week" |
-| "4 flex meals available" | "0 of 5 meals to your first flex" / "1 flex meal earned this week" |
-| "No meals logged" | "Log your first meal to start the week" |
-| "flex meals used" (anywhere) | "high-score meals this week" |
-
-## 7. New Home hierarchy (top → bottom)
-
-1. **Pace hero** — week timeline (gradient columns) + running avg + projection
-2. **Unlock card** — progress to next flex *or* earned-flex CTA (gold, animated when fresh)
-3. **Coach pull** — only when below pace; surfaces 3 curated meals that close the gap
-4. **Today's curated plan** — same as today, but each meal shows its contribution to unlock progress
-5. **Today's nutrition rings** — unchanged, lives at bottom
+| "0 FUEL THIS WEEK" | "Week starts with your first log" |
+| "You used a flex" after any low scan | "This lowers your weekly average, but your week can still be mostly clean" |
+| "4 flex meals available" | "You've built room for life this week" |
+| "Bad / cheat / failed" | "Mostly clean / mixed / indulgent" |
+| "Use them guilt-free anytime" | "Your clean baseline gives you room to enjoy it" |
+| "No meals logged" | "Log your first meal to start your weekly baseline" |
+| "READY TO FUEL" | Delete or replace with a specific action |
+| "Eat this because it's healthy" | "Craving tacos? Make them Fuel Good tonight" |
+| "High-score clean meal" as the headline | "Chicken shawarma bowl" first, "Fuel 100" second |
 
 ---
 
-## 8. Phased implementation plan
+## 11. Phased implementation plan
 
-### Phase 0 — UX spec lock (~½ day, before any code)
-- [ ] Six annotated mockups: Home empty, Home mid-week, Home post-unlock, scan result, Track week, Track month
-- [ ] Lock copy audit table above as the canonical strings
-- [ ] Confirm with user: keep tickets as event-only, retire as budget — alignment check before code
+### Phase 0 — Product spec lock
+- [x] Rename this effort internally from Flex Meals Reframe to Weekly Clean Baseline.
+- [x] Confirm the product thesis: "eat clean most of the time, however you eat."
+- [x] Lock the rule that Fuel Score is not an automatic flex classifier.
+- [x] Define how Home chooses the "best next healthy action."
+- [x] Lock the taste-first principle: appetite appeal leads; Fuel Score proves.
 
-### Phase 1 — Pace hero + unlock card on Home (~2-3 days)
-- [ ] Build `WeekPaceTimeline` component — 7 columns, gradient-filled by daily avg, today highlighted
-- [ ] Replace `FlexBudgetCard` ring on `frontend/app/(tabs)/(home)/index.tsx` with pace timeline
-- [ ] Build `UnlockProgressCard` — replaces "X flex meals available" row; shows progress bar OR earned ticket CTA depending on state
-- [ ] Wire `FlexUnlockedToast` to fire when `flex_available` increases vs. previous fetch (currently un-triggered)
-- [ ] Optimistic refetch of `/fuel/weekly` after every scan or meal-log so the timeline animates immediately
+### Phase 1 — Weekly baseline hero
+- [ ] Build or adapt `WeekPaceTimeline` for weekly average, daily color, and trend.
+- [x] Replace shame-coded empty states with neutral baseline-start copy.
+- [x] Surface warm interpretation: "Mostly clean week," "Strong baseline," "Room for life."
+- [x] Keep plans visible, but do not make them the only primary action.
 
-### Phase 2 — Coach pull-card + curated meal bridge (~2-3 days)
-- [ ] Add inline `CoachPullCard` on Home, visible only when below-pace (running avg < target)
-- [ ] Define new endpoint or extend `/fuel/health-pulse` to return 3 suggested curated meals that would close the gap (filter by `meal_type` slot, `fuel_score >= 85`, dietary preferences)
-- [ ] Tap → curated carousel → log inline → score advances → CoachPullCard re-evaluates
-- [ ] Healthify agent: when scanning a low-score meal, attach a "next time, try this" curated suggestion in the response
+### Phase 2 — Scanner trust and correction UX
+- [x] Promote correction textbox near flagged components and confidence warnings.
+- [x] Show inferred flags as assumptions, not facts.
+- [x] Recompute score/flags before logging after correction.
+- [x] Add product/barcode/label correction parity.
+- [ ] Keep initial scan fast; deeper analysis only on low confidence or correction.
 
-### Phase 3 — Track tab calendar + monthly trend (~2 days)
-- [ ] Fill calendar day cells with daily-avg gradient color (data already in `weekly.daily_breakdown`)
-- [ ] Add weekly chip above calendar: "This week: {avg} avg, {flex_earned} flex earned"
-- [ ] Add "Last 4 weeks" trend strip — sparkline of weekly avgs
-- [ ] Replace red empty-state ring with neutral pace bar matching Home
+### Phase 3 — Component-weighted scan feedback
+- [ ] Make scan results explain the whole meal composition, not just a single verdict.
+- [x] Treat mixed meals proportionally: clean protein/veg/fats should count positively even if bread/sauce lowers the score.
+- [x] Distinguish intentional indulgence from weaker components.
+- [ ] Add QA fixtures for "mostly clean plus processed bread," restaurant oil assumptions, fresh sourdough correction, dessert, pizza, and takeout.
 
-### Phase 4 — Scan-to-flex feedback loop (~1-2 days)
-- [ ] After scan log, show inline post-log moment: score in gradient color → pace timeline animates → if `flex_available` increased, fire `FlexUnlockedToast`; if score < target, show "you used a flex" indicator
-- [ ] Make snacks/desserts count toward weekly avg (extend `backend/app/routers/fuel.py:679` to include `snack` in `flex_counted` set, or treat dessert as its own category)
-- [ ] No new schema needed — fuel_score classification already implicit
+### Phase 4 — Best next healthy action
+- [x] Add a Home card that adapts between plan meal, curated meal, scan, log, or Coach.
+- [x] If below target, offer curated meals or Coach suggestions without framing the user as failing.
+- [x] If on track, reinforce the baseline and suggest an easy next clean meal.
+- [x] Ensure curated meal CTAs lead with craveable meal names and photos/descriptions before nutrition data.
 
-### Phase 5 — Cleanup & deprecation (~½ day)
-- [ ] Delete `SmartFlexCard` and `FlexMealsEarned` (subsumed by `FlexInsightsCard` + new components)
-- [ ] Extract single shared `FlexExplainerModal` (currently duplicated in two components)
-- [ ] Audit imports before deleting; update any lingering references
-- [ ] Update onboarding flex preview copy to match the earned framing (`frontend/app/onboarding-v2/plan-preview.tsx`)
+### Phase 5 — Taste-first curated meals + Coach
+- [x] Audit curated meal cards for appetite-first copy, imagery, and cuisine variety.
+- [ ] Add Coach prompts that transform cravings into whole-food versions.
+- [ ] Connect below-baseline states to tasty clean suggestions, not generic advice.
+- [ ] Make Healthify-style transformations feel central: "tell us what you're craving, we'll make it Fuel Good."
 
-### Phase 6 — Empty state + day-0 polish (~½ day)
-- [ ] All "0 FUEL" red ring instances → neutral "pace begins" copy
-- [ ] First-meal-logged moment: small celebratory animation + "Pace started: you're on track"
-- [ ] Audit onboarding for any remaining absence-framing copy
+### Phase 6 — Flex / life meals as supporting layer
+- [x] Keep flex as emotional permission, not the main product engine.
+- [x] Do not auto-spend flex on every low-score scan.
+- [x] Let users intentionally mark a meal as a life/flex meal when it matches their intent.
+- [x] Trigger celebrations for consistency milestones, not just flex unlocks.
 
-### Phase 7 — Verification (~1 day)
-- [ ] Run all 6 personas (`runs/captures/`) through the new flow; capture before/after screenshots
-- [ ] Verify scan → unlock loop closes end-to-end on simulator
-- [ ] Confirm no red empty states remain on day 0
-- [ ] Update `tasks/lessons.md` with copy/UX framing patterns
+### Phase 7 — Cleanup and deprecation
+- [x] Audit old flex-budget components for accounting-heavy copy.
+- [ ] Remove or rewrite duplicated/dead flex components after confirming imports.
+- [ ] Extract shared explainer UI if still needed.
+- [x] Update onboarding copy so users understand all three modes: plan, curated meals, scan/log.
 
----
-
-## 9. Decisions locked in this plan
-
-1. **Gradient is primary, tickets are event-only.** No ticket-as-budget representation anywhere.
-2. **Tickets are earned, not pre-allocated.** Users start the week with 0 tickets.
-3. **Snacks/desserts count toward the weekly running average** (no separate dessert budget).
-4. **Coach + curated meals are the unlock mechanism**, not parallel features.
-5. **Classification stays implicit** (fuel_score-based). No new `is_flex` field on `FoodLog`.
-6. **EARNED_FLEX_README mode preference (No Flex / 1 Flex Day / 3 Flex Meals) is deferred** — single mode for v1, evaluate after retention data.
-7. **No backend schema changes.** All work is UI reframing on top of existing data.
-
-## 10. Open questions to resolve in Phase 0
-
-- **Unlock threshold:** how many high-score meals trigger a flex ticket? `EARNED_FLEX_README` recommended 12 qualifying meals → 3 flex; closer to 5 qualifying → 1 flex feels more responsive for daily-engagement.
-- **Pace projection math:** linear extrapolation from current avg, or weighted by remaining meals? Display as "on pace for {n}" or as a gauge?
-- **Visualization:** filled column heights (taller = more meals that day) or uniform columns colored by avg? The latter is simpler and more readable.
-
-## 11. Out of scope for this pass
-
-- EARNED_FLEX_README weekly mode preference UI
-- Flex Day (calendar-locked single-day flex)
-- Social sharing / leaderboard around flex
-- Streak bonuses tied to flex
-- Meal-level MES for desserts
-- Backend schema changes
+### Phase 8 — Verification
+- [ ] Run persona QA for planner, curated eater, and scanner/tracker users.
+- [ ] Verify first scan result returns quickly and does not block on multi-model analysis.
+- [ ] Verify corrections update score/flags before logging.
+- [x] Verify no day-0 red/shame states remain.
+- [x] Verify low-score components do not automatically become flex meals.
+- [ ] Verify curated meals and Coach make whole-food choices feel tasty, not clinical.
 
 ---
 
-## 12. Success criteria
+## 12. Decisions locked in this plan
 
-- A new user logging their first three meals never sees a red ring or "0" framing.
-- Scanning any meal triggers a visible pace-timeline animation within 1 second.
-- The first earned flex ticket fires `FlexUnlockedToast` with celebratory copy.
-- A user below pace is offered curated meals from Home without leaving Home.
-- The phrase "flex meals used" appears nowhere in the app.
+1. **Weekly clean baseline is primary.** Flex is supporting, not the center of the app.
+2. **Fuel Score is cumulative proof.** It answers whether the user ate clean most of the time.
+3. **Fuel Score is not an automatic flex classifier.**
+4. **Mixed meals are scored proportionally.** One processed component should not define the whole meal.
+5. **Scanner corrections are first-class.** Users can correct wrong assumptions before logging.
+6. **Scanner speed matters.** First result should be fast; deeper analysis is selective.
+7. **Meal plans are one path, not the only path.** The app must retain planners, curated eaters, and scanner/logging users.
+8. **Taste comes before score.** Curated meals and Coach should make whole-food eating desirable before Fuel Score proves it.
+9. **No shame framing.** The app helps users feel better and live guilt free.
+
+## 13. Open questions to resolve in Phase 0
+
+- **Home action ranking:** what priority order should choose between plan meal, curated meal, scan, log, and Coach?
+- **Correction threshold:** when should the UI proactively ask for a correction vs hide it behind Refine?
+- **Fast scan SLA:** should the product target be 3 seconds, 5 seconds, or "show progress by 3 seconds, result by 5"?
+- **Flex language:** do we keep the term "flex meal" or shift user-facing language toward "life meal" / "room for life"?
+- **Weekly interpretation:** should copy emphasize score number, tier label, or plain-language summary first?
+- **Craving transformations:** should Coach always offer a whole-food version of a craving, or only when the user asks?
+
+## 14. Out of scope for this pass
+
+- Social sharing / leaderboard.
+- Custom user-defined flex budgets.
+- Full restaurant menu integration.
+- Multi-image plate decomposition.
+- Meal-level MES for desserts.
+- Major backend schema redesign beyond correction metadata and product-scan correction parity.
+
+---
+
+## 15. Success criteria
+
+- A non-plan user can scan/log all week and understand whether they ate more healthy than unhealthy.
+- A planner still sees generated meal plans as high-value decision relief.
+- A curated-meal user can choose healthy meals ad hoc without feeling outside the main loop.
+- Curated meals and Coach make minimally processed whole-food choices feel craveable, not boring.
+- A mostly clean meal with one processed component is explained proportionally, not labeled as a cheat meal.
+- Scan results return fast enough that users do not abandon the flow.
+- Users can correct wrong scan assumptions before logging.
+- The app's emotional takeaway is: "I ate well most of the time, I feel better, and I can enjoy life without guilt."

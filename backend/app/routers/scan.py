@@ -1601,6 +1601,46 @@ class MealScanCorrectionRequest(BaseModel):
     correction_text: str = Field(..., min_length=3, max_length=500)
 
 
+def _summarize_scan_correction(
+    original_ingredients: list[str],
+    corrected_ingredients: list[str],
+    correction_text: str,
+) -> dict[str, Any]:
+    """Build a user-facing audit summary for a scan correction."""
+    original_norm = [str(item).strip().lower() for item in original_ingredients if str(item).strip()]
+    corrected_norm = [str(item).strip().lower() for item in corrected_ingredients if str(item).strip()]
+    removed = [item for item in original_norm if item not in corrected_norm]
+    added = [item for item in corrected_norm if item not in original_norm]
+    correction_lower = correction_text.lower()
+
+    if "sourdough" in correction_lower and any(term in " ".join(removed) for term in ("bread", "bun", "roll", "pita")):
+        text = "Updated the bread assumption to sourdough and recomputed the score."
+    elif "seed oil" in correction_lower or any("oil" in item for item in removed + added):
+        if removed and added:
+            text = f"Updated cooking fat from {', '.join(removed[:2])} to {', '.join(added[:2])}."
+        elif removed:
+            text = "Removed the seed-oil assumption and recomputed the score."
+        else:
+            text = "Recomputed the score with your cooking-fat correction."
+    elif "homemade" in correction_lower or "house" in correction_lower:
+        text = "Marked the component as homemade and recomputed the score."
+    elif removed and added:
+        text = f"Updated components from {', '.join(removed[:2])} to {', '.join(added[:2])}."
+    elif added:
+        text = f"Added {', '.join(added[:2])} and recomputed the score."
+    elif removed:
+        text = f"Removed {', '.join(removed[:2])} and recomputed the score."
+    else:
+        text = "Recomputed the score with your correction."
+
+    return {
+        "text": text,
+        "added": added,
+        "removed": removed,
+        "strategy": "heuristic_v2",
+    }
+
+
 @router.patch("/meal/{scan_id}/correct")
 async def correct_meal_scan(
     scan_id: str,
@@ -1610,9 +1650,9 @@ async def correct_meal_scan(
 ):
     """Apply a user's text correction to a scanned meal and recompute scores.
 
-    The correction text is sent to Gemini along with the original scan data
-    to produce updated components and nutrition. Fuel Score and MES are
-    then recomputed on the updated data.
+    The correction text is applied to the extracted components, then Fuel Score
+    and MES are recomputed on the updated data. The original correction is
+    retained in scan metadata so the user-visible score remains auditable.
     """
     scan = (
         db.query(ScannedMealLog)
@@ -1622,7 +1662,7 @@ async def correct_meal_scan(
     if not scan:
         raise HTTPException(status_code=404, detail="Meal scan not found.")
 
-    # Build a corrected ingredient list by merging user feedback
+    # Build a corrected ingredient list by merging user feedback.
     raw_list = scan.normalized_ingredients or scan.estimated_ingredients or []
     original_ingredients = [
         comp.get("name", "") if isinstance(comp, dict) else str(comp)
@@ -1630,9 +1670,11 @@ async def correct_meal_scan(
     ]
     corrected_ingredients = original_ingredients.copy()
 
-    # Simple heuristic: user says "X was actually Y" or "remove X" or "add Y"
+    # Correction parsing lives in recompute_meal_scan; it handles patterns like
+    # "X was actually Y", "remove X", "add Y", and "made with X not Y".
     correction_lower = body.correction_text.lower()
     recomputed_fuel_reasoning: list[str] = []
+    correction_summary: dict[str, Any] | None = None
     if corrected_ingredients or correction_lower:
         # Re-run the scan pipeline with updated ingredient names
         result = await recompute_meal_scan(
@@ -1647,12 +1689,24 @@ async def correct_meal_scan(
             correction_text=body.correction_text,
         )
 
+        corrected_result_ingredients = [
+            comp.get("name", "") if isinstance(comp, dict) else str(comp)
+            for comp in (result.get("normalized_ingredients") or result.get("estimated_ingredients") or [])
+        ]
+        correction_summary = _summarize_scan_correction(
+            original_ingredients,
+            corrected_result_ingredients,
+            body.correction_text,
+        )
         scan.estimated_ingredients = result.get("estimated_ingredients", scan.estimated_ingredients)
         scan.normalized_ingredients = result.get("normalized_ingredients", scan.normalized_ingredients)
         scan.nutrition_estimate = {
             **(result.get("nutrition_estimate") or {}),
             "whole_food_summary": result.get("whole_food_summary"),
             "correction_applied": body.correction_text,
+            "correction_summary": correction_summary,
+            "correction_strategy": "heuristic_v2",
+            "corrected_at": datetime.now(UTC).isoformat(),
         }
         scan.whole_food_status = result.get("whole_food_status", scan.whole_food_status)
         scan.whole_food_flags = result.get("whole_food_flags", scan.whole_food_flags)
@@ -1696,6 +1750,8 @@ async def correct_meal_scan(
             _compute_daily(db, current_user.id, food_log.date)
 
     serialized = _serialize_scan(scan)
+    if correction_summary:
+        serialized["correction_summary"] = correction_summary
     if recomputed_fuel_reasoning:
         serialized["fuel_reasoning"] = recomputed_fuel_reasoning
     try:

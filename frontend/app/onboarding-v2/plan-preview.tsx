@@ -9,13 +9,13 @@ import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState
 import { useOnboardingAnalytics } from '../../hooks/onboarding-v2/useOnboardingAnalytics';
 
 const WEEK_DATA = [
-  { label: 'Mon', score: 100, isFlex: false },
-  { label: 'Tue', score: 100, isFlex: false },
-  { label: 'Wed', score: 100, isFlex: false },
-  { label: 'Thu', score: 100, isFlex: false },
-  { label: 'Fri', score: 100, isFlex: false },
-  { label: 'Sat', score: 35, isFlex: true },
-  { label: 'Sun', score: 45, isFlex: true },
+  { label: 'Mon', score: 100, isLifeMeal: false },
+  { label: 'Tue', score: 100, isLifeMeal: false },
+  { label: 'Wed', score: 100, isLifeMeal: false },
+  { label: 'Thu', score: 100, isLifeMeal: false },
+  { label: 'Fri', score: 100, isLifeMeal: false },
+  { label: 'Sat', score: 35, isLifeMeal: true },
+  { label: 'Sun', score: 45, isLifeMeal: true },
 ];
 
 function getFlexMealCount(goal: string | null, activity: string | null): number {
@@ -120,10 +120,10 @@ export default function PlanPreviewScreen() {
         >
           <Text style={styles.avgLabel}>Weekly Average</Text>
           <Text style={styles.avgScore}>87.6</Text>
-          <Text style={styles.avgSubtext}>Strong tier — even with 2 cheat meals</Text>
+          <Text style={styles.avgSubtext}>Strong baseline — even with real life</Text>
         </Animated.View>
 
-        {/* Flex Meals Section */}
+        {/* Room-for-life section */}
         <Animated.View
           style={[
             styles.flexSection,
@@ -131,9 +131,9 @@ export default function PlanPreviewScreen() {
           ]}
         >
           <Text style={styles.flexText}>
-            Eat clean. Earn{' '}
+            Eat clean. Build room for{' '}
             <Text style={styles.flexCount}>{flexCount}</Text>
-            {' '}guilt-free cheat meals.
+            {' '}real-life meals.
           </Text>
 
           <FlexTicketRow count={flexCount} animated />

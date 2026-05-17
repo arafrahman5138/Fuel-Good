@@ -19,7 +19,7 @@ export const STREAK_TIERS = {
   bronze: { min: 2, color: '#CD7F32' },
 } as const;
 
-/** Flex meal insight thresholds */
+/** Room-for-life insight thresholds */
 export const FLEX_THRESHOLDS = {
   /** Below this ratio: "almost all whole food" */
   lowFlexRatio: 0.25,

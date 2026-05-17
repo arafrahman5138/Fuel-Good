@@ -76,11 +76,11 @@ export default function MealRevealScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.Text style={[styles.headline, { opacity: headlineFade }]}>
-          This is what Fuel Score 100{'\n'}looks like.
+          Shawarma bowls. Smash burgers.{'\n'}Still Fuel 100.
         </Animated.Text>
 
         <Animated.Text style={[styles.subtext, { opacity: subtextFade }]}>
-          All whole food. All delicious. No compromises.
+          Whole-food meals should look like something you actually want.
         </Animated.Text>
 
         <View style={styles.cardsContainer}>

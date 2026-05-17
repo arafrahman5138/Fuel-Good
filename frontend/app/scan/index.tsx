@@ -168,6 +168,12 @@ interface MealResult {
     score?: number;
     whole_food_status?: string;
   }>;
+  correction_summary?: {
+    text?: string;
+    added?: string[];
+    removed?: string[];
+    strategy?: string;
+  };
 }
 
 const PRODUCT_TIER_META: Record<ProductResult['tier'], { color: string; bg: string; label: string }> = {
@@ -360,6 +366,7 @@ export default function ScanScreen() {
   const [tipsExpanded, setTipsExpanded] = useState(false);
   const [flagsExpanded, setFlagsExpanded] = useState(false);
   const [labelExpanded, setLabelExpanded] = useState(false);
+  const autoExpandedCorrectionFor = useRef<string | null>(null);
 
   const [productResult, setProductResult] = useState<ProductResult | null>(null);
   const [successModal, setSuccessModal] = useState<{ visible: boolean; message: string }>({
@@ -502,6 +509,18 @@ export default function ScanScreen() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [mealResult, productResult]);
+
+  // When the scan relies on assumptions, make the correction path visible once.
+  useEffect(() => {
+    if (!mealResult?.id || autoExpandedCorrectionFor.current === mealResult.id) return;
+    const hasFlags = (mealResult.whole_food_flags || []).length > 0;
+    const needsTrustCheck = hasFlags || mealResult.confidence < 0.7;
+    if (!needsTrustCheck) return;
+
+    autoExpandedCorrectionFor.current = mealResult.id;
+    setEditScanExpanded(true);
+    if (hasFlags) setFlagsExpanded(true);
+  }, [mealResult?.id, mealResult?.confidence, mealResult?.whole_food_flags]);
 
   const handleRelogMeal = async (scanId: string, mealLabel: string) => {
     setRelogLoadingId(scanId);
@@ -1159,9 +1178,9 @@ export default function ScanScreen() {
   const getCorrectionHint = (): string => {
     if (!mealResult) return '';
     if (mealResult.confidence < 0.7)
-      return 'Help us get this right — describe what\'s in this meal';
+      return 'Help us replace camera assumptions with what you know is actually in this meal';
     if (mealResult.fuel_score != null && mealResult.fuel_score < 70 && (mealResult.whole_food_flags || []).length > 0)
-      return 'Tell us if any flagged ingredients are actually whole-food (e.g., \'the sauce is homemade\')';
+      return 'Tell us if any possible flags are actually whole-food (e.g., \'the sauce is homemade\')';
     if (mealResult.whole_food_status === 'warn')
       return 'Clarify cooking methods or ingredients the camera may have missed';
     return 'Add details the camera couldn\'t see (e.g., \'brown rice, not white\')';
@@ -1805,10 +1824,10 @@ export default function ScanScreen() {
               <Ionicons name="warning-outline" size={16} color="#D97706" />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: isDark ? '#FCD34D' : '#92400E', fontSize: FontSize.sm, fontWeight: '600' }}>
-                  Low confidence result
+                  More assumptions in this result
                 </Text>
                 <Text style={{ color: isDark ? '#FBBF24' : '#B45309', fontSize: FontSize.xs, marginTop: 1 }}>
-                  Try retaking with better lighting or a closer angle
+                  Retake the photo or correct the details before logging.
                 </Text>
               </View>
               <Ionicons name="camera-outline" size={18} color="#D97706" />
@@ -1920,7 +1939,7 @@ export default function ScanScreen() {
           </TouchableOpacity>
           {!editScanExpanded && (
             <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, marginTop: 4 }}>
-              {ingredientDrafts.length} ingredients detected · Tap to edit or refine
+              {ingredientDrafts.length} ingredients detected · Tap to correct assumptions before logging
             </Text>
           )}
           {editScanExpanded && (
@@ -1963,7 +1982,7 @@ export default function ScanScreen() {
 
               <View style={[{ height: StyleSheet.hairlineWidth, backgroundColor: theme.border, marginVertical: Spacing.md }]} />
 
-              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs }}>Refine</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs }}>Correct an assumption</Text>
               <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs, marginBottom: Spacing.sm }}>
                 {getCorrectionHint()}
               </Text>
@@ -1971,7 +1990,7 @@ export default function ScanScreen() {
                 <TextInput
                   value={correctionText}
                   onChangeText={setCorrectionText}
-                  placeholder="e.g., the dressing is homemade olive oil and lemon"
+                  placeholder="e.g., the bun was fresh sourdough, not a standard processed bun"
                   placeholderTextColor={theme.textTertiary}
                   multiline
                   numberOfLines={2}
@@ -2008,9 +2027,12 @@ export default function ScanScreen() {
                 </TouchableOpacity>
               </View>
               {correctionApplied && (
-                <Text style={{ color: '#22C55E', fontSize: FontSize.xs, marginTop: 4 }}>
-                  Scan updated successfully
-                </Text>
+                <View style={[styles.correctionAppliedCard, { backgroundColor: '#22C55E14', borderColor: '#22C55E33' }]}>
+                  <Ionicons name="checkmark-circle" size={15} color="#22C55E" />
+                  <Text style={[styles.correctionAppliedText, { color: '#16A34A' }]}>
+                    {mealResult.correction_summary?.text || 'Scan updated and score recomputed.'}
+                  </Text>
+                </View>
               )}
             </View>
           )}
@@ -2089,7 +2111,7 @@ export default function ScanScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="alert-circle-outline" size={16} color={mealStatusMeta.color} />
-                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Flagged Ingredients</Text>
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Possible Assumptions</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <View style={[styles.recentScoreBadge, { backgroundColor: mealStatusMeta.bg, width: 22, height: 22 }]}>
@@ -2100,15 +2122,37 @@ export default function ScanScreen() {
             </TouchableOpacity>
             {flagsExpanded && (
               <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, lineHeight: 18, marginBottom: Spacing.sm }}>
+                  These are the scan's best guesses from the photo. If you know a component was cleaner, correct it before logging.
+                </Text>
                 {(mealResult.whole_food_flags || []).slice(0, 6).map((flag, index) => (
                   <View key={`${flag.ingredient}-${index}`} style={styles.guidanceRow}>
-                    <Ionicons name="alert-circle-outline" size={16} color={mealStatusMeta.color} />
+                    <Ionicons name={flag.inferred ? 'help-circle-outline' : 'alert-circle-outline'} size={16} color={mealStatusMeta.color} />
                     <Text style={[styles.guidanceText, { color: theme.text }]}>
                       {flag.ingredient} · {flag.reason}
-                      {flag.inferred ? ' (inferred)' : ''}
+                      {flag.inferred ? ' (assumed)' : ''}
                     </Text>
                   </View>
                 ))}
+                <View style={[styles.correctionPromptCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.correctionPromptTitle, { color: theme.text }]}>
+                      If an assumption is wrong, correct it before logging.
+                    </Text>
+                    <Text style={[styles.correctionPromptCopy, { color: theme.textSecondary }]}>
+                      Tell us if a component was cleaner than it looked, like fresh sourdough or homemade olive-oil dressing.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setEditScanExpanded(true)}
+                    activeOpacity={0.85}
+                    style={[styles.inlineCorrectionButton, { backgroundColor: theme.primaryMuted }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open correction input"
+                  >
+                    <Text style={[styles.inlineCorrectionButtonText, { color: theme.primary }]}>Refine</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
@@ -2219,6 +2263,15 @@ export default function ScanScreen() {
               <Text style={[styles.productConfidenceText, { color: theme.textSecondary }]}>
                 {confidenceCopy}. Review the extracted text if anything looks off.
               </Text>
+              <TouchableOpacity
+                onPress={() => setShowProductEditSheet(true)}
+                activeOpacity={0.85}
+                style={[styles.inlineCorrectionButton, { backgroundColor: theme.primaryMuted }]}
+                accessibilityRole="button"
+                accessibilityLabel="Fix label details"
+              >
+                <Text style={[styles.inlineCorrectionButtonText, { color: theme.primary }]}>Fix</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -2278,7 +2331,7 @@ export default function ScanScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Ionicons name="warning-outline" size={16} color={productTierMeta.color} />
-                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Flagged Ingredients</Text>
+                <Text style={[styles.sectionHeading, { color: theme.text, marginBottom: 0 }]}>Possible Label Flags</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={{ color: theme.textTertiary, fontSize: FontSize.xs }}>{flaggedRows.length}</Text>
@@ -2287,6 +2340,9 @@ export default function ScanScreen() {
             </TouchableOpacity>
             {flagsExpanded && (
               <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, lineHeight: 18, marginBottom: Spacing.sm }}>
+                  These flags come from the extracted label text. If the scan misread the label, fix the text and re-score.
+                </Text>
                 {(productResult.flag_explanations || []).length > 0
                   ? (productResult.flag_explanations || []).map((edu) => (
                     <View key={edu.title} style={[styles.educationCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
@@ -2315,6 +2371,25 @@ export default function ScanScreen() {
                     </View>
                   ))
                 }
+                <View style={[styles.correctionPromptCard, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.correctionPromptTitle, { color: theme.text }]}>
+                      Label scan look off?
+                    </Text>
+                    <Text style={[styles.correctionPromptCopy, { color: theme.textSecondary }]}>
+                      Edit the ingredient text and nutrition facts, then re-score with the corrected label.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowProductEditSheet(true)}
+                    activeOpacity={0.85}
+                    style={[styles.inlineCorrectionButton, { backgroundColor: theme.primaryMuted }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Fix label details"
+                  >
+                    <Text style={[styles.inlineCorrectionButtonText, { color: theme.primary }]}>Fix</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
@@ -2651,7 +2726,7 @@ export default function ScanScreen() {
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Fix label details</Text>
             <Text style={[styles.sheetSub, { color: theme.textSecondary }]}>
-              Correct anything the scan missed, then rescore without leaving this result.
+              Correct anything the scan missed, then re-score before you trust the result.
             </Text>
             <TextInput
               value={productName}
@@ -2670,7 +2745,7 @@ export default function ScanScreen() {
             <TextInput
               value={ingredientsText}
               onChangeText={setIngredientsText}
-              placeholder="Ingredients"
+              placeholder="Ingredients, e.g. sourdough bread, olive oil, sea salt"
               placeholderTextColor={theme.textTertiary}
               multiline
               style={[styles.textArea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
@@ -2708,7 +2783,7 @@ export default function ScanScreen() {
                 activeOpacity={0.9}
                 style={[styles.footerButtonPrimary, styles.productSecondaryAction, { backgroundColor: theme.primary }]}
               >
-                {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Re-score</Text>}
+                {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.footerButtonPrimaryText}>Re-score label</Text>}
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -3425,6 +3500,49 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     lineHeight: 18,
     fontWeight: '600',
+  },
+  correctionPromptCard: {
+    marginTop: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  correctionPromptTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  correctionPromptCopy: {
+    marginTop: 2,
+    fontSize: FontSize.xs,
+    lineHeight: 17,
+  },
+  inlineCorrectionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+  },
+  inlineCorrectionButtonText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+  },
+  correctionAppliedCard: {
+    marginTop: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  correctionAppliedText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    lineHeight: 17,
+    fontWeight: '700',
   },
   lowConfidenceBanner: {
     flexDirection: 'row',

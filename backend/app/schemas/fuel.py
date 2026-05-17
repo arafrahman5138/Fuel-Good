@@ -36,7 +36,7 @@ class FlexBudgetResponse(BaseModel):
     meals_logged: int
     total_score_points: float
     avg_fuel_score: float
-    # Credit-based flex fields
+    # Backward-compatible room-for-life fields
     clean_pct: int
     clean_meals_target: int
     clean_meals_logged: int
@@ -116,7 +116,7 @@ class CalendarDayEntry(BaseModel):
     avg_fuel_score: float
     meal_count: int
     tier: str  # fuel tier key
-    is_flex: bool = False  # had a flex meal (below target)
+    is_flex: bool = False  # had an intentionally logged room-for-life meal
 
 class FuelCalendarResponse(BaseModel):
     month: str  # YYYY-MM
@@ -133,6 +133,6 @@ class FlexSuggestion(BaseModel):
     accent: str  # color key
 
 class SmartFlexResponse(BaseModel):
-    context: str  # "pre_flex" | "post_flex" | "on_track" | "budget_low"
+    context: str  # legacy values: "pre_flex" | "post_flex" | "on_track" | "budget_low"
     flex_meals_remaining: int
     suggestions: List[FlexSuggestion]

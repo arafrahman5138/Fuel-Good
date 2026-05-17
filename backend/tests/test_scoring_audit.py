@@ -616,12 +616,12 @@ class TestFuelScorePaths:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# SECTION 12: Flex Budget
+# SECTION 12: Room-for-life Budget
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestFlexBudget:
     def test_basic_flex_budget_80pct(self):
-        """80% clean, 21 meals → flex_budget=4."""
+        """80% clean, 21 meals -> flex_budget=4."""
         result = compute_flex_budget(
             fuel_target=80,
             expected_meals=21,
@@ -631,8 +631,8 @@ class TestFlexBudget:
         )
         assert result.flex_budget == 4  # 21 - ceil(21*0.80) = 21-17 = 4
         # Clean meals (≥80): 100, 90, 85, 80 = 4
-        # Flex used (< 80): 75, 60 = 2
-        assert result.flex_used == 2
+        # Below-target meals affect the baseline but do not auto-spend flex.
+        assert result.flex_used == 0
         assert result.flex_available >= 0
 
     def test_all_clean_meals(self):
@@ -647,7 +647,7 @@ class TestFlexBudget:
         assert result.flex_used == 0
 
     def test_flex_never_negative(self):
-        """Even if many cheat meals, flex_available ≥ 0."""
+        """Even if many meals are below target, flex_available remains non-negative."""
         result = compute_flex_budget(
             fuel_target=80,
             expected_meals=21,
@@ -656,6 +656,19 @@ class TestFlexBudget:
             clean_pct=80,
         )
         assert result.flex_available >= 0
+
+    def test_intentional_life_meals_spend_availability(self):
+        """Only explicitly logged life meals spend availability."""
+        result = compute_flex_budget(
+            fuel_target=80,
+            expected_meals=21,
+            meal_scores=[100, 90, 85, 80, 95],
+            week_start=date(2026, 3, 16),
+            clean_pct=80,
+            intentional_flex_count=2,
+        )
+        assert result.flex_used == 2
+        assert result.flex_available == max(0, result.flex_budget - 2)
 
     def test_90pct_clean_fewer_flex(self):
         """90% clean → flex_budget = 21 - ceil(21*0.90) = 21-19 = 2."""

@@ -55,7 +55,7 @@ const GOAL_OPTIONS = [
   { value: 'metabolic_reset', label: 'Metabolic reset / health', icon: 'heart-outline' as const },
 ];
 
-// R4 (Month-1 target-user feedback): the Flex Budget previously hardcoded 21
+// R4 (Month-1 target-user feedback): the weekly baseline previously hardcoded 21
 // meals/week ("17 clean target"). Alex does intermittent fasting and eats ~15
 // meals/week — the whole math felt off for the Attia-adjacent longevity
 // segment, which is the app's primary ICP. Capturing meals-per-day during
@@ -476,7 +476,7 @@ export default function OnboardingScreen() {
         // Preferences save failed — still continue
       }
 
-      // R4: persist meals-per-day so the Flex Budget scales to the user's
+      // R4: persist meals-per-day so the weekly baseline scales to the user's
       // eating cadence (IF/OMAD users see 14 meals/week, not 21).
       // fuel_settings.expected_meals_per_week drives clean_meals_target.
       try {
@@ -692,7 +692,7 @@ export default function OnboardingScreen() {
             </Text>
             {isDessert && (
               <View style={[styles.flexTag, { backgroundColor: '#F59E0B18' }]}>
-                <Text style={styles.flexTagText}>FLEX</Text>
+                <Text style={styles.flexTagText}>LIFE</Text>
               </View>
             )}
           </View>
@@ -868,33 +868,33 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── Step 5: Flex Budget (the hook) ── */}
+          {/* ── Step 5: Weekly clean baseline (the hook) ── */}
 
           {step === 5 && (
             <View style={styles.flexBudgetWrap}>
               <Text style={[styles.flexExplainer, { color: theme.textSecondary }]}>
-                Eat clean most of the time, and you earn{' '}
-                <Text style={{ fontWeight: '800', color: theme.text }}>flex meals</Text>
-                {' '}— guilt-free.
+                Eat clean most of the time, and you build{' '}
+                <Text style={{ fontWeight: '800', color: theme.text }}>room for real life</Text>
+                {' '}without guilt.
               </Text>
 
               <View style={styles.weekDotsWrap}>
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                  const isFlex = i === 4 || i === 5;
+                  const isLifeMeal = i === 4 || i === 5;
                   return (
                     <View key={day} style={styles.weekDotColumn}>
                       <View
                         style={[
                           styles.weekDot,
-                          { backgroundColor: isFlex ? '#F59E0B' : '#22C55E' },
+                          { backgroundColor: isLifeMeal ? '#F59E0B' : '#22C55E' },
                         ]}
                       >
-                        {isFlex && <Ionicons name="fast-food" size={14} color="#fff" />}
-                        {!isFlex && <Ionicons name="leaf" size={14} color="#fff" />}
+                        {isLifeMeal && <Ionicons name="fast-food" size={14} color="#fff" />}
+                        {!isLifeMeal && <Ionicons name="leaf" size={14} color="#fff" />}
                       </View>
                       <Text style={[styles.weekDotLabel, { color: theme.textTertiary }]}>{day}</Text>
-                      {isFlex && (
-                        <Text style={[styles.weekDotTag, { color: '#F59E0B' }]}>Flex</Text>
+                      {isLifeMeal && (
+                        <Text style={[styles.weekDotTag, { color: '#F59E0B' }]}>Life</Text>
                       )}
                     </View>
                   );
@@ -911,7 +911,7 @@ export default function OnboardingScreen() {
               <View style={[styles.philosophyCard, { backgroundColor: theme.surfaceHighlight }]}>
                 <Ionicons name="trending-up" size={18} color={theme.primary} />
                 <Text style={[styles.philosophyCardText, { color: theme.textSecondary }]}>
-                  Users with an 80+ avg score still enjoy 5–7 flex meals per week.
+                  Users with an 80+ weekly average still make room for restaurants, dessert, and takeout.
                 </Text>
               </View>
             </View>
@@ -1079,9 +1079,9 @@ export default function OnboardingScreen() {
               ))}
 
               {/* R4: Typical meals per day. Scales the 80%-clean target from
-                  the default 21/week (17 clean + 4 flex) to whatever matches
+                  the default 21/week (17 clean + 4 real-life meals) to whatever matches
                   the user's actual eating cadence — IF users see 14 meals/wk
-                  with 11 clean + 3 flex instead of a guilt-trip "0 of 17". */}
+                  with 11 clean + 3 real-life meals instead of a guilt-trip "0 of 17". */}
               <Text style={[styles.fieldLabel, { color: theme.text, marginTop: Spacing.md }]}>
                 Typical meals per day
               </Text>
@@ -1290,7 +1290,7 @@ export default function OnboardingScreen() {
                     {mealSuggestions.map((meal, idx) => renderMealCard(meal, idx, mealSuggestions.length))}
                   </View>
                   <Text style={[styles.dessertNote, { color: theme.primary }]}>
-                    Yes, there's dessert. It's a flex meal — and your score still looks great.
+                    Yes, there's dessert. The baseline stays strong, and real life still fits.
                   </Text>
                   <Text style={[styles.ahaNote, { color: theme.textTertiary }]}>
                     Scan your meals, follow curated plans, or browse recipes to feel this good every day.
@@ -1655,7 +1655,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // ── Step 5: Flex Budget ──
+  // ── Step 5: Weekly baseline ──
   flexBudgetWrap: {
     gap: Spacing.xl,
   },

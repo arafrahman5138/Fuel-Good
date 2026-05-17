@@ -234,7 +234,7 @@ export const useFuelStore = create<FuelState>((set, get) => ({
       get().fetchWeekly();
       return result;
     } catch (e: any) {
-      set({ error: e?.message || 'Failed to log flex meal' });
+      set({ error: e?.message || 'Failed to log real-life meal' });
       return null;
     }
   },

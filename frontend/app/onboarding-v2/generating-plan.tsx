@@ -16,7 +16,7 @@ import { useOnboardingState } from '../../hooks/onboarding-v2/useOnboardingState
 const STEPS = [
   { label: 'Analyzing your metabolism...', icon: 'pulse-outline' as const },
   { label: 'Building your meal plan...', icon: 'restaurant-outline' as const },
-  { label: 'Calculating your flex meals...', icon: 'ticket-outline' as const },
+  { label: 'Mapping your weekly clean baseline...', icon: 'ticket-outline' as const },
   { label: 'Personalizing your scanner...', icon: 'scan-outline' as const },
   { label: 'Your plan is ready', icon: 'checkmark-circle' as const },
 ];

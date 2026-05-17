@@ -583,10 +583,7 @@ export default function CookModeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={navBarHeight}
     >
-      {/* R19: celebration banner for desserts. The brand framing is "eat
-          clean, earn your cheat meals" — when a user opens cook mode on a
-          dessert, we explicitly celebrate the moment instead of rendering a
-          neutral cook view. This is the flex-feature's emotional payoff. */}
+      {/* Dessert recipes should feel joyful, not like a lapse. */}
       {isDessertRecipe(recipe) && (
         <LinearGradient
           colors={['#F59E0B', '#D97706']}
@@ -596,7 +593,7 @@ export default function CookModeScreen() {
         >
           <Ionicons name="sparkles" size={16} color="#FFFFFF" />
           <Text style={styles.dessertBannerText}>
-            Flex treat time — you earned this.
+            Sweet, satisfying, and still Fuel Good.
           </Text>
         </LinearGradient>
       )}

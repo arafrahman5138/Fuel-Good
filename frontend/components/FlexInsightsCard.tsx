@@ -29,32 +29,32 @@ const COACH_GREEN_DARK = '#16A34A';
 function getFlexCopy(remaining: number, max: number): { headline: string; subtitle: string } {
   if (remaining <= 0) {
     return {
-      headline: 'Flex meals loading...',
-      subtitle: 'Every clean meal gets you closer to guilt-free treats',
+      headline: 'Baseline in progress',
+      subtitle: 'Every clean meal makes more room for real life',
     };
   }
   if (remaining === 1) {
     return {
-      headline: '1 flex meal unlocked',
-      subtitle: 'You earned it — go enjoy something you love',
+      headline: 'Room for life available',
+      subtitle: 'Your clean baseline gives you space to enjoy something you love',
     };
   }
   const ratio = remaining / max;
   if (ratio <= 0.25) {
     return {
-      headline: `${remaining} flex meals left`,
-      subtitle: 'Make them count — save for something you really want',
+      headline: `${remaining} life meal${remaining !== 1 ? 's' : ''} available`,
+      subtitle: 'Use that room intentionally for the moments that matter',
     };
   }
   if (ratio <= 0.6) {
     return {
-      headline: `${remaining} flex meals unlocked`,
-      subtitle: 'Clean eating is paying off — treat yourself guilt-free',
+      headline: `${remaining} life meals can fit`,
+      subtitle: 'Clean eating is paying off — enjoy life without spiraling',
     };
   }
   return {
-    headline: `${remaining} flex meals unlocked`,
-    subtitle: "You're crushing it — your flex budget is fully stacked",
+    headline: 'Strong baseline built',
+    subtitle: "You're eating clean most of the time, and real life still fits",
   };
 }
 
@@ -64,11 +64,11 @@ function buildHowItems(cleanPct: number, cleanTarget: number, flexBudget: number
   const projectedAvg = Math.round((cleanTarget * 95 + flexBudget * 35) / expectedMeals);
   const tierLabel = projectedAvg >= 90 ? 'Elite' : projectedAvg >= 75 ? 'Strong' : projectedAvg >= 60 ? 'Decent' : 'Mixed';
   return [
-    { icon: 'leaf' as const, color: '#22C55E', title: `Eat clean (${cleanPct}% goal)`, body: `Meals scoring ${fuelTarget}+ count as clean. You need ${cleanTarget} clean meals per week to maintain your budget.` },
-    { icon: 'ticket' as const, color: GOLD, title: `${flexBudget} flex meals per week`, body: `Your ${cleanPct}% clean eating goal gives you ${flexBudget} guilt-free treats. Available from day one.` },
-    { icon: 'pizza' as const, color: '#FB923C', title: 'Spend them on anything', body: 'Pizza, takeout, dessert — whatever you want. Flex meals are earned treats, not cheat days.' },
-    { icon: 'analytics' as const, color: '#3B82F6', title: `Avg stays at ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean + ${flexBudget} flex = weekly avg ${projectedAvg}. Your body absorbs the treats without impact.` },
-    { icon: 'refresh' as const, color: '#8B5CF6', title: 'Fresh budget every Monday', body: "Your flex budget resets each week. Unused meals don't roll over, so use them!" },
+    { icon: 'leaf' as const, color: '#22C55E', title: `Build a ${cleanPct}% clean baseline`, body: `Meals scoring ${fuelTarget}+ keep the week moving in the right direction. Aim for about ${cleanTarget} clean meals per week.` },
+    { icon: 'restaurant' as const, color: '#14B8A6', title: 'Choose tasty whole-food meals', body: 'Curated meals and Coach make clean eating feel craveable, not boring.' },
+    { icon: 'ticket' as const, color: GOLD, title: `${flexBudget} life moments can fit`, body: 'Takeout, dessert, drinks, or lunch with friends can fit when the weekly baseline is strong.' },
+    { icon: 'analytics' as const, color: '#3B82F6', title: `Week can stay ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean meals plus real-life meals still tells the story: healthy most of the time.` },
+    { icon: 'refresh' as const, color: '#8B5CF6', title: 'New week, fresh baseline', body: 'Each week starts fresh. Build the baseline, enjoy life, repeat.' },
   ];
 }
 
@@ -117,9 +117,9 @@ function FlexExplainerModal({ visible, onClose, cleanPct = 80, cleanTarget = 17,
               <LinearGradient colors={[GOLD, GOLD_DARK] as any} style={modalStyles.heroIcon}>
                 <Ionicons name="ticket" size={22} color="#fff" />
               </LinearGradient>
-              <Text style={[modalStyles.title, { color: theme.text }]}>Flex Meals</Text>
+              <Text style={[modalStyles.title, { color: theme.text }]}>Room For Life</Text>
               <Text style={[modalStyles.subtitle, { color: theme.textSecondary }]}>
-                Your goal: {cleanPct}% clean eating = {flexBudget} guilt-free treats
+                Your goal: eat clean most of the time, then let real life fit
               </Text>
             </LinearGradient>
             <ScrollView style={modalStyles.scroll} contentContainerStyle={modalStyles.scrollContent} showsVerticalScrollIndicator={false}>

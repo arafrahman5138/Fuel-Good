@@ -15,27 +15,15 @@ function getTierFromScore(score: number) {
   return { color: '#EF4444', icon: 'fast-food' as const };
 }
 
-const FLEX_GOLD = '#F59E0B';
-
 interface FuelScoreBadgeProps {
   score: number;
   compact?: boolean;
-  /** If provided, scores below this threshold show a golden "FLEX" tag */
+  /** Kept for call-site compatibility; scores are not auto-classified as flex. */
   fuelTarget?: number;
 }
 
-export function FuelScoreBadge({ score, compact = false, fuelTarget }: FuelScoreBadgeProps) {
+export function FuelScoreBadge({ score, compact = false }: FuelScoreBadgeProps) {
   const tier = getTierFromScore(score);
-  const isFlex = fuelTarget != null && score < fuelTarget;
-
-  if (isFlex) {
-    return (
-      <View style={[styles.flexContainer]}>
-        <Ionicons name="ticket" size={10} color={FLEX_GOLD} />
-        <Text style={styles.flexText}>FLEX</Text>
-      </View>
-    );
-  }
 
   if (compact) {
     return (
@@ -78,22 +66,5 @@ const styles = StyleSheet.create({
   compactText: {
     fontSize: 10,
     fontWeight: '700',
-  },
-  flexContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: FLEX_GOLD + '18',
-    borderColor: FLEX_GOLD + '40',
-    borderWidth: 1,
-    paddingHorizontal: Spacing.xs + 2,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-    gap: 3,
-  },
-  flexText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: FLEX_GOLD,
-    letterSpacing: 0.5,
   },
 });

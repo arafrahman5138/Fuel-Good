@@ -1713,51 +1713,146 @@ def _apply_correction_heuristic(ingredients: list[str], correction_text: str) ->
     result = list(ingredients)
     lower = correction_text.lower().strip()
 
-    # Pattern: "X was actually Y" / "X is actually Y" / "X was Y"
-    swap_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:was|is)\s+(?:actually\s+)?(.+)", lower)
-    if swap_match:
-        old_name = swap_match.group(1).strip()
-        new_name = swap_match.group(2).strip().rstrip(".")
-        result = [new_name if old_name in ing.lower() else ing for ing in result]
-        return result
+    seed_oil_terms = {
+        "seed oil",
+        "seed oils",
+        "vegetable oil",
+        "canola oil",
+        "soybean oil",
+        "sunflower oil",
+        "safflower oil",
+        "corn oil",
+        "cottonseed oil",
+        "grapeseed oil",
+        "rice bran oil",
+    }
+
+    def _clean_replacement(raw: str, target: str | None = None) -> str:
+        value = raw.lower().strip().rstrip(".")
+        value = re.split(r",|\s+from\s+|\s+made with\s+|\s+with ingredients?\s+", value, maxsplit=1)[0].strip()
+        value = re.sub(r"^(a|an|the)\s+", "", value)
+
+        if target and any(term in target for term in ("bread", "bun", "roll")):
+            if "sourdough" in value:
+                return "fresh sourdough bread" if "fresh" in value else "sourdough bread"
+            if "whole grain" in value or "whole-grain" in value:
+                return "whole grain bread"
+            if "whole wheat" in value or "whole-wheat" in value:
+                return "whole wheat bread"
+
+        for oil in ("olive oil", "avocado oil", "coconut oil", "ghee", "butter"):
+            if oil in value:
+                return oil
+
+        return value
+
+    def _target_matches(ingredient: str, target: str) -> bool:
+        ingredient_lower = ingredient.lower()
+        target_lower = target.lower()
+        if target_lower in ingredient_lower:
+            return True
+        target_groups = [
+            {"bread", "bun", "roll", "pita", "sourdough"},
+            {"dressing", "sauce", "vinaigrette"},
+        ]
+        for group in target_groups:
+            if target_lower in group and any(term in ingredient_lower for term in group):
+                return True
+        if target_lower in seed_oil_terms:
+            return any(term in ingredient_lower for term in seed_oil_terms)
+        if target_lower == "oil":
+            return any(
+                term in ingredient_lower
+                for term in {*seed_oil_terms, "olive oil", "avocado oil", "coconut oil", "ghee", "butter"}
+            )
+        return False
+
+    def _replace_target(target: str, replacement: str) -> list[str]:
+        cleaned = _clean_replacement(replacement, target)
+        replaced = False
+        updated: list[str] = []
+        for ingredient in result:
+            if _target_matches(ingredient, target):
+                updated.append(cleaned)
+                replaced = True
+            else:
+                updated.append(ingredient)
+        if not replaced and cleaned:
+            updated.append(cleaned)
+        return updated
+
+    def _remove_targets(targets: set[str]) -> list[str]:
+        return [
+            ingredient
+            for ingredient in result
+            if not any(_target_matches(ingredient, target) for target in targets)
+        ]
 
     # Pattern: "it's X not Y" / "used X not Y" / "made with X not Y"
     not_match = re.search(r"(?:it'?s|used|made with|cooked (?:in|with))\s+(.+?)\s+(?:not|instead of)\s+(.+)", lower)
     if not_match:
         new_name = not_match.group(1).strip().rstrip(".")
         old_name = not_match.group(2).strip().rstrip(".")
-        result = [new_name if old_name in ing.lower() else ing for ing in result]
-        return result
+        return _replace_target(old_name, new_name)
 
-    # Pattern: "the X is homemade" / "X is whole food" / "X is fresh"
-    qualify_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:is|are|was)\s+(homemade|whole[- ]?food|fresh|organic|house[- ]?made|real|natural)", lower)
-    if qualify_match:
-        target = qualify_match.group(1).strip()
-        qualifier = qualify_match.group(2).strip()
-        result = [f"{qualifier} {ing}" if target in ing.lower() else ing for ing in result]
-        return result
-
-    # Pattern: "remove X" / "no X" / "without X"
-    remove_match = re.search(r"(?:remove|no|without|skip|didn't have)\s+(?:the\s+)?(.+)", lower)
-    if remove_match:
-        remove_name = remove_match.group(1).strip().rstrip(".")
-        result = [ing for ing in result if remove_name not in ing.lower()]
-        return result
-
-    # Pattern: "add X" / "also had X" / "there was also X"
-    add_match = re.search(r"(?:add|include|plus|also had|there was also|i also had)\s+(?:the\s+)?(.+)", lower)
-    if add_match:
-        add_name = add_match.group(1).strip().rstrip(".")
-        result.append(add_name)
-        return result
+    # Pattern: "no seed oils" / "without vegetable oil" / "not canola oil"
+    no_seed_oil_match = re.search(
+        r"(?:no|without|not|didn'?t have|doesn'?t have)\s+(seed oils?|vegetable oil|canola oil|soybean oil|sunflower oil|safflower oil|corn oil|cottonseed oil|grapeseed oil|rice bran oil)",
+        lower,
+    )
+    if no_seed_oil_match:
+        updated = _remove_targets(seed_oil_terms)
+        for healthy_oil in ("olive oil", "avocado oil", "coconut oil", "ghee", "butter"):
+            if healthy_oil in lower and healthy_oil not in updated:
+                updated.append(healthy_oil)
+                break
+        return updated
 
     # Pattern: "swap X for Y" / "replace X with Y"
     replace_match = re.search(r"(?:swap|replace|change)\s+(?:the\s+)?(.+?)\s+(?:for|with|to)\s+(.+)", lower)
     if replace_match:
         old_name = replace_match.group(1).strip().rstrip(".")
         new_name = replace_match.group(2).strip().rstrip(".")
-        result = [new_name if old_name in ing.lower() else ing for ing in result]
+        return _replace_target(old_name, new_name)
+
+    # Pattern: "the bread is fresh sourdough..." / "bun was whole grain..."
+    bread_quality_match = re.search(
+        r"(?:the\s+)?(bread|bun|roll|pita)\s+(?:is|are|was)\s+(.+)",
+        lower,
+    )
+    if bread_quality_match and any(
+        term in bread_quality_match.group(2)
+        for term in ("sourdough", "whole grain", "whole-grain", "whole wheat", "whole-wheat")
+    ):
+        return _replace_target(bread_quality_match.group(1), bread_quality_match.group(2))
+
+    # Pattern: "the X is homemade" / "X is whole food" / "X is fresh"
+    qualify_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:is|are|was)\s+(homemade|whole[- ]?food|fresh|organic|house[- ]?made|real|natural)", lower)
+    if qualify_match:
+        target = qualify_match.group(1).strip()
+        qualifier = qualify_match.group(2).strip()
+        result = [f"{qualifier} {ing}" if _target_matches(ing, target) else ing for ing in result]
         return result
+
+    # Pattern: "remove X" / "no X" / "without X"
+    remove_match = re.search(r"(?:remove|no|without|skip|didn't have)\s+(?:the\s+)?(.+)", lower)
+    if remove_match:
+        remove_name = remove_match.group(1).strip().rstrip(".")
+        return _remove_targets({remove_name})
+
+    # Pattern: "add X" / "also had X" / "there was also X"
+    add_match = re.search(r"(?:add|include|plus|also had|there was also|i also had)\s+(?:the\s+)?(.+)", lower)
+    if add_match:
+        add_name = _clean_replacement(add_match.group(1))
+        result.append(add_name)
+        return result
+
+    # Pattern: "X was actually Y" / "X is actually Y" / "X was Y"
+    swap_match = re.search(r"(?:the\s+)?(\w[\w\s]*?)\s+(?:was|is)\s+(?:actually\s+)?(.+)", lower)
+    if swap_match:
+        old_name = swap_match.group(1).strip()
+        new_name = swap_match.group(2).strip().rstrip(".")
+        return _replace_target(old_name, new_name)
 
     return result
 

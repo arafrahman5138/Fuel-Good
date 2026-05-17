@@ -83,7 +83,7 @@ export default function SocialProofScreen() {
 
   const items = [
     { icon: 'trophy-outline' as const, label: `Goal: ${goalLabel}`, color: '#22C55E' },
-    { icon: 'ticket-outline' as const, label: `${flexCount} guilt-free cheat meals per week`, color: '#F59E0B' },
+    { icon: 'ticket-outline' as const, label: `${flexCount} real-life meals can fit each week`, color: '#F59E0B' },
     { icon: 'restaurant-outline' as const, label: 'Personalized weekly meal plans', color: '#22C55E' },
     { icon: 'scan-outline' as const, label: 'Unlimited food scanning', color: '#22C55E' },
   ];

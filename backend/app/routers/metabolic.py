@@ -1024,9 +1024,9 @@ def _generate_coach_insights(
         elif weekly_avg >= fuel_target and daily_meals >= 1 and flex_remaining > 0:
             insights.append(CoachInsight(
                 icon="leaf",
-                title=f"{flex_remaining} flex meal{'s' if flex_remaining != 1 else ''} available",
+                title=f"{flex_remaining} real-life meal{'s' if flex_remaining != 1 else ''} can fit",
                 body=f"Your Fuel Score is {weekly_avg:.0f} — above your {fuel_target} target. "
-                     f"You’ve earned room for a flex meal. Enjoy it guilt-free!",
+                     f"You've built room for restaurants, dessert, or takeout without spiraling.",
                 accent="#22C55E", priority=4,
             ))
         # Today's fuel is low
@@ -1179,16 +1179,20 @@ async def get_coach_insights(
     try:
         from app.services.fuel_score import (
             get_weekly_meal_scores,
+            get_weekly_intentional_flex_count,
             get_week_bounds,
             compute_flex_budget,
             compute_fuel_streak,
             DEFAULT_FUEL_TARGET,
             DEFAULT_MEALS_PER_WEEK,
+            DEFAULT_CLEAN_PCT,
         )
         fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
         expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+        clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
         week_start, _ = get_week_bounds(day)
         weekly_scores = get_weekly_meal_scores(db, current_user.id, week_start)
+        intentional_flex_count = get_weekly_intentional_flex_count(db, current_user.id, week_start)
 
         # Daily fuel scores
         daily_logs = (
@@ -1203,6 +1207,8 @@ async def get_coach_insights(
             expected_meals=expected_meals,
             meal_scores=weekly_scores,
             week_start=week_start,
+            clean_pct=clean_pct,
+            intentional_flex_count=intentional_flex_count,
         )
         streak_data = compute_fuel_streak(db, current_user.id, fuel_target, day)
 

@@ -1,5 +1,5 @@
 /**
- * FlexMealsEarned — Visual celebration of earned flex/cheat meals.
+ * FlexMealsEarned — Visual celebration of earned room-for-life moments.
  * Shows a row of ticket icons (earned = glowing, unearned = outlined).
  * Includes a "?" button that opens an explainer modal.
  */
@@ -36,20 +36,20 @@ const GOLD_GLOW = '#FBBF24';
 
 const MOTIVATIONAL_COPY: Record<string, { title: string; body: string }> = {
   zero: {
-    title: 'All flex meals used',
-    body: 'Focus on clean eating to earn more next week',
+    title: 'Baseline in progress',
+    body: 'A tasty clean meal moves the week right back up',
   },
   low: {
-    title: 'A few treats left',
-    body: 'Save them for the weekend or use one now',
+    title: 'A little room for life',
+    body: 'Use it intentionally for something you really want',
   },
   mid: {
-    title: 'Your clean eating paid off',
-    body: 'Enjoy guilt-free — you earned it',
+    title: 'Clean baseline is working',
+    body: 'Enjoy life without spiraling',
   },
   high: {
-    title: 'Flex budget stacked!',
-    body: 'Consistency is your superpower — treat yourself',
+    title: 'Strong baseline built',
+    body: 'Consistency is your superpower — real life fits',
   },
 };
 
@@ -67,11 +67,11 @@ function buildHowItems(cleanPct: number, cleanTarget: number, flexBudgetCount: n
   const projectedAvg = Math.round((cleanTarget * 95 + flexBudgetCount * 35) / expectedMeals);
   const tierLabel = projectedAvg >= 90 ? 'Elite' : projectedAvg >= 75 ? 'Strong' : projectedAvg >= 60 ? 'Decent' : 'Mixed';
   return [
-    { icon: 'leaf' as const, color: '#22C55E', title: `Eat clean (${cleanPct}% goal)`, body: `Meals scoring ${fuelTarget}+ count as clean. You need ${cleanTarget} clean meals per week to maintain your budget.` },
-    { icon: 'ticket' as const, color: GOLD, title: `${flexBudgetCount} flex meals per week`, body: `Your ${cleanPct}% clean eating goal gives you ${flexBudgetCount} guilt-free treats. Available from day one.` },
-    { icon: 'pizza' as const, color: '#FB923C', title: 'Spend them on anything', body: 'Pizza, takeout, dessert — whatever you want. Flex meals are earned treats, not cheat days. No guilt, no reset.' },
-    { icon: 'analytics' as const, color: '#3B82F6', title: `Avg stays at ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean + ${flexBudgetCount} flex = weekly avg ${projectedAvg}. Your body absorbs the treats without impact.` },
-    { icon: 'refresh' as const, color: '#8B5CF6', title: 'Fresh budget every Monday', body: "Your flex budget resets each week. Unused meals don't roll over, so use them!" },
+    { icon: 'leaf' as const, color: '#22C55E', title: `Build a ${cleanPct}% clean baseline`, body: `Meals scoring ${fuelTarget}+ keep the week moving in the right direction. Aim for about ${cleanTarget} clean meals per week.` },
+    { icon: 'restaurant' as const, color: '#14B8A6', title: 'Make clean food craveable', body: 'Curated meals and Coach help turn cravings into whole-food meals that still taste good.' },
+    { icon: 'ticket' as const, color: GOLD, title: `${flexBudgetCount} life moments can fit`, body: 'Pizza, takeout, dessert, or lunch with friends can fit when your weekly baseline is strong.' },
+    { icon: 'analytics' as const, color: '#3B82F6', title: `Week can stay ~${projectedAvg} (${tierLabel})`, body: `${cleanTarget} clean meals plus real-life meals still tells the story: healthy most of the time.` },
+    { icon: 'refresh' as const, color: '#8B5CF6', title: 'New week, fresh baseline', body: 'Each week starts fresh. Build the baseline, enjoy life, repeat.' },
   ];
 }
 
@@ -134,9 +134,9 @@ function FlexExplainerModal({ visible, onClose, cleanPct = 80, cleanTarget = 17,
               >
                 <Ionicons name="ticket" size={22} color="#fff" />
               </LinearGradient>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Flex Meals</Text>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Room For Life</Text>
               <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                Your goal: {cleanPct}% clean eating = {flexBudgetCount} guilt-free treats
+                Your goal: eat clean most of the time, then let real life fit
               </Text>
             </LinearGradient>
 
@@ -168,7 +168,7 @@ function FlexExplainerModal({ visible, onClose, cleanPct = 80, cleanTarget = 17,
               <View style={[styles.taglineCard, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '25' }]}>
                 <Ionicons name="sparkles" size={16} color={theme.primary} />
                 <Text style={[styles.taglineText, { color: theme.primary }]}>
-                  The body rewards consistency. Earn your treats.
+                  The body responds to consistency. Build the baseline, then let life fit.
                 </Text>
               </View>
             </ScrollView>
@@ -301,7 +301,7 @@ export function FlexMealsEarned({ flexMealsRemaining, maxFlex = 7, cleanPct = 80
             )}
             <Text style={[styles.copyTitle, { color: theme.text }]}>
               {ticketCount > 0
-                ? `${flexMealsRemaining} flex meal${flexMealsRemaining !== 1 ? 's' : ''} earned`
+                ? `${flexMealsRemaining} real-life meal${flexMealsRemaining !== 1 ? 's' : ''} can fit`
                 : copy.title}
             </Text>
           </View>

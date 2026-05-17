@@ -365,9 +365,9 @@ def _generate_quests(db: Session, user: User, today: date) -> list[DailyQuest]:
         ("3 Whole-Food Meals", "Log 3 meals with Fuel Score ≥ 85 today.", "whole_food_meals", 3, 75),
         ("Scan a Meal", "Scan a restaurant or takeout meal with your camera.", "scan_meal", 1, 40),
         ("Fuel Score 90+ Meal", "Log one meal with a Fuel Score of 90 or higher.", "fuel_90_meal", 1, 50),
-        ("No Flex Meals Today", "Keep all meals above 70 Fuel Score today.", "no_flex_today", 70, 65),
+        ("Clean Baseline Day", "Keep today's average at 70 Fuel Score or higher.", "no_flex_today", 70, 65),
         ("Log 3 Clean Meals", "Log 3 meals scoring above your fuel target today.", "clean_meals_today", 3, 65),
-        ("Use a Flex Meal", "Use a flex meal guilt-free — you earned it!", "use_flex_meal", 1, 30),
+        ("Room for Life", "Log one real-life meal intentionally and move on guilt free.", "use_flex_meal", 1, 30),
     ]
     fuel = random.choice(fuel_pool)
 

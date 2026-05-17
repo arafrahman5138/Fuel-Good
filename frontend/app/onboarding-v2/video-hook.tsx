@@ -296,10 +296,10 @@ export default function VideoHookScreen() {
     </Animated.View>
   );
 
-  // ── Scene 3: Flex system preview ──
+  // ── Scene 3: Weekly baseline preview ──
   const renderScene3 = () => (
     <Animated.View style={[styles.sceneContainer, { opacity: sceneOpacities[2] }]}>
-      <Text style={styles.scene3Headline}>Eat clean. Earn your cheat meals.</Text>
+      <Text style={styles.scene3Headline}>Eat clean most of the time.</Text>
 
       <View style={styles.flexPreviewCard}>
         <MiniBarChart />
@@ -312,7 +312,7 @@ export default function VideoHookScreen() {
         </View>
 
         <View style={styles.flexTicketsRow}>
-          <Text style={styles.flexTicketsLabel}>Flex Tickets Earned</Text>
+          <Text style={styles.flexTicketsLabel}>Room For Life</Text>
           <View style={styles.flexTicketsIcons}>
             {[0, 1, 2, 3].map((i) => (
               <FlexTicket key={i} delay={400 + i * 200} />
@@ -340,12 +340,12 @@ export default function VideoHookScreen() {
       </Text>
 
       <Text style={styles.ctaTagline}>
-        No calorie counting. No restriction.{'\n'}Just eat real food — and earn your cheat meals.
+        No calorie counting. No restriction.{'\n'}Just real food that still tastes good.
       </Text>
 
       <View style={styles.featurePillsRow}>
         <FeaturePill icon="scan" label="Scan any food" />
-        <FeaturePill icon="ticket" label="Earn flex meals" />
+        <FeaturePill icon="ticket" label="Room for life" />
         <FeaturePill icon="sparkles" label="AI-powered plans" />
       </View>
     </Animated.View>

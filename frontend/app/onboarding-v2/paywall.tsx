@@ -33,7 +33,7 @@ const LOSS_AVERSION_MESSAGES: Record<number, string> = {
 const FEATURES = [
   { icon: 'scan-outline' as const, label: 'Scan any food \u2014 instant Fuel Score' },
   { icon: 'calendar-outline' as const, label: 'Weekly meal plans \u2014 all Fuel 100' },
-  { icon: 'ticket-outline' as const, label: 'Earn flex meals \u2014 guilt-free cheat days' },
+  { icon: 'ticket-outline' as const, label: 'Build your baseline \u2014 room for real life' },
   { icon: 'sparkles-outline' as const, label: 'AI-powered Healthify \u2014 transform any craving' },
   { icon: 'analytics-outline' as const, label: 'Track progress \u2014 scores, streaks, quests' },
 ];

@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 interface DayData {
   label: string;
   score: number;
-  isFlex?: boolean;
+  isLifeMeal?: boolean;
 }
 
 interface Props {
@@ -62,7 +62,7 @@ export function WeeklyBarChart({ days, animated = true }: Props) {
             <View style={styles.barContainer}>
               <Animated.View style={{ height: barHeight, width: '100%' }}>
                 <LinearGradient
-                  colors={day.isFlex ? ['#F59E0B', '#D97706'] : ['#22C55E', '#16A34A']}
+                  colors={day.isLifeMeal ? ['#F59E0B', '#D97706'] : ['#22C55E', '#16A34A']}
                   style={styles.barFill}
                 />
               </Animated.View>
