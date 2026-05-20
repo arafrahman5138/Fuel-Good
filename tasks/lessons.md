@@ -439,3 +439,67 @@ Reporting this as "partial / alternative" is more useful than "didn't ship."
 status verdict: (1) does the literal fix exist, and (2) does a functional
 equivalent or alternative exist. A "partial / alternative" column in the P0
 delta table is more honest than binary shipped/not-shipped.
+
+---
+
+## 2026-05-19 (Scoring data drift — the dictionary disagreed with the LLM)
+
+### When a user reports a "wrong score," the leak is usually data, not logic
+
+**Observation**: User scanned a chicken+beef+rice+salad bowl. The LLM
+correctly tagged it `whole_food_status="pass"` (green "Whole-Food Pass"
+chip in the UI), but the score came back **85** instead of 100. The fuel
+scorer logic was fine. The bug was in [nova_dict.json:96-101](backend/app/data/nova_dict.json:96):
+plain `"rice"`, `"white rice"`, `"jasmine rice"`, `"basmati rice"`, and
+`"sushi rice"` were all tagged `"refined_flour"`. That tag adds a
+medium-severity flag, which trips the `med_count == 1: cap = min(cap, 85)`
+rule at [fuel_score.py:430](backend/app/services/fuel_score.py:430). So the LLM said "all whole food" and
+the dictionary said "refined flour" — and the dictionary won.
+
+**Rule**: When a user reports a score that disagrees with the UI's
+own classification chip (Whole-Food Pass vs. <100 score), the two
+signals are pointing in opposite directions and one of them is wrong.
+**Check the data file before the scoring logic.** Specifically:
+
+1. Pull the live scan from Render logs (search by meal name or
+   `request_id` near the screenshot's timestamp).
+2. Read the `meal_scan.completed bytes=… usda=X/Y` line — `usda=0/N`
+   often hints that fallback heuristics (the NOVA dict) carried the score.
+3. Open `nova_dict.json` and search for each ingredient name. Misclassified
+   single-ingredient entries (plain rice tagged refined_flour, plain
+   potatoes tagged something processed, etc.) are the #1 source of
+   "obvious whole food meal scored < 100" bugs.
+4. Fix at the data layer. Don't add escape hatches in `fuel_score.py` unless
+   the rule itself is wrong (it usually isn't).
+
+### Test fixture ranges encode the OLD calibration — always re-check upper bounds after a data fix
+
+**Observation**: After removing the `refined_flour` tag from rice, the
+`salmon_white_rice` golden fixture (range `70-95`) and `burrito_bowl`
+(range `55-90`) both started failing because their ceilings were silently
+being held down by the rice tag. The previous upper bounds reflected the
+buggy calibration, not the intended one.
+
+**Rule**: When changing a tag/penalty in the scoring data, grep all golden
+test ranges that involve that ingredient. Any range whose upper bound was
+"just under" the cap that's about to disappear will need to be widened.
+Tag the bumped range with a dated comment so a future reader knows it
+was a calibration shift, not a regression.
+
+### `render logs --text` is the fastest path to find a specific scan
+
+**Observation**: The user said "I scanned this the other day." No
+timestamp, no scan_id. `render logs --text "/api/scan"` over a 3-day
+window narrowed it to one POST `/api/scan/smart` at 23:54:38 UTC, with
+the request_id and (one second earlier) the `meal_scan.completed` line
+showing model + ingredient count. Took ~10 seconds.
+
+**Rule**: For user-reported scan issues, the playbook is:
+1. `render logs --resources <srv-id> --start <D-3> --end <D+1> --text "/api/scan" --limit 100`
+2. Identify the POST by approximate time-of-day from the screenshot.
+3. Pull a tight window (`--start T-15s --end T+15s`) to get full context:
+   the `meal_scan.completed` log line, request_id, any storage failures.
+4. The score itself is NOT logged — you can only infer it from the
+   inputs + the scoring code. If this becomes a recurring debugging need,
+   add a `logger.info("fuel_score.computed score=%s reasoning=%s")` line
+   after the `compute_fuel_score` call.

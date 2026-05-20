@@ -62,7 +62,7 @@ MEAL_GOLDEN = [
             {"name": "salsa", "role": "sauce", "mass_fraction": 0.1},
         ],
         {"meal_label": "Chipotle Burrito Bowl", "source_context": "restaurant", "confidence": 0.9},
-        (55, 90),
+        (55, 95),  # rice no longer flagged refined_flour; cheese/sour cream NOVA penalty still applies (2026-05-19)
     ),
     (
         "pasta_carbonara",
@@ -115,7 +115,22 @@ MEAL_GOLDEN = [
             {"name": "bok choy", "role": "veg", "mass_fraction": 0.25, "methods": ["steamed"]},
         ],
         {"meal_label": "Grilled Salmon with Rice and Bok Choy", "source_context": "home", "confidence": 0.9},
-        (70, 95),
+        (85, 100),  # white rice no longer carries refined_flour tag (2026-05-19 calibration)
+    ),
+    (
+        "chicken_beef_rice_bowl",
+        # Regression test for the 2026-05-16 prod scan that returned 85 on a
+        # Whole-Food-Pass meal — plain "rice" was tagged refined_flour in
+        # nova_dict.json, triggering the med_count==1 cap at fuel_score.py:430.
+        [
+            {"name": "grilled chicken", "role": "protein", "mass_fraction": 0.3, "methods": ["grilled"]},
+            {"name": "grilled beef", "role": "protein", "mass_fraction": 0.25, "methods": ["grilled"]},
+            {"name": "white rice", "role": "carb", "mass_fraction": 0.25},
+            {"name": "mixed salad", "role": "veg", "mass_fraction": 0.2},
+        ],
+        {"meal_label": "Chicken and Beef Rice Bowl with Salad",
+         "source_context": "restaurant", "whole_food_status": "pass", "confidence": 0.9},
+        (90, 100),
     ),
     (
         "salmon_brown_rice",
