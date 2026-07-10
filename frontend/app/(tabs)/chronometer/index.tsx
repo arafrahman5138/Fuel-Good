@@ -29,14 +29,12 @@ import { SingleMealRow } from '../../../components/CompositeMealCard';
 import { EnergyHistoryChart } from '../../../components/EnergyHistoryChart';
 import { MetabolicStreakBadge } from '../../../components/MetabolicStreakBadge';
 import { MetabolicCoach } from '../../../components/MetabolicCoach';
-import { FlexBudgetCard } from '../../../components/FlexBudgetCard';
+import { RealFoodTrackerCard } from '../../../components/RealFoodTrackerCard';
 import { TodayProgressCard } from '../../../components/TodayProgressCard';
 import { FuelScoreBadge } from '../../../components/FuelScoreBadge';
 import { FuelStreakBadge } from '../../../components/FuelStreakBadge';
 import { FuelCalendarHeatMap } from '../../../components/FuelCalendarHeatMap';
-import { SmartFlexCard } from '../../../components/SmartFlexCard';
 import { FuelSettingsSheet } from '../../../components/FuelSettingsSheet';
-import { FlexMealsEarned } from '../../../components/FlexMealsEarned';
 import { WeeklyFuelBreakdown } from '../../../components/WeeklyFuelBreakdown';
 import { useTheme, useIsDark } from '../../../hooks/useTheme';
 import { useThemeStore } from '../../../stores/themeStore';
@@ -768,20 +766,38 @@ export default function ChronometerScreen() {
               // key forces remount on every tab switch → entrance animations replay
               <React.Fragment key="fuel-view">
             {fuelWeekly && fuelSettings && (
-              <FlexBudgetCard
-                avgScore={fuelWeekly.avg_fuel_score}
-                mealCount={fuelWeekly.meal_count}
-                fuelTarget={fuelSettings.fuel_target}
-                flexMealsRemaining={fuelWeekly.flex_budget?.flex_meals_remaining ?? 0}
-                targetMet={fuelWeekly.target_met}
-                streakWeeks={fuelStreak?.current_streak ?? 0}
-                expectedMeals={fuelSettings.expected_meals_per_week}
-                weeklyMesScore={chronoWeeklyMes.score}
-                weeklyMesTierColor={chronoWeeklyMes.color}
-                prevWeekScore={prevWeekFuelScore}
-                onOpenSettings={() => setFuelSettingsVisible(true)}
-                onPress={() => router.push('/(tabs)/(home)/fuel-weekly' as any)}
+              <RealFoodTrackerCard
+                realFoodMeals={fuelWeekly.flex_budget?.real_food_meals ?? 0}
+                realFoodGoal={fuelWeekly.flex_budget?.real_food_goal ?? 17}
+                loggedMeals={fuelWeekly.flex_budget?.logged_meals ?? 0}
+                roomTotal={fuelWeekly.flex_budget?.room_total ?? 4}
+                roomUsed={fuelWeekly.flex_budget?.room_used ?? 0}
+                roomRemaining={fuelWeekly.flex_budget?.room_remaining ?? 4}
+                weeklyAvg={fuelWeekly.avg_fuel_score}
               />
+            )}
+
+            {fuelWeekly && fuelSettings && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -Spacing.sm, marginBottom: Spacing.md, paddingHorizontal: 4 }}>
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/(home)/flex-onboarding' as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change your real-food goal"
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    Change goal ({fuelSettings.clean_eating_pct ?? 80}%)
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFuelSettingsVisible(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open fuel settings"
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    Score settings
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {fuelStreak && fuelStreak.current_streak > 0 && (
@@ -1414,7 +1430,6 @@ export default function ChronometerScreen() {
 
 // Fuel tab section divider
 const SECTION_ICONS: Record<string, { name: string; color: string }> = {
-  'YOUR FLEX BUDGET': { name: 'ticket', color: '#F59E0B' },
   'FUEL COACH': { name: 'leaf', color: '#22C55E' },
   'MONTHLY VIEW': { name: 'calendar', color: '#3B82F6' },
 };

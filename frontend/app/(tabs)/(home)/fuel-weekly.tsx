@@ -37,7 +37,7 @@ const TIER_CONFIGS = [
   { min: 75, label: 'Strong Fuel', color: '#4ADE80', darkGradient: ['#021a0e', '#0f3b20', '#166534'] as const },
   { min: 60, label: 'Decent', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const },
   { min: 40, label: 'Mixed', color: '#FB923C', darkGradient: ['#160902', '#3d1408', '#9a3412'] as const },
-  { min: 0, label: 'Flex Day', color: '#EF4444', darkGradient: ['#160606', '#3d0a0a', '#991b1b'] as const },
+  { min: 0, label: 'Rebuilding', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const },
 ];
 
 function getTierCfg(score: number) {
@@ -111,7 +111,7 @@ export default function FuelWeeklyScreen() {
   }
 
   const tier = getTierCfg(weekly.avg_fuel_score);
-  const flexRemaining = weekly.flex_budget?.flex_meals_remaining ?? 0;
+  const roomRemaining = weekly.flex_budget?.room_remaining ?? 0;
   const breakdown = weekly.daily_breakdown ?? [];
 
   const textPrimary = isDark ? 'rgba(255,255,255,0.90)' : theme.text;
@@ -173,11 +173,11 @@ export default function FuelWeeklyScreen() {
                     {weekly.meal_count} meals
                   </Text>
                 </View>
-                {flexRemaining > 0 && (
+                {roomRemaining > 0 && (
                   <View style={styles.metaChip}>
                     <Ionicons name="pizza-outline" size={12} color="#4ADE80" />
                     <Text style={[styles.metaText, { color: '#4ADE80' }]}>
-                      {flexRemaining} flex left
+                      Room for {roomRemaining} more
                     </Text>
                   </View>
                 )}
@@ -212,16 +212,16 @@ export default function FuelWeeklyScreen() {
 
           {/* Flex proof messaging */}
           {(() => {
-            const flexUsed = weekly.flex_budget?.flex_used ?? 0;
-            const cleanLogged = weekly.flex_budget?.clean_meals_logged ?? 0;
+            const roomUsed = weekly.flex_budget?.room_used ?? 0;
+            const cleanLogged = weekly.flex_budget?.real_food_meals ?? 0;
             const avg = weekly.avg_fuel_score;
             const tierName = avg >= 90 ? 'Elite' : avg >= 75 ? 'Strong' : avg >= 60 ? 'Decent' : 'Mixed';
-            if (flexUsed > 0 && avg >= 75) {
+            if (roomUsed > 0 && avg >= 75) {
               return (
                 <View style={[styles.targetBanner, { backgroundColor: '#F59E0B10', marginTop: 6 }]}>
                   <Ionicons name="ticket" size={14} color="#F59E0B" />
                   <Text style={[styles.targetText, { color: '#D97706' }]}>
-                    {cleanLogged} clean + {flexUsed} flex = avg {Math.round(avg)} — {tierName} tier. The math works.
+                    {cleanLogged} real-food + {roomUsed} room-for-life = avg {Math.round(avg)} — {tierName} tier. The math works.
                   </Text>
                 </View>
               );
@@ -234,8 +234,8 @@ export default function FuelWeeklyScreen() {
         {weekly && weekly.meal_count > 0 && (() => {
           const avg = Math.round(weekly.avg_fuel_score);
           const meals = weekly.meal_count;
-          const flexUsed = weekly.flex_budget?.flex_used ?? 0;
-          const flexEarned = weekly.flex_budget?.flex_budget ?? 0;
+          const roomUsed = weekly.flex_budget?.room_used ?? 0;
+          const realFood = weekly.flex_budget?.real_food_meals ?? 0;
           // Find best day
           const days = weekly.daily_breakdown ?? [];
           const daysWithMeals = days.filter((d: any) => d.meal_count > 0);
@@ -247,8 +247,8 @@ export default function FuelWeeklyScreen() {
           const lines: string[] = [];
           lines.push(`You logged ${meals} meal${meals !== 1 ? 's' : ''} this week.`);
           if (bestDayLabel) lines.push(`Best Fuel day: ${bestDayLabel}.`);
-          if (flexEarned > 0) lines.push(`You earned ${flexEarned} flex meal${flexEarned !== 1 ? 's' : ''}.`);
-          if (flexUsed > 0) lines.push(`Used ${flexUsed} — and your average stayed at ${avg}. The system works.`);
+          if (realFood > 0) lines.push(`${realFood} of them were real food.`);
+          if (roomUsed > 0) lines.push(`${roomUsed} room-for-life meal${roomUsed !== 1 ? 's' : ''} fit — and your average stayed at ${avg}. The system works.`);
           if (avg >= 90) lines.push('Elite performance. Keep this up.');
           else if (avg >= 75) lines.push('Strong foundation. You\'re building real momentum.');
           else if (avg >= 60) lines.push('Decent baseline. A few more clean meals and you\'ll be in Strong territory.');

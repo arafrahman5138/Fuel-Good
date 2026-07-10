@@ -142,7 +142,7 @@ export function WeeklyFuelBreakdown({ dailyBreakdown, fuelTarget, weeklyAvg }: W
           <View style={styles.summaryItem}>
             <View style={[styles.summaryDot, { backgroundColor: '#F59E0B' }]} />
             <Text style={[styles.summaryText, { color: theme.textSecondary }]}>
-              {flexDays} flex day{flexDays !== 1 ? 's' : ''}
+              {flexDays} room-for-life day{flexDays !== 1 ? 's' : ''}
             </Text>
           </View>
         )}

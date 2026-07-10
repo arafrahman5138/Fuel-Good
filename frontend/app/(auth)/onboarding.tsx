@@ -873,9 +873,9 @@ export default function OnboardingScreen() {
           {step === 5 && (
             <View style={styles.flexBudgetWrap}>
               <Text style={[styles.flexExplainer, { color: theme.textSecondary }]}>
-                Eat clean most of the time, and you earn{' '}
-                <Text style={{ fontWeight: '800', color: theme.text }}>flex meals</Text>
-                {' '}— guilt-free.
+                Eat real food most of the time, and your week has{' '}
+                <Text style={{ fontWeight: '800', color: theme.text }}>room for life</Text>
+                {' '}— restaurants, dessert, no guilt.
               </Text>
 
               <View style={styles.weekDotsWrap}>
@@ -911,7 +911,7 @@ export default function OnboardingScreen() {
               <View style={[styles.philosophyCard, { backgroundColor: theme.surfaceHighlight }]}>
                 <Ionicons name="trending-up" size={18} color={theme.primary} />
                 <Text style={[styles.philosophyCardText, { color: theme.textSecondary }]}>
-                  Users with an 80+ avg score still enjoy 5–7 flex meals per week.
+                  Users with an 80+ avg score still enjoy 4–6 off-baseline meals per week.
                 </Text>
               </View>
             </View>
@@ -1290,7 +1290,7 @@ export default function OnboardingScreen() {
                     {mealSuggestions.map((meal, idx) => renderMealCard(meal, idx, mealSuggestions.length))}
                   </View>
                   <Text style={[styles.dessertNote, { color: theme.primary }]}>
-                    Yes, there's dessert. It's a flex meal — and your score still looks great.
+                    Yes, there's dessert. There's room for it — and your score still looks great.
                   </Text>
                   <Text style={[styles.ahaNote, { color: theme.textTertiary }]}>
                     Scan your meals, follow curated plans, or browse recipes to feel this good every day.

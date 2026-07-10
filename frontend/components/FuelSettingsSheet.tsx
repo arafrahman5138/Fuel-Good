@@ -37,7 +37,7 @@ const RATIO_PRESETS = [
     target: 80,
     label: 'Balanced',
     ratio: '80 / 20',
-    description: 'Great balance — a few flex meals/week',
+    description: 'Great balance — room for a few off-baseline meals',
     icon: 'leaf' as const,
     color: '#4ADE80',
   },
@@ -45,7 +45,7 @@ const RATIO_PRESETS = [
     target: 70,
     label: 'Flexible',
     ratio: '70 / 30',
-    description: 'More freedom — more flex meals/week',
+    description: 'More freedom — more room for life each week',
     icon: 'happy' as const,
     color: '#F59E0B',
   },
@@ -188,10 +188,10 @@ export function FuelSettingsSheet({ visible, onClose }: FuelSettingsSheetProps) 
               <Ionicons name="sparkles" size={18} color={theme.primary} />
               <View style={{ flex: 1, marginLeft: Spacing.sm }}>
                 <Text style={[styles.previewTitle, { color: theme.text }]}>
-                  ~{estimatedFlex} flex meals per week
+                  Room for ~{estimatedFlex} off-baseline meals a week
                 </Text>
                 <Text style={[styles.previewBody, { color: theme.textSecondary }]}>
-                  Earn cheat meals by eating clean — your body rewards consistency
+                  Real food most of the time — room for restaurants, dessert, and life
                 </Text>
               </View>
             </View>

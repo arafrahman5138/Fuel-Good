@@ -58,23 +58,7 @@ function RootLayout() {
 
   const currentRootSegment = segments[0];
   const isAuthRoute = currentRootSegment === '(auth)';
-  const isOnboardingV2Route = currentRootSegment === 'onboarding-v2';
-  const isOnboardingRoute = isOnboardingV2Route || (isAuthRoute && (segments as string[])[1] === 'onboarding');
-  const isSubscribeRoute = pathname === '/subscribe';
-  const canAccessWithoutPremium = isAuthRoute || isOnboardingV2Route || isSubscribeRoute || pathname === '/';
-  const skipBillingGate = __DEV__;
-
-  // Honor the server-issued entitlement instead of re-implementing trial math
-  // on the client. This keeps route gating aligned with protected API routes.
-  const isWithinFreeTrial = (() => {
-    const entitlement = user?.entitlement;
-    if (!entitlement || hasPremiumAccess) return false;
-    if (entitlement.access_level !== 'premium' || entitlement.requires_paywall) return false;
-    if (entitlement.subscription_state !== 'trialing') return false;
-    if (!entitlement.trial_ends_at) return true;
-    const trialEndsAt = new Date(entitlement.trial_ends_at);
-    return trialEndsAt.getTime() > Date.now();
-  })();
+  const isOnboardingRoute = isAuthRoute && (segments as string[])[1] === 'onboarding';
 
   useEffect(() => {
     // Critical-path bootstrap: theme + auth must complete before any
@@ -247,7 +231,7 @@ function RootLayout() {
     if (isAuthRoute) {
       router.replace('/(tabs)' as any);
     }
-  }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length, skipBillingGate]);
+  }, [isAuthenticated, isLoading, isBillingLoading, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length]);
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
@@ -302,7 +286,6 @@ function RootLayout() {
         })}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding-v2" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false, headerTitle: '' }} />
         <Stack.Screen
           name="subscribe"

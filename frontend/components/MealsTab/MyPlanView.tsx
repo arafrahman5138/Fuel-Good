@@ -1118,9 +1118,9 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
           const projectedFlex = expectedMeals - cleanMealsTarget;
           return projectedFlex > 0 ? (
             <View style={[styles.projectedFlexRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Ionicons name="ticket" size={14} color="#F59E0B" />
+              <Ionicons name="restaurant-outline" size={14} color="#F59E0B" />
               <Text style={[styles.projectedFlexText, { color: theme.textSecondary }]}>
-                This plan earns ~{projectedFlex} flex meals
+                This plan keeps room for ~{projectedFlex} off-baseline meals
               </Text>
             </View>
           ) : null;

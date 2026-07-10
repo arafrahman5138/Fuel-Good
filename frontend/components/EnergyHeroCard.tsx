@@ -30,7 +30,7 @@ const TIER_CONFIGS = [
   // Pass-5 F5: was red (#EF4444 + crimson gradient) — too punitive given "Flex Day"
   // is a feature, not a failure. Softened to deep amber. Keeps the tier visually
   // distinct from "Mixed" (#FB923C) but stops bleeding red across the home hero.
-  { min: 0, label: 'Flex Day', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
+  { min: 0, label: 'Rebuilding', color: '#F59E0B', darkGradient: ['#160d02', '#3d2108', '#78350f'] as const, lightGradient: ['#fffbeb', '#fef3c7', '#fffbeb'] as const },
 ];
 
 const DARK_EMPTY_GRADIENT = ['#111118', '#1a1a24', '#111118'] as const;
@@ -55,7 +55,7 @@ function getContextTagline(
   weeklyTargetMet: boolean,
 ): { text: string; color: string } {
   if (mealCount === 0) {
-    return { text: 'Your day is a blank slate — make it count', color: '#4ADE80' };
+    return { text: 'First meal sets the pace — make it count', color: '#4ADE80' };
   }
   if (mealCount <= 2) {
     if (fuelScore >= 90) return { text: 'Elite start — keep this going all day', color: '#22C55E' };
@@ -80,7 +80,7 @@ function getContextTagline(
   if (fuelScore >= 60) return { text: 'Decent day — one clean meal pushes you higher', color: '#F59E0B' };
   if (fuelScore >= 40) return { text: 'Mixed fuel — a whole-food meal turns this around', color: '#FB923C' };
   // Pass-5 F5: tier color softened from red to amber, tagline color follows.
-  return { text: 'Flex day — get back on track with something nourishing', color: '#F59E0B' };
+  return { text: 'Room-for-life day — your next meal starts the rebuild', color: '#F59E0B' };
 }
 
 // ── MES tier label ──────────────────────────────────────────────────────────
@@ -107,8 +107,6 @@ interface EnergyHeroCardProps {
   proteinRemaining?: number;
   fiberRemaining?: number;
   healthPulse?: { fuel: any; metabolic: any; nutrition: any };
-  flexMealsEarned?: number;
-  cleanMealsToNextFlex?: number;
   onPress?: () => void;
 }
 
@@ -197,8 +195,6 @@ function EnergyHeroCardImpl({
   weeklyTargetMet = false,
   weeklyDaysLogged = 0,
   mealCount,
-  flexMealsEarned = 0,
-  cleanMealsToNextFlex = 0,
   onPress,
 }: EnergyHeroCardProps) {
   const theme = useTheme();

@@ -25,10 +25,8 @@ import { SkeletonCard } from '../../../components/SkeletonLoader';
 import { DataErrorState } from '../../../components/DataErrorState';
 
 import { XPToast } from '../../../components/XPToast';
-import { FlexUnlockedToast } from '../../../components/FlexUnlockedToast';
 
 import { EnergyHeroCard } from '../../../components/EnergyHeroCard';
-import { FlexInsightsCard } from '../../../components/FlexInsightsCard';
 import { RealFoodTrackerCard } from '../../../components/RealFoodTrackerCard';
 import { WeeklyRecapBanner } from '../../../components/WeeklyRecapBanner';
 import { TodayProgressCard } from '../../../components/TodayProgressCard';
@@ -157,7 +155,6 @@ export default function HomeScreen() {
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
   const [xpToast, setXpToast] = useState<string | null>(null);
   const [xpToastIcon, setXpToastIcon] = useState<string>('flash');
-  const [flexToast, setFlexToast] = useState<string | null>(null);
   const fuelStreak = useFuelStore((s) => s.streak);
   const fuelSettings = useFuelStore((s) => s.settings);
   const flexSuggestions = useFuelStore((s) => s.flexSuggestions);
@@ -532,13 +529,14 @@ export default function HomeScreen() {
       setLoggedMealIds((prev) => new Set(prev).add(meal.id));
       // Refresh nutrition + fuel data
       loadDailyNutrition(selectedDayKey);
-      const prevFlex = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
+      const prevRealFood = fuelWeekly?.flex_budget?.real_food_meals ?? 0;
       await fetchFuelWeekly(selectedDayKey);
-      const newFlex = useFuelStore.getState().weekly?.flex_budget?.flex_meals_remaining ?? 0;
+      const budget = useFuelStore.getState().weekly?.flex_budget;
+      const newRealFood = budget?.real_food_meals ?? 0;
 
-      if (newFlex > prevFlex) {
-        setXpToastIcon('ticket');
-        setXpToast(`Flex meal earned! You have ${newFlex} now`);
+      if (newRealFood > prevRealFood && budget) {
+        setXpToastIcon('leaf');
+        setXpToast(`Real-food meal ${newRealFood} of ${budget.real_food_goal} this week`);
       } else {
         setXpToastIcon('leaf');
         setXpToast(`${recipe?.title || meal.meal_type} logged`);
@@ -741,7 +739,6 @@ export default function HomeScreen() {
   return (
     <ScreenContainer safeArea={false}>
       <XPToast message={xpToast} icon={xpToastIcon} onDismissed={() => setXpToast(null)} />
-      <FlexUnlockedToast message={flexToast} onDismissed={() => setFlexToast(null)} />
       {/* Sticky header is always rendered so opacity + translateY can run on
           the native driver. pointerEvents toggles via the threshold-crossing
           listener so taps don't hit a transparent header above the fold. */}
@@ -1036,16 +1033,6 @@ export default function HomeScreen() {
           weeklyTargetMet={weeklyTargetMet}
           weeklyDaysLogged={weeklyDaysLogged}
           mealCount={Math.max(fuelDaily?.meal_count ?? 0, dailySummary?.logs?.length ?? 0)}
-          flexMealsEarned={fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
-          cleanMealsToNextFlex={(() => {
-            const flexRemaining = fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0;
-            if (flexRemaining > 0) return 0;
-            const target = fuelSettings?.fuel_target ?? 80;
-            const avgCheatCost = Math.max(1, target - 35);
-            const pointsRemaining = (fuelWeekly?.flex_budget as any)?.flex_points_remaining ?? 0;
-            if (pointsRemaining >= avgCheatCost) return 0;
-            return Math.ceil((avgCheatCost - pointsRemaining) / (100 - target));
-          })()}
           onPress={() => router.push('/(tabs)/(home)/fuel-weekly' as any)}
         />
 

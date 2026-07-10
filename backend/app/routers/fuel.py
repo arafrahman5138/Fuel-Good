@@ -649,8 +649,8 @@ async def get_flex_suggestions(
         suggestions = [
             FlexSuggestion(
                 icon="alert-circle",
-                title="Flex Budget Spent",
-                body=f"You've used all your flex room this week. Stick to whole-food meals (Fuel Score {fuel_target}+) for the rest of the week.",
+                title="Room Used for This Week",
+                body=f"You've used your room for life this week — no failure, just information. Whole-food meals (Fuel Score {fuel_target}+) rebuild the baseline.",
                 accent="#EF4444",
             ),
             FlexSuggestion(
@@ -674,14 +674,14 @@ async def get_flex_suggestions(
         suggestions = [
             FlexSuggestion(
                 icon="checkmark-circle",
-                title=f"{flex_remaining} Flex Meals Available",
-                body=f"You're ahead of your target — enjoy a flex meal guilt-free. {weekend_note}",
+                title=f"Room for {flex_remaining} More This Week",
+                body=f"You're ahead of your target — dinner out or dessert fits. {weekend_note}",
                 accent="#22C55E",
             ),
             FlexSuggestion(
                 icon="swap-horizontal",
                 title="Smart Swap Tip",
-                body="Craving takeout? Pick a restaurant option and scan it. Many score 60-70 — cheaper on your flex budget than fast food (30-40).",
+                body="Craving takeout? Pick a restaurant option and scan it. Many score 60-70 — easier on your week than fast food (30-40).",
                 accent="#3B82F6",
             ),
         ]
@@ -691,7 +691,7 @@ async def get_flex_suggestions(
         suggestions = [
             FlexSuggestion(
                 icon="calculator",
-                title=f"{flex_remaining} Flex Meal{'s' if flex_remaining != 1 else ''} Left",
+                title=f"Room for {flex_remaining} Off-Baseline Meal{'s' if flex_remaining != 1 else ''}",
                 body=f"You have room for {flex_remaining} lower-scoring meal{'s' if flex_remaining != 1 else ''} and still hit your {fuel_target} target this week.",
                 accent="#F59E0B",
             ),
