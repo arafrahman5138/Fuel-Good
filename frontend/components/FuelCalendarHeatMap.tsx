@@ -192,8 +192,8 @@ export function FuelCalendarHeatMap({
           </View>
         ))}
         <View style={styles.legendItem}>
-          <Ionicons name="ticket" size={8} color="#F59E0B" />
-          <Text style={[styles.legendText, { color: theme.textTertiary }]}>Flex</Text>
+          <Ionicons name="restaurant" size={8} color="#F59E0B" />
+          <Text style={[styles.legendText, { color: theme.textTertiary }]}>Room for life</Text>
         </View>
       </View>
     </View>

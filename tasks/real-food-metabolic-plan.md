@@ -188,14 +188,34 @@ All phases implemented on `feature/real-food-tracker` (branched from main).
   secret test — reproduced on unmodified main, spun off as a separate task).
 - Frontend `tsc --noEmit` clean throughout.
 
-**Not yet verified (remaining before ship):**
-- Simulator persona runs (planner / curated eater / scanner) + burger-spot
-  UI walkthrough — the tracker card, scan impact strip, recap screen, and
-  upsell cards have not been visually exercised on iOS.
-- weekly_recap push firing on a real schedule (candidate logic unit-level
-  only; fire window Sun ≥18:00 / Mon 7–11 local).
-- RevenueCat purchase flow on device with the new "Continue with the free
-  plan" path (App Store 3.1.1 copy retained on the live paywall).
+**Simulator pass (2026-07-10, iPhone 17 Pro / iOS 26.5, Expo Go, screenshots
+in session scratchpad):**
+- ✅ Home: RealFoodTrackerCard hero ("12 of 17 real-food meals · Room for 3
+  more"), Fuel ring, no red/shame states.
+- ✅ Track fuel view: tracker card + "Change goal (80%)" / "Score settings"
+  links; add-menu shows working Scan entry + "Ate Out / Off-Plan".
+- ✅ Dessert quick-log E2E on device: alert "Room-for-life meal logged.
+  You have room for 2 more this week." and the tracker updated live
+  (room dots 2/4, Fuel 95→91).
+- ✅ Weekly Fuel screen: "Room for 3 more" chip, proof banner ("12
+  real-food + 1 room-for-life = avg 95 — Elite tier. The math works.").
+- ✅ Recap screen: goal-met celebration ("17 real-food meals — and 2
+  room-for-life meals fit." + Goal met — week won) with stat grid.
+- ✅ WeeklyRecapBanner fired on first open of the new week.
+- ✅ Quests: single "Weeks at Goal" streak.
+- ✅ Free tier (gating flag off): Coach shows PremiumUpsellCard in place;
+  metabolic fetch failures degrade to a soft retry banner; paywall shows
+  backend pricing ($9.99/$49.99/$149.99) and "Continue with the free plan"
+  returns to a working Home.
+- 🔧 Fixed during pass: calendar legend "Flex" → "Room for life".
+
+**Still not verified (needs device / real keys):**
+- Scan-result week-impact strip + Metabolic line on a REAL scan (local
+  Gemini key is a placeholder; scan paths degrade by design locally).
+- weekly_recap push firing on a real schedule (candidate logic tested at
+  unit level only; fire window Sun ≥18:00 / Mon 7–11 local).
+- RevenueCat purchase flow on a device build (Expo Go can't run native
+  billing; paywall renders with correct copy and pricing).
 
 ## 9. Success criteria
 
