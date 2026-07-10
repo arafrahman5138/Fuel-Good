@@ -42,6 +42,7 @@ NOTIFICATION_CATEGORIES = {
     "healthify_callback": "healthify",
 }
 CATEGORY_PRIORITY = {
+    "weekly_recap": 6,
     "cook_tonight": 5,
     "grocery_follow_through": 4,
     "streak_protection": 3,
@@ -53,6 +54,9 @@ CATEGORY_PRIORITY = {
     "reactivation_14d": -1,
 }
 CATEGORY_COOLDOWNS = {
+    # Fires once per week; the Sun-evening/Mon-morning window is ~2 days
+    # wide, so a 5-day cooldown prevents a Sunday+Monday double-send.
+    "weekly_recap": timedelta(days=5),
     "plan_kickoff": timedelta(days=7),
     "cook_tonight": timedelta(days=3),
     "grocery_follow_through": timedelta(days=14),
@@ -178,6 +182,7 @@ def default_categories() -> dict[str, bool]:
         "quest": True,
         "reactivation": True,
         "healthify": True,
+        "recap": True,
         "promotional": False,
     }
 
@@ -718,6 +723,11 @@ def _build_candidates(
     candidates: list[CandidateNotification] = []
     categories = {**default_categories(), **(pref.categories or {})}
 
+    if categories.get("recap", True):
+        candidate = _candidate_weekly_recap(db, user, local_now)
+        if candidate:
+            candidates.append(candidate)
+
     if categories.get("plan"):
         candidate = _candidate_plan_kickoff(db, user, local_now, now_utc)
         if candidate:
@@ -787,6 +797,74 @@ def _last_event_time(db: Session, user_id: str, event_type: str) -> Optional[dat
         .first()
     )
     return event.occurred_at if event else None
+
+
+def _candidate_weekly_recap(db: Session, user: User, local_now: datetime) -> Optional[CandidateNotification]:
+    """The Sunday proof moment: 'you ate clean most of the time — see?'
+
+    Fires Sunday evening (recapping the week that's ending) or Monday
+    morning (recapping the week that just closed). Skips weeks with no
+    logs — nothing to prove, nothing to shame.
+    """
+    is_sunday_evening = local_now.weekday() == 6 and local_now.hour >= 18
+    is_monday_morning = local_now.weekday() == 0 and 7 <= local_now.hour <= 11
+    if not (is_sunday_evening or is_monday_morning):
+        return None
+
+    from app.services.fuel_score import (
+        DEFAULT_CLEAN_PCT,
+        DEFAULT_FUEL_TARGET,
+        compute_flex_budget,
+        get_week_bounds,
+        get_weekly_meal_scores,
+        get_weekly_snack_scores,
+    )
+
+    today = local_now.date()
+    if is_sunday_evening:
+        week_start, _ = get_week_bounds(today)
+    else:
+        this_monday, _ = get_week_bounds(today)
+        week_start, _ = get_week_bounds(this_monday - timedelta(days=1))
+
+    all_scores = get_weekly_meal_scores(db, user.id, week_start)
+    if not all_scores:
+        return None
+
+    fuel_target = user.fuel_target or DEFAULT_FUEL_TARGET
+    budget = compute_flex_budget(
+        fuel_target=fuel_target,
+        expected_meals=user.expected_meals_per_week or 21,
+        meal_scores=get_weekly_meal_scores(db, user.id, week_start, exclude_snacks=True),
+        week_start=week_start,
+        clean_pct=user.clean_eating_pct or DEFAULT_CLEAN_PCT,
+        snack_scores=get_weekly_snack_scores(db, user.id, week_start),
+    )
+    avg = round(sum(all_scores) / len(all_scores))
+    goal_met = budget.real_food_meals >= budget.real_food_goal
+
+    if goal_met and budget.room_used > 0:
+        title = "Week won — with room for life"
+        body = f"{budget.real_food_meals} real-food meals, and {budget.room_used} off-baseline meal{'s' if budget.room_used != 1 else ''} still fit. See your recap."
+    elif goal_met:
+        title = "A fully clean week"
+        body = f"{budget.real_food_meals} real-food meals, weekly Fuel {avg}. See your recap."
+    elif avg >= fuel_target:
+        title = "Your weekly recap is ready"
+        body = f"Weekly Fuel {avg} — the baseline held. See how the week added up."
+    else:
+        title = "Your weekly recap is ready"
+        body = f"{budget.real_food_meals} real-food meals logged. See where this week landed — no judgment."
+
+    return CandidateNotification(
+        category="weekly_recap",
+        route=f"/(tabs)/(home)/recap?date={week_start.isoformat()}",
+        metadata={"week_start": week_start.isoformat()},
+        triggered_by_event="schedule",
+        score=_score_candidate("weekly_recap", recency_fit=3, behavior_match=2, goal_relevance=3),
+        title=title,
+        body=body,
+    )
 
 
 def _candidate_plan_kickoff(db: Session, user: User, local_now: datetime, now_utc: datetime) -> Optional[CandidateNotification]:

@@ -24,6 +24,7 @@ from app.schemas.fuel import (
     FlexSuggestion,
     ManualFlexLogRequest,
     ManualFlexLogResponse,
+    WeeklyRecapResponse,
 )
 from app.services.fuel_score import (
     DEFAULT_FUEL_TARGET,
@@ -250,6 +251,101 @@ async def get_weekly_fuel(
         target_met=avg_score >= fuel_target if all_scores else False,
         flex_budget=FlexBudgetResponse(**budget.__dict__),
         daily_breakdown=daily_breakdown,
+    )
+
+
+# ── Weekly Recap ─────────────────────────────────────────────────────
+
+def _recap_tier_label(avg: float) -> str:
+    if avg >= 90:
+        return "Elite"
+    if avg >= 75:
+        return "Strong"
+    if avg >= 60:
+        return "Decent"
+    if avg >= 40:
+        return "Mixed"
+    return "Rebuilding"
+
+
+@router.get("/recap", response_model=WeeklyRecapResponse)
+async def get_weekly_recap(
+    date_str: str | None = Query(default=None, alias="date"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The Sunday proof moment: recap of the most recently completed week.
+
+    Without a date, recaps the week before the current one. With a date,
+    recaps the week containing that date (client passes last Monday to
+    re-show a specific recap).
+    """
+    if date_str:
+        ref = _safe_parse_date(date_str)
+        week_start, week_end = get_week_bounds(ref)
+    else:
+        today = datetime.now(UTC).date()
+        this_monday, _ = get_week_bounds(today)
+        week_start, week_end = get_week_bounds(this_monday - timedelta(days=1))
+
+    fuel_target = current_user.fuel_target or DEFAULT_FUEL_TARGET
+    expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
+    clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
+
+    main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    snack_scores = get_weekly_snack_scores(db, current_user.id, week_start)
+    all_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=False)
+
+    if not all_scores:
+        return WeeklyRecapResponse(
+            week_start=week_start.isoformat(),
+            week_end=week_end.isoformat(),
+            has_data=False,
+            headline="No meals logged that week",
+            body="This week is a fresh start — your first log begins the baseline.",
+        )
+
+    budget = compute_flex_budget(
+        fuel_target=fuel_target,
+        expected_meals=expected_meals,
+        meal_scores=main_scores,
+        week_start=week_start,
+        clean_pct=clean_pct,
+        snack_scores=snack_scores,
+    )
+    avg = round(sum(all_scores) / len(all_scores), 1)
+    goal_met = budget.real_food_meals >= budget.real_food_goal
+    streak = compute_fuel_streak(db, current_user.id, fuel_target, week_end)
+
+    room_word = "room-for-life meal" if budget.room_used == 1 else "room-for-life meals"
+    if goal_met and budget.room_used > 0:
+        headline = f"{budget.real_food_meals} real-food meals — and {budget.room_used} {room_word} fit."
+        body = f"Weekly Fuel {avg:g}. This is the proof: a strong baseline makes room for real life."
+    elif goal_met:
+        headline = f"{budget.real_food_meals} real-food meals. A fully clean week."
+        body = f"Weekly Fuel {avg:g}. You've banked room for life whenever you want it."
+    elif avg >= fuel_target:
+        headline = f"Weekly Fuel {avg:g} — a strong average."
+        body = f"{budget.real_food_meals} of {budget.real_food_goal} real-food meals logged. The baseline held."
+    else:
+        headline = f"A mixed week — {budget.real_food_meals} real-food meals logged."
+        body = "No spiral needed. Your next clean meal starts rebuilding the baseline."
+
+    return WeeklyRecapResponse(
+        week_start=week_start.isoformat(),
+        week_end=week_end.isoformat(),
+        has_data=True,
+        avg_fuel_score=avg,
+        tier_label=_recap_tier_label(avg),
+        real_food_meals=budget.real_food_meals,
+        real_food_goal=budget.real_food_goal,
+        logged_meals=budget.logged_meals,
+        room_used=budget.room_used,
+        room_total=budget.room_total,
+        goal_met=goal_met,
+        weeks_at_goal_streak=int(streak.get("current_streak", 0)),
+        headline=headline,
+        body=body,
     )
 
 

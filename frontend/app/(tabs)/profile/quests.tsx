@@ -19,7 +19,6 @@ import { useTheme, useIsDark } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
 import { useGamificationStore } from '../../../stores/gamificationStore';
 import { useFuelStore } from '../../../stores/fuelStore';
-import { useMetabolicBudgetStore } from '../../../stores/metabolicBudgetStore';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
 import { XP_PER_LEVEL } from '../../../constants/Config';
 
@@ -35,8 +34,6 @@ export default function QuestsScreen() {
   const stats = useGamificationStore((s) => s.stats);
   const fuelStreak = useFuelStore((s) => s.streak);
   const fetchFuelStreak = useFuelStore((s) => s.fetchStreak);
-  const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
-  const fetchMetabolicStreak = useMetabolicBudgetStore((s) => s.fetchStreak);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,15 +41,15 @@ export default function QuestsScreen() {
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
 
   useEffect(() => {
-    Promise.allSettled([fetchQuests(), fetchStats(), fetchFuelStreak(), fetchMetabolicStreak()])
+    Promise.allSettled([fetchQuests(), fetchStats(), fetchFuelStreak()])
       .finally(() => setIsLoading(false));
   }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchQuests(), fetchStats(), fetchFuelStreak(), fetchMetabolicStreak()]);
+    await Promise.all([fetchQuests(), fetchStats(), fetchFuelStreak()]);
     setRefreshing(false);
-  }, [fetchQuests, fetchStats, fetchFuelStreak, fetchMetabolicStreak]);
+  }, [fetchQuests, fetchStats, fetchFuelStreak]);
 
   return (
     <ScreenContainer>
@@ -80,7 +77,8 @@ export default function QuestsScreen() {
             <ActivityIndicator size="large" color={theme.primary} />
           </View>
         )}
-        {/* Streak Overview */}
+        {/* Streak Overview — one streak: consecutive weeks at your real-food
+            goal. Weekly cadence forgives a bad day; daily streaks don't. */}
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={styles.streakRow}>
             <View style={styles.streakItem}>
@@ -88,14 +86,7 @@ export default function QuestsScreen() {
                 <Ionicons name="flame" size={24} color={theme.accent} />
               </View>
               <Text style={[styles.streakValue, { color: theme.text }]}>{fuelStreak?.current_streak ?? 0}</Text>
-              <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Fuel Streak</Text>
-            </View>
-            <View style={styles.streakItem}>
-              <View style={[styles.streakIcon, { backgroundColor: '#8B5CF620' }]}>
-                <Ionicons name="flash" size={24} color="#8B5CF6" />
-              </View>
-              <Text style={[styles.streakValue, { color: theme.text }]}>{metabolicStreak?.current_streak ?? 0}</Text>
-              <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Metabolic Streak</Text>
+              <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Weeks at Goal</Text>
             </View>
             <View style={styles.streakItem}>
               <View style={[styles.streakIcon, { backgroundColor: theme.primaryMuted }]}>

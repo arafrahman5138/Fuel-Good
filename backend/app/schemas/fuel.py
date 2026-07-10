@@ -143,3 +143,23 @@ class SmartFlexResponse(BaseModel):
     context: str  # "pre_flex" | "post_flex" | "on_track" | "budget_low"
     flex_meals_remaining: int
     suggestions: List[FlexSuggestion]
+
+
+# ── Weekly Recap ─────────────────────────────────────────────────────
+
+class WeeklyRecapResponse(BaseModel):
+    """The Sunday proof moment: how last week actually went."""
+    week_start: str
+    week_end: str
+    has_data: bool
+    avg_fuel_score: float = 0.0
+    tier_label: str = ""              # Elite / Strong / Decent / Mixed / Rebuilding
+    real_food_meals: int = 0
+    real_food_goal: int = 0
+    logged_meals: int = 0
+    room_used: int = 0
+    room_total: int = 0
+    goal_met: bool = False
+    weeks_at_goal_streak: int = 0
+    headline: str = ""                # "17 real-food meals. Pizza night fit."
+    body: str = ""                    # warm interpretation, never shame-coded

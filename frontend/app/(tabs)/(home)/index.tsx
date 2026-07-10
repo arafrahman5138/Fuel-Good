@@ -30,6 +30,7 @@ import { FlexUnlockedToast } from '../../../components/FlexUnlockedToast';
 import { EnergyHeroCard } from '../../../components/EnergyHeroCard';
 import { FlexInsightsCard } from '../../../components/FlexInsightsCard';
 import { RealFoodTrackerCard } from '../../../components/RealFoodTrackerCard';
+import { WeeklyRecapBanner } from '../../../components/WeeklyRecapBanner';
 import { TodayProgressCard } from '../../../components/TodayProgressCard';
 import { useTheme, useIsDark } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
@@ -1009,6 +1010,9 @@ export default function HomeScreen() {
           </View>
         ) : (
         <>
+        {/* ── Last week's recap (first open of a new week) ─────────────── */}
+        <WeeklyRecapBanner userId={user?.id} />
+
         {/* ── Real Food Tracker (weekly baseline hero) ─────────────────── */}
         <RealFoodTrackerCard
           realFoodMeals={fuelWeekly?.flex_budget?.real_food_meals ?? 0}

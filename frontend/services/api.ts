@@ -692,6 +692,8 @@ export const fuelApi = {
     api.get<any>(`/fuel/calendar${month ? `?month=${encodeURIComponent(month)}` : ''}`),
   getFlexSuggestions: (date?: string) =>
     api.get<any>(`/fuel/flex-suggestions${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getRecap: (date?: string) =>
+    api.get<any>(`/fuel/recap${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   logManualFlex: (data: { meal_type?: string; tag?: string; date?: string }) =>
     api.post<any>('/fuel/flex-log', data),
 };
