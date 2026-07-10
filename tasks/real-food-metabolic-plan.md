@@ -168,7 +168,36 @@ All Phase-0 questions resolved 2026-07-10 — see Phase 0 section for the locked
 - New scoring engines or schema redesign beyond the weekly MES aggregate.
 - Restaurant menu integration.
 
-## 8. Success criteria
+## 8. Execution review (2026-07-10)
+
+All phases implemented on `feature/real-food-tracker` (branched from main).
+
+**Verified (live API E2E, 23/23 green — `scratchpad/e2e_burger_spot.py` pattern):**
+- Day-0 tracker neutral (no red, full room, "Ready to start" pulse label).
+- Burger-spot math exact: 14 clean mains + burger + dessert → real_food 14/17,
+  room_used 2/4, room_remaining 2, logged_meals 16, weekly avg 91.9; the
+  dessert consumed a room slot; legacy `flex_used` stayed mains-only.
+- `/fuel/recap` counts + copy clean (no flex/cheat/fail words).
+- Freemium: `/fuel/*`, `/recipes/browse` open free; `/metabolic/score/weekly`,
+  `/meal-plans/*` 402; 4th AI scan of the day 402 with structured
+  `scan_quota_exceeded` payload; barcode lookups uncapped.
+  NOTE: in dev, `ALLOW_OPEN_PREMIUM_IN_NON_PRODUCTION=true` (default) makes
+  every user premium, so gates only fire with that flag false (or in prod).
+- Backend: 142 scoring/paywall tests pass; full suite green except two
+  PRE-EXISTING failures (reset-code format; order-dependent notification
+  secret test — reproduced on unmodified main, spun off as a separate task).
+- Frontend `tsc --noEmit` clean throughout.
+
+**Not yet verified (remaining before ship):**
+- Simulator persona runs (planner / curated eater / scanner) + burger-spot
+  UI walkthrough — the tracker card, scan impact strip, recap screen, and
+  upsell cards have not been visually exercised on iOS.
+- weekly_recap push firing on a real schedule (candidate logic unit-level
+  only; fire window Sun ≥18:00 / Mon 7–11 local).
+- RevenueCat purchase flow on device with the new "Continue with the free
+  plan" path (App Store 3.1.1 copy retained on the live paywall).
+
+## 9. Success criteria
 
 - A user standing in a burger spot can scan and know within 5 seconds whether the burger and a dessert fit their week.
 - A free user gets real value (scanner + tracker) and hits a natural, non-punitive premium boundary at the metabolic layer.

@@ -388,7 +388,8 @@ def _pulse_tier(score: float) -> tuple[str, str]:
         return "good", "Good"
     if score >= 45:
         return "fair", "Fair"
-    return "poor", "Needs Work"
+    # Never shame-coded — a low pulse is a starting point, not a verdict
+    return "poor", "Rebuilding"
 
 
 @router.get("/health-pulse", response_model=HealthPulseResponse)
@@ -500,7 +501,11 @@ async def get_health_pulse(
     else:
         composite = 0.0
     composite = round(composite, 1)
-    comp_tier, comp_label = _pulse_tier(composite)
+    if weights:
+        comp_tier, comp_label = _pulse_tier(composite)
+    else:
+        # Day-0 neutral state — nothing logged is not a low score
+        comp_tier, comp_label = "none", "Ready to start"
 
     return HealthPulseResponse(
         date=day.isoformat(),
