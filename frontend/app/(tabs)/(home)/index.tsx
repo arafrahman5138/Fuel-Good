@@ -29,7 +29,7 @@ import { FlexUnlockedToast } from '../../../components/FlexUnlockedToast';
 
 import { EnergyHeroCard } from '../../../components/EnergyHeroCard';
 import { FlexInsightsCard } from '../../../components/FlexInsightsCard';
-import { FlexSummaryCard } from '../../../components/FlexSummaryCard';
+import { RealFoodTrackerCard } from '../../../components/RealFoodTrackerCard';
 import { TodayProgressCard } from '../../../components/TodayProgressCard';
 import { useTheme, useIsDark } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
@@ -1004,6 +1004,17 @@ export default function HomeScreen() {
           </View>
         ) : (
         <>
+        {/* ── Real Food Tracker (weekly baseline hero) ─────────────────── */}
+        <RealFoodTrackerCard
+          realFoodMeals={fuelWeekly?.flex_budget?.real_food_meals ?? 0}
+          realFoodGoal={fuelWeekly?.flex_budget?.real_food_goal ?? 17}
+          loggedMeals={fuelWeekly?.flex_budget?.logged_meals ?? 0}
+          roomTotal={fuelWeekly?.flex_budget?.room_total ?? 4}
+          roomUsed={fuelWeekly?.flex_budget?.room_used ?? 0}
+          roomRemaining={fuelWeekly?.flex_budget?.room_remaining ?? 4}
+          weeklyAvg={fuelWeekly?.avg_fuel_score ?? 0}
+        />
+
         {/* ── Energy Hero ─────────────────────────────────────────────── */}
         <EnergyHeroCard
           fuelScore={fuelScoreValue}
@@ -1027,13 +1038,6 @@ export default function HomeScreen() {
             return Math.ceil((avgCheatCost - pointsRemaining) / (100 - target));
           })()}
           onPress={() => router.push('/(tabs)/(home)/fuel-weekly' as any)}
-        />
-
-        {/* ── Flex Budget Summary ──────────────────────────────────────── */}
-        <FlexSummaryCard
-          flexAvailable={fuelWeekly?.flex_budget?.flex_available ?? fuelWeekly?.flex_budget?.flex_meals_remaining ?? 0}
-          flexBudget={fuelWeekly?.flex_budget?.flex_budget ?? 4}
-          flexUsed={fuelWeekly?.flex_budget?.flex_used ?? 0}
         />
 
         {/* ── Today's Plan ─────────────────────────────────────────────── */}

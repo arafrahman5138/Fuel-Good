@@ -83,11 +83,11 @@ export default function FlexOnboarding() {
         {/* Header */}
         <View style={styles.header}>
           <LinearGradient colors={[GOLD, GOLD_DARK] as any} style={styles.headerIcon}>
-            <Ionicons name="ticket" size={28} color="#fff" />
+            <Ionicons name="leaf" size={28} color="#fff" />
           </LinearGradient>
-          <Text style={[styles.title, { color: theme.text }]}>How do you want to eat?</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Set your real-food goal</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Choose your clean eating target. This determines how many guilt-free flex meals you earn each week.
+            How much of your week do you want to be real food? The rest is room for life — restaurants, dessert, takeout, no guilt.
           </Text>
         </View>
 
@@ -124,7 +124,7 @@ export default function FlexOnboarding() {
                       )}
                     </View>
                     <Text style={[styles.presetFlex, { color: isActive ? GOLD : theme.textSecondary }]}>
-                      {preset.flexMeals} flex meals per week
+                      Room for {preset.flexMeals} off-baseline meals a week
                     </Text>
                   </View>
                   <View style={[styles.radio, { borderColor: isActive ? GOLD : theme.border }]}>
@@ -145,7 +145,7 @@ export default function FlexOnboarding() {
         <View style={[styles.proofCard, { backgroundColor: '#22C55E08', borderColor: '#22C55E25' }]}>
           <Ionicons name="analytics" size={16} color="#22C55E" />
           <Text style={[styles.proofText, { color: theme.textSecondary }]}>
-            {selected}% = {cleanTarget} clean meals + {activePreset.flexMeals} treats per week.{'\n'}
+            {selected}% = {cleanTarget} real-food meals + room for {activePreset.flexMeals} per week.{'\n'}
             Weekly avg: ~{projectedAvg} — <Text style={{ color: '#22C55E', fontWeight: '700' }}>{tierLabel} tier</Text>
           </Text>
         </View>

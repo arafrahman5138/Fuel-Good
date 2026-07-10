@@ -237,6 +237,30 @@ export default function ChronometerScreen() {
     }
   }, [fetchMetabolic, fetchProfile, fetchFuel, fetchCalendar, fetchFlexSuggestions, selectedDayKey]);
 
+  // One-tap off-plan log: ate out / dessert / drinks, no scan required.
+  // Meal type inferred from time of day; the backend scores it as a
+  // room-for-life meal and returns the updated week state.
+  const handleQuickOffPlanLog = useCallback(() => {
+    const hour = new Date().getHours();
+    const inferredMeal = hour < 11 ? 'breakfast' : hour < 16 ? 'lunch' : 'dinner';
+    const logIt = async (meal_type: string, tag: string) => {
+      const result = await useFuelStore.getState().logManualFlex({ meal_type, tag, date: selectedDayKey });
+      if (result) {
+        Alert.alert(
+          'Logged',
+          result.flex_note || 'Room-for-life meal logged for this week.',
+        );
+        refresh({ force: true });
+      }
+    };
+    Alert.alert('Ate out or off-plan?', 'Quick-log it — no scan needed. It counts as room for life, not a failure.', [
+      { text: 'Meal out', onPress: () => logIt(inferredMeal, 'takeout') },
+      { text: 'Dessert', onPress: () => logIt('dessert', 'dessert') },
+      { text: 'Drinks', onPress: () => logIt('snack', 'drinks') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [selectedDayKey, refresh]);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -1360,14 +1384,15 @@ export default function ChronometerScreen() {
             {[
               { icon: 'restaurant-outline' as const, label: 'Log Meal', sub: 'From recipes', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/meals?tab=browse' as any); } },
               { icon: 'nutrition-outline' as const, label: 'Log Food', sub: 'Search database', onPress: () => { setShowAddMenu(false); router.push('/(tabs)/(home)/food-search' as any); } },
-              { icon: 'camera-outline' as const, label: 'Scan Photo', sub: 'Coming soon', onPress: () => { setShowAddMenu(false); Alert.alert('Coming Soon', 'Photo scanning will be available in a future update.'); } },
-            ].map((item, idx) => (
+              { icon: 'camera-outline' as const, label: 'Scan', sub: 'Meal, label, or barcode', onPress: () => { setShowAddMenu(false); router.push('/scan' as any); } },
+              { icon: 'pizza-outline' as const, label: 'Ate Out / Off-Plan', sub: 'Quick log, no scan needed', onPress: () => { setShowAddMenu(false); handleQuickOffPlanLog(); } },
+            ].map((item, idx, arr) => (
               <TouchableOpacity
                 key={item.label}
                 onPress={item.onPress}
                 style={[
                   styles.addMenuItem,
-                  idx < 2 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
+                  idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
                 ]}
               >
                 <View style={[styles.addMenuIcon, { backgroundColor: theme.primaryMuted }]}>

@@ -24,6 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { FuelScoreRing } from '../../components/FuelScoreRing';
+import { ScanWeekImpact } from '../../components/ScanWeekImpact';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
@@ -509,6 +510,7 @@ export default function ScanScreen() {
       await wholeFoodScanApi.relogMeal(scanId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessModal({ visible: true, message: `${mealLabel} logged!` });
+      useFuelStore.getState().fetchWeekly();
     } catch {
       Alert.alert('Error', 'Failed to log this meal. Please try again.');
     } finally {
@@ -573,6 +575,7 @@ export default function ScanScreen() {
       await wholeFoodScanApi.logFavorite(favoriteId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessModal({ visible: true, message: `${label} logged!` });
+      useFuelStore.getState().fetchWeekly();
     } catch {
       Alert.alert('Error', 'Failed to log this meal. Please try again.');
     } finally {
@@ -1038,6 +1041,8 @@ export default function ScanScreen() {
         message: `"${mealResult.meal_label}"${pairingLabel} has been added to today's nutrition log.`,
       });
       setMealResult({ ...mealResult, logged_to_chronometer: true });
+      // Refresh the week so the tracker + impact strip reflect this log immediately
+      useFuelStore.getState().fetchWeekly();
     } catch (err: any) {
       Alert.alert('Log failed', err?.message || 'Unable to log that meal right now.');
     } finally {
@@ -1814,6 +1819,14 @@ export default function ScanScreen() {
               <Ionicons name="camera-outline" size={18} color="#D97706" />
             </TouchableOpacity>
           )}
+
+          {/* ── Week impact: "do I have room for this?" ── */}
+          <ScanWeekImpact
+            score={mealResult.fuel_score}
+            mealType={mealType}
+            logged={Boolean(mealResult.logged_to_chronometer)}
+            refreshKey={mealResult.id}
+          />
         </View>
 
         {/* ── Nutrition Detail — photo, macros, why this score ── */}
@@ -2213,6 +2226,13 @@ export default function ScanScreen() {
             <Ionicons name="leaf-outline" size={18} color={productTierMeta.color} />
             <Text style={[styles.productActionCopy, { color: theme.text }]}>{productResult.recommended_action}</Text>
           </View>
+
+          {/* ── Week impact: "do I have room for this?" ── */}
+          <ScanWeekImpact
+            score={productResult.score}
+            variant="product"
+            refreshKey={productResult.product_name}
+          />
           {(productResult.recoverable || productResult.confidence < 0.8) && (
             <View style={[styles.productConfidenceCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
               <Ionicons name="scan-outline" size={16} color={theme.primary} />

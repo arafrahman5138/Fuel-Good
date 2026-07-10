@@ -27,6 +27,17 @@ interface FlexBudget {
   flex_budget: number;
   flex_used: number;
   flex_available: number;
+  // Snack/dessert tracking
+  snacks_logged: number;
+  snack_avg_score: number;
+  // Real Food Tracker (below-target snacks/desserts consume room;
+  // at/above-target snacks count toward neither meal count nor room)
+  real_food_meals: number;
+  real_food_goal: number;
+  logged_meals: number;
+  room_total: number;
+  room_used: number;
+  room_remaining: number;
   // Legacy
   flex_points_total: number;
   flex_points_used: number;
@@ -45,6 +56,8 @@ interface ManualFlexResult {
   fuel_score: number;
   flex_available: number;
   weekly_avg: number;
+  flex_counted?: boolean;
+  flex_note?: string;
 }
 
 interface WeeklyFuel {
