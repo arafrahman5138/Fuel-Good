@@ -228,15 +228,10 @@ function RootLayout() {
       return;
     }
 
-    // Billing-dependent routes can only enter protected tabs when the user
-    // has premium access or is inside the temporary free-trial window.
-    if (!skipBillingGate && !hasPremiumAccess && !isWithinFreeTrial) {
-      if (!canAccessWithoutPremium) {
-        analytics.trackEvent('paywall_gate_activated', { pathname });
-        router.replace('/subscribe');
-      }
-      return;
-    }
+    // Freemium: the app is open to all authenticated users. The real-food
+    // pillar (tracker, scanner, logging, curated meals) is free; premium
+    // surfaces (Metabolic Score, Coach, meal plans) gate at the feature
+    // level and the backend enforces with 402s.
 
     // Force re-sync if the entitlement period has expired (stale check)
     if (user?.entitlement && isEntitlementStale(user.entitlement)) {
@@ -247,7 +242,9 @@ function RootLayout() {
       }).catch(() => {});
     }
 
-    if (isAuthRoute || isSubscribeRoute) {
+    // Bounce away from auth screens once signed in. /subscribe stays
+    // reachable for everyone — it's the upgrade surface, not a gate.
+    if (isAuthRoute) {
       router.replace('/(tabs)' as any);
     }
   }, [isAuthenticated, isLoading, isBillingLoading, hasPremiumAccess, isWithinFreeTrial, pathname, currentRootSegment, isOnboardingRoute, user?.flavor_preferences?.length, user?.dietary_preferences?.length, skipBillingGate]);

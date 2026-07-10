@@ -422,18 +422,25 @@ async def rate_limit_middleware(request: Request, call_next):
     return response
 
 
+# Freemium gating (tasks/real-food-metabolic-plan.md Phase 3):
+# FREE  — the real-food pillar: fuel tracker, nutrition logging, scanning
+#         (AI scans capped per day inside the scan router; barcode uncapped),
+#         curated recipe browsing, food search, gamification.
+# PAID  — the metabolic pillar + decision-relief: metabolic scores (gated
+#         per-route inside the router), Coach/Healthify chat, meal plans,
+#         grocery lists, unlimited AI scans.
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(billing.router, prefix="/api/billing", tags=["Billing"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Healthify Chatbot"], dependencies=[Depends(require_premium_user)])
 app.include_router(meal_plan.router, prefix="/api/meal-plans", tags=["Meal Plans"], dependencies=[Depends(require_premium_user)])
 app.include_router(grocery.router, prefix="/api/grocery", tags=["Grocery Lists"], dependencies=[Depends(require_premium_user)])
-app.include_router(recipes.router, prefix="/api/recipes", tags=["Recipes"], dependencies=[Depends(require_premium_user)])
-app.include_router(food_db.router, prefix="/api/foods", tags=["Food Database"], dependencies=[Depends(require_premium_user)])
-app.include_router(scan.router, prefix="/api/scan", tags=["Scan"], dependencies=[Depends(require_premium_user)])
-app.include_router(whole_food_scan.router, prefix="/api/whole-food-scan", tags=["Whole Food Scan"], dependencies=[Depends(require_premium_user)])
-app.include_router(gamification.router, prefix="/api/game", tags=["Gamification"], dependencies=[Depends(require_premium_user)])
-app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Chronometer"], dependencies=[Depends(require_premium_user)])
-app.include_router(fuel.router, prefix="/api/fuel", tags=["Fuel Score"], dependencies=[Depends(require_premium_user)])
+app.include_router(recipes.router, prefix="/api/recipes", tags=["Recipes"])
+app.include_router(food_db.router, prefix="/api/foods", tags=["Food Database"])
+app.include_router(scan.router, prefix="/api/scan", tags=["Scan"])
+app.include_router(whole_food_scan.router, prefix="/api/whole-food-scan", tags=["Whole Food Scan"])
+app.include_router(gamification.router, prefix="/api/game", tags=["Gamification"])
+app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Chronometer"])
+app.include_router(fuel.router, prefix="/api/fuel", tags=["Fuel Score"])
 app.include_router(metabolic.router, prefix="/api/metabolic", tags=["Metabolic Budget"])
 app.include_router(telemetry.router, prefix="/api/telemetry", tags=["Telemetry"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])

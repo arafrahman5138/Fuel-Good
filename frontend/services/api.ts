@@ -188,6 +188,9 @@ class ApiClient {
     if (error.detail) {
       if (typeof error.detail === 'string' && !error.detail.includes('/')) {
         userMessage = error.detail;
+      } else if (typeof error.detail === 'object' && !Array.isArray(error.detail) && typeof error.detail.message === 'string') {
+        // Structured details (e.g. scan_quota_exceeded) carry a user-ready message
+        userMessage = error.detail.message;
       } else if (Array.isArray(error.detail) && error.detail.length > 0) {
         // Pydantic validation errors return detail as an array of objects with msg fields
         const firstError = error.detail[0];

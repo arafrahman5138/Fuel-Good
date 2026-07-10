@@ -384,6 +384,20 @@ export default function SubscribeScreen() {
           </Text>
 
           <TouchableOpacity
+            testID="subscribe-continue-free"
+            style={styles.continueFree}
+            onPress={() => {
+              analytics.trackEvent('paywall_dismissed_to_free', {});
+              router.replace('/(tabs)' as any);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.continueFreeText, { color: theme.textSecondary }]}>
+              Continue with the free plan — scanner and weekly tracker included
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.secondaryAction, { borderColor: theme.border, backgroundColor: theme.surfaceElevated }]}
             onPress={handleRestore}
             disabled={restoring}
@@ -579,6 +593,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  continueFree: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  continueFreeText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
   secondaryActionText: {
     fontSize: FontSize.sm,

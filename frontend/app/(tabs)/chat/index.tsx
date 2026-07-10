@@ -30,6 +30,8 @@ import { Card } from '../../../components/GradientCard';
 import { Button } from '../../../components/Button';
 import { useTheme } from '../../../hooks/useTheme';
 import { useChatStore } from '../../../stores/chatStore';
+import { useAuthStore } from '../../../stores/authStore';
+import { PremiumUpsellCard } from '../../../components/PremiumUpsellCard';
 import { useSavedRecipesStore } from '../../../stores/savedRecipesStore';
 import { useGamificationStore } from '../../../stores/gamificationStore';
 import { chatApi, type ChatContext } from '../../../services/api';
@@ -72,6 +74,7 @@ const MAX_BUBBLE_WIDTH = 720;
 
 export default function ChatScreen() {
   const theme = useTheme();
+  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { width } = useWindowDimensions();
@@ -599,6 +602,23 @@ export default function ChatScreen() {
       }
     });
   }, [conversationData.length, isLoading]);
+
+  // Coach is a premium surface (the backend 402s on /chat anyway) —
+  // free users get a contextual upsell instead of a broken chat.
+  if (!hasPremiumAccess) {
+    return (
+      <ScreenContainer>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <PremiumUpsellCard
+            feature="coach"
+            icon="chatbubbles"
+            title="Coach is a Premium feature"
+            body="Tell Coach what you're craving and it turns it into a whole-food version that keeps your week on track — burgers, pasta, desserts included."
+          />
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer padded={false}>

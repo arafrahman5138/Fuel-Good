@@ -27,6 +27,7 @@ import { DataErrorState } from '../DataErrorState';
 import { useTheme } from '../../hooks/useTheme';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useAuthStore } from '../../stores/authStore';
+import { PremiumUpsellCard } from '../PremiumUpsellCard';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { useFuelStore } from '../../stores/fuelStore';
 import { mealPlanApi, nutritionApi, recipeApi } from '../../services/api';
@@ -97,6 +98,7 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const user = useAuthStore((s) => s.user);
+  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
   const awardXP = useGamificationStore((s) => s.awardXP);
   const { currentPlan, isGenerating, selectedDay, setCurrentPlan, setGenerating, setSelectedDay } =
     useMealPlanStore();
@@ -427,6 +429,22 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
     ? allergies.map((id) => ALLERGY_LABELS[id] || id)
     : ['None Added'];
   const prepTimeline = currentPlan?.prep_timeline || [];
+
+  // Meal plans are a premium surface (the backend 402s on /meal-plans)
+  if (!hasPremiumAccess) {
+    return (
+      <ScreenContainer safeArea={false}>
+        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.lg }}>
+          <PremiumUpsellCard
+            feature="meal-plans"
+            icon="calendar"
+            title="Weekly meal plans are Premium"
+            body="One tap generates a week of Fuel-100 meals matched to your metabolic targets — prep timeline and grocery list included. Browsing curated meals stays free."
+          />
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   if (isLoadingPlan && !currentPlan) {
     return (

@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     revenuecat_annual_product_id: str = "yearly"
     revenuecat_lifetime_product_id: str = "lifetime"
     revenuecat_trial_days: int = 7
+    # Free tier: AI scans per day (meal photo / label / smart). Barcode
+    # lookups are uncapped — near-zero marginal cost, grocery-loop hook.
+    free_daily_ai_scans: int = 3
     allow_open_premium_in_non_production: bool = True
     complimentary_access_allowlist_emails: str = ""
     app_store_manage_subscriptions_url: str = "https://apps.apple.com/account/subscriptions"

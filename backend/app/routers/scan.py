@@ -52,6 +52,55 @@ settings = get_settings()
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
+async def enforce_ai_scan_quota(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Free-tier daily cap on AI scans (meal photo / label / smart).
+
+    Premium users are unlimited. Barcode lookups never pass through this
+    dependency — they're DB lookups and stay uncapped for everyone.
+    """
+    from sqlalchemy import func as sa_func
+    from app.services.billing import build_entitlement_info
+
+    entitlement = build_entitlement_info(current_user)
+    if entitlement.access_level == "premium" and not entitlement.requires_paywall:
+        return current_user
+
+    limit = max(0, settings.free_daily_ai_scans)
+    day_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    meal_scans = (
+        db.query(sa_func.count(ScannedMealLog.id))
+        .filter(ScannedMealLog.user_id == current_user.id, ScannedMealLog.created_at >= day_start)
+        .scalar()
+        or 0
+    )
+    label_scans = (
+        db.query(sa_func.count(ProductLabelScan.id))
+        .filter(
+            ProductLabelScan.user_id == current_user.id,
+            ProductLabelScan.created_at >= day_start,
+            (ProductLabelScan.capture_type.is_(None)) | (ProductLabelScan.capture_type != "barcode"),
+        )
+        .scalar()
+        or 0
+    )
+    if meal_scans + label_scans >= limit:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "scan_quota_exceeded",
+                "limit": limit,
+                "message": (
+                    f"You've used your {limit} free AI scans for today. "
+                    "Barcode scans are always free — or go Premium for unlimited scanning."
+                ),
+            },
+        )
+    return current_user
+
+
 def _validate_image_magic_bytes(data: bytes) -> str | None:
     """Return detected MIME type from magic bytes, or None if unrecognized."""
     if len(data) < 12:
@@ -384,7 +433,7 @@ async def _storage_reference_async(
     }
 
 
-@router.post("/product/analyze")
+@router.post("/product/analyze", dependencies=[Depends(enforce_ai_scan_quota)])
 async def analyze_product(
     body: WholeFoodAnalyzeRequest,
     current_user: User = Depends(get_current_user),
@@ -559,7 +608,7 @@ async def analyze_product_barcode(
     return full_result
 
 
-@router.post("/product/image")
+@router.post("/product/image", dependencies=[Depends(enforce_ai_scan_quota)])
 async def analyze_product_image(
     image: UploadFile = File(...),
     capture_type: Optional[str] = Form(default="front_label"),
@@ -642,7 +691,7 @@ async def analyze_product_image(
         raise HTTPException(status_code=502, detail="Something went wrong analyzing that label. Try a clearer photo of the ingredients list.")
 
 
-@router.post("/meal")
+@router.post("/meal", dependencies=[Depends(enforce_ai_scan_quota)])
 async def scan_meal(
     image: UploadFile = File(...),
     meal_type: Optional[str] = Form(default=None),
@@ -886,7 +935,7 @@ async def scan_meal(
     return serialized
 
 
-@router.post("/smart")
+@router.post("/smart", dependencies=[Depends(enforce_ai_scan_quota)])
 async def scan_smart(
     image: UploadFile = File(...),
     meal_type: Optional[str] = Form(default=None),
@@ -1190,7 +1239,7 @@ def _sse_event(event: str, payload: dict[str, Any]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(payload)}\n\n".encode("utf-8")
 
 
-@router.post("/meal/stream")
+@router.post("/meal/stream", dependencies=[Depends(enforce_ai_scan_quota)])
 async def scan_meal_stream(
     image: UploadFile = File(...),
     meal_type: Optional[str] = Form(default=None),

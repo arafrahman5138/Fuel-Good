@@ -16,6 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useMealPlanStore } from '../../stores/mealPlanStore';
 import { useGamificationStore } from '../../stores/gamificationStore';
 import { useAuthStore } from '../../stores/authStore';
+import { PremiumUpsellCard } from '../PremiumUpsellCard';
 import { groceryApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { trackBehaviorEvent } from '../../services/notifications';
@@ -46,6 +47,7 @@ export function GroceryView() {
   const fetchQuests = useGamificationStore((s) => s.fetchQuests);
   const updateQuestProgress = useGamificationStore((s) => s.updateQuestProgress);
   const addXp = useAuthStore((s) => s.addXp);
+  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +153,20 @@ export function GroceryView() {
   }));
 
   const checkedCount = items.filter((i) => i.checked).length;
+
+  // Grocery lists ride on meal plans — same premium surface
+  if (!hasPremiumAccess) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', paddingHorizontal: Spacing.lg }]}>
+        <PremiumUpsellCard
+          feature="grocery"
+          icon="cart"
+          title="Grocery lists are Premium"
+          body="Your weekly meal plan builds its own grocery list, organized by aisle. Scanning products at the store stays free."
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
