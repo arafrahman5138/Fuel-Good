@@ -714,6 +714,14 @@ class FlexBudget:
     # Snack/dessert tracking (excluded from main meal count)
     snacks_logged: int = 0
     snack_avg_score: float = 0.0
+    # Real Food Tracker fields — below-target snacks/desserts consume room,
+    # at/above-target snacks count toward neither (they only lift the average)
+    real_food_meals: int = 0      # main meals at/above target
+    real_food_goal: int = 0       # alias of clean_meals_target
+    logged_meals: int = 0         # main meals + below-target snacks (slots consumed)
+    room_total: int = 0           # alias of flex_budget
+    room_used: int = 0            # ALL logs below target (mains + snacks/desserts)
+    room_remaining: int = 0       # effective room left after shrinkage
     # Legacy fields kept for backward compat
     flex_points_total: float = 0.0
     flex_points_used: float = 0.0
@@ -732,6 +740,7 @@ def compute_flex_budget(
     meal_scores: list[float],
     week_start: date,
     clean_pct: int = DEFAULT_CLEAN_PCT,
+    snack_scores: list[float] | None = None,
 ) -> FlexBudget:
     """Compute the live flex budget using credit-based percentage model.
 
@@ -772,6 +781,14 @@ def compute_flex_budget(
 
     flex_available = max(0, effective_budget - flex_used)
 
+    # Real Food Tracker: below-target snacks/desserts consume room slots
+    # (the "do I have room for dessert?" case); at/above-target snacks count
+    # toward neither the meal count nor room — they only lift the average.
+    snack_scores = snack_scores or []
+    snacks_below = sum(1 for s in snack_scores if s < fuel_target)
+    room_used = flex_used + snacks_below
+    room_remaining = max(0, effective_budget - room_used)
+
     # Legacy points-based fields (backward compat)
     earned = sum(max(0, s - fuel_target) for s in meal_scores)
     spent = sum(max(0, fuel_target - s) for s in meal_scores)
@@ -797,6 +814,14 @@ def compute_flex_budget(
         flex_budget=flex_budget_total,
         flex_used=flex_used,
         flex_available=flex_available,
+        snacks_logged=len(snack_scores),
+        snack_avg_score=round(sum(snack_scores) / len(snack_scores), 1) if snack_scores else 0.0,
+        real_food_meals=clean_meals_logged,
+        real_food_goal=clean_meals_target,
+        logged_meals=meals_logged + snacks_below,
+        room_total=flex_budget_total,
+        room_used=room_used,
+        room_remaining=room_remaining,
         flex_points_total=round(flex_total, 1),
         flex_points_used=round(spent, 1),
         flex_points_remaining=round(flex_remaining, 1),

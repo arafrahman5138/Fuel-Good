@@ -193,13 +193,11 @@ async def get_weekly_fuel(
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
-        meal_scores=main_meal_scores,  # Only main meals count toward flex budget
+        meal_scores=main_meal_scores,
         week_start=week_start,
         clean_pct=clean_pct,
+        snack_scores=snack_scores,  # below-target snacks/desserts consume room
     )
-    # Attach snack stats to budget
-    budget.snacks_logged = len(snack_scores)
-    budget.snack_avg_score = round(sum(snack_scores) / len(snack_scores), 1) if snack_scores else 0.0
 
     # Build daily breakdown
     logs = (
@@ -500,14 +498,16 @@ async def get_flex_suggestions(
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
 
-    # Use main meal scores only (exclude snacks/desserts) for flex budget
+    # Main meals drive the clean-meal count; below-target snacks consume room
     main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    snack_scores = get_weekly_snack_scores(db, current_user.id, week_start)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
         meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
+        snack_scores=snack_scores,
     )
 
     # Today's scores
@@ -664,30 +664,31 @@ async def log_manual_flex_meal(
     expected_meals = current_user.expected_meals_per_week or DEFAULT_MEALS_PER_WEEK
     clean_pct = current_user.clean_eating_pct or DEFAULT_CLEAN_PCT
     week_start, _ = get_week_bounds(day)
-    # Use main meal scores only (exclude snacks) for flex budget
     main_scores = get_weekly_meal_scores(db, current_user.id, week_start, exclude_snacks=True)
+    snack_scores = get_weekly_snack_scores(db, current_user.id, week_start)
     budget = compute_flex_budget(
         fuel_target=fuel_target,
         expected_meals=expected_meals,
         meal_scores=main_scores,
         week_start=week_start,
         clean_pct=clean_pct,
+        snack_scores=snack_scores,
     )
 
-    # ── Flex Snack Transparency ──
-    meal_type_val = payload.meal_type or "snack"
-    flex_counted = meal_type_val in {"breakfast", "lunch", "dinner", "meal"}
-    if flex_counted:
-        flex_note = "This meal counts toward your weekly flex budget."
+    # A manual off-plan log always scores below target, so it always uses room —
+    # whether it's a dinner out or a dessert (Real Food Tracker semantics).
+    flex_counted = True
+    if budget.room_remaining > 0:
+        flex_note = f"Room-for-life meal logged. You have room for {budget.room_remaining} more this week."
     else:
-        flex_note = f"Snacks and desserts are tracked but don't count against your flex budget."
+        flex_note = "Room-for-life meal logged. Your next clean meal starts rebuilding your week."
 
     return ManualFlexLogResponse(
         id=log.id,
         date=day.isoformat(),
         title=title,
         fuel_score=float(AVG_CHEAT_MEAL_SCORE),
-        flex_available=budget.flex_available,
+        flex_available=budget.room_remaining,
         weekly_avg=budget.projected_weekly_avg,
         flex_counted=flex_counted,
         flex_note=flex_note,

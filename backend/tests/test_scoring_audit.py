@@ -692,6 +692,82 @@ class TestFlexBudget:
         assert abs(result.avg_fuel_score - expected_avg) < 0.1
 
 
+class TestRealFoodTracker:
+    """Real Food Tracker semantics (tasks/real-food-metabolic-plan.md Phase 1).
+
+    Below-target snacks/desserts consume room slots; at/above-target snacks
+    count toward neither the meal count nor room.
+    """
+
+    WEEK = date(2026, 7, 6)
+
+    def _budget(self, meal_scores, snack_scores=None, **kw):
+        return compute_flex_budget(
+            fuel_target=kw.pop("fuel_target", 80),
+            expected_meals=kw.pop("expected_meals", 21),
+            meal_scores=meal_scores,
+            week_start=self.WEEK,
+            clean_pct=kw.pop("clean_pct", 80),
+            snack_scores=snack_scores,
+        )
+
+    def test_seventeen_clean_four_low_full_week(self):
+        """The canonical 80% week: 17 clean + 4 room-for-life meals."""
+        result = self._budget([100] * 17 + [35] * 4)
+        assert result.real_food_meals == 17
+        assert result.real_food_goal == 17
+        assert result.room_total == 4
+        assert result.room_used == 4
+        assert result.room_remaining == 0
+        assert result.logged_meals == 21
+        # Weekly avg (17×100 + 4×35)/21 = 87.6 — target still met
+        assert result.avg_fuel_score > 80
+
+    def test_dessert_consumes_room(self):
+        """Scanning a low dessert uses a room slot (the burger-spot case)."""
+        result = self._budget([100] * 10, snack_scores=[25])
+        assert result.room_used == 1
+        assert result.room_remaining == 3
+        assert result.logged_meals == 11  # 10 mains + 1 below-target dessert
+        assert result.snacks_logged == 1
+
+    def test_clean_snack_counts_toward_neither(self):
+        """A whole-food snack is a free win: no meal slot, no room."""
+        result = self._budget([100] * 10, snack_scores=[95])
+        assert result.room_used == 0
+        assert result.room_remaining == 4
+        assert result.logged_meals == 10
+        assert result.snacks_logged == 1
+
+    def test_burger_plus_dessert_scenario(self):
+        """Mid-week burger spot: 14 clean mains, 2 low mains, then a low dessert."""
+        result = self._budget([100] * 14 + [38, 40], snack_scores=[25])
+        assert result.real_food_meals == 14
+        assert result.room_used == 3
+        assert result.room_remaining == 1  # room for one more
+
+    def test_day_zero_is_neutral(self):
+        """Empty week: full room available, nothing negative or 'used'."""
+        result = self._budget([], snack_scores=[])
+        assert result.real_food_meals == 0
+        assert result.room_used == 0
+        assert result.room_remaining == result.room_total == 4
+        assert result.logged_meals == 0
+
+    def test_room_never_negative_with_snacks(self):
+        """Blowout week: room bottoms out at 0, never negative."""
+        result = self._budget([30] * 8, snack_scores=[20, 25, 15])
+        assert result.room_used == 11
+        assert result.room_remaining == 0
+
+    def test_legacy_fields_keep_mains_only_semantics(self):
+        """Old flex fields ignore snacks so the legacy UI stays consistent."""
+        result = self._budget([100] * 5 + [40], snack_scores=[25, 20])
+        assert result.flex_used == 1          # mains only
+        assert result.room_used == 3          # mains + snacks
+        assert result.clean_meals_logged == result.real_food_meals == 5
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 13: Budget Build — Full Pipeline
 # ═══════════════════════════════════════════════════════════════════════

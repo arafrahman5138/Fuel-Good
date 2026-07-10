@@ -46,6 +46,13 @@ class FlexBudgetResponse(BaseModel):
     # Snack/dessert tracking (excluded from main meal count)
     snacks_logged: int = 0
     snack_avg_score: float = 0.0
+    # Real Food Tracker fields
+    real_food_meals: int = 0
+    real_food_goal: int = 0
+    logged_meals: int = 0
+    room_total: int = 0
+    room_used: int = 0
+    room_remaining: int = 0
     # Legacy points fields
     flex_points_total: float = 0.0
     flex_points_used: float = 0.0

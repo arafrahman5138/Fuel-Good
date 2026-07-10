@@ -1,5 +1,7 @@
 # Flex Meals — Reframe Plan (2026-05-06)
 
+> **SUPERSEDED (2026-07-10):** replaced by [real-food-metabolic-plan.md](real-food-metabolic-plan.md), which retires the flex/ticket system entirely in favor of the 80% Real Food Tracker + Metabolic Score two-pillar product. Kept for historical context only.
+
 **Goal:** Reframe the existing flex/cheat-meal feature around the *running weekly score* as the primary mental model, with discrete flex tickets as a *reward event* layered on top.
 
 **Outcome target:** user retention, perceived value rooted in the **presence-of-good** philosophy, and tight cross-feature pull through curated meals + Coach. The product positions itself as the only nutrition app that *gives the user permission to indulge* — track consistently, earn permission, enjoy guilt-free, come back to track again.
