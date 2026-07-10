@@ -49,7 +49,7 @@ export function ProjectedMESCard({
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <Ionicons name="analytics" size={18} color={theme.primary} />
-          <Text style={[styles.title, { color: theme.text }]}>Projected Energy Score</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Projected Metabolic Score</Text>
         </View>
       </View>
 

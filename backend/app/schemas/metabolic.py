@@ -186,6 +186,18 @@ class ScoreHistoryEntry(BaseModel):
     display_tier: str = ""
 
 
+class WeeklyMESResponse(BaseModel):
+    """Weekly Metabolic Score rollup — average of daily scores in the week."""
+    week_start: str
+    week_end: str
+    avg_score: float          # 0 when no days scored yet
+    tier: str                 # tier of avg_score, "" when no data
+    days_scored: int
+    daily: list[ScoreHistoryEntry]
+    prev_week_avg: Optional[float] = None
+    trend: str = "new"        # up | down | flat | new
+
+
 # ──────────────────── Streak ────────────────────
 
 class MetabolicStreakResponse(BaseModel):

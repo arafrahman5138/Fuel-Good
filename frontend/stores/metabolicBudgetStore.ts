@@ -137,6 +137,17 @@ export interface MESHistoryEntry {
   display_tier: string;
 }
 
+export interface WeeklyMES {
+  week_start: string;
+  week_end: string;
+  avg_score: number;
+  tier: string;
+  days_scored: number;
+  daily: MESHistoryEntry[];
+  prev_week_avg: number | null;
+  trend: 'up' | 'down' | 'flat' | 'new';
+}
+
 export interface MetabolicStreak {
   current_streak: number;
   longest_streak: number;
@@ -167,19 +178,19 @@ export interface MetabolicProfile {
 
 // ─── Tier helpers ───
 
+// Metabolic Score tiers (user-facing pillar name: "Metabolic Score")
 export const TIER_CONFIG = {
-  // New tier names
-  critical: { label: 'Energy Drain', color: '#DC2626', icon: 'battery-dead' as const },
-  low: { label: 'Low Energy', color: '#FF4444', icon: 'battery-dead' as const },
-  moderate: { label: 'Steady Burn', color: '#FF9500', icon: 'battery-half' as const },
-  good: { label: 'Momentum', color: '#4A90D9', icon: 'battery-charging' as const },
-  optimal: { label: 'Elite Fuel', color: '#34C759', icon: 'battery-full' as const },
+  critical: { label: 'Drained', color: '#DC2626', icon: 'battery-dead' as const },
+  low: { label: 'Sluggish', color: '#FF4444', icon: 'battery-dead' as const },
+  moderate: { label: 'Steady', color: '#FF9500', icon: 'battery-half' as const },
+  good: { label: 'Efficient', color: '#4A90D9', icon: 'battery-charging' as const },
+  optimal: { label: 'Optimized', color: '#34C759', icon: 'battery-full' as const },
   // Empty day — no meals logged yet
   no_data: { label: 'No meals logged', color: '#9CA3AF', icon: 'ellipse-outline' as const },
   // Legacy aliases
-  crash_risk: { label: 'Energy Drain', color: '#FF4444', icon: 'battery-dead' as const },
-  shaky: { label: 'Steady Burn', color: '#FF9500', icon: 'battery-half' as const },
-  stable: { label: 'Momentum', color: '#4A90D9', icon: 'battery-charging' as const },
+  crash_risk: { label: 'Drained', color: '#FF4444', icon: 'battery-dead' as const },
+  shaky: { label: 'Steady', color: '#FF9500', icon: 'battery-half' as const },
+  stable: { label: 'Efficient', color: '#4A90D9', icon: 'battery-charging' as const },
 } as const;
 
 export type TierKey = keyof typeof TIER_CONFIG;
@@ -215,6 +226,9 @@ interface MetabolicBudgetState {
   // History
   scoreHistory: MESHistoryEntry[];
 
+  // Weekly Metabolic Score (server rollup of daily scores)
+  weeklyScore: WeeklyMES | null;
+
   // Streak
   streak: MetabolicStreak | null;
 
@@ -239,6 +253,7 @@ interface MetabolicBudgetState {
   fetchMealScores: (date?: string) => Promise<void>;
   fetchRemainingBudget: (date?: string) => Promise<void>;
   fetchScoreHistory: (days?: number) => Promise<void>;
+  fetchWeeklyScore: (date?: string) => Promise<void>;
   fetchStreak: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   saveProfile: (data: Partial<MetabolicProfile>) => Promise<void>;
@@ -258,6 +273,7 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
   mealScores: [],
   remainingBudget: null,
   scoreHistory: [],
+  weeklyScore: null,
   streak: null,
   profile: null,
   loading: false,
@@ -332,6 +348,15 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
     }
   },
 
+  fetchWeeklyScore: async (date) => {
+    try {
+      const data = await metabolicApi.getWeeklyScore(date);
+      set({ weeklyScore: data });
+    } catch {
+      // silent — premium-gated; free users simply have no weekly score
+    }
+  },
+
   fetchStreak: async () => {
     try {
       const data = await metabolicApi.getStreak();
@@ -394,6 +419,7 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
           get().fetchMealScores(date),
           get().fetchStreak(),
           get().fetchScoreHistory(),
+          get().fetchWeeklyScore(date),
         ]);
         set({ _lastFetchedAt: { ...get()._lastFetchedAt, [dateKey]: Date.now() } });
       } finally {

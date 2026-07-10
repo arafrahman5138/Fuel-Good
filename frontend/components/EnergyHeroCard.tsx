@@ -297,7 +297,7 @@ function EnergyHeroCardImpl({
             {/* Tier pill */}
             <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
               <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
-                {hasData ? tier.label : 'Ready to fuel'}
+                {hasData ? tier.label : 'Ready to start'}
               </Text>
             </View>
 

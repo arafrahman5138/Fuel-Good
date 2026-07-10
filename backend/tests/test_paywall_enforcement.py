@@ -29,6 +29,7 @@ class PaywallEnforcementTests(unittest.TestCase):
             ("POST", "/api/scan/product/analyze"),
             ("POST", "/api/whole-food-scan/analyze"),
             ("GET", "/api/metabolic/score/daily"),
+            ("GET", "/api/metabolic/score/weekly"),
             ("GET", "/api/metabolic/meal-suggestions"),
         ]
 

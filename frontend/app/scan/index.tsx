@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { FuelScoreRing } from '../../components/FuelScoreRing';
 import { ScanWeekImpact } from '../../components/ScanWeekImpact';
+import { getTierConfig } from '../../stores/metabolicBudgetStore';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, FontSize, Spacing } from '../../constants/Colors';
 import { Shadows } from '../../constants/Shadows';
@@ -1827,6 +1828,32 @@ export default function ScanScreen() {
             logged={Boolean(mealResult.logged_to_chronometer)}
             refreshKey={mealResult.id}
           />
+
+          {/* ── Metabolic Score: how this meal fuels you (premium pillar) ── */}
+          {mealResult.mes && (() => {
+            const mesTier = getTierConfig(mealResult.mes.tier);
+            return (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginTop: Spacing.sm,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.sm,
+                  borderRadius: BorderRadius.lg,
+                  borderWidth: 1,
+                  backgroundColor: mesTier.color + '10',
+                  borderColor: mesTier.color + '30',
+                }}
+              >
+                <Ionicons name="pulse" size={16} color={mesTier.color} />
+                <Text style={{ flex: 1, fontSize: FontSize.sm, fontWeight: '600', color: theme.text }}>
+                  Metabolic {Math.round(mealResult.mes.score)} — {mesTier.label}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
 
         {/* ── Nutrition Detail — photo, macros, why this score ── */}

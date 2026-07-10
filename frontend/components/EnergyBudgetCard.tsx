@@ -258,7 +258,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
           <View style={[styles.headerIcon, { backgroundColor: tierCfg.color + '1A' }]}>
             <Ionicons name="flash" size={13} color={tierCfg.color} />
           </View>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Metabolic Energy</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Metabolic Score</Text>
           {weeklyMesScore != null && weeklyMesScore > 0 ? (
             <View style={[styles.headerPill, { backgroundColor: (weeklyMesTierColor || tierCfg.color) + '18', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
               <Ionicons name="flash" size={9} color={weeklyMesTierColor || tierCfg.color} />

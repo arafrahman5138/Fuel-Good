@@ -21,6 +21,7 @@ from app.schemas.metabolic import (
     DailyMESResponse,
     MealMESResponse,
     ScoreHistoryEntry,
+    WeeklyMESResponse,
     MetabolicStreakResponse,
     MESPreviewRequest,
     MESPreviewResponse,
@@ -568,6 +569,75 @@ async def get_score_history(
         )
         for s in scores
     ]
+
+
+@router.get("/score/weekly", response_model=WeeklyMESResponse)
+async def get_weekly_score(
+    date_str: str | None = Query(default=None, alias="date"),
+    _: User = Depends(require_premium_user),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Weekly Metabolic Score — average of the week's daily scores.
+
+    Mirrors /fuel/weekly bounds (Mon-Sun). Includes the previous week's
+    average so clients can show a trend without a second request.
+    """
+    from app.services.fuel_score import get_week_bounds
+
+    ref = _parse_date(date_str)
+    week_start, week_end = get_week_bounds(ref)
+    prev_start, prev_end = get_week_bounds(week_start - timedelta(days=1))
+
+    rows = (
+        db.query(MetabolicScore)
+        .filter(
+            MetabolicScore.user_id == current_user.id,
+            MetabolicScore.scope == "daily",
+            MetabolicScore.date >= prev_start,
+            MetabolicScore.date <= week_end,
+        )
+        .order_by(MetabolicScore.date.asc())
+        .all()
+    )
+
+    def _display(s: MetabolicScore) -> float:
+        return s.display_score or to_display_score(s.total_score)
+
+    this_week = [s for s in rows if s.date >= week_start]
+    prev_week = [s for s in rows if s.date <= prev_end]
+
+    avg = round(sum(_display(s) for s in this_week) / len(this_week), 1) if this_week else 0.0
+    prev_avg = round(sum(_display(s) for s in prev_week) / len(prev_week), 1) if prev_week else None
+
+    if not this_week or prev_avg is None:
+        trend = "new"
+    elif avg > prev_avg + 2:
+        trend = "up"
+    elif avg < prev_avg - 2:
+        trend = "down"
+    else:
+        trend = "flat"
+
+    return WeeklyMESResponse(
+        week_start=week_start.isoformat(),
+        week_end=week_end.isoformat(),
+        avg_score=avg,
+        tier=display_tier(avg) if this_week else "",
+        days_scored=len(this_week),
+        daily=[
+            ScoreHistoryEntry(
+                date=s.date.isoformat(),
+                total_score=s.total_score,
+                display_score=_display(s),
+                tier=s.tier,
+                display_tier=s.display_tier or display_tier(_display(s)),
+            )
+            for s in this_week
+        ],
+        prev_week_avg=prev_avg,
+        trend=trend,
+    )
 
 
 @router.post("/score/preview", response_model=MESPreviewResponse)

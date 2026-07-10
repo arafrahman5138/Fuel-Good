@@ -128,8 +128,8 @@ export default function MESBreakdownScreen() {
         <View style={[styles.heroCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.heroTop}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.eyebrow, { color: tierCfg.color }]}>Metabolic Energy Score</Text>
-              <Text style={[styles.heroTitle, { color: theme.text }]}>Today’s MES</Text>
+              <Text style={[styles.eyebrow, { color: tierCfg.color }]}>Metabolic Score</Text>
+              <Text style={[styles.heroTitle, { color: theme.text }]}>Today’s Metabolic Score</Text>
               <Text style={[styles.heroSub, { color: theme.textSecondary }]}>
                 A weighted score built from protein, fiber, carb control, and fat adequacy.
               </Text>

@@ -140,6 +140,7 @@ export default function HomeScreen() {
   const mealPlanLoadError = useMealPlanStore((s) => s.loadError);
   const dailyMES = useMetabolicBudgetStore((s) => s.dailyScore);
   const scoreHistory = useMetabolicBudgetStore((s) => s.scoreHistory);
+  const weeklyMes = useMetabolicBudgetStore((s) => s.weeklyScore);
 
   const metabolicStreak = useMetabolicBudgetStore((s) => s.streak);
   const mealScores = useMetabolicBudgetStore((s) => s.mealScores);
@@ -584,16 +585,20 @@ export default function HomeScreen() {
   const dailyMesScore = Math.round(dailyMES?.score?.display_score ?? dailyMES?.score?.total_score ?? 0);
   const dailyMesTierKey = dailyMES?.score?.display_tier ?? dailyMES?.score?.tier ?? 'critical';
   const dailyMesTierColor = getTierConfig(dailyMesTierKey).color;
-  // Weekly MES — average scores from the current week (Mon–Sun), matching fuel weekly bounds
+  // Weekly Metabolic Score — server rollup (/metabolic/score/weekly). Falls
+  // back to a client-side average from history while the rollup loads.
   const weekStart = fuelWeekly?.week_start ?? (() => {
     const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
     return toDateKey(d);
   })();
   const thisWeekScores = scoreHistory
     .filter((e) => e.date >= weekStart && (e.display_score ?? e.total_score ?? 0) > 0);
-  const weeklyMesScore = thisWeekScores.length > 0
+  const fallbackWeeklyMes = thisWeekScores.length > 0
     ? Math.round(thisWeekScores.reduce((sum, e) => sum + (e.display_score ?? e.total_score ?? 0), 0) / thisWeekScores.length)
     : 0;
+  const weeklyMesScore = weeklyMes && weeklyMes.days_scored > 0
+    ? Math.round(weeklyMes.avg_score)
+    : fallbackWeeklyMes;
   const weeklyMesTierColor = getTierConfig(getTierFromScore(weeklyMesScore)).color;
   // Homepage ring shows weekly avg — big-picture view; today's detail is in Chrono
   const fuelScoreValue = Math.round(fuelWeekly?.avg_fuel_score ?? fuelDaily?.avg_fuel_score ?? 0);

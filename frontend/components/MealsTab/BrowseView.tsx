@@ -23,7 +23,7 @@ import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTION
 import { MealImage } from '../MealImage';
 import { MealMESBadge } from '../MealMESBadge';
 import { PlateComposer } from '../PlateComposer';
-import { useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
+import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
 import { usePlateStore } from '../../stores/plateStore';
 import {
   classifyMealContext,
@@ -406,6 +406,25 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             {item.difficulty}
           </Text>
         </View>
+      </View>
+
+      {/* Two-pillar proof: every curated meal is real food; Metabolic varies by composition */}
+      <View style={{ flexDirection: 'row', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+        <View style={[styles.pillarBadge, { backgroundColor: '#22C55E14' }]}>
+          <Ionicons name="leaf" size={10} color="#22C55E" />
+          <Text style={[styles.pillarBadgeText, { color: '#22C55E' }]}>Fuel 100</Text>
+        </View>
+        {displayScore != null && displayScore > 0 && (() => {
+          const tierColor = getTierConfig(displayTier).color;
+          return (
+            <View style={[styles.pillarBadge, { backgroundColor: tierColor + '14' }]}>
+              <Ionicons name="pulse" size={10} color={tierColor} />
+              <Text style={[styles.pillarBadgeText, { color: tierColor }]}>
+                Metabolic {Math.round(displayScore)}
+              </Text>
+            </View>
+          );
+        })()}
       </View>
 
       {item.nutrition_info?.calories && (() => {
@@ -1226,6 +1245,18 @@ const styles = StyleSheet.create({
   cardCalories: {
     fontSize: FontSize.xs,
     fontWeight: '500',
+  },
+  pillarBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  pillarBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
 
   // ── Side indicator ──

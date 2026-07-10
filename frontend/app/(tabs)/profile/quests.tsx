@@ -95,7 +95,7 @@ export default function QuestsScreen() {
                 <Ionicons name="flash" size={24} color="#8B5CF6" />
               </View>
               <Text style={[styles.streakValue, { color: theme.text }]}>{metabolicStreak?.current_streak ?? 0}</Text>
-              <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Energy Streak</Text>
+              <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Metabolic Streak</Text>
             </View>
             <View style={styles.streakItem}>
               <View style={[styles.streakIcon, { backgroundColor: theme.primaryMuted }]}>

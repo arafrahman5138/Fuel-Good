@@ -815,6 +815,8 @@ export const metabolicApi = {
     api.get<any[]>(`/metabolic/score/meals${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getScoreHistory: (days?: number) =>
     api.get<any[]>(`/metabolic/score/history${days ? `?days=${days}` : ''}`),
+  getWeeklyScore: (date?: string) =>
+    api.get<any>(`/metabolic/score/weekly${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   previewMeal: (data: { protein_g: number; fiber_g: number; sugar_g?: number; carbs_g?: number; calories?: number }, date?: string) =>
     api.post<any>(`/metabolic/score/preview${date ? `?date=${encodeURIComponent(date)}` : ''}`, data),
 
