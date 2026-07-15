@@ -4,6 +4,20 @@ Self-improvement log per the CLAUDE.md workflow. Add rules for future sessions s
 
 ---
 
+## 2026-07-15 (production deploy)
+
+### Render free/starter tier: migrations NEVER run on deploy
+
+**Observation**: render.yaml documents a preDeployCommand running alembic, but the live service was created manually and pre-deploy commands are a PAID-tier feature — so the "live" deploy shipped new code against a 5-revision-old Supabase schema (account deletion still 500ing in prod, scan components column missing). /health was green the whole time.
+
+**Rule**: After every Render deploy that includes alembic revisions: (1) fetch DATABASE_URL from the service env (`GET /v1/services/<id>/env-vars` with the CLI token from ~/.render/cli.yaml — never print values), (2) run `DATABASE_URL=<prod> PYTHONPATH=. alembic upgrade heads` locally, (3) verify actual schema via Supabase MCP information_schema queries (delete_rule, columns) — the version pointer alone lies (2026-04-17 lesson, bitten again). One-off jobs are also paid-tier; SSH needs a registered key. Data backfills (e.g. scripts/backfill_dessert_fuel_scores.py) ship the same way: dry-run first, --apply, verify with SQL.
+
+### eas update from a dev checkout needs env hygiene
+
+`.env` and `.env.local` both carry http:// LAN API URLs and EXPO_PUBLIC_STUB_BILLING=true; expo export for an OTA reads them and either throws (Config.ts HTTPS guard — good guard!) or worse, would ship stub billing. Procedure: move BOTH aside, publish with explicit `EXPO_PUBLIC_API_URL=https://api.fuelgood.app/api EXPO_PUBLIC_APP_ENV=production`, restore after. api.fuelgood.app is the live custom domain for fuel-good.onrender.com.
+
+---
+
 ## 2026-07-14 (pass-8 remediation)
 
 ### Capture harnesses need a foreground assertion, not just md5 checks

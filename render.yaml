@@ -6,11 +6,17 @@
 #
 # Last synced with live production: 2026-04-06
 #
-# IMPORTANT – migration behaviour:
+# IMPORTANT – migration behaviour (updated 2026-07-15):
 #   buildCommand  installs deps only (NO alembic)
-#   preDeployCommand runs alembic upgrade heads against the live DB
-# This ensures migrations always execute against the real DATABASE_URL
-# rather than the ephemeral build environment.
+#   preDeployCommand below is ASPIRATIONAL — pre-deploy commands require a
+#   paid Render instance tier and are NOT configured on the live service.
+#   Migrations therefore DO NOT run automatically on deploy. After every
+#   deploy that includes new alembic revisions, run them manually:
+#     cd backend && DATABASE_URL=<prod url from Render env> \
+#       PYTHONPATH=. venv/bin/alembic upgrade heads
+#   then verify the actual schema via information_schema (never trust the
+#   version pointer alone — see tasks/lessons.md 2026-04-17 and 2026-07-15).
+#   The 2026-07-15 deploy shipped 5 unapplied revisions this way.
 #
 # 2026-04-30: switched `head` → `heads` (plural) to match backend/start.sh and
 # tolerate prod's alembic_version table having multiple recorded heads from past
