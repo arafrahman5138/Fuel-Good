@@ -65,7 +65,11 @@ function WeeklyRecapBannerImpl({ userId }: WeeklyRecapBannerProps) {
       style={[
         styles.banner,
         {
-          backgroundColor: goalMet ? '#22C55E14' : theme.card.background,
+          // surfaceElevated (not card.background): the card surface is nearly
+          // the same value as the dark page background (#141419 on #0A0A0F),
+          // so the banner disappeared in dark mode. Elevated surface + the
+          // subtle border separates it in dark and stays correct in light.
+          backgroundColor: goalMet ? '#22C55E14' : theme.surfaceElevated,
           borderColor: goalMet ? '#22C55E40' : theme.border,
         },
       ]}

@@ -7,8 +7,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, useIsDark } from '../hooks/useTheme';
 import { isReduceMotionEnabled } from '../hooks/useAnimations';
+
+/**
+ * Canonical dark-mode ring-track color. theme.surfaceHighlight (#24242E) is
+ * near-invisible against the #0A0A0F dark background, so empty rings looked
+ * like floating numbers. Callers that override `trackColor` in dark mode
+ * should use this same value so every ring track reads identically.
+ */
+export const DARK_RING_TRACK = 'rgba(255,255,255,0.14)';
 
 const FUEL_TIERS = [
   { min: 90, label: 'Elite', color: '#22C55E', icon: 'leaf' as const },
@@ -60,6 +68,7 @@ export function FuelScoreRing({
   emptyStateColor = '#94A3B8', // slate — neutral cool for empty state
 }: FuelScoreRingProps) {
   const theme = useTheme();
+  const isDark = useIsDark();
   const tierCfg = getTierConfig(score);
   const borderWidth = Math.max(6, size * 0.065);
   const innerSize = size - borderWidth * 2;
@@ -120,7 +129,10 @@ export function FuelScoreRing({
     extrapolate: 'clamp',
   });
 
-  const resolvedTrack = trackColor ?? theme.surfaceHighlight;
+  // Dark mode: surfaceHighlight is barely distinguishable from the app's
+  // near-black background, so an empty ring's track vanished. Use the shared
+  // DARK_RING_TRACK so the empty state reads as an intentional track.
+  const resolvedTrack = trackColor ?? (isDark ? DARK_RING_TRACK : theme.surfaceHighlight);
 
   // Active ring color: fuel color or MES color when toggled.
   // Pass-5 F4: when no data has been logged (score === 0 and not toggled to MES),
@@ -232,7 +244,12 @@ export function FuelScoreRing({
               style={{ marginBottom: 1 }}
             />
           )}
+          {/* F5 (April Dynamic Type audit pattern — see chat header): the ring
+              is a fixed-size circle, so unbounded XXXL text overflowed it.
+              Scale with the user's setting but cap at 1.4x. */}
           <Text
+            allowFontScaling
+            maxFontSizeMultiplier={1.4}
             style={[
               styles.score,
               { color: activeRingColor, fontSize: Math.max(18, size * 0.22) },
@@ -242,6 +259,8 @@ export function FuelScoreRing({
           </Text>
           {showLabel && (
             <Text
+              allowFontScaling
+              maxFontSizeMultiplier={1.4}
               style={[
                 styles.label,
                 {

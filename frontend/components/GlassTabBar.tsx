@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
@@ -27,7 +27,7 @@ import * as Haptics from 'expo-haptics';
 /** Route names to exclude from the visible pill. */
 const HIDDEN_ROUTES = new Set(['profile']);
 const FLOATING_BAR_HEIGHT = 64;
-const PLUS_BUTTON_SIZE = 62;
+const PLUS_BUTTON_SIZE = 64;
 const CHARCOAL = '#26282B';
 const BUBBLE_SLOT_INSET = 5;
 
@@ -61,6 +61,21 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
+
+  // F6 (QA): the quick-action overlay could stay wedged open after a
+  // navigation the menu didn't initiate (deep links, push-notification
+  // routing), swallowing tab taps behind the modal backdrop. Close the
+  // menu whenever the current route changes for any reason.
+  const pathname = usePathname();
+  const prevPathname = useRef(pathname);
+  useEffect(() => {
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
+      setShowAddMenu(false);
+      plusRotation.setValue(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Filter out hidden routes (profile, etc.)
   const visibleRoutes = state.routes.filter((r) => {
@@ -305,20 +320,26 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         <Animated.View style={[plusPress.animatedStyle, { transform: [{ scale: plusScale }] }]}>
           <TouchableOpacity
             testID="tab-plus"
-            style={[
-              styles.plusButton,
-              plusShadow,
-              {
-                backgroundColor: plusBg,
-                borderColor: plusBorder,
-              },
-            ]}
+            style={[styles.plusButton, plusShadow]}
             activeOpacity={0.7}
             onPress={handlePlusPress}
             onPressIn={plusPress.onPressIn}
             onPressOut={plusPress.onPressOut}
-            accessibilityLabel="Open quick actions"
+            accessibilityLabel={showAddMenu ? 'Close quick actions' : 'Open quick actions'}
+            accessibilityState={{ expanded: showAddMenu }}
           >
+            {/* Same glass treatment as the main pill so the FAB reads attached */}
+            <BlurView
+              intensity={Platform.OS === 'ios' ? (isDark ? 80 : 50) : 100}
+              tint={blurTint}
+              style={StyleSheet.absoluteFill}
+            />
+            <View
+              style={[
+                styles.plusTintOverlay,
+                { backgroundColor: plusBg, borderColor: plusBorder },
+              ]}
+            />
             <Animated.View style={{ transform: [{ rotate: plusRotateDeg }] }}>
               <Ionicons name="add" size={28} color={plusIconColor} />
             </Animated.View>
@@ -418,7 +439,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    paddingLeft: Spacing.md,
+    // Extra right inset so the circular FAB clears the screen edge
+    paddingRight: Spacing.lg,
   },
   row: {
     flexDirection: 'row',
@@ -474,6 +497,11 @@ const styles = StyleSheet.create({
     borderRadius: PLUS_BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  plusTintOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: PLUS_BUTTON_SIZE / 2,
     borderWidth: 1,
   },
   menuBackdrop: {

@@ -268,14 +268,25 @@ export default function LoginScreen() {
               />
             </LinearGradient>
           </View>
-          <Text style={[styles.appName, { color: theme.text }]}>{APP_NAME}</Text>
-          <Text style={[styles.tagline, { color: theme.textSecondary }]}>
+          <Text
+            style={[styles.appName, { color: theme.text }]}
+            maxFontSizeMultiplier={1.4} // = MAX_FONT_MULTIPLIER.display
+          >
+            {APP_NAME}
+          </Text>
+          <Text
+            style={[styles.tagline, { color: theme.textSecondary }]}
+            maxFontSizeMultiplier={1.8} // = MAX_FONT_MULTIPLIER.caption
+          >
             Eat real. Feel amazing.
           </Text>
         </View>
 
         <View style={styles.formSection}>
-          <Text style={[styles.formTitle, { color: theme.text }]}>
+          <Text
+            style={[styles.formTitle, { color: theme.text }]}
+            maxFontSizeMultiplier={1.6} // = MAX_FONT_MULTIPLIER.title
+          >
             {isRegister ? 'Create Account' : 'Welcome Back'}
           </Text>
 

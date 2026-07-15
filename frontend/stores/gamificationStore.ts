@@ -65,6 +65,9 @@ interface GamificationState {
 
   // Convenience computed
   completionPct: number;
+
+  /** Restore initial state — called on logout so the next account starts clean. */
+  reset: () => void;
 }
 
 export const useGamificationStore = create<GamificationState>((set, get) => ({
@@ -188,4 +191,17 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
       return [];
     }
   },
+
+  // ─── Reset (logout) ───
+  reset: () =>
+    set({
+      quests: [],
+      questsLoaded: false,
+      stats: null,
+      scoreHistory: [],
+      nutritionStreak: 0,
+      nutritionLongestStreak: 0,
+      completionPct: 0,
+      lastStreakSync: null,
+    }),
 }));

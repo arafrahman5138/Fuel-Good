@@ -172,6 +172,118 @@ const FALLBACK_MEALS: MealSuggestion[] = [
   },
 ];
 
+// E6 fix (QA: vegetarian persona shown salmon + chicken at the reveal):
+// plant-based static fallbacks used when the catalog can't serve a
+// restricted diet. All four are vegan-safe so they cover vegan,
+// vegetarian, and pescatarian alike.
+const FALLBACK_MEALS_PLANT: MealSuggestion[] = [
+  {
+    recipe_id: 'fbv-1',
+    title: 'Chickpea & Quinoa Power Bowl',
+    meal_score: 87,
+    meal_tier: 'optimal',
+    projected_daily_score: 83,
+    projected_daily_tier: 'good',
+    protein_g: 24,
+    fiber_g: 14,
+    sugar_g: 6,
+    calories: 510,
+    cuisine: 'Mediterranean',
+    total_time_min: 25,
+  },
+  {
+    recipe_id: 'fbv-2',
+    title: 'Lentil & Roasted Veggie Plate',
+    meal_score: 86,
+    meal_tier: 'optimal',
+    projected_daily_score: 82,
+    projected_daily_tier: 'good',
+    protein_g: 22,
+    fiber_g: 16,
+    sugar_g: 7,
+    calories: 470,
+    cuisine: 'Mediterranean',
+    total_time_min: 30,
+  },
+  {
+    recipe_id: 'fbv-3',
+    title: 'Tofu Stir-Fry with Brown Rice',
+    meal_score: 85,
+    meal_tier: 'optimal',
+    projected_daily_score: 82,
+    projected_daily_tier: 'good',
+    protein_g: 28,
+    fiber_g: 9,
+    sugar_g: 8,
+    calories: 540,
+    cuisine: 'Asian',
+    total_time_min: 25,
+  },
+  {
+    recipe_id: 'fb-4',
+    title: 'Dark Chocolate Avocado Mousse',
+    meal_score: 76,
+    meal_tier: 'good',
+    projected_daily_score: 80,
+    projected_daily_tier: 'good',
+    protein_g: 6,
+    fiber_g: 8,
+    sugar_g: 12,
+    calories: 280,
+    cuisine: 'Dessert',
+    total_time_min: 10,
+  },
+];
+
+// ─── E6: hard client-side diet post-filter ─────────────────────────
+// Root cause of the QA finding was twofold:
+//  1. /metabolic/meal-suggestions scores ALL recipes against the energy
+//     budget with zero dietary filtering, so when it returns results a
+//     vegetarian can be shown salmon/chicken; and
+//  2. when that endpoint *throws* (it's premium-gated — onboarding users
+//     get a 402), the old catch jumped straight to the meat-heavy static
+//     FALLBACK_MEALS, skipping the diet-filtered /recipes/browse path.
+// Regardless of which path produced a meal, everything now passes through
+// this conflict check before it can appear on the reveal screen.
+
+const MEAT_PROTEIN_TYPES = new Set(['chicken', 'beef', 'lamb', 'pork', 'turkey', 'duck', 'bacon', 'ham', 'meat']);
+const SEAFOOD_PROTEIN_TYPES = new Set(['salmon', 'shrimp', 'other_fish', 'fish', 'tuna', 'cod', 'shellfish', 'seafood', 'crab', 'scallop']);
+const MEAT_TITLE_WORDS = ['chicken', 'beef', 'steak', 'lamb', 'pork', 'bacon', 'ham', 'turkey', 'sausage', 'meatball', 'brisket', 'ribs'];
+const SEAFOOD_TITLE_WORDS = ['salmon', 'shrimp', 'tuna', 'cod', 'fish', 'prawn', 'crab', 'scallop', 'anchov', 'sardine', 'halibut', 'tilapia'];
+const VEGAN_TITLE_WORDS = ['egg', 'cheese', 'yogurt', 'butter', 'milk', 'honey', 'cream'];
+
+/**
+ * True when a meal conflicts with the selected diet. Uses structured
+ * dietary_tags / protein_type when available (browse results) and falls
+ * back to title keywords (meal-suggestion results carry no tags).
+ */
+function conflictsWithDiet(
+  diet: string | undefined,
+  meal: { title?: string | null; proteinTypes?: string[] | null; dietaryTags?: string[] | null },
+): boolean {
+  const d = String(diet || '').toLowerCase();
+  if (!['vegetarian', 'vegan', 'pescatarian'].includes(d)) return false;
+
+  const tags = (meal.dietaryTags || []).map((t) => String(t).toLowerCase());
+  // An explicit matching tag clears the meal ('vegan' also satisfies
+  // vegetarian/pescatarian; 'vegetarian' also satisfies pescatarian).
+  if (tags.includes('vegan')) return false;
+  if (tags.includes('vegetarian') && d !== 'vegan') return false;
+  if (tags.includes('pescatarian') && d === 'pescatarian') return false;
+
+  const proteins = (meal.proteinTypes || []).map((p) => String(p).toLowerCase());
+  const hasMeat = proteins.some((p) => MEAT_PROTEIN_TYPES.has(p));
+  const hasSeafood = proteins.some((p) => SEAFOOD_PROTEIN_TYPES.has(p));
+  if (hasMeat) return true;
+  if (hasSeafood && d !== 'pescatarian') return true;
+
+  const title = String(meal.title || '').toLowerCase();
+  if (MEAT_TITLE_WORDS.some((w) => title.includes(w))) return true;
+  if (d !== 'pescatarian' && SEAFOOD_TITLE_WORDS.some((w) => title.includes(w))) return true;
+  if (d === 'vegan' && VEGAN_TITLE_WORDS.some((w) => title.includes(w))) return true;
+  return false;
+}
+
 // ─── Component ─────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
@@ -360,6 +472,20 @@ export default function OnboardingScreen() {
     }
   };
 
+  // E6: hide animal proteins that contradict the diet picked on step 7.
+  // Vegetarian keeps eggs + vegetarian; vegan keeps vegetarian only.
+  // Applied to both the "like" and "avoid" selectors on step 8.
+  const proteinOptionsForDiet = useMemo(() => {
+    const diets = (dietary || []).map((d) => String(d).toLowerCase());
+    if (diets.includes('vegan')) {
+      return PROTEIN_OPTIONS.filter((o) => o.id === 'vegetarian');
+    }
+    if (diets.includes('vegetarian')) {
+      return PROTEIN_OPTIONS.filter((o) => o.id === 'eggs' || o.id === 'vegetarian');
+    }
+    return PROTEIN_OPTIONS;
+  }, [dietary]);
+
   const canContinue =
     step === 0 ||
     (step === 1 && motivations.length > 0) ||
@@ -515,13 +641,33 @@ export default function OnboardingScreen() {
       // these as filters, not hard requirements, so if the catalog can't
       // satisfy (e.g., only 1 salmon breakfast exists) it still returns
       // something rather than an empty array.
+      // E6 restructure: the old shape put getMealSuggestions and the browse
+      // fallback in ONE try/catch, so when the premium-gated suggestions
+      // endpoint threw (402 during onboarding) we jumped straight to the
+      // static FALLBACK_MEALS — salmon + chicken for everyone, including
+      // vegetarians. Each network call now fails independently, and every
+      // candidate (suggestion, browse item, or static fallback) must pass
+      // the conflictsWithDiet hard filter before it can be shown.
       try {
-        const suggestions = await metabolicApi.getMealSuggestions(undefined, 4);
-        if (!cancelled && suggestions && suggestions.length > 0) {
-          setMealSuggestions(suggestions.slice(0, 4));
-        } else if (!cancelled) {
-          const nonRestrictive = new Set(['none', 'no restrictions', '']);
-          const primaryDiet = (dietary || []).find((d) => !nonRestrictive.has(String(d).toLowerCase()));
+        const nonRestrictive = new Set(['none', 'no restrictions', '']);
+        // `dietary` holds lowercase option ids from DIETARY_OPTIONS
+        // (e.g. 'vegetarian'), which is exactly what browse expects.
+        const primaryDiet = (dietary || []).find((d) => !nonRestrictive.has(String(d).toLowerCase()));
+        const dietKey = String(primaryDiet || '').toLowerCase();
+
+        // 1) Personalized suggestions — diet-unaware on the backend, so
+        //    hard-filter by title keywords (the response carries no tags).
+        const suggestions = await metabolicApi
+          .getMealSuggestions(undefined, 8)
+          .catch(() => null);
+        const safeSuggestions = (suggestions || []).filter(
+          (m: any) => !conflictsWithDiet(dietKey, { title: m?.title })
+        );
+
+        // 2) Diet-filtered browse pool — used as primary fallback AND as
+        //    backfill when the filtered suggestions come up short (<3).
+        let browseMeals: MealSuggestion[] = [];
+        if (safeSuggestions.length < 3 && !cancelled) {
           // Cap at 3 liked proteins so the filter doesn't over-constrain and
           // drop the result set to 0. Most onboarding users pick 3–5 proteins.
           const proteinFilter = (likedProteins || []).slice(0, 3).join(',') || undefined;
@@ -538,20 +684,22 @@ export default function OnboardingScreen() {
           // R1: the browse API returns recipes whose protein_type matches
           // ANY of the requested liked-proteins (OR semantics), and the
           // default sort promotes the most common protein (chicken dominates
-          // the current catalog). That means Alex asking for chicken / salmon
-          // / shrimp / eggs gets back ~20 items with chicken in the top 4.
-          // Re-rank client-side so the reveal screen surfaces items that hit
-          // MORE of the user's liked proteins before falling back to defaults.
-          // Also drop anything whose protein_type includes a disliked protein.
+          // the current catalog). Re-rank client-side so the reveal surfaces
+          // items that hit MORE of the user's liked proteins. Also drop
+          // anything with a disliked protein or a diet conflict (browse's
+          // dietary_tags param is a soft filter — enforce it hard here).
           const rawItems = Array.isArray(browse?.items) ? browse.items : [];
           const disliked = new Set((dislikedProteins || []).map((p: string) => p.toLowerCase()));
           const likedSet = new Set((likedProteins || []).map((p: string) => p.toLowerCase()));
-          const filtered = disliked.size
-            ? rawItems.filter((r: any) => {
-                const pts = Array.isArray(r?.protein_type) ? r.protein_type : [];
-                return !pts.some((p: string) => disliked.has(String(p).toLowerCase()));
-              })
-            : rawItems;
+          const filtered = rawItems.filter((r: any) => {
+            const pts = Array.isArray(r?.protein_type) ? r.protein_type : [];
+            if (pts.some((p: string) => disliked.has(String(p).toLowerCase()))) return false;
+            return !conflictsWithDiet(dietKey, {
+              title: r?.title,
+              proteinTypes: pts,
+              dietaryTags: Array.isArray(r?.dietary_tags) ? r.dietary_tags : [],
+            });
+          });
           const items = filtered
             .map((r: any) => {
               const pts = Array.isArray(r?.protein_type) ? r.protein_type : [];
@@ -569,30 +717,53 @@ export default function OnboardingScreen() {
             })
             .sort((a: any, b: any) => b.score - a.score)
             .map((entry: any) => entry.recipe);
-          if (items.length > 0) {
-            setMealSuggestions(
-              items.slice(0, 4).map((r: any, idx: number) => ({
-                recipe_id: r.id,
-                title: r.title,
-                description: r.description,
-                meal_score: r?.nutrition_info?.mes_score ?? 85,
-                meal_tier: 'good',
-                projected_daily_score: 80,
-                projected_daily_tier: 'good',
-                protein_g: r?.nutrition_info?.protein ?? 0,
-                fiber_g: r?.nutrition_info?.fiber ?? 0,
-                sugar_g: r?.nutrition_info?.sugar ?? 0,
-                calories: r?.nutrition_info?.calories ?? 0,
-                cuisine: r.cuisine ?? null,
-                total_time_min: r.total_time_min ?? null,
-              }))
-            );
-          } else {
-            setMealSuggestions(FALLBACK_MEALS);
+          browseMeals = items.map((r: any) => ({
+            recipe_id: r.id,
+            title: r.title,
+            description: r.description,
+            meal_score: r?.nutrition_info?.mes_score ?? 85,
+            meal_tier: 'good',
+            projected_daily_score: 80,
+            projected_daily_tier: 'good',
+            protein_g: r?.nutrition_info?.protein ?? 0,
+            fiber_g: r?.nutrition_info?.fiber ?? 0,
+            sugar_g: r?.nutrition_info?.sugar ?? 0,
+            calories: r?.nutrition_info?.calories ?? 0,
+            cuisine: r.cuisine ?? null,
+            total_time_min: r.total_time_min ?? null,
+          } as MealSuggestion));
+        }
+
+        if (!cancelled) {
+          // Combine: filtered suggestions first, backfilled from the
+          // diet-filtered browse pool, then diet-appropriate static
+          // fallbacks — every source already passed the hard filter.
+          const staticPool = ['vegetarian', 'vegan', 'pescatarian'].includes(dietKey)
+            ? FALLBACK_MEALS_PLANT
+            : FALLBACK_MEALS;
+          const combined: MealSuggestion[] = [...safeSuggestions.slice(0, 4)];
+          const seen = new Set(combined.map((m) => m.recipe_id));
+          for (const pool of [browseMeals, staticPool]) {
+            for (const m of pool) {
+              if (combined.length >= 4) break;
+              if (seen.has(m.recipe_id)) continue;
+              seen.add(m.recipe_id);
+              combined.push(m);
+            }
           }
+          setMealSuggestions(combined.length > 0 ? combined.slice(0, 4) : staticPool);
         }
       } catch {
-        if (!cancelled) setMealSuggestions(FALLBACK_MEALS);
+        if (!cancelled) {
+          const dietKeyFallback = String(
+            (dietary || []).find((d) => !['none', 'no restrictions', ''].includes(String(d).toLowerCase())) || ''
+          ).toLowerCase();
+          setMealSuggestions(
+            ['vegetarian', 'vegan', 'pescatarian'].includes(dietKeyFallback)
+              ? FALLBACK_MEALS_PLANT
+              : FALLBACK_MEALS
+          );
+        }
       }
 
       if (!cancelled) {
@@ -692,7 +863,7 @@ export default function OnboardingScreen() {
             </Text>
             {isDessert && (
               <View style={[styles.flexTag, { backgroundColor: '#F59E0B18' }]}>
-                <Text style={styles.flexTagText}>FLEX</Text>
+                <Text style={styles.flexTagText}>ROOM</Text>
               </View>
             )}
           </View>
@@ -894,7 +1065,7 @@ export default function OnboardingScreen() {
                       </View>
                       <Text style={[styles.weekDotLabel, { color: theme.textTertiary }]}>{day}</Text>
                       {isFlex && (
-                        <Text style={[styles.weekDotTag, { color: '#F59E0B' }]}>Flex</Text>
+                        <Text style={[styles.weekDotTag, { color: '#F59E0B' }]}>Room</Text>
                       )}
                     </View>
                   );
@@ -911,7 +1082,7 @@ export default function OnboardingScreen() {
               <View style={[styles.philosophyCard, { backgroundColor: theme.surfaceHighlight }]}>
                 <Ionicons name="trending-up" size={18} color={theme.primary} />
                 <Text style={[styles.philosophyCardText, { color: theme.textSecondary }]}>
-                  Users with an 80+ avg score still enjoy 4–6 off-baseline meals per week.
+                  Users with an 80+ avg score still enjoy 4–6 room-for-life meals per week.
                 </Text>
               </View>
             </View>
@@ -956,7 +1127,7 @@ export default function OnboardingScreen() {
             <>
               <ChipSelector
                 label="Proteins you like"
-                options={PROTEIN_OPTIONS}
+                options={proteinOptionsForDiet}
                 selected={likedProteins}
                 onToggle={(id) =>
                   toggleProtein(likedProteins, setLikedProteins, dislikedProteins, setDislikedProteins, id)
@@ -964,7 +1135,7 @@ export default function OnboardingScreen() {
               />
               <ChipSelector
                 label="Proteins to avoid"
-                options={PROTEIN_OPTIONS}
+                options={proteinOptionsForDiet}
                 selected={dislikedProteins}
                 onToggle={(id) =>
                   toggleProtein(dislikedProteins, setDislikedProteins, likedProteins, setLikedProteins, id)

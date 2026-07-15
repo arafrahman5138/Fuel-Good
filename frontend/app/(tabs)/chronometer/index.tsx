@@ -23,6 +23,7 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Card } from '../../../components/GradientCard';
 import { MetabolicRing } from '../../../components/MetabolicRing';
 import { EnergyBudgetCard } from '../../../components/EnergyBudgetCard';
+import { PremiumUpsellCard } from '../../../components/PremiumUpsellCard';
 import { MealMESBadge } from '../../../components/MealMESBadge';
 import { MealScoreSheet } from '../../../components/MealScoreSheet';
 import { SingleMealRow } from '../../../components/CompositeMealCard';
@@ -91,6 +92,7 @@ const MACROS = [
 export default function ChronometerScreen() {
   const theme = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
+  const hasPremiumAccess = useAuthStore((s) => s.hasPremiumAccess);
   const themeMode = useThemeStore((s) => s.mode);
   const systemScheme = useColorScheme();
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemScheme !== 'light');
@@ -378,19 +380,24 @@ export default function ChronometerScreen() {
     extrapolate: 'clamp',
   });
 
+  // E1: keep missing targets as null (not `|| 0`) so TodayProgressCard can
+  // tell "targets never set up" apart from an explicit 0 target.
   const macros = useMemo(() => {
     const c = daily?.comparison || {};
     return MACROS.map((m) => ({
       ...m,
       consumed: Number(c[m.key]?.consumed || 0),
-      target: Number(c[m.key]?.target || 0),
+      target: c[m.key]?.target != null ? Number(c[m.key].target) : null,
       pct: Math.min(100, Number(c[m.key]?.pct || 0)),
     }));
   }, [daily]);
 
   const calories = useMemo(() => {
     const c = daily?.comparison?.calories;
-    return { consumed: Number(c?.consumed || 0), target: Number(c?.target || 0) };
+    return {
+      consumed: Number(c?.consumed || 0),
+      target: c?.target != null ? Number(c.target) : null,
+    };
   }, [daily]);
   const fatMacroTarget = useMemo(() => {
     const target = Number(daily?.comparison?.fat?.target || 0);
@@ -711,7 +718,14 @@ export default function ChronometerScreen() {
             {/* ════════════════════════════════════════════
                  METABOLIC VIEW
                ════════════════════════════════════════════ */}
-            {viewMode === 'metabolic' && (
+            {viewMode === 'metabolic' && !hasPremiumAccess && (
+              <PremiumUpsellCard
+                feature="metabolic"
+                title="Metabolic Score is a Premium feature"
+                body="See how efficiently every meal fuels you — daily and weekly Metabolic Scores, budgets, and personalized coaching."
+              />
+            )}
+            {viewMode === 'metabolic' && hasPremiumAccess && (
               <>
             {shouldShowProfilePrompt && (
               <TouchableOpacity
@@ -778,33 +792,41 @@ export default function ChronometerScreen() {
             )}
 
             {fuelWeekly && fuelSettings && (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -Spacing.sm, marginBottom: Spacing.md, paddingHorizontal: 4 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -Spacing.sm, marginBottom: Spacing.md, paddingHorizontal: 4, gap: Spacing.sm }}>
                 <TouchableOpacity
                   onPress={() => router.push('/(tabs)/(home)/flex-onboarding' as any)}
                   accessibilityRole="button"
                   accessibilityLabel="Change your real-food goal"
+                  activeOpacity={0.7}
+                  style={[styles.fuelSettingsBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
                 >
-                  <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textDecorationLine: 'underline' }}>
+                  <Text style={[styles.fuelSettingsBtnText, { color: theme.textSecondary }]}>
                     Change goal ({fuelSettings.clean_eating_pct ?? 80}%)
                   </Text>
+                  <Ionicons name="chevron-forward" size={12} color={theme.textTertiary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setFuelSettingsVisible(true)}
                   accessibilityRole="button"
                   accessibilityLabel="Open fuel settings"
+                  activeOpacity={0.7}
+                  style={[styles.fuelSettingsBtn, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}
                 >
-                  <Text style={{ color: theme.textSecondary, fontSize: FontSize.xs, fontWeight: '600', textDecorationLine: 'underline' }}>
+                  <Text style={[styles.fuelSettingsBtnText, { color: theme.textSecondary }]}>
                     Score settings
                   </Text>
+                  <Ionicons name="chevron-forward" size={12} color={theme.textTertiary} />
                 </TouchableOpacity>
               </View>
             )}
 
-            {fuelStreak && fuelStreak.current_streak > 0 && (
+            {fuelStreak && (fuelStreak.current_streak > 0 || (fuelStreak.fuel_target_streak ?? 0) > 0) && (
               <View style={{ marginBottom: Spacing.md }}>
                 <FuelStreakBadge
                   currentStreak={fuelStreak.current_streak}
                   longestStreak={fuelStreak.longest_streak}
+                  weeksAtGoal={fuelStreak.fuel_target_streak}
+                  longestWeeksAtGoal={fuelStreak.fuel_target_longest}
                 />
               </View>
             )}
@@ -853,9 +875,9 @@ export default function ChronometerScreen() {
               fuelTarget={fuelSettings?.fuel_target}
               todayFuelScore={Math.round(fuelDaily?.avg_fuel_score ?? 0)}
               calories={calories}
-              protein={{ consumed: Math.round(macros.find((m: any) => m.key === 'protein')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'protein')?.target ?? 0) }}
-              carbs={{ consumed: Math.round(macros.find((m: any) => m.key === 'carbs')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'carbs')?.target ?? 0) }}
-              fat={{ consumed: Math.round(macros.find((m: any) => m.key === 'fat')?.consumed ?? 0), target: Math.round(macros.find((m: any) => m.key === 'fat')?.target ?? 0) }}
+              protein={{ consumed: Math.round(macros.find((m: any) => m.key === 'protein')?.consumed ?? 0), target: (() => { const t = macros.find((m: any) => m.key === 'protein')?.target; return t != null ? Math.round(t) : null; })() }}
+              carbs={{ consumed: Math.round(macros.find((m: any) => m.key === 'carbs')?.consumed ?? 0), target: (() => { const t = macros.find((m: any) => m.key === 'carbs')?.target; return t != null ? Math.round(t) : null; })() }}
+              fat={{ consumed: Math.round(macros.find((m: any) => m.key === 'fat')?.consumed ?? 0), target: (() => { const t = macros.find((m: any) => m.key === 'fat')?.target; return t != null ? Math.round(t) : null; })() }}
               title={(() => {
                 if (isSelectedToday) return "Today's Fuel";
                 // Check if within current week (within 6 days of today)
@@ -873,7 +895,7 @@ export default function ChronometerScreen() {
             />}
 
             {/* ── Metabolic tab: compact meal list ── */}
-            {viewMode === 'metabolic' && (
+            {viewMode === 'metabolic' && hasPremiumAccess && (
               <View style={{ marginBottom: Spacing.md, marginTop: Spacing.lg }}>
                 {/* Compact meal list */}
                 <Card style={{ overflow: 'hidden' }}>
@@ -1252,7 +1274,7 @@ export default function ChronometerScreen() {
             {/* ════════════════════════════════════════════
                  METABOLIC VIEW (continued)
                ════════════════════════════════════════════ */}
-            {viewMode === 'metabolic' && (
+            {viewMode === 'metabolic' && hasPremiumAccess && (
               <>
             {/* ── Metabolic Coach ── */}
             <MetabolicCoach
@@ -1289,6 +1311,7 @@ export default function ChronometerScreen() {
         />
       )}
 
+      {/* AUDIT-DEFERRED(pass-8): duplicate calendar implementations — FuelCalendarHeatMap vs chronometer inline month view; consolidate in a future pass. */}
       <Modal visible={showCalendar} transparent animationType="fade" onRequestClose={() => setShowCalendar(false)}>
         <View style={styles.calendarBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCalendar(false)} />
@@ -1490,6 +1513,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
+  },
+  fuelSettingsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  fuelSettingsBtnText: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
   },
   stickyChronoHeader: {
     position: 'absolute',

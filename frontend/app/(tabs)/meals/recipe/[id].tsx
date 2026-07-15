@@ -31,7 +31,7 @@ import { usePlateStore } from '../../../../stores/plateStore';
 import { MetabolicRing } from '../../../../components/MetabolicRing';
 import { MealMESBadge } from '../../../../components/MealMESBadge';
 import { getTierConfig } from '../../../../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Layout, Spacing } from '../../../../constants/Colors';
+import { BorderRadius, FontSize, IngredientCategoryColors, Layout, MacroColors, ScoreColors, Spacing } from '../../../../constants/Colors';
 import { HEALTH_BENEFIT_OPTIONS } from '../../../../constants/Config';
 import { cleanRecipeDescription } from '../../../../utils/recipeDescription';
 import { formatIngredientDisplayLine } from '../../../../utils/ingredientFormat';
@@ -121,22 +121,15 @@ interface MESPreviewResult {
   } | null;
 }
 
-const MACRO_COLORS = {
-  protein: '#22C55E',
-  carbs: '#3B82F6',
-  fat: '#F59E0B',
-  fiber: '#8B5CF6',
-};
-
 const INGREDIENT_CATEGORIES: Record<string, { label: string; icon: string; color: string; order: number }> = {
-  protein: { label: 'Protein', icon: 'fish-outline', color: '#EF4444', order: 0 },
-  produce: { label: 'Produce', icon: 'leaf-outline', color: '#22C55E', order: 1 },
-  dairy:   { label: 'Dairy', icon: 'water-outline', color: '#3B82F6', order: 2 },
-  grains:  { label: 'Grains', icon: 'nutrition-outline', color: '#F59E0B', order: 3 },
-  fats:    { label: 'Fats & Oils', icon: 'flask-outline', color: '#A855F7', order: 4 },
-  spices:  { label: 'Spices & Seasonings', icon: 'flame-outline', color: '#F97316', order: 5 },
-  sweetener: { label: 'Sweeteners', icon: 'cafe-outline', color: '#EC4899', order: 6 },
-  other:   { label: 'Other', icon: 'cube-outline', color: '#6B7280', order: 7 },
+  protein: { label: 'Protein', icon: 'fish-outline', color: IngredientCategoryColors.protein, order: 0 },
+  produce: { label: 'Produce', icon: 'leaf-outline', color: IngredientCategoryColors.produce, order: 1 },
+  dairy:   { label: 'Dairy', icon: 'water-outline', color: IngredientCategoryColors.dairy, order: 2 },
+  grains:  { label: 'Grains', icon: 'nutrition-outline', color: IngredientCategoryColors.grains, order: 3 },
+  fats:    { label: 'Fats & Oils', icon: 'flask-outline', color: IngredientCategoryColors.fats, order: 4 },
+  spices:  { label: 'Spices & Seasonings', icon: 'flame-outline', color: IngredientCategoryColors.spices, order: 5 },
+  sweetener: { label: 'Sweeteners', icon: 'cafe-outline', color: IngredientCategoryColors.sweetener, order: 6 },
+  other:   { label: 'Other', icon: 'cube-outline', color: IngredientCategoryColors.other, order: 7 },
 };
 
 const ROLE_BADGE_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string; bgDark: string; colorDark: string }> = {
@@ -576,15 +569,15 @@ export default function RecipeDetailScreen() {
   const mesBaseScore = storedDisplayMes ?? mesPreview?.meal_score.display_score ?? mesPreview?.meal_score.total_score ?? null;
   const mesBreakdown = hasStoredDisplayMes && storedBreakdown
     ? [
-        { label: 'Protein', value: Number(storedBreakdown.protein_score || 0), color: '#22C55E' },
-        { label: 'Fiber', value: Number(storedBreakdown.fiber_score || 0), color: '#8B5CF6' },
-        { label: 'Carbs', value: Number(storedBreakdown.sugar_score || 0), color: '#F59E0B' },
+        { label: 'Protein', value: Number(storedBreakdown.protein_score || 0), color: MacroColors.protein },
+        { label: 'Fiber', value: Number(storedBreakdown.fiber_score || 0), color: MacroColors.fiber },
+        { label: 'Carbs', value: Number(storedBreakdown.sugar_score || 0), color: MacroColors.carbs },
       ]
     : mesPreview
       ? [
-          { label: 'Protein', value: mesPreview.meal_score.protein_score, color: '#22C55E' },
-          { label: 'Fiber', value: mesPreview.meal_score.fiber_score, color: '#8B5CF6' },
-          { label: 'Carbs', value: mesPreview.meal_score.sugar_score, color: '#F59E0B' },
+          { label: 'Protein', value: mesPreview.meal_score.protein_score, color: MacroColors.protein },
+          { label: 'Fiber', value: mesPreview.meal_score.fiber_score, color: MacroColors.fiber },
+          { label: 'Carbs', value: mesPreview.meal_score.sugar_score, color: MacroColors.carbs },
         ]
       : [];
   const baseMesImpactScore = hasStoredDisplayMes ? storedDisplayMes : (baseMES?.score ?? null);
@@ -718,10 +711,10 @@ export default function RecipeDetailScreen() {
     return text;
   })();
   const macros = [
-    { label: 'Protein', value: nutrition.protein, unit: 'g', color: MACRO_COLORS.protein },
-    { label: 'Carbs', value: nutrition.carbs, unit: 'g', color: MACRO_COLORS.carbs },
-    { label: 'Fat', value: nutrition.fat, unit: 'g', color: MACRO_COLORS.fat },
-    { label: 'Fiber', value: nutrition.fiber, unit: 'g', color: MACRO_COLORS.fiber },
+    { label: 'Protein', value: nutrition.protein, unit: 'g', color: MacroColors.protein },
+    { label: 'Carbs', value: nutrition.carbs, unit: 'g', color: MacroColors.carbs },
+    { label: 'Fat', value: nutrition.fat, unit: 'g', color: MacroColors.fat },
+    { label: 'Fiber', value: nutrition.fiber, unit: 'g', color: MacroColors.fiber },
   ].filter((m) => m.value !== undefined);
 
   const micronutrients = Object.entries(nutrition)
@@ -1069,9 +1062,9 @@ export default function RecipeDetailScreen() {
                         {Math.round(selectedSideImpactScore)}
                       </Text>
                       {selectedSide.mes_delta > 0 && (
-                        <View style={[styles.mesDeltaBadge, { backgroundColor: '#22C55E' + '20' }]}>
-                          <Ionicons name="trending-up" size={10} color="#22C55E" />
-                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#22C55E' }}>
+                        <View style={[styles.mesDeltaBadge, { backgroundColor: theme.success + '20' }]}>
+                          <Ionicons name="trending-up" size={10} color={theme.success} />
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: theme.success }}>
                             +{Math.round(selectedSide.mes_delta)}
                           </Text>
                         </View>
@@ -1423,7 +1416,7 @@ export default function RecipeDetailScreen() {
           style={{ flex: 1 }}
         >
           <LinearGradient
-            colors={logSuccess ? ['#22C55E', '#16A34A'] as const : ['#22C55E', '#059669'] as const}
+            colors={logSuccess ? [ScoreColors.good, '#16A34A'] as const : [ScoreColors.good, '#059669'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.stickyLogBtn}
@@ -1659,7 +1652,7 @@ export default function RecipeDetailScreen() {
                           fontWeight: '800',
                           color:
                             p.mes_delta > 0
-                              ? '#22C55E'
+                              ? theme.success
                               : p.mes_delta < 0
                                 ? theme.warning
                                 : theme.textTertiary,

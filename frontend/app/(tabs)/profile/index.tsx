@@ -123,6 +123,10 @@ export default function ProfileScreen() {
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const unlockedAchievements = achievements.filter((a) => a.unlocked);
+  // Backend currently returns [] for everyone (achievements are stubbed).
+  // Hide the whole achievements surface — stat row, segmented control,
+  // grid segment, and "View All" shortcut — until there is real data.
+  const hasAchievements = achievements.length > 0;
 
   // Sort: unlocked first, then locked — both grouped by category
   const sortedAchievements = [...achievements].sort((a, b) => {
@@ -204,13 +208,15 @@ export default function ProfileScreen() {
         </Animated.View>
 
         {/* ── Segmented Control ──────────────────────────────── */}
-        <View style={{ marginBottom: Spacing.lg }}>
-          <ProfileSegmentedControl active={activeSegment} onChange={setActiveSegment} />
-        </View>
+        {hasAchievements && (
+          <View style={{ marginBottom: Spacing.lg }}>
+            <ProfileSegmentedControl active={activeSegment} onChange={setActiveSegment} />
+          </View>
+        )}
 
         {/* ── Segment Content ────────────────────────────────── */}
         <Animated.View style={contentEntrance.style}>
-          {activeSegment === 'overview' ? (
+          {activeSegment === 'overview' || !hasAchievements ? (
             /* ── OVERVIEW ──────────────────────────────────────── */
             <View style={{ gap: Spacing.md }}>
               {/* Stats */}
@@ -230,14 +236,18 @@ export default function ProfileScreen() {
                   <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Total XP</Text>
                   <Text style={[styles.statRowValue, { color: theme.text }]}>{xp}</Text>
                 </View>
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                <View style={styles.statRow}>
-                  <View style={[styles.statIcon, { backgroundColor: theme.infoMuted }]}>
-                    <Ionicons name="ribbon" size={18} color={theme.info} />
-                  </View>
-                  <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Achievements</Text>
-                  <Text style={[styles.statRowValue, { color: theme.text }]}>{unlockedCount} / {achievements.length || '–'}</Text>
-                </View>
+                {hasAchievements && (
+                  <>
+                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                    <View style={styles.statRow}>
+                      <View style={[styles.statIcon, { backgroundColor: theme.infoMuted }]}>
+                        <Ionicons name="ribbon" size={18} color={theme.info} />
+                      </View>
+                      <Text style={[styles.statRowLabel, { color: theme.textSecondary }]}>Achievements</Text>
+                      <Text style={[styles.statRowValue, { color: theme.text }]}>{unlockedCount} / {achievements.length}</Text>
+                    </View>
+                  </>
+                )}
               </View>
 
               {/* Quests link */}
@@ -284,17 +294,19 @@ export default function ProfileScreen() {
               )}
 
               {/* View All Achievements shortcut */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setActiveSegment('achievements')}
-                style={[styles.viewAllBtn, { backgroundColor: theme.surfaceElevated }]}
-              >
-                <Ionicons name="trophy-outline" size={18} color={theme.primary} />
-                <Text style={[styles.viewAllText, { color: theme.primary }]}>
-                  View All Achievements ({achievements.length})
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={theme.primary} />
-              </TouchableOpacity>
+              {hasAchievements && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setActiveSegment('achievements')}
+                  style={[styles.viewAllBtn, { backgroundColor: theme.surfaceElevated }]}
+                >
+                  <Ionicons name="trophy-outline" size={18} color={theme.primary} />
+                  <Text style={[styles.viewAllText, { color: theme.primary }]}>
+                    View All Achievements ({achievements.length})
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={theme.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             /* ── ACHIEVEMENTS ──────────────────────────────────── */

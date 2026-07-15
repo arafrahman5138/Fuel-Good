@@ -201,6 +201,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       hasPremiumAccess: false,
       isBillingLoading: false,
     });
+    // Wipe every user-data store so nothing leaks into the next account on
+    // this device. Lazy require (not a static import) — the data stores
+    // import services/api, which imports this store, so a static import of
+    // resetAllStores here would create a require cycle.
+    try {
+      const { resetAllUserStores } = require('./resetAllStores') as typeof import('./resetAllStores');
+      resetAllUserStores();
+    } catch (err: any) {
+      void reportClientError({ source: 'ui', message: 'resetAllUserStores failed on logout', context: { error: err?.message } });
+    }
   },
   setLoading: (isLoading) => set({ isLoading }),
   setBillingLoading: (isBillingLoading) => set({ isBillingLoading }),

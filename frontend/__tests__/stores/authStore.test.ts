@@ -1,5 +1,16 @@
+// services/notifications runs a dynamic import() of expo-notifications at
+// module load on native, which jest's VM cannot execute. gamificationStore
+// and savedRecipesStore (loaded via logout -> resetAllUserStores) import it.
+jest.mock('../../services/notifications', () => ({
+  maybePromptForPush: jest.fn().mockResolvedValue(undefined),
+}));
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore, getDefaultEntitlement, hasActivePremiumAccess } from '../../stores/authStore';
 import type { UserEntitlement } from '../../stores/authStore';
+import { useChatStore } from '../../stores/chatStore';
+import { useFuelStore } from '../../stores/fuelStore';
+import { useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
 
 // Reset store between tests
 beforeEach(() => {
@@ -160,6 +171,35 @@ describe('authStore actions', () => {
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
     expect(state.hasPremiumAccess).toBe(false);
+  });
+
+  it('logout resets user-data stores (cross-account leak fix)', () => {
+    // Seed user A's data into a few stores
+    useFuelStore.setState({
+      daily: { date: '2026-07-10', avg_fuel_score: 82, meal_count: 3, meals: [] } as any,
+      _lastFetchedAt: { _default: Date.now() },
+    });
+    useMetabolicBudgetStore.setState({
+      dailyScore: { date: '2026-07-10', score: {}, remaining: null } as any,
+      budgetLoaded: true,
+    });
+    useChatStore.setState({
+      messages: [{ role: 'user', content: 'hi' }] as any,
+      sessionId: 's1',
+      hasLoadedHistory: true,
+    });
+
+    useAuthStore.getState().logout();
+
+    expect(useFuelStore.getState().daily).toBeNull();
+    expect(useFuelStore.getState()._lastFetchedAt).toEqual({});
+    expect(useMetabolicBudgetStore.getState().dailyScore).toBeNull();
+    expect(useMetabolicBudgetStore.getState().budgetLoaded).toBe(false);
+    expect(useChatStore.getState().messages).toEqual([]);
+    expect(useChatStore.getState().sessionId).toBeNull();
+    expect(useChatStore.getState().hasLoadedHistory).toBe(false);
+    // Saved recipes must also be purged from AsyncStorage (shared devices)
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith('fuelgood.saved_recipes.v1');
   });
 
   it('setLoading and setBillingLoading update flags', () => {

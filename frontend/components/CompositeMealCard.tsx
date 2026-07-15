@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MealMESBadge } from './MealMESBadge';
 import { FuelScoreBadge } from './FuelScoreBadge';
 import { useTheme, useIsDark } from '../hooks/useTheme';
+import { pluralize } from '../utils/format';
 import { isReduceMotionEnabled, usePressScale } from '../hooks/useAnimations';
 import { useMetabolicBudgetStore, getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES, CompositeMES, MESScore } from '../stores/metabolicBudgetStore';
@@ -378,7 +379,7 @@ export function CompositeMealCard({ group, fuelTarget }: { group: MealGroup; fue
                     {config.label}
                   </Text>
                   <Text style={[styles.componentCount, { color: theme.textTertiary }]}>
-                    {group.logs.length} item{group.logs.length > 1 ? 's' : ''} · {agg.calories.toFixed(0)} calories
+                    {pluralize(group.logs.length, 'item')} · {agg.calories.toFixed(0)} calories
                   </Text>
                 </View>
               </View>

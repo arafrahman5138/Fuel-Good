@@ -20,7 +20,7 @@ const FLEX_GOLD = '#F59E0B';
 interface FuelScoreBadgeProps {
   score: number;
   compact?: boolean;
-  /** If provided, scores below this threshold show a golden "FLEX" tag */
+  /** If provided, scores below this threshold show a golden "ROOM" tag (room for life) */
   fuelTarget?: number;
 }
 
@@ -32,7 +32,7 @@ export function FuelScoreBadge({ score, compact = false, fuelTarget }: FuelScore
     return (
       <View style={[styles.flexContainer]}>
         <Ionicons name="ticket" size={10} color={FLEX_GOLD} />
-        <Text style={styles.flexText}>FLEX</Text>
+        <Text style={styles.flexText}>ROOM</Text>
       </View>
     );
   }

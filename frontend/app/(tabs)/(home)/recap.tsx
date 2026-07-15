@@ -15,6 +15,7 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useTheme } from '../../../hooks/useTheme';
 import { fuelApi } from '../../../services/api';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
+import { fmtScore } from '../../../utils/format';
 
 const GREEN = '#22C55E';
 const AMBER = '#F59E0B';
@@ -107,8 +108,8 @@ export default function RecapScreen() {
                   <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Real-food meals</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <Ionicons name="speedometer" size={16} color={theme.primary} />
-                  <Text style={[styles.statValue, { color: theme.text }]}>{Math.round(recap.avg_fuel_score)}</Text>
+                  <Ionicons name="flash" size={16} color={theme.primary} />
+                  <Text style={[styles.statValue, { color: theme.text }]}>{fmtScore(recap.avg_fuel_score)}</Text>
                   <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Weekly Fuel · {recap.tier_label}</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>

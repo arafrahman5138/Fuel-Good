@@ -64,6 +64,9 @@ interface SavedRecipesState {
   removeRecipe: (id: string) => Promise<void>;
   isSaved: (id: string) => boolean;
   getRecipeById: (id: string) => SavedRecipe | null;
+  /** Restore initial state AND remove the AsyncStorage payload — called on
+   *  logout so saved recipes don't leak to the next account on a shared device. */
+  reset: () => Promise<void>;
 }
 
 function buildSavedIds(recipes: SavedRecipe[]): Set<string> {
@@ -310,4 +313,13 @@ export const useSavedRecipesStore = create<SavedRecipesState>((set, get) => ({
   isSaved: (id: string) => get().savedIds.has(id),
 
   getRecipeById: (id: string) => get().recipes.find((recipe) => recipe.id === id || recipe.sourceRecipeId === id) || null,
+
+  reset: async () => {
+    set({ recipes: [], savedIds: new Set(), loading: false });
+    try {
+      await AsyncStorage.removeItem(SAVED_RECIPES_STORAGE_KEY);
+    } catch {
+      // Best effort — in-memory state is already cleared.
+    }
+  },
 }));

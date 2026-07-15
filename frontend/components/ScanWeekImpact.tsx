@@ -63,11 +63,11 @@ function ScanWeekImpactImpl({ score, mealType, logged, variant = 'meal', refresh
         ? 'Clean snack logged — it lifts your weekly average.'
         : 'Clean snack — lifts your weekly average without using room.';
     } else if (logged) {
-      headline = `Logged — ${realFood} of ${goal} real-food meals this week.`;
+      headline = `Logged — ${realFood} of ${goal} real-food meal${goal !== 1 ? 's' : ''} this week.`;
     } else if (variant === 'product') {
       headline = 'Real food — eating this strengthens your week.';
     } else {
-      headline = `Logging this makes it ${Math.min(realFood + 1, goal)} of ${goal} real-food meals this week.`;
+      headline = `Logging this makes it ${Math.min(realFood + 1, goal)} of ${goal} real-food meal${goal !== 1 ? 's' : ''} this week.`;
     }
   } else if (logged) {
     icon = 'restaurant';

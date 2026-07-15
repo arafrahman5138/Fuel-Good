@@ -1,7 +1,10 @@
 /**
- * FuelStreakBadge — Streak pill with leaf icon + weeks.
- * Similar to MetabolicStreakBadge but tracks consecutive weeks meeting
- * fuel target. Gold tier (8+ weeks) gets a shimmer sweep animation.
+ * FuelStreakBadge — Streak pill with leaf icon.
+ *
+ * Prefers the weeks-at-goal streak (`fuel_target_streak` on /api/fuel/streak,
+ * the pivot's single canonical streak — same number the recap shows) and
+ * falls back to the daily app streak labeled in days when the weekly fields
+ * are absent. Gold tier (8+) gets a shimmer sweep animation.
  */
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View, Text, StyleSheet } from 'react-native';
@@ -14,14 +17,23 @@ import { BorderRadius, Spacing } from '../constants/Colors';
 interface FuelStreakBadgeProps {
   currentStreak: number;
   longestStreak?: number;
+  /** Weeks-at-goal streak — when provided the badge renders weeks, not days. */
+  weeksAtGoal?: number;
+  longestWeeksAtGoal?: number;
   compact?: boolean;
 }
 
 export function FuelStreakBadge({
-  currentStreak,
-  longestStreak,
+  currentStreak: dailyStreak,
+  longestStreak: dailyLongest,
+  weeksAtGoal,
+  longestWeeksAtGoal,
   compact = false,
 }: FuelStreakBadgeProps) {
+  const usingWeeks = typeof weeksAtGoal === 'number';
+  const currentStreak = usingWeeks ? weeksAtGoal : dailyStreak;
+  const longestStreak = usingWeeks ? longestWeeksAtGoal : dailyLongest;
+  const unit = usingWeeks ? 'week' : 'day';
   const theme = useTheme();
   const shimmerX = useRef(new Animated.Value(-80)).current;
   const isGold = currentStreak >= 8;
@@ -58,7 +70,7 @@ export function FuelStreakBadge({
     return (
       <View style={[styles.compactContainer, { backgroundColor: streakColor + '20' }]}>
         <Ionicons name="leaf" size={12} color={streakColor} />
-        <Text style={[styles.compactText, { color: streakColor }]}>{currentStreak}w</Text>
+        <Text style={[styles.compactText, { color: streakColor }]}>{currentStreak}{usingWeeks ? 'w' : 'd'}</Text>
       </View>
     );
   }
@@ -97,7 +109,7 @@ export function FuelStreakBadge({
       </View>
       <View>
         <Text style={[styles.streakCount, { color: theme.text }]}>
-          {currentStreak} week{currentStreak !== 1 ? 's' : ''}
+          {currentStreak} {unit}{currentStreak !== 1 ? 's' : ''}{usingWeeks ? ' at goal' : ''}
         </Text>
         <Text style={[styles.streakLabel, { color: theme.textTertiary }]}>
           Fuel Streak
@@ -106,7 +118,7 @@ export function FuelStreakBadge({
       {longestStreak !== undefined && longestStreak > 0 && (
         <View style={styles.bestContainer}>
           <Text style={[styles.bestLabel, { color: theme.textTertiary }]}>Best</Text>
-          <Text style={[styles.bestValue, { color: theme.textSecondary }]}>{longestStreak}w</Text>
+          <Text style={[styles.bestValue, { color: theme.textSecondary }]}>{longestStreak}{usingWeeks ? 'w' : 'd'}</Text>
         </View>
       )}
     </View>

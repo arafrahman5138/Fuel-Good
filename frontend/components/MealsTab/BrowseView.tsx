@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -20,17 +19,14 @@ import { useTheme } from '../../hooks/useTheme';
 import { recipeApi } from '../../services/api';
 import { BorderRadius, FontSize, Layout, Spacing } from '../../constants/Colors';
 import { COOK_TIME_OPTIONS, HEALTH_BENEFIT_OPTIONS, PROTEIN_OPTIONS, CARB_OPTIONS, CUISINE_OPTIONS } from '../../constants/Config';
-import { MealImage } from '../MealImage';
-import { MealMESBadge } from '../MealMESBadge';
 import { PlateComposer } from '../PlateComposer';
-import { useMetabolicBudgetStore, getTierConfig } from '../../stores/metabolicBudgetStore';
+import { Chip } from '../ui/Chip';
+import { pluralize } from '../../utils/format';
+import { RecipeCard, getRecipeContext, type BrowseRecipe } from './RecipeCard';
+import { useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
 import { usePlateStore } from '../../stores/plateStore';
 import {
-  classifyMealContext,
   isScoreable,
-  contextLabel,
-  type MealContext,
-  MEAL_CONTEXT_FULL,
   MEAL_CONTEXT_COMPONENT_PROTEIN,
   MEAL_CONTEXT_COMPONENT_CARB,
   MEAL_CONTEXT_COMPONENT_VEG,
@@ -38,34 +34,8 @@ import {
   MEAL_CONTEXT_DESSERT,
 } from '../../utils/mealContext';
 
-
-interface RecipeCard {
-  id: string;
-  title: string;
-  description: string;
-  cuisine: string;
-  cook_time_min: number;
-  total_time_min: number;
-  difficulty: string;
-  flavor_profile: string[];
-  dietary_tags: string[];
-  health_benefits: string[];
-  nutrition_info: Record<string, number>;
-  servings: number;
-  image_url?: string | null;
-  // Composition fields
-  recipe_role?: string;
-  is_component?: boolean;
-  meal_group_id?: string | null;
-  default_pairing_ids?: string[];
-  needs_default_pairing?: boolean | null;
-  is_mes_scoreable?: boolean;
-  composite_display_score?: number;
-  composite_display_tier?: string;
-}
-
 interface BrowseResult {
-  items: RecipeCard[];
+  items: BrowseRecipe[];
   total: number;
   page: number;
   page_size: number;
@@ -114,22 +84,6 @@ interface BrowseViewProps {
   initialCategory?: TopCategory;
   /** Pre-select sub-tab (only relevant when category is 'meals'). */
   initialSubTab?: MealsSubTab;
-}
-
-function budgetBadgeColor(
-  recipeCals: number,
-  recipeProtein: number,
-  budget: any,
-): { bg: string; text: string } {
-  if (!budget || !budget.protein_target_g) return { bg: '#22C55E14', text: '#22C55E' };
-  const calTarget = (budget.tdee || 2000) / 3;
-  const proteinTarget = budget.protein_target_g / 3;
-  const calOff = calTarget > 0 ? Math.abs(recipeCals - calTarget) / calTarget : 0;
-  const proOff = proteinTarget > 0 ? Math.abs(recipeProtein - proteinTarget) / proteinTarget : 0;
-  const worst = Math.max(calOff, proOff);
-  if (worst <= 0.3) return { bg: '#22C55E14', text: '#22C55E' };
-  if (worst <= 0.6) return { bg: '#F59E0B14', text: '#F59E0B' };
-  return { bg: '#EF444414', text: '#EF4444' };
 }
 
 export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) {
@@ -276,21 +230,6 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
   const getBenefitInfo = (id: string) =>
     HEALTH_BENEFIT_OPTIONS.find((h) => h.id === id);
 
-  const getRecipeContext = (item: RecipeCard): MealContext => {
-    // Prefer backend canonical taxonomy when available.
-    if (item.recipe_role) {
-      if (item.recipe_role === 'full_meal') return MEAL_CONTEXT_FULL;
-      if (item.recipe_role === 'protein_base') return MEAL_CONTEXT_COMPONENT_PROTEIN;
-      if (item.recipe_role === 'carb_base') return MEAL_CONTEXT_COMPONENT_CARB;
-      if (item.recipe_role === 'veg_side') return MEAL_CONTEXT_COMPONENT_VEG;
-      if (item.recipe_role === 'sauce') return MEAL_CONTEXT_SAUCE;
-      if (item.recipe_role === 'dessert') return MEAL_CONTEXT_DESSERT;
-    }
-
-    // Safety fallback for older payloads.
-    return classifyMealContext(item.title, null, item.nutrition_info);
-  };
-
   const displayedItems = (() => {
     const base = results?.items || [];
 
@@ -334,118 +273,20 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
     return modeFiltered;
   })();
 
-  const renderRecipeCard = ({ item }: { item: RecipeCard }) => {
-    const ctx: MealContext = getRecipeContext(item);
-    const baseDisplayScore = Number(item.nutrition_info?.mes_display_score ?? item.nutrition_info?.mes_score ?? 0);
-    const baseDisplayTier = typeof item.nutrition_info?.mes_display_tier === 'string'
-      ? item.nutrition_info.mes_display_tier
-      : 'critical';
-    const shouldUseCompositeScore =
-      item.needs_default_pairing === true && typeof item.composite_display_score === 'number';
-    const displayScore = shouldUseCompositeScore ? item.composite_display_score! : (baseDisplayScore > 0 ? baseDisplayScore : null);
-    const displayTier = shouldUseCompositeScore
-      ? (item.composite_display_tier || baseDisplayTier || 'critical')
-      : (baseDisplayTier || 'critical');
-    const hint = contextLabel(ctx);
-    const hintTheme = ctx.includes('dessert')
-      ? {
-          bg: theme.accent + '14',
-          border: theme.accent + '3D',
-          text: theme.accent,
-          icon: 'ice-cream-outline' as const,
-        }
-      : ctx.includes('sauce')
-      ? {
-          bg: theme.info + '14',
-          border: theme.info + '3D',
-          text: theme.info,
-          icon: 'flask-outline' as const,
-        }
-      : {
-          bg: theme.primary + '14',
-          border: theme.primary + '3D',
-          text: theme.primary,
-          icon: 'layers-outline' as const,
-        };
+  const handleRecipePress = useCallback((id: string) => {
+    router.push(`/(tabs)/meals/recipe/${id}`);
+  }, []);
 
-    return (
-    <TouchableOpacity
-      style={[styles.card, { width: CARD_WIDTH, backgroundColor: theme.surface, borderColor: theme.border }]}
-      activeOpacity={0.7}
-      onPress={() => router.push(`/(tabs)/meals/recipe/${item.id}`)}
-    >
-      <MealImage
-        imageUrl={item.image_url}
-        title={item.title}
-        width={CARD_WIDTH - Spacing.md * 2}
-        height={(CARD_WIDTH - Spacing.md * 2) * 0.65}
-        borderRadius={BorderRadius.md}
+  const renderRecipeCard = useCallback(
+    ({ item }: { item: BrowseRecipe }) => (
+      <RecipeCard
+        recipe={item}
+        cardWidth={CARD_WIDTH}
+        onPress={handleRecipePress}
       />
-      <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
-        {item.title}
-      </Text>
-      {item.description ? (
-        <Text
-          style={[styles.cardDescription, { color: theme.textSecondary }]}
-          numberOfLines={1}
-        >
-          {item.description}
-        </Text>
-      ) : null}
-
-      <View style={styles.cardMeta}>
-        <View style={styles.cardMetaItem}>
-          <Ionicons name="time-outline" size={12} color={theme.textSecondary} />
-          <Text style={[styles.cardMetaText, { color: theme.textSecondary }]}>
-            {item.total_time_min}m
-          </Text>
-        </View>
-        <View style={styles.cardMetaItem}>
-          <Ionicons name="speedometer-outline" size={12} color={theme.textSecondary} />
-          <Text style={[styles.cardMetaText, { color: theme.textSecondary }]}>
-            {item.difficulty}
-          </Text>
-        </View>
-      </View>
-
-      {/* Two-pillar proof: every curated meal is real food; Metabolic varies by composition */}
-      <View style={{ flexDirection: 'row', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
-        <View style={[styles.pillarBadge, { backgroundColor: '#22C55E14' }]}>
-          <Ionicons name="leaf" size={10} color="#22C55E" />
-          <Text style={[styles.pillarBadgeText, { color: '#22C55E' }]}>Fuel 100</Text>
-        </View>
-        {displayScore != null && displayScore > 0 && (() => {
-          const tierColor = getTierConfig(displayTier).color;
-          return (
-            <View style={[styles.pillarBadge, { backgroundColor: tierColor + '14' }]}>
-              <Ionicons name="pulse" size={10} color={tierColor} />
-              <Text style={[styles.pillarBadgeText, { color: tierColor }]}>
-                Metabolic {Math.round(displayScore)}
-              </Text>
-            </View>
-          );
-        })()}
-      </View>
-
-      {item.nutrition_info?.calories && (() => {
-        const badge = budgetBadgeColor(item.nutrition_info.calories || 0, item.nutrition_info.protein || 0, mesBudget);
-        return (
-          <View style={{
-            backgroundColor: badge.bg,
-            paddingHorizontal: 8,
-            paddingVertical: 3,
-            borderRadius: 999,
-            alignSelf: 'flex-start',
-          }}>
-            <Text style={[styles.cardCalories, { color: badge.text }]}>
-              {Math.round(item.nutrition_info.calories)} cal{item.nutrition_info.protein ? ` · ${Math.round(item.nutrition_info.protein)}g protein` : ''}
-            </Text>
-          </View>
-        );
-      })()}
-    </TouchableOpacity>
+    ),
+    [CARD_WIDTH, handleRecipePress],
   );
-  };
 
   const getMultiSelectLabel = (key: keyof Filters, label: string): string => {
     const val = filters[key];
@@ -478,15 +319,12 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
     }
 
     return (
-      <TouchableOpacity
+      <Chip
         key={key}
-        style={[
-          styles.filterChip,
-          {
-            backgroundColor: isActive ? theme.primary : theme.surfaceElevated + 'BB',
-            borderColor: isActive ? theme.primary : theme.border + '55',
-          },
-        ]}
+        label={isActive ? displayLabel : label}
+        selected={isActive}
+        tone="filter"
+        trailing={isActive ? 'close' : 'caret'}
         onPress={() => {
           if (isActive) {
             setFilters((prev) => ({ ...prev, [key]: undefined }));
@@ -494,21 +332,7 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             setFilterModal(key);
           }
         }}
-      >
-        <Text
-          style={[
-            styles.filterChipText,
-            { color: isActive ? '#FFFFFF' : theme.textSecondary },
-          ]}
-        >
-          {isActive ? displayLabel : label}
-        </Text>
-        {isActive ? (
-          <Ionicons name="close-circle" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
-        ) : (
-          <Ionicons name="chevron-down" size={12} color={theme.textTertiary} style={{ marginLeft: 3 }} />
-        )}
-      </TouchableOpacity>
+      />
     );
   };
 
@@ -792,40 +616,16 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             { key: 'carb_base', label: 'Carbs', icon: 'nutrition-outline' },
             { key: 'veg_side', label: 'Veggies', icon: 'leaf-outline' },
             { key: 'sauce', label: 'Sauces', icon: 'flask-outline' },
-          ] as const).map((role) => {
-            const isActive = selectedRoleFilter === role.key;
-            return (
-              <TouchableOpacity
-                key={role.label}
-                onPress={() => setSelectedRoleFilter(role.key)}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                  borderRadius: BorderRadius.full,
-                  borderWidth: 1,
-                  backgroundColor: isActive ? theme.primary + '18' : theme.surfaceElevated,
-                  borderColor: isActive ? theme.primary + '40' : theme.border + '55',
-                }}
-              >
-                <Ionicons
-                  name={role.icon as any}
-                  size={14}
-                  color={isActive ? theme.primary : theme.textTertiary}
-                />
-                <Text style={{
-                  fontSize: FontSize.xs,
-                  fontWeight: isActive ? '700' : '600',
-                  color: isActive ? theme.primary : theme.textSecondary,
-                }}>
-                  {role.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          ] as const).map((role) => (
+            <Chip
+              key={role.label}
+              label={role.label}
+              selected={selectedRoleFilter === role.key}
+              leadingIcon={role.icon}
+              tone="filter"
+              onPress={() => setSelectedRoleFilter(role.key)}
+            />
+          ))}
         </ScrollView>
       )}
 
@@ -839,26 +639,14 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
           {DESSERT_FILTERS.map((filter) => {
             const isActive = dessertFilter === filter.key;
             return (
-              <TouchableOpacity
+              <Chip
                 key={filter.key}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive ? theme.primary : theme.surfaceElevated + 'BB',
-                    borderColor: isActive ? theme.primary : theme.border + '55',
-                  },
-                ]}
+                label={filter.label}
+                selected={isActive}
+                tone="filter"
+                trailing={isActive ? 'close' : undefined}
                 onPress={() => setDessertFilter(dessertFilter === filter.key ? null : filter.key)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    { color: isActive ? '#FFFFFF' : theme.textSecondary },
-                  ]}
-                >
-                  {filter.label}
-                </Text>
-              </TouchableOpacity>
+              />
             );
           })}
         </ScrollView>
@@ -885,29 +673,14 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
             {renderFilterChip('Health Benefit', 'health_benefit')}
             {renderFilterChip('Cuisine', 'cuisine')}
             {/* Fits My Budget toggle */}
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: fitsBudget ? '#34C759' : theme.surfaceElevated + 'BB',
-                  borderColor: fitsBudget ? '#34C759' : theme.border + '55',
-                },
-              ]}
+            <Chip
+              label="Fits Budget"
+              selected={fitsBudget}
+              leadingIcon="flash"
+              tone="filter"
+              trailing={fitsBudget ? 'close' : undefined}
               onPress={() => setFitsBudget((v) => !v)}
-            >
-              <Ionicons name="flash" size={12} color={fitsBudget ? '#FFFFFF' : theme.textSecondary} style={{ marginRight: 2 }} />
-              <Text
-                style={[
-                  styles.filterChipText,
-                  { color: fitsBudget ? '#FFFFFF' : theme.textSecondary },
-                ]}
-              >
-                Fits Budget
-              </Text>
-              {fitsBudget && (
-                <Ionicons name="close-circle" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
-              )}
-            </TouchableOpacity>
+            />
             {activeFilterCount > 0 && (
               <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
                 <Ionicons name="refresh" size={14} color={theme.error} />
@@ -966,12 +739,20 @@ export function BrowseView({ initialCategory, initialSubTab }: BrowseViewProps) 
         </>
       )}
 
-      {/* Result count */}
-      {results && (
-        <Text style={[styles.resultCount, { color: theme.textSecondary }]}>
-          {displayedItems.length} recipe{displayedItems.length !== 1 ? 's' : ''} found
-        </Text>
-      )}
+      {/* Result count — API total; falls back to the loaded count when a
+          client-side-only narrow (dessert term filter / Fits Budget) is on,
+          since the server total doesn't know about those. */}
+      {results && (() => {
+        const clientNarrowed =
+          (selectedCategory === 'desserts' && !!dessertFilter) ||
+          (isFullMealsMode && fitsBudget);
+        const count = clientNarrowed ? displayedItems.length : results.total;
+        return (
+          <Text style={[styles.resultCount, { color: theme.textSecondary }]}>
+            {pluralize(count, 'recipe')} found
+          </Text>
+        );
+      })()}
 
       {/* Recipe Grid */}
       <FlashList
@@ -1121,22 +902,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     alignItems: 'center',
   },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 0,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: 10,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  filterChipText: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    flexShrink: 0,
-  },
   clearBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1178,129 +943,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingBottom: Layout.scrollBottomPadding,
   },
-  gridRow: {
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  card: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  cardTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    lineHeight: 20,
-    letterSpacing: -0.2,
-  },
-  cardDescription: {
-    fontSize: FontSize.xs,
-    lineHeight: 16,
-    marginTop: -2,
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  cardMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  cardMetaText: {
-    fontSize: FontSize.xs,
-  },
-  cardTags: {
-    flexDirection: 'row',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
-  flavorTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  flavorTagText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  cardBenefits: {
-    flexDirection: 'row',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
-  benefitPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  benefitPillText: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
-  cardCalories: {
-    fontSize: FontSize.xs,
-    fontWeight: '500',
-  },
-  pillarBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  pillarBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
-  // ── Side indicator ──
-  sideIndicatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sideIndicatorPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  sideIndicatorText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-
-  // ── Context hint ──
-  contextHintRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  contextHintPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 3,
-    borderWidth: 1,
-  },
-  contextHintText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-
   // ── Plate FAB ──
   plateFab: {
     position: 'absolute',

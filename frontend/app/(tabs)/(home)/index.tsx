@@ -27,6 +27,8 @@ import { DataErrorState } from '../../../components/DataErrorState';
 import { XPToast } from '../../../components/XPToast';
 
 import { EnergyHeroCard } from '../../../components/EnergyHeroCard';
+import { StreakChip } from '../../../components/ui/StreakChip';
+import { pluralize } from '../../../utils/format';
 import { RealFoodTrackerCard } from '../../../components/RealFoodTrackerCard';
 import { WeeklyRecapBanner } from '../../../components/WeeklyRecapBanner';
 import { TodayProgressCard } from '../../../components/TodayProgressCard';
@@ -548,14 +550,18 @@ export default function HomeScreen() {
     }
   };
 
+  // E1: pass missing targets through as null (not `|| 0`) so TodayProgressCard
+  // can tell "targets never set up" apart from an explicit 0 target.
+  const roundedTargetOrNull = (value: unknown): number | null =>
+    value != null && Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
   const calorieConsumed = Math.round(dailySummary?.comparison?.calories?.consumed ?? 0);
-  const calorieTarget = Math.round(dailySummary?.comparison?.calories?.target ?? 0);
+  const calorieTarget = roundedTargetOrNull(dailySummary?.comparison?.calories?.target);
   const proteinConsumed = Math.round(dailySummary?.comparison?.protein?.consumed ?? 0);
-  const proteinTarget = Math.round(dailySummary?.comparison?.protein?.target ?? 0);
+  const proteinTarget = roundedTargetOrNull(dailySummary?.comparison?.protein?.target);
   const carbsConsumed = Math.round(dailySummary?.comparison?.carbs?.consumed ?? 0);
-  const carbsTarget = Math.round(dailySummary?.comparison?.carbs?.target ?? 0);
+  const carbsTarget = roundedTargetOrNull(dailySummary?.comparison?.carbs?.target);
   const fatConsumed = Math.round(dailySummary?.comparison?.fat?.consumed ?? 0);
-  const fatTarget = Math.round(dailySummary?.comparison?.fat?.target ?? 0);
+  const fatTarget = roundedTargetOrNull(dailySummary?.comparison?.fat?.target);
   const fiberConsumed = Math.round(dailySummary?.comparison?.fiber?.consumed ?? 0);
   const fiberTarget = Math.round(dailySummary?.comparison?.fiber?.target ?? 0);
   // Memoize macro objects so the React.memo wrapper on TodayProgressCard
@@ -649,6 +655,16 @@ export default function HomeScreen() {
       accentBg: '#EEF2FF',
     },
   ];
+
+  // Header streak chip: prefer the canonical weeks-at-goal streak
+  // (fuel_target_streak — the same number the Track badge and weekly recap
+  // show) and fall back to the daily app streak when the weekly field is
+  // absent, mirroring FuelStreakBadge's usingWeeks pattern.
+  const streakIsWeeks = typeof fuelStreak?.fuel_target_streak === 'number';
+  const headerStreakCount = streakIsWeeks
+    ? fuelStreak?.fuel_target_streak ?? 0
+    : fuelStreak?.current_streak ?? 0;
+  const headerStreakUnit: 'day' | 'week' = streakIsWeeks ? 'week' : 'day';
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const greeting = getGreeting();
@@ -782,20 +798,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <View style={styles.stickyHeaderRight}>
-              <TouchableOpacity
+              <HeaderStreakChip
                 testID="home-sticky-streak"
-                onPress={() => router.push('/(tabs)/profile/quests' as any)}
-                activeOpacity={0.7}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
-                accessibilityRole="button"
-                accessibilityLabel={`Open quests, current streak ${fuelStreak?.current_streak ?? 0} days`}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="flame" size={16} color={theme.accent} />
-                {(fuelStreak?.current_streak ?? 0) > 0 && (
-                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak}</Text>
-                )}
-              </TouchableOpacity>
+                count={headerStreakCount}
+                unit={headerStreakUnit}
+                theme={theme}
+              />
               <TouchableOpacity
                 testID="home-sticky-profile"
                 activeOpacity={0.7}
@@ -871,20 +879,12 @@ export default function HomeScreen() {
           </View>
           <View style={styles.headerRight}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <TouchableOpacity
+              <HeaderStreakChip
                 testID="home-header-streak"
-                onPress={() => router.push('/(tabs)/profile/quests' as any)}
-                activeOpacity={0.7}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentMuted, paddingHorizontal: 10, paddingVertical: 5, borderRadius: BorderRadius.full }}
-                accessibilityRole="button"
-                accessibilityLabel={`Open quests, current streak ${fuelStreak?.current_streak ?? 0} days`}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="flame" size={16} color={theme.accent} />
-                {(fuelStreak?.current_streak ?? 0) > 0 && (
-                  <Text style={{ color: theme.accent, fontSize: FontSize.sm, fontWeight: '700' }}>{fuelStreak?.current_streak}</Text>
-                )}
-              </TouchableOpacity>
+                count={headerStreakCount}
+                unit={headerStreakUnit}
+                theme={theme}
+              />
               <TouchableOpacity
                 testID="home-header-profile"
                 activeOpacity={0.7}
@@ -969,7 +969,11 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`${day.label} ${day.date}${isToday ? ', today' : ''}${isSelected ? ', selected' : ''}`}
                   >
+                    {/* F5: week strip pills are fixed-width — bound Dynamic
+                        Type scaling at 1.4x (house pattern from chat header) */}
                     <Text
+                      allowFontScaling
+                      maxFontSizeMultiplier={1.4}
                       style={[
                         styles.weekDayLabel,
                         { color: isSelected || isToday ? theme.text : theme.textSecondary },
@@ -989,7 +993,7 @@ export default function HomeScreen() {
                         isSelected && { transform: [{ scale: pulseScale }] },
                       ]}
                     >
-                      <Text style={[styles.weekDate, { color: isSelected ? theme.primary : theme.text }]}>{day.date}</Text>
+                      <Text allowFontScaling maxFontSizeMultiplier={1.4} style={[styles.weekDate, { color: isSelected ? theme.primary : theme.text }]}>{day.date}</Text>
                     </Animated.View>
                   </TouchableOpacity>
                 );
@@ -1027,7 +1031,7 @@ export default function HomeScreen() {
           mesScore={weeklyMesScore}
           mesTierColor={weeklyMesTierColor}
           energyPrediction={dailyMES?.mea?.energy_prediction ?? null}
-          fuelStreakWeeks={fuelStreak?.current_streak ?? 0}
+          fuelStreakDays={fuelStreak?.current_streak ?? 0}
           metabolicStreakDays={metabolicStreak?.current_streak ?? 0}
           weeklyProgress={weeklyProgressPct}
           weeklyTargetMet={weeklyTargetMet}
@@ -1159,7 +1163,7 @@ export default function HomeScreen() {
                 <View style={[s.planFlexFooter, { borderTopColor: theme.surfaceHighlight }]}>
                   <Ionicons name="ticket" size={12} color="#F59E0B" />
                   <Text style={[s.planFlexText, { color: theme.textSecondary }]}>
-                    Log {planCompletion.total - planCompletion.completed} more → earn flex points
+                    Log {planCompletion.total - planCompletion.completed} more → earn room for life
                   </Text>
                 </View>
               )}
@@ -1347,6 +1351,49 @@ export default function HomeScreen() {
     </ScreenContainer>
   );
 }
+
+// Header streak entry point — shared by the sticky header and the intro
+// header (previously two hand-rolled "🔥1" pills whose bare number was
+// cryptic). Shows the canonical StreakChip ("5 weeks at goal" / "3-day
+// streak") when a streak exists; keeps a flame-only pill as the quests
+// affordance when there's no streak yet.
+type HeaderStreakChipProps = {
+  testID: string;
+  count: number;
+  unit: 'day' | 'week';
+  theme: any;
+};
+const HeaderStreakChip = React.memo(function HeaderStreakChip({ testID, count, unit, theme }: HeaderStreakChipProps) {
+  const streakLabel =
+    unit === 'week' ? `${pluralize(count, 'week')} at goal` : `${count}-day streak`;
+  return (
+    <TouchableOpacity
+      testID={testID}
+      onPress={() => router.push('/(tabs)/profile/quests' as any)}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Open quests, ${count > 0 ? streakLabel : 'no active streak'}`}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      {count > 0 ? (
+        <StreakChip count={count} unit={unit} kind="fuel" />
+      ) : (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: theme.accentMuted,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: BorderRadius.full,
+          }}
+        >
+          <Ionicons name="flame" size={16} color={theme.accent} />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 // Memoized recent-meal chip — the parent's `recentMeals.map(...)` was
 // previously creating a fresh inline `onPress` arrow per item per render

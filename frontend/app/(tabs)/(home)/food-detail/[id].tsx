@@ -19,7 +19,7 @@ import { Card } from '../../../../components/GradientCard';
 import { ChronometerSuccessModal } from '../../../../components/ChronometerSuccessModal';
 import LogoHeader from '../../../../components/LogoHeader';
 import { useTheme } from '../../../../hooks/useTheme';
-import { BorderRadius, FontSize, Layout, Spacing } from '../../../../constants/Colors';
+import { BorderRadius, FontSize, Layout, MacroColors, ScoreColors, Spacing } from '../../../../constants/Colors';
 import { foodApi, nutritionApi } from '../../../../services/api';
 import { useScaleReveal } from '../../../../hooks/useAnimations';
 
@@ -47,11 +47,11 @@ interface FoodDetail {
 }
 
 const MACRO_ROWS = [
-  { key: 'calories', label: 'Calories', color: '#22C55E' },
-  { key: 'protein_g', label: 'Protein', color: '#22C55E' },
-  { key: 'carbs_g', label: 'Carbs', color: '#F59E0B' },
-  { key: 'fat_g', label: 'Fat', color: '#EC4899' },
-  { key: 'fiber_g', label: 'Fiber', color: '#8B5CF6' },
+  { key: 'calories', label: 'Calories', color: MacroColors.neutral },
+  { key: 'protein_g', label: 'Protein', color: MacroColors.protein },
+  { key: 'carbs_g', label: 'Carbs', color: MacroColors.carbs },
+  { key: 'fat_g', label: 'Fat', color: MacroColors.fat },
+  { key: 'fiber_g', label: 'Fiber', color: MacroColors.fiber },
 ];
 
 function formatValue(value: number, key: string) {
@@ -300,7 +300,7 @@ export default function FoodDetailScreen() {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={logSuccess ? ['#22C55E', '#16A34A'] as const : ['#22C55E', '#059669'] as const}
+            colors={logSuccess ? [ScoreColors.good, '#16A34A'] as const : [ScoreColors.good, '#059669'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.logBtn}

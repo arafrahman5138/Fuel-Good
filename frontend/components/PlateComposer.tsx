@@ -22,7 +22,7 @@ import { usePlateStore } from '../stores/plateStore';
 import { MealMESBadge } from './MealMESBadge';
 import { ChronometerSuccessModal } from './ChronometerSuccessModal';
 import { nutritionApi } from '../services/api';
-import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { BorderRadius, FontSize, MacroColors, Spacing } from '../constants/Colors';
 
 interface Props {
   visible: boolean;
@@ -159,10 +159,10 @@ export function PlateComposer({ visible, onClose }: Props) {
                   <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
                     {cals} calories
                   </Text>
-                  <Text style={[styles.summaryLabel, { color: theme.primary }]}>P {protein}g</Text>
-                  <Text style={[styles.summaryLabel, { color: theme.accent }]}>C {carbs}g</Text>
-                  <Text style={[styles.summaryLabel, { color: theme.info }]}>F {fat}g</Text>
-                  <Text style={[styles.summaryLabel, { color: '#22C55E' }]}>Fib {fiber}g</Text>
+                  <Text style={[styles.summaryLabel, { color: MacroColors.protein }]}>P {protein}g</Text>
+                  <Text style={[styles.summaryLabel, { color: MacroColors.carbs }]}>C {carbs}g</Text>
+                  <Text style={[styles.summaryLabel, { color: MacroColors.fat }]}>F {fat}g</Text>
+                  <Text style={[styles.summaryLabel, { color: MacroColors.fiber }]}>Fib {fiber}g</Text>
                 </View>
 
                 {/* MES preview */}

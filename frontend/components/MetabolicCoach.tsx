@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
 import { useStaggeredEntrance } from '../hooks/useAnimations';
 import { BorderRadius, FontSize, Spacing } from '../constants/Colors';
+import { StatusPill } from './ui/StatusPill';
 import type { MESScore, RemainingBudget, MetabolicBudget} from '../stores/metabolicBudgetStore';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import { metabolicApi } from '../services/api';
@@ -166,10 +167,13 @@ function generateInsights(
 
 // ── Suggested foods (static, based on remaining budget gaps) ──
 
+// Single accent for the "Try These Foods" chips — matches the section
+// header's leaf icon instead of per-item random hexes.
+const FOOD_CHIP_ACCENT = '#10B981';
+
 interface QuickFood {
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
-  color: string;
 }
 
 function getSuggestedFoods(remaining: RemainingBudget | null): QuickFood[] {
@@ -182,29 +186,29 @@ function getSuggestedFoods(remaining: RemainingBudget | null): QuickFood[] {
 
   if (proteinLeft > 15) {
     foods.push(
-      { name: 'Chicken', icon: 'restaurant', color: '#22C55E' },
-      { name: 'Eggs', icon: 'egg', color: '#22C55E' },
-      { name: 'Greek Yogurt', icon: 'cafe', color: '#22C55E' },
+      { name: 'Chicken', icon: 'barbell' }, // lean protein — matches the app's protein icon language
+      { name: 'Eggs', icon: 'egg' },
+      { name: 'Greek Yogurt', icon: 'cafe' },
     );
   }
   if (fiberLeft > 8) {
     foods.push(
-      { name: 'Broccoli', icon: 'leaf', color: '#10B981' },
-      { name: 'Lentils', icon: 'ellipse', color: '#10B981' },
+      { name: 'Broccoli', icon: 'leaf' },
+      { name: 'Lentils', icon: 'nutrition' },
     );
   }
   if (carbHeadroom < 20) {
     foods.push(
-      { name: 'Spinach', icon: 'leaf', color: '#F59E0B' },
+      { name: 'Spinach', icon: 'leaf' },
     );
   }
 
   // Fallback
   if (foods.length === 0) {
     foods.push(
-      { name: 'Salmon', icon: 'fish', color: '#22C55E' },
-      { name: 'Avocado', icon: 'leaf', color: '#10B981' },
-      { name: 'Sweet Potato', icon: 'nutrition', color: '#F59E0B' },
+      { name: 'Salmon', icon: 'fish' },
+      { name: 'Avocado', icon: 'leaf' },
+      { name: 'Sweet Potato', icon: 'nutrition' },
     );
   }
 
@@ -379,19 +383,13 @@ export function MetabolicCoach({ score, remaining, budget, mealsLogged, mealSugg
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
               {suggestedFoods.map((food, idx) => (
-                <View
+                <StatusPill
                   key={`food-${idx}`}
-                  style={[
-                    styles.foodChip,
-                    {
-                      backgroundColor: theme.surfaceElevated,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  <Ionicons name={food.icon as any} size={12} color={food.color} />
-                  <Text style={[styles.foodChipText, { color: theme.text }]}>{food.name}</Text>
-                </View>
+                  label={food.name}
+                  icon={food.icon}
+                  color={FOOD_CHIP_ACCENT}
+                  size="sm"
+                />
               ))}
             </View>
           </View>
@@ -523,19 +521,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
-  },
-  foodChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  foodChipText: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
   },
   seeAllBtn: {
     flexDirection: 'row',

@@ -14,6 +14,8 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Card } from '../../../components/GradientCard';
+import { StatusPill } from '../../../components/ui/StatusPill';
+import { SETTINGS_ICON_TONES } from '../../../components/ui/SettingsRow';
 import { XPBar } from '../../../components/XPBar';
 import { useTheme, useIsDark } from '../../../hooks/useTheme';
 import { useAuthStore } from '../../../stores/authStore';
@@ -21,6 +23,8 @@ import { useGamificationStore } from '../../../stores/gamificationStore';
 import { useFuelStore } from '../../../stores/fuelStore';
 import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
 import { XP_PER_LEVEL } from '../../../constants/Config';
+import { normalizeTierWording } from '../../../utils/tierLabels';
+import { fmtScore } from '../../../utils/format';
 
 export default function QuestsScreen() {
   const theme = useTheme();
@@ -82,15 +86,15 @@ export default function QuestsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={styles.streakRow}>
             <View style={styles.streakItem}>
-              <View style={[styles.streakIcon, { backgroundColor: theme.accentMuted }]}>
-                <Ionicons name="flame" size={24} color={theme.accent} />
+              <View style={[styles.streakIcon, { backgroundColor: SETTINGS_ICON_TONES.warn.bg }]}>
+                <Ionicons name="flame" size={24} color={SETTINGS_ICON_TONES.warn.fg} />
               </View>
               <Text style={[styles.streakValue, { color: theme.text }]}>{fuelStreak?.current_streak ?? 0}</Text>
               <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Weeks at Goal</Text>
             </View>
             <View style={styles.streakItem}>
-              <View style={[styles.streakIcon, { backgroundColor: theme.primaryMuted }]}>
-                <Ionicons name="star" size={24} color={theme.primary} />
+              <View style={[styles.streakIcon, { backgroundColor: SETTINGS_ICON_TONES.brand.bg }]}>
+                <Ionicons name="star" size={24} color={SETTINGS_ICON_TONES.brand.fg} />
               </View>
               <Text style={[styles.streakValue, { color: theme.text }]}>Lv {level}</Text>
               <Text style={[styles.streakLabel, { color: theme.textSecondary }]}>Level</Text>
@@ -179,11 +183,16 @@ export default function QuestsScreen() {
                       ]}
                       numberOfLines={1}
                     >
-                      {quest.title}
+                      {/* F7: backend quest titles still say "Stable" (legacy
+                          tier word) — normalize to the ladder used on recipe
+                          cards (Drained/Sluggish/Steady/Efficient/Optimized) */}
+                      {normalizeTierWording(quest.title)}
                     </Text>
-                    <View style={[styles.questXpBadge, { backgroundColor: quest.completed ? theme.primaryMuted : theme.surfaceHighlight }]}>
-                      <Text style={[styles.questXpText, { color: quest.completed ? theme.primary : theme.textSecondary }]}>+{quest.xp_reward} XP</Text>
-                    </View>
+                    <StatusPill
+                      label={`+${quest.xp_reward} XP`}
+                      color={quest.completed ? theme.primary : theme.accent}
+                      size="sm"
+                    />
                   </View>
                   <View style={[styles.questMiniTrack, { backgroundColor: theme.surfaceHighlight }]}>
                     <View
@@ -203,7 +212,7 @@ export default function QuestsScreen() {
                       ? `${Math.round(quest.current_value)}g consumed (${Math.round(quest.target_value)}g limit)`
                       : (quest.quest_type === 'fuel' && quest.target_value >= 50
                         ? (quest.completed ? 'Target met' : `Score: ${Math.round(quest.current_value)} / ${Math.round(quest.target_value)} min`)
-                        : `${quest.current_value}/${quest.target_value}`)}
+                        : `${fmtScore(quest.current_value)}/${fmtScore(quest.target_value)}`)}
                   </Text>
                 </View>
               </View>
@@ -337,15 +346,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: '600',
     flex: 1,
-  },
-  questXpBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  questXpText: {
-    fontSize: 10,
-    fontWeight: '700',
   },
   questMiniTrack: {
     height: 4,

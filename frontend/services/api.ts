@@ -33,6 +33,7 @@ class ApiClient {
       || endpoint.includes('/meal-plans/generate')
       || endpoint.includes('/healthify')
       || endpoint.includes('/scan/meal')
+      || endpoint.includes('/scan/smart')
       || endpoint.includes('/scan/product/image')
     ) {
       return this.aiTimeout;
@@ -199,7 +200,19 @@ class ApiClient {
         }
       }
     }
-    throw new Error(userMessage);
+    const clientError = new Error(userMessage);
+    // Attach machine-readable info so callers can branch on structured
+    // errors (e.g. scan_quota_exceeded → upsell sheet instead of Alert).
+    (clientError as any).status = response.status;
+    if (
+      error.detail
+      && typeof error.detail === 'object'
+      && !Array.isArray(error.detail)
+      && typeof error.detail.code === 'string'
+    ) {
+      (clientError as any).code = error.detail.code;
+    }
+    throw clientError;
   }
 
   /**
@@ -417,6 +430,97 @@ class ApiClient {
       clearTimeout(timer);
     }
   }
+
+  /**
+   * Multipart upload with named-SSE-event response (scan streaming).
+   *
+   * Uses expo/fetch, which supports streamed response bodies on native
+   * (unlike the global RN fetch that `stream()` above falls back around).
+   * Parses `event: X\ndata: {...}` frames with cross-chunk line buffering.
+   * Throws on any failure BEFORE the first event so callers can fall back
+   * to the blocking endpoint; errors after events surface as-is.
+   */
+  async uploadStream(
+    endpoint: string,
+    formData: FormData,
+    onEvent: (event: string, payload: any) => void,
+  ): Promise<void> {
+    const { fetch: expoFetch } = require('expo/fetch');
+    const controller = new AbortController();
+    // Idle timeout, reset on every received chunk — a healthy stream keeps
+    // emitting; a stalled one aborts without waiting the whole aiTimeout.
+    let timer = setTimeout(() => controller.abort(), this.aiTimeout);
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), this.aiTimeout);
+    };
+
+    try {
+      const doFetch = () => expoFetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: this.getUploadHeaders(),
+        body: formData,
+        signal: controller.signal,
+      });
+
+      let response = await doFetch();
+      if (response.status === 401 && this.shouldTreat401AsSessionExpiry(endpoint)) {
+        const refreshed = await this.tryRefresh();
+        if (refreshed) response = await doFetch();
+      }
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Stream failed: ${response.status}`);
+      }
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Streaming not supported by this runtime.');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const emitFrame = (frame: string) => {
+        let eventName = '';
+        let data = '';
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+          else if (line.startsWith('data: ')) data = line.slice(6);
+        }
+        if (!eventName) return;
+        try {
+          onEvent(eventName, data ? JSON.parse(data) : {});
+        } catch (parseErr: any) {
+          void reportClientError({
+            source: 'stream',
+            message: 'SSE frame parse error',
+            context: { endpoint, event: eventName, error: parseErr?.message },
+          });
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        resetTimer();
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf('\n\n');
+        while (boundary >= 0) {
+          emitFrame(buffer.slice(0, boundary));
+          buffer = buffer.slice(boundary + 2);
+          boundary = buffer.indexOf('\n\n');
+        }
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) emitFrame(buffer);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new Error('Streaming scan timed out.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 export const api = new ApiClient();
@@ -503,7 +607,16 @@ export const foodApi = {
   getDetail: (id: string) => api.get<any>(`/foods/${id}`),
 };
 
+export interface ScanQuota {
+  limit: number;
+  used_today: number;
+  remaining: number | null;
+  is_premium: boolean;
+}
+
 export const wholeFoodScanApi = {
+  /** Free-tier daily AI-scan quota (remaining is null for premium users). */
+  getQuota: () => api.get<ScanQuota>('/scan/quota'),
   inferImageMimeType: (uri?: string, providedType?: string | null) => {
     const normalized = (providedType || '').trim().toLowerCase();
     if (normalized) {
@@ -616,6 +729,69 @@ export const wholeFoodScanApi = {
     if (data.forceScanType) form.append('force_scan_type', data.forceScanType);
     if (data.captureType) form.append('capture_type', data.captureType);
     return api.upload<any>('/scan/smart', form);
+  },
+  /**
+   * Streaming variant of analyzeSmart (POST /scan/smart/stream, SSE).
+   *
+   * Resolves with the same discriminated payload shape as analyzeSmart so the
+   * two are drop-in interchangeable. Progress events (`quality`, `components`)
+   * fire through onProgress before the terminal event arrives — render them
+   * for a fast first paint. Rejects on transport failure; callers should fall
+   * back to the blocking analyzeSmart.
+   */
+  analyzeSmartStream: async (
+    data: {
+      imageUri: string;
+      imageName?: string | null;
+      imageType?: string | null;
+      meal_type?: string;
+      portion_size?: string;
+      source_context?: string;
+      forceScanType?: 'meal' | 'label';
+      captureType?: string;
+    },
+    onProgress?: (event: string, payload: any) => void,
+  ): Promise<any> => {
+    const form = new FormData();
+    const imageType = wholeFoodScanApi.inferImageMimeType(data.imageUri, data.imageType);
+    const extension = imageType.split('/')[1] || 'jpg';
+    form.append('image', {
+      uri: data.imageUri,
+      name: data.imageName || `scan.${extension}`,
+      type: imageType,
+    } as any);
+    if (data.meal_type) form.append('meal_type', data.meal_type);
+    if (data.portion_size) form.append('portion_size', data.portion_size);
+    if (data.source_context) form.append('source_context', data.source_context);
+    if (data.forceScanType) form.append('force_scan_type', data.forceScanType);
+    if (data.captureType) form.append('capture_type', data.captureType);
+
+    let terminal: any = null;
+    await api.uploadStream('/scan/smart/stream', form, (event, payload) => {
+      switch (event) {
+        case 'final':
+          terminal = { scan_type: 'meal', meal: payload };
+          break;
+        case 'label':
+          terminal = { scan_type: 'label', label: payload };
+          break;
+        case 'beverage':
+          terminal = { scan_type: 'beverage', beverage: payload };
+          break;
+        case 'not_food':
+          terminal = { scan_type: 'not_food', not_food: { reason: payload?.not_food_reason } };
+          break;
+        case 'degraded':
+          terminal = { scan_type: 'degraded', degraded: payload };
+          break;
+        default:
+          onProgress?.(event, payload);
+      }
+    });
+    if (!terminal) {
+      throw new Error('Scan stream ended without a result.');
+    }
+    return terminal;
   },
   updateMeal: (scanId: string, data: {
     meal_label: string;

@@ -1,6 +1,7 @@
 /**
  * FuelCalendarHeatMap — Monthly grid of daily Fuel Score cells.
- * Green/amber/red coloring at a glance. Flex meals get a diamond icon.
+ * One indicator language: each logged day shows a single tier-colored dot;
+ * room-for-life (flex) days add a subtle amber ring around that same dot.
  */
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
@@ -151,11 +152,8 @@ export function FuelCalendarHeatMap({
                   {dayNum}
                 </Text>
                 {hasData && (
-                  <View style={[styles.scoreDot, { backgroundColor: TIER_COLORS[cell.tier] || theme.textTertiary }]} />
-                )}
-                {cell.is_flex && hasData && (
-                  <View style={styles.flexMarker}>
-                    <Ionicons name="ticket" size={7} color="#F59E0B" />
+                  <View style={[styles.dotRing, cell.is_flex && styles.dotRingFlex]}>
+                    <View style={[styles.scoreDot, { backgroundColor: TIER_COLORS[cell.tier] || theme.textTertiary }]} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -192,7 +190,9 @@ export function FuelCalendarHeatMap({
           </View>
         ))}
         <View style={styles.legendItem}>
-          <Ionicons name="restaurant" size={8} color="#F59E0B" />
+          <View style={[styles.dotRing, styles.dotRingFlex]}>
+            <View style={[styles.scoreDot, { backgroundColor: theme.textTertiary }]} />
+          </View>
           <Text style={[styles.legendText, { color: theme.textTertiary }]}>Room for life</Text>
         </View>
       </View>
@@ -255,18 +255,20 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    marginTop: 1,
   },
-  flexMarker: {
-    position: 'absolute',
-    top: 1,
-    right: 1,
-    backgroundColor: '#F59E0B18',
-    borderRadius: 4,
-    width: 12,
-    height: 12,
+  // Constant-size wrapper so dot position doesn't shift between plain and
+  // room-for-life days; the flex variant just paints the ring border.
+  dotRing: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 1,
+  },
+  dotRingFlex: {
+    borderWidth: 1,
+    borderColor: '#F59E0B',
   },
   legend: {
     flexDirection: 'row',

@@ -15,15 +15,16 @@ import { FuelScoreBadge } from './FuelScoreBadge';
 import { useTheme } from '../hooks/useTheme';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MealMES } from '../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, MacroColors, Spacing } from '../constants/Colors';
+import { BorderRadius, FontSize, MacroColors, ScoreColors, Spacing } from '../constants/Colors';
+import { fmtCalParts } from '../utils/format';
 
 // ── Fuel tier config ────────────────────────────────────────────────────────
 const FUEL_TIERS = [
-  { min: 90, color: '#22C55E', label: 'Elite' },
+  { min: 90, color: ScoreColors.good, label: 'Elite' },
   { min: 75, color: '#4ADE80', label: 'Strong' },
-  { min: 60, color: '#F59E0B', label: 'Decent' },
+  { min: 60, color: ScoreColors.warning, label: 'Decent' },
   { min: 40, color: '#FB923C', label: 'Mixed' },
-  { min: 0, color: '#EF4444', label: 'Flex' },
+  { min: 0, color: ScoreColors.danger, label: 'Flex' },
 ];
 function getFuelTier(score: number) {
   return FUEL_TIERS.find((t) => score >= t.min) ?? FUEL_TIERS[FUEL_TIERS.length - 1];
@@ -65,7 +66,9 @@ type DisplayItem =
 // ── Props ───────────────────────────────────────────────────────────────────
 interface NutrientValue {
   consumed: number;
-  target: number;
+  /** null/undefined = target not set up (distinct from an explicit 0) —
+   *  the card renders "—" and suppresses progress/over states. */
+  target: number | null | undefined;
 }
 
 interface TodayProgressCardProps {
@@ -151,6 +154,9 @@ function TodayProgressCardImpl({
   const mealCount = displayItems.length;
   const hasFuel = todayFuelScore != null && todayFuelScore > 0;
   const tier = hasFuel ? getFuelTier(todayFuelScore!) : null;
+  // MES chip color comes from the caller's tier; fall back to the neutral
+  // "tier unknown" grey rather than a hardcoded macro-ish violet.
+  const mesChipColor = todayMesTierColor ?? getTierConfig('no_data').color;
 
   const macroValues: Record<string, NutrientValue> = {
     calories,
@@ -158,6 +164,11 @@ function TodayProgressCardImpl({
     carbs,
     fat,
   };
+
+  // E1: distinguish "targets never set up" from "target is 0". When every
+  // macro target is missing, show one setup CTA instead of four 0/0 tiles.
+  const hasTarget = (v: NutrientValue) => v.target != null && v.target > 0;
+  const allTargetsMissing = !MACRO_CONFIG.some((m) => hasTarget(macroValues[m.key]));
 
   const trackColor = theme.surfaceHighlight;
 
@@ -195,9 +206,9 @@ function TodayProgressCardImpl({
                 <Text style={[styles.scoreChipText, { color: tier.color }]}>{todayFuelScore}</Text>
               </View>
               {(todayMesScore ?? 0) > 0 && (
-                <View style={[styles.scoreChip, { backgroundColor: (todayMesTierColor ?? '#8B5CF6') + '15' }]}>
-                  <Ionicons name="flash" size={11} color={todayMesTierColor ?? '#8B5CF6'} />
-                  <Text style={[styles.scoreChipText, { color: todayMesTierColor ?? '#8B5CF6' }]}>{todayMesScore}</Text>
+                <View style={[styles.scoreChip, { backgroundColor: mesChipColor + '15' }]}>
+                  <Ionicons name="flash" size={11} color={mesChipColor} />
+                  <Text style={[styles.scoreChipText, { color: mesChipColor }]}>{todayMesScore}</Text>
                 </View>
               )}
             </View>
@@ -215,42 +226,75 @@ function TodayProgressCardImpl({
           animation; render order here drives the perceived stagger.
       */}
       <View style={styles.macroSection}>
-        <View style={styles.macroRow}>
-          {MACRO_CONFIG.map((macro) => {
-            const v = macroValues[macro.key];
-            const pct = v.target > 0 ? v.consumed / v.target : 0;
-            const diff = Math.round(v.target - v.consumed);
-            const isOver = diff < 0;
-            const displayDiff = Math.abs(diff);
-            const isCalories = macro.key === 'calories';
-            const ringColor = isCalories && tier ? tier.color : macro.color;
+        {allTargetsMissing ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/(tabs)/chronometer/metabolic-onboarding' as any)}
+            style={[styles.setupTargets, { backgroundColor: theme.primary + '0E', borderColor: theme.primary + '30' }]}
+            accessibilityRole="button"
+            accessibilityLabel="Set up your targets"
+          >
+            <View style={[styles.setupTargetsIcon, { backgroundColor: theme.primary + '18' }]}>
+              <Ionicons name="options-outline" size={18} color={theme.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.setupTargetsTitle, { color: theme.text }]}>Set up your targets</Text>
+              <Text style={[styles.setupTargetsSub, { color: theme.textSecondary }]}>
+                Personalize your daily calorie and macro goals
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.macroRow}>
+            {MACRO_CONFIG.map((macro) => {
+              const v = macroValues[macro.key];
+              const targetSet = hasTarget(v);
+              const pct = targetSet ? v.consumed / (v.target as number) : 0;
+              const diff = targetSet ? Math.round((v.target as number) - v.consumed) : 0;
+              const isOver = diff < 0;
+              const displayDiff = Math.abs(diff);
+              const isCalories = macro.key === 'calories';
+              const ringColor = isCalories && tier ? tier.color : macro.color;
+              // Cal tile routes through fmtCalParts — never string-concat the
+              // value and unit inline (the "0"+"2459" bug).
+              const consumedText = isCalories
+                ? fmtCalParts(v.consumed).value
+                : String(Math.round(v.consumed));
+              const calTargetParts = isCalories && targetSet ? fmtCalParts(v.target as number) : null;
+              const targetText = !targetSet
+                ? '—'
+                : calTargetParts
+                  ? `${calTargetParts.value} ${calTargetParts.unit}`
+                  : `${Math.round(v.target as number)}${macro.unit}`;
 
-            return (
-              <View key={macro.key} style={styles.macroItem}>
-                <MacroRing
-                  progress={pct}
-                  size={MACRO_RING_SIZE}
-                  color={ringColor}
-                  trackColor={trackColor}
-                />
-                <Text style={[styles.macroValue, { color: theme.text }]}>
-                  {Math.round(v.consumed)}
-                  <Text style={[styles.macroTarget, { color: theme.textTertiary }]}>
-                    /{Math.round(v.target)}{macro.unit}
+              return (
+                <View key={macro.key} style={styles.macroItem}>
+                  <MacroRing
+                    progress={pct}
+                    size={MACRO_RING_SIZE}
+                    color={ringColor}
+                    trackColor={trackColor}
+                  />
+                  <Text style={[styles.macroValue, { color: theme.text }]}>
+                    {consumedText}
+                    <Text style={[styles.macroTarget, { color: theme.textTertiary }]}>
+                      /{targetText}
+                    </Text>
                   </Text>
-                </Text>
-                <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>
-                  {macro.label}
-                </Text>
-                {v.target > 0 && (
-                  <Text style={[styles.macroRemaining, { color: isOver ? '#EF4444AA' : ringColor + 'AA' }]}>
-                    {displayDiff}{macro.unit} {isOver ? 'over' : 'left'}
+                  <Text style={[styles.macroLabel, { color: theme.textTertiary }]}>
+                    {macro.label}
                   </Text>
-                )}
-              </View>
-            );
-          })}
-        </View>
+                  {targetSet && (
+                    <Text style={[styles.macroRemaining, { color: isOver ? '#EF4444AA' : ringColor + 'AA' }]}>
+                      {displayDiff}{macro.unit} {isOver ? 'over' : 'left'}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* ── Meals ── */}
@@ -273,7 +317,7 @@ function TodayProgressCardImpl({
             onPress={() => router.push('/scan' as any)}
           >
             <LinearGradient
-              colors={['#22C55E', '#059669'] as const}
+              colors={[ScoreColors.good, '#059669'] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.emptyBtn}
@@ -393,8 +437,8 @@ function GroupedMealRow({
       </View>
 
       <View style={styles.sideRow}>
-        <View style={styles.sideDot} />
-        <Ionicons name="leaf-outline" size={12} color="#22C55E" style={{ marginRight: 4 }} />
+        <View style={[styles.sideDot, { backgroundColor: theme.primary }]} />
+        <Ionicons name="leaf-outline" size={12} color={theme.primary} style={{ marginRight: 4 }} />
         <Text style={[styles.sideTitle, { color: theme.textSecondary }]} numberOfLines={1}>
           {side.title || 'Side'}
         </Text>
@@ -512,6 +556,33 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'] as any,
   },
 
+  // Targets-not-set CTA (E1)
+  setupTargets: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm + 2,
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
+  },
+  setupTargetsIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setupTargetsTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  setupTargetsSub: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+
   // Meal divider
   mealDivider: {
     height: StyleSheet.hairlineWidth,
@@ -597,7 +668,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22C55E',
     marginRight: 8,
   },
   sideTitle: {

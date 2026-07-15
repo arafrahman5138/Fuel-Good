@@ -50,6 +50,8 @@ interface MealPlanState {
   setSelectedDay: (day: string) => void;
   loadCurrentPlan: (forceReload?: boolean) => Promise<void>;
   updateMealServings: (itemId: string, servings: number) => Promise<void>;
+  /** Restore initial state — called on logout so the next account starts clean. */
+  reset: () => void;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -122,4 +124,13 @@ export const useMealPlanStore = create<MealPlanState>((set, get) => ({
       set({ currentPlan: plan });
     }
   },
+  reset: () =>
+    set({
+      currentPlan: null,
+      isGenerating: false,
+      isLoading: false,
+      hasLoaded: false,
+      loadError: false,
+      selectedDay: getTodayName(),
+    }),
 }));

@@ -23,7 +23,7 @@ import { nutritionApi, foodApi, recipeApi, fuelApi, metabolicApi } from '../../.
 import { useMetabolicBudgetStore, getTierConfig, getTierFromScore } from '../../../stores/metabolicBudgetStore';
 import { useFuelStore } from '../../../stores/fuelStore';
 import type { MealMES } from '../../../stores/metabolicBudgetStore';
-import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
+import { BorderRadius, FontSize, MacroColors, ScoreColors, Spacing } from '../../../constants/Colors';
 import { toDateKey } from '../../../utils/dateKey';
 
 // ── Types ──
@@ -52,11 +52,11 @@ interface SearchResult {
 
 // ── Fuel tier config ──
 const FUEL_TIERS = [
-  { min: 90, color: '#22C55E', label: 'Elite' },
+  { min: 90, color: ScoreColors.good, label: 'Elite' },
   { min: 75, color: '#4ADE80', label: 'Strong' },
-  { min: 60, color: '#F59E0B', label: 'Decent' },
+  { min: 60, color: ScoreColors.warning, label: 'Decent' },
   { min: 40, color: '#FB923C', label: 'Mixed' },
-  { min: 0, color: '#EF4444', label: 'Flex' },
+  { min: 0, color: ScoreColors.danger, label: 'Flex' },
 ];
 function getFuelTier(score: number) {
   return FUEL_TIERS.find((t) => score >= t.min) ?? FUEL_TIERS[FUEL_TIERS.length - 1];
@@ -65,10 +65,10 @@ function getFuelTier(score: number) {
 // ── Macro ring config ──
 const MACRO_RING_SIZE = 44;
 const MACRO_CONFIG = [
-  { key: 'calories', label: 'Cal', unit: '', color: '#22C55E' },
-  { key: 'protein', label: 'Protein', unit: 'g', color: '#22C55E' },
-  { key: 'carbs', label: 'Carbs', unit: 'g', color: '#F59E0B' },
-  { key: 'fat', label: 'Fat', unit: 'g', color: '#EC4899' },
+  { key: 'calories', label: 'Cal', unit: '', color: MacroColors.neutral },
+  { key: 'protein', label: 'Protein', unit: 'g', color: MacroColors.protein },
+  { key: 'carbs', label: 'Carbs', unit: 'g', color: MacroColors.carbs },
+  { key: 'fat', label: 'Fat', unit: 'g', color: MacroColors.fat },
 ];
 
 function cleanScanTitle(raw: string | undefined, snap: Record<string, any>) {
@@ -707,10 +707,10 @@ function MacroDots({ theme, cal, pro, carb, fat, fiber }: { theme: any; cal: num
   return (
     <View style={st.macroDots}>
       {[
-        { label: 'PROTEIN', val: pro, color: '#22C55E' },
-        { label: 'CARBS', val: carb, color: '#3B82F6' },
-        { label: 'FAT', val: fat, color: '#F59E0B' },
-        { label: 'FIBER', val: fiber, color: '#A855F7' },
+        { label: 'PROTEIN', val: pro, color: MacroColors.protein },
+        { label: 'CARBS', val: carb, color: MacroColors.carbs },
+        { label: 'FAT', val: fat, color: MacroColors.fat },
+        { label: 'FIBER', val: fiber, color: MacroColors.fiber },
       ].map((m) => (
         <View key={m.label} style={st.macroDotItem}>
           <View style={[st.macroDot, { backgroundColor: m.color }]} />

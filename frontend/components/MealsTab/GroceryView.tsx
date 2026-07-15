@@ -199,41 +199,44 @@ export function GroceryView() {
         </Text>
       </View>
 
-      {/* Progress Summary */}
-      <View style={{ paddingHorizontal: Spacing.xl }}>
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={styles.costRow}>
-            <View>
-              <Text style={[styles.costLabel, { color: theme.textTertiary }]}>Items</Text>
-              <Text style={[styles.costValue, { color: theme.text }]}>{items.length}</Text>
+      {/* Progress Summary — hidden while loading or on error so zeroed stats
+          don't contradict the error/loading state below */}
+      {!error && !loading ? (
+        <View style={{ paddingHorizontal: Spacing.xl }}>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={styles.costRow}>
+              <View>
+                <Text style={[styles.costLabel, { color: theme.textTertiary }]}>Items</Text>
+                <Text style={[styles.costValue, { color: theme.text }]}>{items.length}</Text>
+              </View>
+              <View style={[styles.costDivider, { backgroundColor: theme.border }]} />
+              <View>
+                <Text style={[styles.costLabel, { color: theme.textTertiary }]}>Progress</Text>
+                <Text style={[styles.costValue, { color: theme.accent }]}>
+                  {items.length > 0 ? Math.round((checkedCount / items.length) * 100) : 0}%
+                </Text>
+              </View>
             </View>
-            <View style={[styles.costDivider, { backgroundColor: theme.border }]} />
-            <View>
-              <Text style={[styles.costLabel, { color: theme.textTertiary }]}>Progress</Text>
-              <Text style={[styles.costValue, { color: theme.accent }]}>
-                {items.length > 0 ? Math.round((checkedCount / items.length) * 100) : 0}%
-              </Text>
-            </View>
-          </View>
 
-          {/* Progress bar */}
-          <View style={[styles.progressBg, { backgroundColor: theme.surfaceHighlight }]}>
-            <LinearGradient
-              colors={theme.gradient.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[
-                styles.progressFill,
-                {
-                  width: items.length > 0
-                    ? `${(checkedCount / items.length) * 100}%`
-                    : '0%',
-                },
-              ]}
-            />
+            {/* Progress bar */}
+            <View style={[styles.progressBg, { backgroundColor: theme.surfaceHighlight }]}>
+              <LinearGradient
+                colors={theme.gradient.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[
+                  styles.progressFill,
+                  {
+                    width: items.length > 0
+                      ? `${(checkedCount / items.length) * 100}%`
+                      : '0%',
+                  },
+                ]}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
 
       {/* Grocery Sections */}
       {loading ? (

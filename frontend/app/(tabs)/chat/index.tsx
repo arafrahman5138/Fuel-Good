@@ -230,20 +230,35 @@ export default function ChatScreen() {
   //   - empty content with no recipe (transient LLM/timeout error), OR
   //   - 100-200 chars of prose that ends mid-word/clause with no terminator (max_tokens hit).
   // We promote these to the same retry UX as network errors — better than displaying garbage.
+  // Relaxed (E2): the old rule flagged ANY reply under 200 chars lacking terminal
+  // punctuation, discarding legitimate short answers. Now a reply is unusable only
+  // if it is effectively empty (<10 chars) or BOTH short (<200 chars) AND visibly
+  // cut off mid-sentence — and never when the payload carries a recipe or
+  // nutrition comparison (those render on their own).
   const isUnusableAssistantResponse = (
     message: string,
     hasRecipe: boolean,
+    hasNutrition: boolean,
   ): boolean => {
+    if (hasRecipe || hasNutrition) return false;
     const trimmed = (message || '').trim();
-    // No recipe and no message at all → definitely unusable.
-    if (!hasRecipe && trimmed.length === 0) return true;
-    // No recipe, has prose, but the prose ends without a sentence-terminating punctuation
-    // mark and is shorter than ~30 words → almost certainly truncated.
-    if (!hasRecipe && trimmed.length > 0 && trimmed.length < 200) {
-      const endsClean = /[.!?…)\]"']\s*$/.test(trimmed);
-      if (!endsClean) return true;
-    }
+    // Effectively empty → unusable.
+    if (trimmed.length < 10) return true;
+    // Visibly truncated: short prose ending without sentence-terminating
+    // punctuation. A complete short sentence (e.g. 156 chars ending ".") passes.
+    if (trimmed.length < 200 && !/[.!?…)\]"']\s*$/.test(trimmed)) return true;
     return false;
+  };
+
+  // Message payloads should carry string content, but degraded backend responses
+  // have shipped objects in `message`. Only ever pass/render strings.
+  const coerceMessageContent = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      const inner = (value as any).content;
+      if (typeof inner === 'string') return inner;
+    }
+    return '';
   };
 
   const addAssistantPayload = (payload: any): { ok: boolean } => {
@@ -251,19 +266,23 @@ export default function ChatScreen() {
     if (!rawRecipe) {
       console.warn('[Healthify] No recipe in payload:', JSON.stringify(payload)?.slice(0, 300));
     }
+    // Guard: `payload.message` can be an object lacking `.content` — never let
+    // an object flow into content (it would render as garbage or crash .slice).
+    const messageContent = coerceMessageContent(payload?.message?.content)
+      || coerceMessageContent(payload?.message);
     const normalized = normalizeAssistantPayload({
-      content: payload?.message?.content || payload?.message || '',
+      content: messageContent,
       recipe: rawRecipe,
       swaps: payload?.ingredient_swaps || payload?.swaps,
       nutrition: payload?.nutrition_comparison || payload?.nutrition,
     });
     if (!normalized.recipe) {
-      console.warn('[Healthify] normalizeAssistantPayload returned no recipe. Content preview:', (payload?.message?.content || payload?.message || '').slice(0, 200));
+      console.warn('[Healthify] normalizeAssistantPayload returned no recipe. Content preview:', messageContent.slice(0, 200));
     }
     // Pass-5 F2: short-circuit on empty/truncated responses so the user gets a
     // retry CTA instead of a mid-sentence fragment. Caller should treat ok=false
     // the same as a thrown error.
-    if (isUnusableAssistantResponse(normalized.message, Boolean(normalized.recipe))) {
+    if (isUnusableAssistantResponse(normalized.message, Boolean(normalized.recipe), Boolean(normalized.nutrition))) {
       console.warn('[Healthify] Detected unusable response (empty or truncated). Surfacing retry UI.');
       return { ok: false };
     }
@@ -278,11 +297,24 @@ export default function ChatScreen() {
     return { ok: true };
   };
 
-  const submitChatMessage = async (userMessage: string, chatContext?: ChatContext) => {
+  const submitChatMessage = async (
+    userMessage: string,
+    chatContext?: ChatContext,
+    options?: { isRetry?: boolean },
+  ) => {
     lastUserInputRef.current = userMessage;
     const ctx = chatContext ?? pendingContextRef.current ?? undefined;
     pendingContextRef.current = null;
-    addMessage({ role: 'user', content: userMessage });
+    if (options?.isRetry) {
+      // Retrying: the user bubble is already in the transcript — don't duplicate
+      // it. Drop the trailing error bubble so the retry replaces it in place.
+      useChatStore.setState((state) => {
+        const last = state.messages[state.messages.length - 1] as any;
+        return last?.isError ? { messages: state.messages.slice(0, -1) } : {};
+      });
+    } else {
+      addMessage({ role: 'user', content: userMessage });
+    }
     setLoading(true);
     setStreamingText('');
     try {
@@ -886,7 +918,7 @@ export default function ChatScreen() {
                     style={[styles.bubbleContent, styles.userBubbleContent]}
                   >
                     <Text style={[styles.messageText, { color: '#FFFFFF' }]}>
-                      {payload?.message || msg.content}
+                      {coerceMessageContent(payload?.message) || coerceMessageContent(msg.content)}
                     </Text>
                   </LinearGradient>
                 ) : (msg as any).isError ? (
@@ -894,7 +926,7 @@ export default function ChatScreen() {
                     activeOpacity={0.8}
                     onPress={() => {
                       if (lastUserInputRef.current && !isLoading) {
-                        void submitChatMessage(lastUserInputRef.current);
+                        void submitChatMessage(lastUserInputRef.current, undefined, { isRetry: true });
                       }
                     }}
                     style={[
@@ -906,7 +938,7 @@ export default function ChatScreen() {
                     <View style={styles.errorRow}>
                       <Ionicons name="warning-outline" size={16} color={theme.error} />
                       <Text style={[styles.messageText, { color: theme.error, flex: 1 }]}>
-                        {payload?.message || msg.content}
+                        {coerceMessageContent(payload?.message) || coerceMessageContent(msg.content)}
                       </Text>
                     </View>
                     <View style={styles.retryRow}>
@@ -922,10 +954,10 @@ export default function ChatScreen() {
                     ]}
                   >
                     <Text style={[styles.messageText, { color: theme.text }]}>
-                      {payload?.message || msg.content}
+                      {coerceMessageContent(payload?.message) || coerceMessageContent(msg.content)}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => handleReportMessage(payload?.message || msg.content || '')}
+                      onPress={() => handleReportMessage(coerceMessageContent(payload?.message) || coerceMessageContent(msg.content))}
                       accessibilityRole="button"
                       accessibilityLabel="Report this response"
                       hitSlop={8}

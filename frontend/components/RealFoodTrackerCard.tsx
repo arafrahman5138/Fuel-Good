@@ -50,16 +50,16 @@ function RealFoodTrackerCardImpl({
   const goalMet = realFoodMeals >= realFoodGoal && realFoodGoal > 0;
 
   const headline = hasLogs
-    ? `${realFoodMeals} of ${realFoodGoal} real-food meals`
+    ? `${realFoodMeals} of ${realFoodGoal} real-food meal${realFoodGoal !== 1 ? 's' : ''}`
     : 'Your week starts with your first log';
 
   let roomLine: string;
   if (!hasLogs) {
-    roomLine = `Room for ${roomTotal} off-baseline meal${roomTotal !== 1 ? 's' : ''} this week`;
+    roomLine = `${roomTotal} room-for-life meal${roomTotal !== 1 ? 's' : ''} available this week`;
   } else if (goalMet) {
     roomLine = 'Goal met — your baseline is strong';
   } else if (roomRemaining > 0) {
-    roomLine = `Room for ${roomRemaining} more off-baseline meal${roomRemaining !== 1 ? 's' : ''}`;
+    roomLine = `Room for ${roomRemaining} more room-for-life meal${roomRemaining !== 1 ? 's' : ''}`;
   } else {
     roomLine = 'Room used — your next clean meal rebuilds the week';
   }
@@ -85,7 +85,11 @@ function RealFoodTrackerCardImpl({
         </View>
         <Text style={[styles.kicker, { color: theme.textTertiary }]}>REAL FOOD THIS WEEK</Text>
         {hasLogs && weeklyAvg > 0 && (
-          <Text style={[styles.avgChip, { color: theme.textSecondary }]}>
+          <Text
+            allowFontScaling
+            maxFontSizeMultiplier={1.4}
+            style={[styles.avgChip, { color: theme.textSecondary }]}
+          >
             Fuel {Math.round(weeklyAvg)} · {weeklyTierLabel(weeklyAvg)}
           </Text>
         )}

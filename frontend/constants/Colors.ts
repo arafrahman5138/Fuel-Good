@@ -94,13 +94,32 @@ export const MacroColors = {
   protein: '#22C55E',
   carbs:   '#F59E0B',
   fat:     '#8B5CF6',
-  fatAlt:  '#EC4899',   // pink variant used in TodayProgressCard
   fiber:   '#3B82F6',
   // Pass-5 F7: neutral slate for "informational" data points like calories that
   // shouldn't compete with macros for visual weight. Cal pills should always
   // use this so cal+protein on the same row don't both render brand-green.
   neutral: '#94A3B8',
 } as const;
+
+/**
+ * Pass-8: canonical macro tint — the house `color + '14'` (~8% alpha)
+ * pattern for tinted pills/backgrounds behind macro-colored content.
+ *
+ * This replaces per-file dark-variant hexes: screens must NOT keep local
+ * darkened/lightened copies of the macro palette for chip backgrounds —
+ * call `macroTint('carbs')` (or pass an explicit alpha byte such as '20').
+ *
+ * Escape hatch: if an accessibility audit flags a single channel (amber
+ * carbs is the usual suspect for contrast on light tints), introduce a
+ * narrowly-scoped `MacroColorsDark` override for that channel only —
+ * do not fork the whole palette per screen again.
+ */
+export function macroTint(
+  macro: keyof typeof MacroColors,
+  alpha?: string,
+): string {
+  return MacroColors[macro] + (alpha ?? '14');
+}
 
 /** Semantic score tier colors. */
 export const ScoreColors = {
@@ -181,6 +200,21 @@ export const FontWeight = {
   bold: '700' as const,
   black: '800' as const,
 };
+
+/**
+ * Caps for the OS font-size accessibility multiplier on <Text>.
+ *
+ * Usage: `<Text maxFontSizeMultiplier={MAX_FONT_MULTIPLIER.display}>` on
+ * hero/display numerals (score rings, big calorie tiles) so 200%+ system
+ * text settings scale them without shattering fixed-size layouts;
+ * `title` for card titles/section headers; `body` (2.0 = no practical cap)
+ * for running text, which should honor the user's setting fully.
+ */
+export const MAX_FONT_MULTIPLIER = {
+  display: 1.4,
+  title: 1.6,
+  body: 2.0,
+} as const;
 
 export const Layout = {
   /** Bottom padding for scrollable content to clear the floating tab bar */

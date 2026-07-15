@@ -221,7 +221,7 @@ export default function FuelWeeklyScreen() {
                 <View style={[styles.targetBanner, { backgroundColor: '#F59E0B10', marginTop: 6 }]}>
                   <Ionicons name="ticket" size={14} color="#F59E0B" />
                   <Text style={[styles.targetText, { color: '#D97706' }]}>
-                    {cleanLogged} real-food + {roomUsed} room-for-life = avg {Math.round(avg)} — {tierName} tier. The math works.
+                    {cleanLogged} real-food meal{cleanLogged !== 1 ? 's' : ''} + {roomUsed} room-for-life = avg {Math.round(avg)} — {tierName} tier. The math works.
                   </Text>
                 </View>
               );

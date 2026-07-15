@@ -1,26 +1,45 @@
 /**
  * MealImage — Displays a food image with a gradient placeholder fallback.
  *
- * Shows a beautiful gradient placeholder with a fork/knife icon when no
- * image_url is available. Handles loading states smoothly.
+ * Shows a quiet, surface-adjacent gradient placeholder with a fork/knife
+ * glyph when no image_url is available. Handles loading states smoothly.
  */
 import React, { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { resolveImageUrl } from '../utils/imageUrl';
-import { useTheme } from '../hooks/useTheme';
+import { useIsDark } from '../hooks/useTheme';
 import { BorderRadius } from '../constants/Colors';
 
-// Rotating gradient pairs for visual variety based on title hash
-const GRADIENTS: [string, string][] = [
-  ['#FDE68A', '#F59E0B'],  // warm gold
-  ['#BBF7D0', '#22C55E'],  // fresh green
-  ['#BFDBFE', '#3B82F6'],  // cool blue
-  ['#DDD6FE', '#8B5CF6'],  // soft purple
-  ['#FECDD3', '#F43F5E'],  // warm rose
-  ['#FED7AA', '#EA580C'],  // vibrant orange
+// Rotating gradient pairs for visual variety based on title hash.
+// Polish pass: the original palette was saturated brand-color pairs
+// (#FDE68A→#F59E0B gold, #FECDD3→#F43F5E rose, …) that read as loud
+// unfinished art next to real photos. These are low-chroma, surface-adjacent
+// tones — the per-title hash still varies the hue, but the family stays
+// quiet so placeholders recede instead of competing with photography.
+const GRADIENTS_LIGHT: [string, string][] = [
+  ['#ECE9E4', '#DCD5CA'],  // warm stone
+  ['#E7ECE6', '#D2DCD1'],  // muted sage
+  ['#E6EAEF', '#D2DAE3'],  // mist blue
+  ['#EAE8EF', '#D9D5E2'],  // lilac grey
+  ['#EFE9E9', '#E2D6D6'],  // blush grey
+  ['#E5ECEB', '#D0DDDB'],  // pale teal
 ];
+
+const GRADIENTS_DARK: [string, string][] = [
+  ['#211F1B', '#2B2822'],  // warm stone
+  ['#1C221D', '#252D26'],  // muted sage
+  ['#1C2026', '#242A33'],  // mist blue
+  ['#201F27', '#2A2833'],  // lilac grey
+  ['#241F20', '#2E2829'],  // blush grey
+  ['#1B2323', '#242E2D'],  // pale teal
+];
+
+// Single monochrome glyph at modest opacity. The old outline glyph at
+// 30-50% white read as an "✕" against the saturated gradients.
+const GLYPH_LIGHT = 'rgba(60,60,67,0.26)';
+const GLYPH_DARK = 'rgba(255,255,255,0.22)';
 
 function hashTitle(title: string): number {
   let hash = 0;
@@ -45,13 +64,14 @@ export function MealImage({
   height,
   borderRadius = BorderRadius.md,
 }: MealImageProps) {
-  const theme = useTheme();
+  const isDark = useIsDark();
   const [failed, setFailed] = useState(false);
   const resolvedUrl = resolveImageUrl(imageUrl);
   const showImage = resolvedUrl && !failed;
 
-  const gradientIndex = hashTitle(title) % GRADIENTS.length;
-  const gradientColors = GRADIENTS[gradientIndex];
+  const gradients = isDark ? GRADIENTS_DARK : GRADIENTS_LIGHT;
+  const gradientColors = gradients[hashTitle(title) % gradients.length];
+  const glyphColor = isDark ? GLYPH_DARK : GLYPH_LIGHT;
 
   if (showImage) {
     return (
@@ -64,9 +84,9 @@ export function MealImage({
           style={[styles.gradient, { width, height, borderRadius, position: 'absolute' }]}
         >
           <Ionicons
-            name="restaurant-outline"
+            name="restaurant"
             size={Math.min(width, height) * 0.28}
-            color="rgba(255,255,255,0.3)"
+            color={glyphColor}
           />
         </LinearGradient>
         <Image
@@ -88,9 +108,9 @@ export function MealImage({
         style={[styles.gradient, { width, height, borderRadius }]}
       >
         <Ionicons
-          name="restaurant-outline"
+          name="restaurant"
           size={Math.min(width, height) * 0.28}
-          color="rgba(255,255,255,0.5)"
+          color={glyphColor}
         />
       </LinearGradient>
     </View>

@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MESScore } from '../stores/metabolicBudgetStore';
-import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
+import { FontSize, MacroColors, Spacing, BorderRadius } from '../constants/Colors';
 
 interface MealScoreSheetProps {
   visible: boolean;
@@ -50,10 +50,10 @@ export function MealScoreSheet({ visible, onClose, title, score, proteinTarget }
 
   const rows: SubRow[] = sub && weights
     ? [
-        { key: 'gis', label: 'GIS', fullName: 'Glycemic Impact', color: '#FF9500', gradient: ['#FF9500', '#F59E0B'], value: sub.gis, weightPct: Math.round(weights.gis * 100) },
-        { key: 'pas', label: 'PAS', fullName: 'Protein', color: '#34C759', gradient: ['#34C759', '#22C55E'], value: sub.pas, weightPct: Math.round(weights.protein * 100) },
-        { key: 'fs', label: 'FS', fullName: 'Fiber', color: '#4A90D9', gradient: ['#4A90D9', '#3B82F6'], value: sub.fs, weightPct: Math.round(weights.fiber * 100) },
-        { key: 'fas', label: 'FAS', fullName: 'Fat Adequacy', color: '#A855F7', gradient: ['#A855F7', '#8B5CF6'], value: sub.fas, weightPct: Math.round(weights.fat * 100) },
+        { key: 'gis', label: 'GIS', fullName: 'Glycemic Impact', color: MacroColors.carbs, gradient: [MacroColors.carbs, '#D97706'], value: sub.gis, weightPct: Math.round(weights.gis * 100) },
+        { key: 'pas', label: 'PAS', fullName: 'Protein', color: MacroColors.protein, gradient: [MacroColors.protein, '#16A34A'], value: sub.pas, weightPct: Math.round(weights.protein * 100) },
+        { key: 'fs', label: 'FS', fullName: 'Fiber', color: MacroColors.fiber, gradient: [MacroColors.fiber, '#2563EB'], value: sub.fs, weightPct: Math.round(weights.fiber * 100) },
+        { key: 'fas', label: 'FAS', fullName: 'Fat Adequacy', color: MacroColors.fat, gradient: [MacroColors.fat, '#7C3AED'], value: sub.fas, weightPct: Math.round(weights.fat * 100) },
       ]
     : [];
 
@@ -115,22 +115,22 @@ export function MealScoreSheet({ visible, onClose, title, score, proteinTarget }
             <View style={[styles.section, { backgroundColor: theme.surfaceHighlight + '60' }]}>
               <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Macros</Text>
               <View style={styles.macroGrid}>
-                <MacroCell label="Net Carbs" value={`${Math.round(netCarbs)}g`} color="#FF9500" theme={theme} />
+                <MacroCell label="Net Carbs" value={`${Math.round(netCarbs)}g`} color={MacroColors.carbs} theme={theme} />
                 <MacroCell
                   label="Protein"
                   value={`${Math.round(proteinG)}g`}
                   detail={proteinTarget ? `/ ${Math.round(proteinTarget)}g target` : undefined}
-                  color="#34C759"
+                  color={MacroColors.protein}
                   theme={theme}
                 />
                 <MacroCell
                   label="Fiber"
                   value={`${Math.round(effectiveFiberG)}g`}
                   detail={rs3G > 0 ? `incl. ${rs3G}g RS3` : undefined}
-                  color="#4A90D9"
+                  color={MacroColors.fiber}
                   theme={theme}
                 />
-                <MacroCell label="Fat" value={`${Math.round(fatG)}g`} color="#A855F7" theme={theme} />
+                <MacroCell label="Fat" value={`${Math.round(fatG)}g`} color={MacroColors.fat} theme={theme} />
               </View>
             </View>
 

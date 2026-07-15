@@ -74,6 +74,8 @@ interface FuelStreak {
   current_streak: number;
   longest_streak: number;
   fuel_target: number;
+  fuel_target_streak?: number;
+  fuel_target_longest?: number;
 }
 
 interface HealthPulseDimension {
@@ -146,6 +148,8 @@ interface FuelState {
   fetchFlexSuggestions: (date?: string) => Promise<void>;
   logManualFlex: (data: { meal_type?: string; tag?: string; date?: string }) => Promise<ManualFlexResult | null>;
   fetchAll: (date?: string, opts?: { force?: boolean }) => Promise<void>;
+  /** Restore initial state — called on logout so the next account starts clean. */
+  reset: () => void;
 }
 
 // Time window during which a repeat fetchAll for the same dateKey is
@@ -291,4 +295,18 @@ export const useFuelStore = create<FuelState>((set, get) => ({
       set({ error: e?.message || 'Failed to load fuel data', loading: false });
     }
   },
+
+  reset: () =>
+    set({
+      settings: null,
+      daily: null,
+      weekly: null,
+      streak: null,
+      healthPulse: null,
+      calendar: null,
+      flexSuggestions: null,
+      loading: false,
+      error: null,
+      _lastFetchedAt: {},
+    }),
 }));

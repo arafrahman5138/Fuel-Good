@@ -260,6 +260,8 @@ interface MetabolicBudgetState {
   patchProfile: (data: Partial<MetabolicProfile>) => Promise<void>;
   fetchAll: (date?: string, opts?: { force?: boolean }) => Promise<void>;
   fetchCompositeMES: (foodLogIds: string[]) => Promise<CompositeMES | null>;
+  /** Restore initial state — called on logout so the next account starts clean. */
+  reset: () => void;
 }
 
 // Time window during which a repeat fetchAll for the same dateKey is
@@ -438,4 +440,22 @@ export const useMetabolicBudgetStore = create<MetabolicBudgetState>((set, get) =
       return null;
     }
   },
+
+  reset: () =>
+    set({
+      budget: null,
+      budgetLoaded: false,
+      dailyScore: null,
+      mealScores: [],
+      remainingBudget: null,
+      scoreHistory: [],
+      weeklyScore: null,
+      streak: null,
+      profile: null,
+      loading: false,
+      _inflightBudget: null,
+      _inflightScore: null,
+      _inflightAll: null,
+      _lastFetchedAt: {},
+    }),
 }));

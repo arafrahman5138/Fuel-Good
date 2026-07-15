@@ -18,7 +18,7 @@ interface ChronometerSuccessModalProps {
 
 export function ChronometerSuccessModal({
   visible,
-  title = 'Logged to Chronometer',
+  title = 'Logged to Track',
   message,
   primaryLabel = 'View Chronometer',
   secondaryLabel = 'Stay Here',

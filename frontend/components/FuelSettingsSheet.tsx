@@ -29,7 +29,7 @@ const RATIO_PRESETS = [
     target: 90,
     label: 'Strict',
     ratio: '90 / 10',
-    description: 'Mostly whole foods — minimal flex',
+    description: 'Mostly whole foods — a little room for life',
     icon: 'shield-checkmark' as const,
     color: '#22C55E',
   },
@@ -37,7 +37,7 @@ const RATIO_PRESETS = [
     target: 80,
     label: 'Balanced',
     ratio: '80 / 20',
-    description: 'Great balance — room for a few off-baseline meals',
+    description: 'Great balance — room for a few room-for-life meals',
     icon: 'leaf' as const,
     color: '#4ADE80',
   },
@@ -188,7 +188,7 @@ export function FuelSettingsSheet({ visible, onClose }: FuelSettingsSheetProps) 
               <Ionicons name="sparkles" size={18} color={theme.primary} />
               <View style={{ flex: 1, marginLeft: Spacing.sm }}>
                 <Text style={[styles.previewTitle, { color: theme.text }]}>
-                  Room for ~{estimatedFlex} off-baseline meals a week
+                  ~{estimatedFlex} room-for-life meals a week
                 </Text>
                 <Text style={[styles.previewBody, { color: theme.textSecondary }]}>
                   Real food most of the time — room for restaurants, dessert, and life

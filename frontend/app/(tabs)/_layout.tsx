@@ -31,12 +31,16 @@ export default function TabLayout() {
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        // Pass-6 P0 #1 (worst single audit finding): tab transitions had ZERO motion.
-        // 'shift' enables React Navigation 7's horizontal slide between tabs (~250ms,
-        // outgoing slides toward inactive direction, incoming slides in from active).
-        // RN 7.x BottomTabs respects iOS Reduce Motion automatically — no extra guard
-        // needed. If 'shift' feels too aggressive, swap to 'fade' for a subtler cue.
-        animation: 'shift',
+        // Pass-6 P0 #1: tab transitions need a motion cue (zero motion was the worst
+        // single audit finding). Pass-8 P1 #1: under rapid navigation churn, 'shift'
+        // (native scene translate/detach) intermittently left a scene detached/at
+        // opacity 0 — tab bar alive, content permanently blank, no JS error for the
+        // ErrorBoundary to catch. 'fade' keeps the pass-6 motion cue on the safer
+        // opacity-only path; freezeOnBlur is pinned off so react-native-screens can
+        // never hold a frozen scene at blank. Do NOT switch back to 'shift' without
+        // re-running tasks/ui-audit-pass8/run_churn.sh (the wedge regression probe).
+        animation: 'fade',
+        freezeOnBlur: false,
         // Keep these for the custom bar to read
         tabBarActiveTintColor: theme.tabBar.active,
         tabBarInactiveTintColor: theme.tabBar.inactive,

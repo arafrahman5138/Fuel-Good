@@ -32,6 +32,10 @@ interface ChatState {
   clearChat: () => void;
   loadLastSession: () => Promise<void>;
   loadSessions: () => Promise<void>;
+  /** Restore initial state — called on logout so the next account starts clean.
+   *  Unlike clearChat (in-app "new chat"), this also wipes the sessions list
+   *  and the hasLoadedHistory flag so the next account re-fetches its own history. */
+  reset: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -49,6 +53,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
   appendStreamingText: (chunk) =>
     set((state) => ({ streamingText: state.streamingText + chunk })),
   clearChat: () => set({ messages: [], sessionId: null, streamingText: '' }),
+  reset: () =>
+    set({
+      messages: [],
+      sessionId: null,
+      isLoading: false,
+      streamingText: '',
+      sessions: [],
+      hasLoadedHistory: false,
+    }),
   loadSessions: async () => {
     try {
       const sessions = await chatApi.getSessions();

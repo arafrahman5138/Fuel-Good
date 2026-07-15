@@ -124,7 +124,7 @@ export default function FlexOnboarding() {
                       )}
                     </View>
                     <Text style={[styles.presetFlex, { color: isActive ? GOLD : theme.textSecondary }]}>
-                      Room for {preset.flexMeals} off-baseline meals a week
+                      {preset.flexMeals} room-for-life meals a week
                     </Text>
                   </View>
                   <View style={[styles.radio, { borderColor: isActive ? GOLD : theme.border }]}>

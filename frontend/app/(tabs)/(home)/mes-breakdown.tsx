@@ -11,6 +11,7 @@ import { BorderRadius, FontSize, Spacing } from '../../../constants/Colors';
 import { getTierConfig, getTierFromScore, useMetabolicBudgetStore } from '../../../stores/metabolicBudgetStore';
 import { useThemeStore } from '../../../stores/themeStore';
 import { toDateKey } from '../../../utils/dateKey';
+import { fmtScore } from '../../../utils/format';
 
 const COMPONENT_GUIDE = [
   {
@@ -142,7 +143,7 @@ export default function MESBreakdownScreen() {
               <Text style={[styles.tierPillText, { color: tierCfg.color }]}>{tierCfg.label}</Text>
             </View>
             <Text style={[styles.heroScoreText, { color: theme.textSecondary }]}>
-              {displayScore.toFixed(1)} / 100 weighted MES
+              {fmtScore(displayScore)} / 100 weighted MES
             </Text>
           </View>
         </View>

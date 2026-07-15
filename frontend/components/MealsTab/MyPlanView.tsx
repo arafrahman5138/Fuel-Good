@@ -39,6 +39,7 @@ import { ProjectedMESCard } from '../ProjectedMESCard';
 import { maybePromptForPush } from '../../services/notifications';
 import { trackBehaviorEvent } from '../../services/notifications';
 import { getTierConfig, useMetabolicBudgetStore } from '../../stores/metabolicBudgetStore';
+import { StatusPill } from '../ui/StatusPill';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -146,6 +147,11 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
       duration: 240,
       useNativeDriver: true,
     }).start();
+    if (plannerMode) {
+      // Guard against the builder opening pre-scrolled (e.g. reused scroll
+      // position from a previous visit) — always start at the top.
+      plannerScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }
   }, [plannerMode, plannerEnterAnim]);
 
   const buildPreferencePayload = () => ({
@@ -206,7 +212,17 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
         preferences: buildPreferencePayload(),
       });
       if (!result?.items?.length) {
-        throw new Error('Plan returned with no meals');
+        // E4: the generator explains WHY it came back empty via `warnings`
+        // (e.g. "No breakfast recipes could be selected for this plan.") —
+        // surface that instead of a generic failure.
+        const warnings = Array.isArray(result?.warnings)
+          ? result.warnings.filter((w: unknown): w is string => typeof w === 'string')
+          : [];
+        throw new Error(
+          warnings.length
+            ? `${warnings.join(' ')} Try relaxing your preferences and generating again.`
+            : 'Plan returned with no meals',
+        );
       }
       setCurrentPlan(result);
       setPlannerStep('preferences');
@@ -514,15 +530,14 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
             },
           ]}
         >
-          <ScrollView
-            ref={plannerScrollRef}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.scroll,
-              { paddingTop: Math.max(insets.top, 10), paddingBottom: createPlanBottomPadding },
+          {/* Fixed header: stays put below the status bar while step content
+              scrolls underneath it inside the ScrollView. */}
+          <View
+            style={[
+              styles.plannerFixedHeader,
+              { paddingTop: insets.top, backgroundColor: theme.surface },
             ]}
           >
-            <View style={styles.plannerContent}>
             <View style={styles.plannerHeaderRow}>
               <TouchableOpacity
                 onPress={() => {
@@ -534,6 +549,11 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
                 }}
                 style={styles.plannerHeaderIconButton}
                 activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  plannerStep === 'shortlist' ? 'Back to preferences' : 'Close meal plan builder'
+                }
               >
                 <Ionicons
                   name={plannerStep === 'shortlist' ? 'chevron-back' : 'close'}
@@ -545,15 +565,24 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
               <Text style={[styles.plannerHeaderTitle, { color: theme.text }]}>Meal Plan</Text>
               <View style={styles.plannerHeaderIconSpacer} />
             </View>
-            <View style={styles.plannerTop}>
-              <View style={styles.stepBadgeRow}>
-                <View style={[styles.stepBadge, { backgroundColor: theme.primaryMuted }]}>
-                  <Text style={[styles.stepBadgeText, { color: theme.primary }]}>
-                    Step {plannerStep === 'preferences' ? '1' : '2'} of 2
-                  </Text>
-                </View>
+            <View style={styles.stepBadgeRow}>
+              <View style={[styles.stepBadge, { backgroundColor: theme.primaryMuted }]}>
+                <Text style={[styles.stepBadgeText, { color: theme.primary }]}>
+                  Step {plannerStep === 'preferences' ? '1' : '2'} of 2
+                </Text>
               </View>
-
+            </View>
+          </View>
+          <ScrollView
+            ref={plannerScrollRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingTop: Spacing.md, paddingBottom: createPlanBottomPadding },
+            ]}
+          >
+            <View style={styles.plannerContent}>
+            <View style={styles.plannerTop}>
               <View style={[styles.progressTrack, { backgroundColor: theme.surfaceHighlight }]}>
                 <View
                   style={[
@@ -617,9 +646,7 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
                     ) : (
                       <View style={styles.summaryChipWrap}>
                         {selectedFlavorLabels.map((label) => (
-                          <View key={label} style={[styles.summaryChip, { backgroundColor: theme.primaryMuted }]}>
-                            <Text style={[styles.summaryChipText, { color: theme.primary }]}>{label}</Text>
-                          </View>
+                          <StatusPill key={label} label={label} color={theme.primary} size="sm" />
                         ))}
                       </View>
                     )}
@@ -660,9 +687,7 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
                     ) : (
                       <View style={styles.summaryChipWrap}>
                         {selectedDietaryLabels.map((label) => (
-                          <View key={label} style={[styles.summaryChip, { backgroundColor: theme.primaryMuted }]}>
-                            <Text style={[styles.summaryChipText, { color: theme.primary }]}>{label}</Text>
-                          </View>
+                          <StatusPill key={label} label={label} color={theme.primary} size="sm" />
                         ))}
                       </View>
                     )}
@@ -703,24 +728,12 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
                     ) : (
                       <View style={styles.summaryChipWrap}>
                         {selectedAllergyLabels.map((label) => (
-                          <View
+                          <StatusPill
                             key={label}
-                            style={[
-                              styles.summaryChip,
-                              {
-                                backgroundColor: allergies.length ? 'rgba(245,158,11,0.12)' : theme.surfaceElevated,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.summaryChipText,
-                                { color: allergies.length ? theme.warning : theme.textSecondary },
-                              ]}
-                            >
-                              {label}
-                            </Text>
-                          </View>
+                            label={label}
+                            color={allergies.length ? theme.warning : theme.textSecondary}
+                            size="sm"
+                          />
                         ))}
                       </View>
                     )}
@@ -916,9 +929,6 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
               <Text style={[styles.title, { color: theme.text, marginBottom: 0 }]}>Meal Plan</Text>
               <Text style={[styles.planDate, { color: theme.textSecondary }]}>Build your first week of meals</Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Button title="New Plan" variant="outline" size="sm" onPress={() => router.push('/meal-plan-builder' as any)} />
-            </View>
           </View>
 
           <Card
@@ -1059,14 +1069,47 @@ function MyPlanViewImpl({ plannerMode = false }: { plannerMode?: boolean } = {})
         />
         </View>
 
-        {currentPlan?.warnings && currentPlan.warnings.length > 0 && (
-          <View style={{ backgroundColor: (theme as any).warningMuted || 'rgba(245,158,11,0.1)', borderRadius: BorderRadius.md, padding: Spacing.sm, marginBottom: Spacing.md }}>
-            {currentPlan.warnings.map((w: string, i: number) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: 2 }}>
-                <Ionicons name="warning-outline" size={14} color={theme.warning} />
-                <Text style={{ color: theme.warning, fontSize: FontSize.xs, flex: 1 }}>{w}</Text>
-              </View>
+        {/* E4: plan warnings — visible notice card with a path to fix (adjust
+            preferences) instead of a silent partially-empty week. Also shown
+            when the plan somehow has zero items. */}
+        {((currentPlan?.warnings && currentPlan.warnings.length > 0) || (currentPlan?.items?.length ?? 0) === 0) && (
+          <View
+            style={{
+              backgroundColor: (theme as any).warningMuted || 'rgba(245,158,11,0.10)',
+              borderColor: 'rgba(245,158,11,0.35)',
+              borderWidth: 1,
+              borderRadius: BorderRadius.lg,
+              padding: Spacing.md,
+              marginBottom: Spacing.md,
+              gap: Spacing.xs,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+              <Ionicons name="warning-outline" size={16} color={theme.warning} />
+              <Text style={{ color: theme.warning, fontSize: FontSize.sm, fontWeight: '700', flex: 1 }}>
+                We couldn't fill every slot in this plan
+              </Text>
+            </View>
+            {(currentPlan?.warnings?.length
+              ? currentPlan.warnings
+              : ['No recipes matched your current preferences — try relaxing them.']
+            ).map((w: string, i: number) => (
+              <Text key={i} style={{ color: theme.textSecondary, fontSize: FontSize.xs, lineHeight: 17 }}>
+                •  {w}
+              </Text>
             ))}
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/profile/preferences' as any)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Adjust preferences"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start', marginTop: 2 }}
+            >
+              <Text style={{ color: theme.primary, fontSize: FontSize.xs, fontWeight: '700' }}>
+                Adjust preferences
+              </Text>
+              <Ionicons name="chevron-forward" size={12} color={theme.primary} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1423,22 +1466,24 @@ const styles = StyleSheet.create({
   plannerContent: {
     paddingHorizontal: Spacing.lg,
   },
+  plannerFixedHeader: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
   plannerHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: -Spacing.lg,
-    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   plannerHeaderIconButton: {
-    width: 38,
+    width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plannerHeaderIconSpacer: {
-    width: 38,
+    width: 44,
     height: 44,
   },
   plannerHeaderTitle: {
@@ -1621,15 +1666,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.xs,
     marginTop: Spacing.sm,
-  },
-  summaryChip: {
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 6,
-  },
-  summaryChipText: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
   },
   shortlistSection: {
     marginTop: 0,

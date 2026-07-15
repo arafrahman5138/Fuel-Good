@@ -14,9 +14,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { FuelScoreRing } from './FuelScoreRing';
-import { FuelStreakBadge } from './FuelStreakBadge';
-import { MetabolicStreakBadge } from './MetabolicStreakBadge';
+import { FuelScoreRing, DARK_RING_TRACK } from './FuelScoreRing';
+import { StreakChip } from './ui/StreakChip';
 import { useTheme } from '../hooks/useTheme';
 import { useThemeStore } from '../stores/themeStore';
 import { FontSize, Spacing, BorderRadius } from '../constants/Colors';
@@ -53,9 +52,19 @@ function getContextTagline(
   weeklyProgress: number,
   energyPrediction: string | null | undefined,
   weeklyTargetMet: boolean,
+  weeklyDaysLogged: number,
 ): { text: string; color: string } {
   if (mealCount === 0) {
-    return { text: 'First meal sets the pace — make it count', color: '#4ADE80' };
+    // QA copy fix: the ring shows the WEEKLY average, so "First meal sets the
+    // pace" next to a whole-week 87 read as a contradiction. Only use the
+    // first-meal line when the week itself is empty; otherwise keep the
+    // week-level framing for a day with no logs yet.
+    if (weeklyDaysLogged === 0) {
+      return { text: 'First meal sets the pace — make it count', color: '#4ADE80' };
+    }
+    if (fuelScore >= 75) return { text: 'Strong week — keep the baseline going', color: '#4ADE80' };
+    if (fuelScore >= 60) return { text: 'Decent week so far — today can lift it', color: '#F59E0B' };
+    return { text: 'Fresh day — one clean meal lifts the week', color: '#FB923C' };
   }
   if (mealCount <= 2) {
     if (fuelScore >= 90) return { text: 'Elite start — keep this going all day', color: '#22C55E' };
@@ -98,7 +107,7 @@ interface EnergyHeroCardProps {
   mesScore?: number;
   mesTierColor?: string;
   energyPrediction?: string | null;
-  fuelStreakWeeks: number;
+  fuelStreakDays: number;
   metabolicStreakDays: number;
   weeklyProgress: number;
   weeklyTargetMet?: boolean;
@@ -158,7 +167,7 @@ function MiniMesRing({
       {/* Center content */}
       <View style={[miniStyles.center, { width: size - borderWidth * 2, height: size - borderWidth * 2, borderRadius: (size - borderWidth * 2) / 2, backgroundColor: backgroundColor ?? 'transparent' }]}>
         <Ionicons name={icon} size={9} color={tierColor} />
-        <Text style={[miniStyles.score, { color: tierColor }]}>{score}</Text>
+        <Text allowFontScaling maxFontSizeMultiplier={1.4} style={[miniStyles.score, { color: tierColor }]}>{score}</Text>
       </View>
     </View>
   );
@@ -189,7 +198,7 @@ function EnergyHeroCardImpl({
   mesScore,
   mesTierColor,
   energyPrediction,
-  fuelStreakWeeks,
+  fuelStreakDays,
   metabolicStreakDays,
   weeklyProgress,
   weeklyTargetMet = false,
@@ -206,9 +215,11 @@ function EnergyHeroCardImpl({
   const tier = getTierCfg(hasData ? fuelScore : 0);
 
   const textTertiary = isDark ? 'rgba(255,255,255,0.38)' : theme.textTertiary;
-  const ringTrack = isDark ? 'rgba(255,255,255,0.10)' : theme.surfaceHighlight;
+  // Align with FuelScoreRing's dark-mode default so every ring track in the
+  // app reads at the same weight against the near-black background.
+  const ringTrack = isDark ? DARK_RING_TRACK : theme.surfaceHighlight;
 
-  const tagline = getContextTagline(fuelScore, mealCount, weeklyProgress, energyPrediction, weeklyTargetMet);
+  const tagline = getContextTagline(fuelScore, mealCount, weeklyProgress, energyPrediction, weeklyTargetMet, weeklyDaysLogged);
 
   const gradientColors = isDark
     ? hasData ? (tier.darkGradient as unknown as string[]) : (DARK_EMPTY_GRADIENT as unknown as string[])
@@ -232,7 +243,7 @@ function EnergyHeroCardImpl({
 
   const hasMes = hasData && (mesScore ?? 0) > 0;
   const resolvedMesColor = mesTierColor ?? '#8B5CF6';
-  const hasStreaks = metabolicStreakDays > 0 || fuelStreakWeeks > 0;
+  const hasStreaks = metabolicStreakDays > 0 || fuelStreakDays > 0;
 
   // Controlled toggle: lift showMes state so badge reacts to ring swap
   const [showMes, setShowMes] = useState(false);
@@ -292,7 +303,11 @@ function EnergyHeroCardImpl({
           <View style={styles.statsCol}>
             {/* Tier pill */}
             <View style={[styles.tierPill, { backgroundColor: hasData ? tier.color + '18' : (isDark ? 'rgba(255,255,255,0.06)' : theme.surfaceHighlight) }]}>
-              <Text style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}>
+              <Text
+                allowFontScaling
+                maxFontSizeMultiplier={1.4}
+                style={[styles.tierPillText, { color: hasData ? tier.color : textTertiary }]}
+              >
                 {hasData ? tier.label : 'Ready to start'}
               </Text>
             </View>
@@ -306,10 +321,10 @@ function EnergyHeroCardImpl({
             {hasStreaks && (
               <View style={styles.streakRow}>
                 {metabolicStreakDays > 0 && (
-                  <MetabolicStreakBadge currentStreak={metabolicStreakDays} compact />
+                  <StreakChip count={metabolicStreakDays} unit="day" kind="metabolic" compact />
                 )}
-                {fuelStreakWeeks > 0 && (
-                  <FuelStreakBadge currentStreak={fuelStreakWeeks} compact />
+                {fuelStreakDays > 0 && (
+                  <StreakChip count={fuelStreakDays} unit="day" kind="fuel" compact />
                 )}
               </View>
             )}

@@ -164,7 +164,7 @@ export default function SubscribeScreen() {
         router.replace('/(tabs)' as any);
       }
     } catch (err: any) {
-      Alert.alert('Paywall unavailable', err?.message || 'Unable to open the RevenueCat paywall right now.');
+      Alert.alert('Plans unavailable', err?.message || 'Unable to load subscription plans right now.');
     } finally {
       setOpeningPaywall(false);
     }
@@ -229,9 +229,10 @@ export default function SubscribeScreen() {
           </Text>
           <View style={styles.featureList}>
             {[
-              'Full access to chat, scans, meal plans, browse, and tracking',
+              'AI Coach, Metabolic Score, and personalized meal plans',
+              'Unlimited scanning — no daily cap',
               '7-day free trial before billing starts',
-              'Manage, restore, or cancel with RevenueCat Customer Center',
+              'Manage, restore, or cancel anytime in Settings',
             ].map((item) => (
               <View key={item} style={styles.featureRow}>
                 <Ionicons name="checkmark-circle" size={18} color="#86EFAC" />
@@ -294,7 +295,7 @@ export default function SubscribeScreen() {
           ) : null}
 
           <Button
-            title={openingPaywall ? 'Opening Paywall...' : 'Open RevenueCat Paywall'}
+            title={openingPaywall ? 'Loading plans...' : 'See plans'}
             onPress={handleRevenueCatPaywall}
             disabled={!billingSupported || openingPaywall}
             loading={openingPaywall}
@@ -425,12 +426,12 @@ export default function SubscribeScreen() {
                 try {
                   await billingService.presentCustomerCenter();
                 } catch (err: any) {
-                  Alert.alert('Customer Center unavailable', err?.message || 'Unable to open Customer Center right now.');
+                  Alert.alert('Unavailable', err?.message || 'Unable to open subscription management right now.');
                 }
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.secondaryActionText, { color: theme.text }]}>Open Customer Center</Text>
+              <Text style={[styles.secondaryActionText, { color: theme.text }]}>Manage subscription</Text>
             </TouchableOpacity>
           ) : null}
 

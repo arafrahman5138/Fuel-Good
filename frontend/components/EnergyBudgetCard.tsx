@@ -11,6 +11,7 @@ import { isReduceMotionEnabled } from '../hooks/useAnimations';
 import { MetabolicRing } from './MetabolicRing';
 import { getTierConfig } from '../stores/metabolicBudgetStore';
 import type { MESScore, MetabolicBudget, RemainingBudget, MEAScore } from '../stores/metabolicBudgetStore';
+import { StatusPill } from './ui/StatusPill';
 import { FontSize, MacroColors, Spacing, BorderRadius } from '../constants/Colors';
 
 interface EnergyBudgetCardProps {
@@ -33,6 +34,7 @@ function GoalRing({
   target,
   unit = 'g',
   stateLabel,
+  stateMuted = false,
   animDelay = 0,
 }: {
   label: string;
@@ -43,6 +45,8 @@ function GoalRing({
   target: number;
   unit?: string;
   stateLabel: string;
+  /** Muted zero-state: render the state text in a neutral tone, not the macro color. */
+  stateMuted?: boolean;
   animDelay?: number;
 }) {
   const theme = useTheme();
@@ -90,7 +94,10 @@ function GoalRing({
         <View style={[styles.goalIconWrap, { backgroundColor: color + '14' }]}>
           <Ionicons name={icon} size={13} color={color} />
         </View>
-        <Text style={[styles.goalState, { color }]} numberOfLines={1}>
+        <Text
+          style={[styles.goalState, { color: stateMuted ? theme.textTertiary : color }]}
+          numberOfLines={1}
+        >
           {stateLabel}
         </Text>
       </View>
@@ -174,6 +181,8 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
     const carbConsumed = score.carbs_g ?? score.sugar_g ?? 0;
     const carbPct = carbTarget > 0 ? (carbConsumed / carbTarget) * 100 : 0;
 
+    // Zero-state: with nothing logged, state words like "Good" would read as
+    // positive scores the user hasn't earned — show a neutral "—" instead.
     return [
       {
         key: 'protein',
@@ -183,7 +192,8 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
         color: MacroColors.protein,
         consumed: score.protein_g,
         target: budget.protein_target_g,
-        stateLabel: proteinPct >= 100 ? 'Hit' : 'Needs more',
+        stateLabel: score.protein_g <= 0 ? '—' : proteinPct >= 100 ? 'Hit' : 'Needs more',
+        stateMuted: score.protein_g <= 0,
       },
       {
         key: 'fat',
@@ -193,7 +203,8 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
         color: MacroColors.fat,
         consumed: fatConsumed,
         target: fatTarget,
-        stateLabel: fatPct >= 100 ? 'Hit' : 'Needs more',
+        stateLabel: fatConsumed <= 0 ? '—' : fatPct >= 100 ? 'Hit' : 'Needs more',
+        stateMuted: fatConsumed <= 0,
       },
       {
         key: 'fiber',
@@ -203,7 +214,8 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
         color: MacroColors.fiber,
         consumed: score.fiber_g,
         target: budget.fiber_floor_g,
-        stateLabel: fiberPct >= 100 ? 'Hit' : 'Needs more',
+        stateLabel: score.fiber_g <= 0 ? '—' : fiberPct >= 100 ? 'Hit' : 'Needs more',
+        stateMuted: score.fiber_g <= 0,
       },
       {
         key: 'carbs',
@@ -213,7 +225,9 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
         color: MacroColors.carbs,
         consumed: carbConsumed,
         target: carbTarget,
-        stateLabel: carbPct > 100 ? 'Over' : carbPct >= 85 ? 'Watch it' : 'Good',
+        stateLabel:
+          carbConsumed <= 0 ? '—' : carbPct > 100 ? 'Over' : carbPct >= 85 ? 'Watch it' : 'Good',
+        stateMuted: carbConsumed <= 0,
       },
     ];
   }, [
@@ -263,7 +277,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
             <View style={[styles.headerPill, { backgroundColor: (weeklyMesTierColor || tierCfg.color) + '18', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
               <Ionicons name="flash" size={9} color={weeklyMesTierColor || tierCfg.color} />
               <Text style={[styles.headerPillText, { color: weeklyMesTierColor || tierCfg.color }]}>
-                Week {Math.round(weeklyMesScore)}
+                This week · {Math.round(weeklyMesScore)}
               </Text>
             </View>
           ) : (
@@ -284,19 +298,21 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
             <Text style={[styles.tierLabel, { color: tierCfg.color }]}>{tierCfg.label}</Text>
           </View>
 
-          {/* MEA mini badge */}
+          {/* Energy-adequacy mini badge. "MEA" = Metabolic Energy Adequacy
+              (caloric adequacy + macro balance + daily MES) — rendered as
+              plain "Energy" since the acronym meant nothing to users. */}
           {mea && mea.mea_score > 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2, flexWrap: 'wrap' }}>
               <View style={[styles.statPill, { backgroundColor: meaColor + '12' }]}>
                 <Ionicons name="pulse-outline" size={11} color={meaColor} />
                 <Text style={[styles.statPillText, { color: meaColor }]}>
-                  MEA {Math.round(mea.mea_score)}
+                  Energy {Math.round(mea.mea_score)}
                 </Text>
               </View>
               <Text style={{ fontSize: 9, color: theme.textTertiary, fontWeight: '500' }}>
-                {mea.energy_prediction === 'sustained' ? 'Sustained Energy' :
-                 mea.energy_prediction === 'adequate' ? 'Adequate Energy' :
-                 mea.energy_prediction === 'may_dip' ? 'May Dip' : 'Low Energy'}
+                {mea.energy_prediction === 'sustained' ? 'Sustained energy' :
+                 mea.energy_prediction === 'adequate' ? 'Adequate energy' :
+                 mea.energy_prediction === 'may_dip' ? 'Midday dip risk' : 'Low energy likely'}
               </Text>
             </View>
           )}
@@ -305,26 +321,34 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
           {remaining && (
             <View style={styles.statPills}>
               {proteinLeft > 0 && (
-                <View style={[styles.statPill, { backgroundColor: '#22C55E14' }]}>
-                  <Ionicons name="barbell-outline" size={11} color="#34C759" />
-                  <Text style={[styles.statPillText, { color: '#16A34A' }]}>{proteinLeft}g protein left</Text>
-                </View>
+                <StatusPill
+                  size="sm"
+                  icon="barbell-outline"
+                  color={MacroColors.protein}
+                  label={`${proteinLeft}g protein left`}
+                />
               )}
               {fiberLeft > 0 && (
-                <View style={[styles.statPill, { backgroundColor: '#3B82F612' }]}>
-                  <Ionicons name="leaf-outline" size={11} color="#4A90D9" />
-                  <Text style={[styles.statPillText, { color: '#2563EB' }]}>{fiberLeft}g fiber left</Text>
-                </View>
+                <StatusPill
+                  size="sm"
+                  icon="leaf-outline"
+                  color={MacroColors.fiber}
+                  label={`${fiberLeft}g fiber left`}
+                />
               )}
-              <View style={[styles.statPill, { backgroundColor: '#F59E0B14' }]}>
-                <Ionicons name="shield-checkmark-outline" size={11} color="#FF9500" />
-                <Text style={[styles.statPillText, { color: '#D97706' }]}>{carbRoom}g carb room</Text>
-              </View>
+              <StatusPill
+                size="sm"
+                icon="shield-checkmark-outline"
+                color={MacroColors.carbs}
+                label={`${carbRoom}g carb room`}
+              />
               {fatLeft > 0 && (
-                <View style={[styles.statPill, { backgroundColor: '#A855F714' }]}>
-                  <Ionicons name="water-outline" size={11} color="#A855F7" />
-                  <Text style={[styles.statPillText, { color: '#9333EA' }]}>{fatLeft}g fat left</Text>
-                </View>
+                <StatusPill
+                  size="sm"
+                  icon="water-outline"
+                  color={MacroColors.fat}
+                  label={`${fatLeft}g fat left`}
+                />
               )}
             </View>
           )}
@@ -346,6 +370,7 @@ export function EnergyBudgetCard({ score, budget, remaining, mea, fatTargetOverr
             consumed={item.consumed}
             target={item.target}
             stateLabel={item.stateLabel}
+            stateMuted={item.stateMuted}
             animDelay={idx * 80}
           />
         ))}

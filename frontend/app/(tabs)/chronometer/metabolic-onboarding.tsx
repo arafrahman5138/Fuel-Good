@@ -7,7 +7,7 @@
  *
  * Uses U.S. units (lbs, ft/in). Grams for macros.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -43,15 +43,22 @@ const GOAL_OPTIONS = [
   { value: 'metabolic_reset', label: 'Metabolic reset / health', icon: 'heart-outline' as const },
 ];
 
+// Mirrors the signup onboarding's four options (QA N26): sex feeds
+// Mifflin-St Jeor BMR math; the backend accepts any string and coerces
+// non_binary / prefer_not_to_say to the conservative (female) estimate.
 const SEX_OPTIONS = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
+  { value: 'non_binary', label: 'Non-binary' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ];
 
 export default function MetabolicOnboardingScreen() {
   const theme = useTheme();
   const saveProfile = useMetabolicBudgetStore((s) => s.saveProfile);
   const fetchBudget = useMetabolicBudgetStore((s) => s.fetchBudget);
+  const profile = useMetabolicBudgetStore((s) => s.profile);
+  const fetchProfile = useMetabolicBudgetStore((s) => s.fetchProfile);
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -74,6 +81,32 @@ export default function MetabolicOnboardingScreen() {
   const [prediabetes, setPrediabetes] = useState(false);
   const [type2Diabetes, setType2Diabetes] = useState(false);
 
+  // Prefill from the saved profile so re-opening the wizard edits instead of
+  // starting blank (fields previously always initialized empty).
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!profile || prefilled) return;
+    setPrefilled(true);
+    if (profile.weight_lb != null) setWeightLb(String(profile.weight_lb));
+    if (profile.height_ft != null) setHeightFt(String(profile.height_ft));
+    if (profile.height_in != null) setHeightIn(String(profile.height_in));
+    if (profile.age != null) setAge(String(profile.age));
+    if (profile.sex) setSex(profile.sex);
+    if (profile.activity_level) setActivityLevel(profile.activity_level);
+    if (profile.goal) setGoal(profile.goal);
+    if (profile.body_fat_pct != null) setBodyFatPct(String(profile.body_fat_pct));
+    if (profile.body_fat_method === 'dexa' || profile.body_fat_method === 'estimate') {
+      setBodyFatMethod(profile.body_fat_method);
+    }
+    setInsulinResistant(!!profile.insulin_resistant);
+    setPrediabetes(!!profile.prediabetes);
+    setType2Diabetes(!!profile.type_2_diabetes);
+  }, [profile, prefilled]);
+
   const step1Valid = useMemo(() => {
     return (
       weightLb.trim() !== '' &&
@@ -83,6 +116,19 @@ export default function MetabolicOnboardingScreen() {
       activityLevel !== null &&
       goal !== null
     );
+  }, [weightLb, heightFt, age, sex, activityLevel, goal]);
+
+  // Which step-1 fields are still missing — powers the inline hint under the
+  // disabled Continue button so users know why they can't proceed.
+  const missingStep1Fields = useMemo(() => {
+    const missing: string[] = [];
+    if (weightLb.trim() === '') missing.push('weight');
+    if (heightFt.trim() === '') missing.push('height');
+    if (age.trim() === '') missing.push('age');
+    if (sex === null) missing.push('sex');
+    if (activityLevel === null) missing.push('activity level');
+    if (goal === null) missing.push('goal');
+    return missing;
   }, [weightLb, heightFt, age, sex, activityLevel, goal]);
 
   const handleT2DToggle = (on: boolean) => {
@@ -383,7 +429,8 @@ export default function MetabolicOnboardingScreen() {
         </ScrollView>
 
         {/* ── Footer buttons ── */}
-        <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
+        <View style={[styles.footerWrap, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
+        <View style={styles.footer}>
           {step < TOTAL_STEPS ? (
             <>
               {step > 1 && (
@@ -420,6 +467,12 @@ export default function MetabolicOnboardingScreen() {
               </LinearGradient>
             </TouchableOpacity>
           )}
+        </View>
+        {step === 1 && !step1Valid && missingStep1Fields.length > 0 && (
+          <Text style={[styles.missingHint, { color: theme.textTertiary }]}>
+            Still needed: {missingStep1Fields.join(', ')}
+          </Text>
+        )}
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -597,13 +650,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
   },
+  footerWrap: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  missingHint: {
+    fontSize: FontSize.xs,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
   skipBtn: {
     paddingHorizontal: Spacing.md,
