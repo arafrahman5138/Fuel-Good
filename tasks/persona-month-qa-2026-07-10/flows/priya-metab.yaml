@@ -1,0 +1,9 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "289,158"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/priya-06-metab-free"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/priya-07-metab-free2"

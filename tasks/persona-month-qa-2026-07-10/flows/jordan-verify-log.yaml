@@ -1,0 +1,8 @@
+appId: host.exp.Exponent
+---
+- tapOn: ".*View Chronometer.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-21-chrono"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-22-chrono2"

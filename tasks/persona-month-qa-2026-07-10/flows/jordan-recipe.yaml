@@ -1,0 +1,10 @@
+appId: host.exp.Exponent
+---
+- tapOn: ".*Cottage Cheese Power Bowl.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-17-recipe"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-18-recipe2"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-19-recipe3"

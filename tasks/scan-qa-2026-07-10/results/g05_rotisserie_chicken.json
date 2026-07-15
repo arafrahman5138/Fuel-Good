@@ -1,0 +1,100 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "bd42818a-10ab-4160-87bc-2e6da507882b",
+    "meal_label": "Whole Roasted Chicken",
+    "meal_type": "dinner",
+    "meal_context": "meal_component_protein",
+    "portion_size": "large",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Whole Roasted Chicken"
+    ],
+    "normalized_ingredients": [
+      "whole roasted chicken",
+      "added_salt"
+    ],
+    "components": [
+      {
+        "name": "whole roasted chicken",
+        "role": "protein",
+        "portion_factor": 1.0,
+        "mass_fraction": 1.0,
+        "estimated_grams": 800,
+        "item_count": 1,
+        "nova": 1,
+        "methods": [
+          "baked",
+          "roasted"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 500.0,
+      "protein": 37.5,
+      "carbs": 0.0,
+      "fat": 8.8,
+      "fiber": 0.0,
+      "sugar_g": 0.0,
+      "ingredients": [
+        "whole roasted chicken",
+        "added_salt"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Add a bean, lentil, or vegetable side to raise fiber."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia."
+    ],
+    "mes": null,
+    "snack_profile": null,
+    "confidence": 0.77,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.85,
+      "grounding": 0.6,
+      "nutrition": 0.6,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": true
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 100.0,
+    "fuel_reasoning": [
+      "Every component is whole-food grade \u2014 honest 100."
+    ],
+    "image": null
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "dff41c85-a8fa-4ef8-8bf5-4dc18ad4727a",
+    "meal_label": "Instant Ramen with Sausage",
+    "meal_type": "dinner",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Instant Ramen Noodles",
+      "Sliced Sausage"
+    ],
+    "normalized_ingredients": [
+      "instant ramen noodles",
+      "sliced sausage"
+    ],
+    "components": [
+      {
+        "name": "instant ramen noodles",
+        "role": "carb",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.7,
+        "estimated_grams": 350,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [
+          "boiled"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "sliced sausage",
+        "role": "protein",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.3,
+        "estimated_grams": 60,
+        "item_count": 5,
+        "nova": 4,
+        "methods": [
+          "cured"
+        ],
+        "visible": true,
+        "confidence": 0.9
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 560.0,
+      "protein": 39.0,
+      "carbs": 54.0,
+      "fat": 22.0,
+      "fiber": 2.0,
+      "sugar_g": 9.7,
+      "glycemic_profile": {
+        "primary_carb_source": "refined_grain",
+        "processing_level": "refined",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "instant ramen noodles",
+        "sliced sausage"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "refined_grain",
+      "processing_level": "refined",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair this with Kale and White Bean Salad before the meal for about +17.8 MES.",
+      "Add a bean, lentil, or vegetable side to raise fiber."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+    ],
+    "mes": {
+      "score": 64.9,
+      "tier": "moderate",
+      "sub_scores": {
+        "gis": 49.3,
+        "pas": 96.5,
+        "fs": 20.0,
+        "fas": 85.6
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.462,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.85,
+      "grounding": 0.6,
+      "nutrition": 0.6,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": false
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": true,
+    "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+    "pairing_recommended_title": "Kale and White Bean Salad",
+    "pairing_projected_mes": 82.7,
+    "pairing_projected_delta": 17.8,
+    "pairing_reasons": [
+      "fiber-rich side",
+      "acidic element",
+      "healthy fat",
+      "vegetable-forward side",
+      "eat before meal"
+    ],
+    "pairing_timing": "before_meal",
+    "fuel_score": 25.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221248).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

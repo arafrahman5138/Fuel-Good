@@ -1,0 +1,12 @@
+appId: host.exp.Exponent
+---
+- scrollUntilVisible:
+    element: ".*LAST WEEK.*|.*RECAP.*"
+    direction: UP
+    timeout: 10000
+- tapOn: ".*18 real-food meals.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-05-recap"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-06-recap2"

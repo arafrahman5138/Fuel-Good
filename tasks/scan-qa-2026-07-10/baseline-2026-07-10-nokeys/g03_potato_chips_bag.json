@@ -1,0 +1,51 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Crunchy Cheese Puffs",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "",
+    "confidence": 0.3,
+    "confidence_breakdown": {
+      "ocr": 0.5,
+      "ingredients": 0.0,
+      "nutrition": 0.0,
+      "metadata": 0.4
+    },
+    "recoverable": true,
+    "notes": [],
+    "score": 59.0,
+    "tier": "mixed",
+    "verdict": "Needs review",
+    "summary": "We could not confidently read enough of the ingredient list to give a trusted verdict yet.",
+    "recommended_action": "Retake the label photo, try barcode, or fix the extracted text before deciding.",
+    "highlights": [],
+    "concerns": [
+      "The ingredient list could not be read confidently from the label photo.",
+      "Ingredient list is missing, so the product is harder to trust."
+    ],
+    "reasoning": [],
+    "ingredient_count": 0,
+    "nutrition_snapshot": {
+      "calories": 0.0,
+      "protein_g": 0.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "scan_id": "dc8e3a5c-a007-4a45-b9ee-ba2f2db957db",
+    "image": null
+  }
+}

@@ -1,0 +1,35 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "204,813"
+- extendedWaitUntil:
+    visible: ".*Today.*|.*Fuel.*|.*Metabolic.*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D06b-track-fuel-dark"
+- tapOn:
+    point: "289,158"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D07b-track-metab-dark"
+- tapOn:
+    point: "50,813"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: "91%,12%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "91%,10%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: ".*Appearance.*|.*Preferences.*"
+    timeout: 8000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D11-settings-dark"

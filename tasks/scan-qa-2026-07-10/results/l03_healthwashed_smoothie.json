@@ -1,0 +1,72 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "All Natural Superfood Smoothie",
+    "raw_product_name": "All Natural Superfood Smoothie",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Apple Juice Concentrate, Banana, Mango Puree, White Grape Juice Concentrate, Natural Flavors, Citric Acid, Ascorbic Acid",
+    "confidence": 0.85,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.9,
+      "nutrition": 0.8,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [
+      "Contains fruit juice concentrates",
+      "Ultra-processed due to use of concentrates and added acids",
+      "Health-washed labeling"
+    ],
+    "score": 62.4,
+    "tier": "mixed",
+    "verdict": "Mixed bag",
+    "summary": "This product has some redeeming qualities, but it is noticeably processed.",
+    "recommended_action": "Okay occasionally, but not ideal as a staple.",
+    "highlights": [
+      "Reasonable sugar level per serving."
+    ],
+    "concerns": [
+      "Contains added sugars."
+    ],
+    "reasoning": [
+      "Added sugar ingredients found: apple juice concentrate, white grape juice concentrate."
+    ],
+    "ingredient_count": 7,
+    "nutrition_snapshot": {
+      "calories": 270.0,
+      "protein_g": 1.0,
+      "fiber_g": 2.0,
+      "sugar_g": 5.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "apple juice concentrate",
+        "white grape juice concentrate"
+      ],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+        "detected": [
+          "apple juice concentrate",
+          "white grape juice concentrate"
+        ]
+      }
+    ],
+    "scan_id": "3d2234ae-179d-409c-b7c0-0bf9ca397c25",
+    "image": null
+  }
+}

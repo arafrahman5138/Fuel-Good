@@ -1,0 +1,120 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "3fde7881-147f-46cf-88c0-e05fe68fac43",
+    "meal_label": "Turkey and Cheese Sandwich with Carrots",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Whole Wheat Bread",
+      "Turkey Breast Slices",
+      "Cheese Slices",
+      "Lettuce",
+      "Tomato Slices",
+      "Baby Carrots"
+    ],
+    "normalized_ingredients": [
+      "whole wheat bread",
+      "turkey breast slices",
+      "cheese slices",
+      "lettuce",
+      "tomato slices",
+      "baby carrots"
+    ],
+    "nutrition_estimate": {
+      "calories": 570.0,
+      "protein": 46.0,
+      "carbs": 55.0,
+      "fat": 19.0,
+      "fiber": 11.0,
+      "sugar_g": 9.9,
+      "glycemic_profile": {
+        "primary_carb_source": "intact_whole_grain",
+        "processing_level": "intact",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "whole wheat bread",
+        "turkey breast slices",
+        "cheese slices",
+        "lettuce",
+        "tomato slices",
+        "baby carrots"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "intact_whole_grain",
+      "processing_level": "intact",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 79.4,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 62.7,
+        "pas": 80.4,
+        "fs": 92.0,
+        "fas": 83.2
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.73,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.68,
+      "nutrition": 0.68,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 35.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221222).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

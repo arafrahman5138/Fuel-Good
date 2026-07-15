@@ -1,0 +1,49 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- tapOn:
+    point: "204,813"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L16-track-fuel-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L17-track-fuel-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L18-track-fuel-lower"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "289,158"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L19-track-metab-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L20-track-metab-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L21-track-metab-lower"

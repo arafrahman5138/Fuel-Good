@@ -1,0 +1,56 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Whole Grain Rolled Oats",
+    "raw_product_name": "Whole Grain Rolled Oats",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "100% Whole Grain Rolled Oats",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 1.0,
+      "nutrition": 0.8,
+      "metadata": 0.9
+    },
+    "recoverable": false,
+    "notes": [
+      "Minimally processed single-ingredient product"
+    ],
+    "score": 96.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "summary": "This looks very close to a real-food product with minimal processing.",
+    "recommended_action": "This is a strong pantry pick for a whole-food lifestyle.",
+    "highlights": [
+      "Very short ingredient list.",
+      "Decent fiber per serving.",
+      "Reasonable sugar level per serving.",
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [],
+    "reasoning": [],
+    "ingredient_count": 1,
+    "nutrition_snapshot": {
+      "calories": 150.0,
+      "protein_g": 5.0,
+      "fiber_g": 4.0,
+      "sugar_g": 1.0,
+      "carbs_g": 27.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "scan_id": "217b199e-4173-467a-a98c-028a19da031b",
+    "image": null
+  }
+}

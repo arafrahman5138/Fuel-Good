@@ -1,0 +1,31 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "25%,35%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: "50%,45%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L12-recipe-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L13-recipe-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L14-recipe-lower"
+- scrollUntilVisible:
+    element: ".*Cook.*"
+    direction: DOWN
+    timeout: 15000
+- tapOn: ".*Cook.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L15-cook-step1"

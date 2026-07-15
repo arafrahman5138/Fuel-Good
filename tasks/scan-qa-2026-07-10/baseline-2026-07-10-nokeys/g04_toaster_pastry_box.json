@@ -1,0 +1,53 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "FROSTED STRAWBERRY TOASTER PASTRIES",
+    "brand": "MORNING TREATS",
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "",
+    "confidence": 0.65,
+    "confidence_breakdown": {
+      "ocr": 0.8,
+      "ingredients": 0.0,
+      "nutrition": 0.0,
+      "metadata": 0.8
+    },
+    "recoverable": true,
+    "notes": [
+      "Product type (toaster pastries) is inherently ultra-processed."
+    ],
+    "score": 59.0,
+    "tier": "mixed",
+    "verdict": "Needs review",
+    "summary": "We could not confidently read enough of the ingredient list to give a trusted verdict yet.",
+    "recommended_action": "Retake the label photo, try barcode, or fix the extracted text before deciding.",
+    "highlights": [],
+    "concerns": [
+      "The ingredient list could not be read confidently from the label photo.",
+      "Ingredient list is missing, so the product is harder to trust."
+    ],
+    "reasoning": [],
+    "ingredient_count": 0,
+    "nutrition_snapshot": {
+      "calories": 0.0,
+      "protein_g": 0.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "scan_id": "9d3d0469-81dd-4eaf-b6ae-d17505daaab5",
+    "image": null
+  }
+}

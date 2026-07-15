@@ -1,0 +1,115 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "60c71963-6780-43ac-b8c3-412ff972bbba",
+    "meal_label": "Sushi Platter",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Sushi Rice",
+      "Salmon Nigiri",
+      "Tuna Nigiri",
+      "Sushi Roll",
+      "Avocado",
+      "Cucumber",
+      "Soy Sauce",
+      "Wasabi",
+      "Pickled Ginger"
+    ],
+    "normalized_ingredients": [
+      "sushi rice",
+      "salmon nigiri",
+      "tuna nigiri",
+      "sushi roll",
+      "avocado",
+      "cucumber",
+      "soy sauce",
+      "wasabi",
+      "pickled ginger"
+    ],
+    "nutrition_estimate": {
+      "calories": 1130.0,
+      "protein": 73.5,
+      "carbs": 114.5,
+      "fat": 41.0,
+      "fiber": 11.5,
+      "sugar_g": 20.6,
+      "ingredients": [
+        "sushi rice",
+        "salmon nigiri",
+        "tuna nigiri",
+        "sushi roll",
+        "avocado",
+        "cucumber",
+        "soy sauce",
+        "wasabi",
+        "pickled ginger"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 76.2,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 8.2,
+        "pas": 100.0,
+        "fs": 93.0,
+        "fas": 99.2
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.671,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.9,
+      "grounding": 0.74,
+      "nutrition": 0.74,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 70.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221218)."
+    ],
+    "image": null
+  }
+}

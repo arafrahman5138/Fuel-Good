@@ -1,0 +1,13 @@
+appId: host.exp.Exponent
+---
+- tapOn: ".*onboard.qa.*"
+- eraseText: 80
+- inputText: "onboard.qa.20260711@example.com"
+- hideKeyboard
+- tapOn: "Enter password"
+- inputText: "OnboardQA!2026x"
+- hideKeyboard
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/ob-01-first-screen"

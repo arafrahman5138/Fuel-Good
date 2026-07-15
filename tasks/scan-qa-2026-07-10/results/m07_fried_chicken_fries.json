@@ -1,0 +1,150 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "7a1e218a-f24f-4159-abb2-ea490b1c9c5d",
+    "meal_label": "Fried Chicken and French Fries",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "large",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Fried Chicken",
+      "French Fries",
+      "Ranch Dressing"
+    ],
+    "normalized_ingredients": [
+      "fried chicken",
+      "french fries",
+      "ranch dressing"
+    ],
+    "components": [
+      {
+        "name": "fried chicken",
+        "role": "protein",
+        "portion_factor": 1.2,
+        "mass_fraction": 0.6,
+        "estimated_grams": 350,
+        "item_count": 3,
+        "nova": 4,
+        "methods": [
+          "breaded",
+          "deep-fried"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "french fries",
+        "role": "carb",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.3,
+        "estimated_grams": 150,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [
+          "seed_oil_fried"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "ranch dressing",
+        "role": "sauce",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.1,
+        "estimated_grams": 40,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.9
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 1012.5,
+      "protein": 51.2,
+      "carbs": 55.0,
+      "fat": 21.8,
+      "fiber": 3.8,
+      "sugar_g": 9.9,
+      "ingredients": [
+        "fried chicken",
+        "french fries",
+        "ranch dressing"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair this with Kale and White Bean Salad before the meal for about +15.1 MES.",
+      "Ask for grilled, roasted, or olive-oil based prep instead of fryer oil."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Use Kale and White Bean Salad before your next similar meal to soften the glycemic hit."
+    ],
+    "mes": {
+      "score": 71.1,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 50.4,
+        "pas": 100.0,
+        "fs": 40.2,
+        "fas": 85.4
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.78,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.9,
+      "grounding": 0.6,
+      "nutrition": 0.6,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": true
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": true,
+    "pairing_recommended_recipe_id": "9e0e10bb-ba4d-41a8-bbe7-41167ef14a4e",
+    "pairing_recommended_title": "Kale and White Bean Salad",
+    "pairing_projected_mes": 86.2,
+    "pairing_projected_delta": 15.1,
+    "pairing_reasons": [
+      "fiber-rich side",
+      "acidic element",
+      "healthy fat",
+      "vegetable-forward side",
+      "eat before meal"
+    ],
+    "pairing_timing": "before_meal",
+    "fuel_score": 25.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221248).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

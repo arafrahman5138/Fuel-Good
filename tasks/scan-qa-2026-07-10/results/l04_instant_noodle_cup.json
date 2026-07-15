@@ -1,0 +1,97 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Turbo Noodle",
+    "raw_product_name": "Turbo Noodle",
+    "brand": "Turbo Noodle",
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Enriched Wheat Flour, Palm Oil, Palm, Salt, Mondorzuu Soy Protein, Glugatin, Sugar, Dehylzed Vegetables (Carfs, Corn, Peas), Disodicum Inosinate, Disodoum Guanylate, TBHQ (Preservative), Yellow 6",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.95,
+      "ingredients": 0.9,
+      "nutrition": 0.85,
+      "metadata": 0.9
+    },
+    "recoverable": false,
+    "notes": [
+      "contains palm oil",
+      "contains TBHQ preservative",
+      "contains artificial color Yellow 6",
+      "contains soy protein"
+    ],
+    "score": 19.7,
+    "tier": "ultra_processed",
+    "verdict": "Not a great fit",
+    "summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "recommended_action": "Best used rarely. Look for a version with fewer ingredients and less processing.",
+    "highlights": [
+      "Reasonable sugar level per serving."
+    ],
+    "concerns": [
+      "Moderately long ingredient list.",
+      "Contains added sugars.",
+      "Uses refined flour instead of a whole-food carbohydrate source.",
+      "Contains artificial additives or preservatives."
+    ],
+    "reasoning": [
+      "Added sugar ingredients found: sugar.",
+      "Artificial additives found: tbhq, yellow 6."
+    ],
+    "ingredient_count": 16,
+    "nutrition_snapshot": {
+      "calories": 290.0,
+      "protein_g": 6.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 40.0,
+      "sodium_mg": 160.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "sugar"
+      ],
+      "refined_flours": [
+        "enriched wheat flour"
+      ],
+      "artificial_additives": [
+        "tbhq",
+        "yellow 6"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+        "detected": [
+          "sugar"
+        ]
+      },
+      {
+        "title": "Refined Flours",
+        "explanation": "Refined flour has been stripped of the bran and germ \u2014 the parts with fiber, vitamins, and minerals. It digests quickly like sugar. Whole grain or sprouted grain versions retain the nutrition.",
+        "look_for": "Whole wheat flour, almond flour, oat flour, sprouted grain flour",
+        "detected": [
+          "enriched wheat flour"
+        ]
+      },
+      {
+        "title": "Artificial Additives",
+        "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+        "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+        "detected": [
+          "tbhq",
+          "yellow 6"
+        ]
+      }
+    ],
+    "scan_id": "d7cd5cff-a3d3-4437-be99-93bc5a886195",
+    "image": null
+  }
+}

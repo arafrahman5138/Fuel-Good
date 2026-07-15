@@ -1,0 +1,59 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Packaged product",
+    "raw_product_name": "Frosted Strawberry Toaster Pastries",
+    "brand": "Morning Treats",
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "",
+    "confidence": 0.75,
+    "confidence_breakdown": {
+      "ocr": 0.95,
+      "ingredients": 0.0,
+      "nutrition": 0.0,
+      "metadata": 0.9
+    },
+    "recoverable": true,
+    "notes": [
+      "Product is a highly processed toaster pastry, classified as ultra-processed (NOVA 4) due to its nature as a commercial shelf-stable snack food."
+    ],
+    "score": null,
+    "tier": "unscored",
+    "verdict": "Needs a closer look",
+    "summary": "We could not read enough of the ingredient list to score this product honestly.",
+    "recommended_action": "Scan the barcode or the ingredients panel to get a real score.",
+    "highlights": [],
+    "concerns": [
+      "The ingredient list could not be read confidently from the label photo.",
+      "Ingredient list is missing, so the product is harder to trust."
+    ],
+    "reasoning": [],
+    "ingredient_count": 0,
+    "nutrition_snapshot": {
+      "calories": 0.0,
+      "protein_g": 0.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "needs_better_capture": true,
+    "suggested_captures": [
+      "barcode",
+      "ingredients_panel"
+    ],
+    "scan_id": "a3bdc616-5813-48ed-bd86-7548b465184a",
+    "image": null
+  }
+}

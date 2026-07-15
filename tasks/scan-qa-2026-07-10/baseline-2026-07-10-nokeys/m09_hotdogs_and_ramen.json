@@ -1,0 +1,113 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "2a995c88-81f8-4c0e-b352-ec5a1d131cea",
+    "meal_label": "Instant Ramen with Sausage",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Instant Ramen Noodles",
+      "Sausage Slices",
+      "Broth"
+    ],
+    "normalized_ingredients": [
+      "instant ramen noodles",
+      "sausage slices",
+      "broth"
+    ],
+    "nutrition_estimate": {
+      "calories": 610.0,
+      "protein": 40.0,
+      "carbs": 60.0,
+      "fat": 25.0,
+      "fiber": 2.0,
+      "sugar_g": 10.8,
+      "glycemic_profile": {
+        "primary_carb_source": "refined_grain",
+        "processing_level": "refined",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "instant ramen noodles",
+        "sausage slices",
+        "broth"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "refined_grain",
+      "processing_level": "refined",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Add a bean, lentil, or vegetable side to raise fiber.",
+      "Start with a salad or vegetables before the starch so the meal hits more gently."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "A 10-minute walk after this meal can help flatten the glycemic hit."
+    ],
+    "mes": {
+      "score": 53.4,
+      "tier": "moderate",
+      "sub_scores": {
+        "gis": 41.3,
+        "pas": 67.3,
+        "fs": 20.0,
+        "fas": 88.0
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.39,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.52,
+      "nutrition": 0.52,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 25.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221248).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

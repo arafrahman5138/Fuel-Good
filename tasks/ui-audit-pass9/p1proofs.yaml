@@ -1,0 +1,39 @@
+appId: host.exp.Exponent
+---
+# FAB over gradient content (home mid-scroll where the purple card bled through)
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- swipe:
+    start: "50%,72%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P02-fab-over-gradient"
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+- waitForAnimationToEnd:
+    timeout: 1200
+# Plan builder: enter, capture first paint, scroll, capture header pinned
+- tapOn:
+    point: "127,813"
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "73%,53%"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P03-planner-firstpaint"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P04-planner-scrolled"
+- tapOn: "Close meal plan builder"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P05-after-planner-close"

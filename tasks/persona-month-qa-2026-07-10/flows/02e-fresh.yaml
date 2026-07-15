@@ -1,0 +1,21 @@
+appId: host.exp.Exponent
+---
+- extendedWaitUntil:
+    visible: ".*Sign Up.*"
+    timeout: 25000
+- tapOn: ".*Sign Up.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Your name"
+- inputText: "Nina Iyer"
+- tapOn:
+    point: "200,432"
+- inputText: "onboard.qa.20260711@example.com"
+- tapOn:
+    point: "200,515"
+- inputText: "OnboardQA!2026x"
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/ob-00b-filled"
+- tapOn: "Create Account"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/ob-01-first-screen"

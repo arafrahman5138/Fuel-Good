@@ -1,0 +1,175 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "9533b216-b804-427a-83f8-7919cdb64fe2",
+    "meal_label": "Ice cream sundae",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "large",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Ice Cream",
+      "Chocolate Ice Cream",
+      "Chocolate Syrup",
+      "Whipped Cream",
+      "Maraschino Cherry",
+      "Chopped Nuts"
+    ],
+    "normalized_ingredients": [
+      "ice cream",
+      "chocolate ice cream",
+      "chocolate syrup",
+      "whipped cream",
+      "maraschino cherry",
+      "chopped nuts"
+    ],
+    "components": [
+      {
+        "name": "ice cream",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.4,
+        "estimated_grams": 200,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "chocolate ice cream",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.3,
+        "estimated_grams": 150,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "chocolate syrup",
+        "role": "sauce",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.1,
+        "estimated_grams": 50,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.9
+      },
+      {
+        "name": "whipped cream",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.1,
+        "estimated_grams": 30,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.9
+      },
+      {
+        "name": "maraschino cherry",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.05,
+        "estimated_grams": 10,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "chopped nuts",
+        "role": "fat",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.05,
+        "estimated_grams": 15,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.8
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 1187.5,
+      "protein": 15.0,
+      "carbs": 117.5,
+      "fat": 77.5,
+      "fiber": 10.0,
+      "sugar_g": 70.0,
+      "ingredients": [
+        "ice cream",
+        "chocolate ice cream",
+        "chocolate syrup",
+        "whipped cream",
+        "maraschino cherry",
+        "chopped nuts"
+      ],
+      "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "fail",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "This works fine as a light snack. No major upgrade needed."
+    ],
+    "recovery_plan": [
+      "Keep the rest of the day a little cleaner so you preserve your remaining 200g carb room."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.79,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.85,
+      "grounding": 0.68,
+      "nutrition": 0.68,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": false
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 28.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221247).",
+      "Contains a processed sweet component.",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

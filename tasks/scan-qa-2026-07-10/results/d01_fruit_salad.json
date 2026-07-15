@@ -1,0 +1,169 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "454e9543-04af-4c66-b7cf-4261bebc4aa5",
+    "meal_label": "Fruit Salad",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Watermelon",
+      "Kiwi",
+      "Strawberries",
+      "Blueberries",
+      "Grapes"
+    ],
+    "normalized_ingredients": [
+      "watermelon",
+      "kiwi",
+      "strawberries",
+      "blueberries",
+      "grapes"
+    ],
+    "components": [
+      {
+        "name": "watermelon",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.4,
+        "estimated_grams": 150,
+        "item_count": 1,
+        "nova": 1,
+        "methods": [
+          "raw"
+        ],
+        "visible": true,
+        "confidence": 1.0
+      },
+      {
+        "name": "kiwi",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.2,
+        "estimated_grams": 75,
+        "item_count": 1,
+        "nova": 1,
+        "methods": [
+          "raw"
+        ],
+        "visible": true,
+        "confidence": 1.0
+      },
+      {
+        "name": "strawberries",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.2,
+        "estimated_grams": 75,
+        "item_count": 5,
+        "nova": 1,
+        "methods": [
+          "raw"
+        ],
+        "visible": true,
+        "confidence": 1.0
+      },
+      {
+        "name": "blueberries",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.1,
+        "estimated_grams": 40,
+        "item_count": 10,
+        "nova": 1,
+        "methods": [
+          "raw"
+        ],
+        "visible": true,
+        "confidence": 1.0
+      },
+      {
+        "name": "grapes",
+        "role": "fruit",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.1,
+        "estimated_grams": 40,
+        "item_count": 6,
+        "nova": 1,
+        "methods": [
+          "raw"
+        ],
+        "visible": true,
+        "confidence": 1.0
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 395.0,
+      "protein": 6.0,
+      "carbs": 100.0,
+      "fat": 0.0,
+      "fiber": 12.0,
+      "sugar_g": 23.0,
+      "ingredients": [
+        "watermelon",
+        "kiwi",
+        "strawberries",
+        "blueberries",
+        "grapes"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "recovery_plan": [
+      "Let your next meal do the heavy lifting with a real protein anchor.",
+      "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs.",
+      "Keep the rest of the day a little cleaner so you preserve your remaining 200g carb room."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.85,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.9,
+      "grounding": 0.75,
+      "nutrition": 0.75,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false,
+      "sanity_clamped": false
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 100.0,
+    "fuel_reasoning": [
+      "Every component is whole-food grade \u2014 honest 100."
+    ],
+    "image": null
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "dd46c9ad-fe7f-41be-be11-9eb4dc7c4a1e",
+    "meal_label": "Donuts and Coffee",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Glazed Donut",
+      "Chocolate Frosted Donut With Sprinkles",
+      "Coffee"
+    ],
+    "normalized_ingredients": [
+      "glazed donut",
+      "chocolate frosted donut with sprinkles",
+      "coffee"
+    ],
+    "nutrition_estimate": {
+      "calories": 470.0,
+      "protein": 7.0,
+      "carbs": 56.6,
+      "fat": 25.2,
+      "fiber": 3.4,
+      "sugar_g": 35.0,
+      "ingredients": [
+        "glazed donut",
+        "chocolate frosted donut with sprinkles",
+        "coffee"
+      ],
+      "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "fail",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "recovery_plan": [
+      "Let your next meal do the heavy lifting with a real protein anchor.",
+      "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs.",
+      "Keep the rest of the day a little cleaner so you preserve your remaining 200g carb room."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.73,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.68,
+      "nutrition": 0.68,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 28.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221239).",
+      "Contains a processed sweet component.",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

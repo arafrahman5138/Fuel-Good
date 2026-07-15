@@ -1,0 +1,65 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "9%,7%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: "50,813"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D01-home"
+- swipe:
+    start: "50%,72%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D02-home-mid"
+- tapOn:
+    point: "127,813"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D03-meals-hub"
+- tapOn:
+    point: "25%,35%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D04-browse"
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D05-recipe"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "204,813"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D06-track-fuel"
+- tapOn:
+    point: "289,158"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D07-track-metab"
+- tapOn:
+    point: "281,813"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D08-coach"
+- tapOn:
+    point: "50,813"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: "91%,12%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D09-profile"
+- tapOn:
+    point: "91%,10%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/D10-settings"

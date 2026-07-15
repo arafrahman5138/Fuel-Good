@@ -1,0 +1,1002 @@
+{
+  "api": "http://localhost:8000",
+  "n": 28,
+  "classification": {
+    "ok": 27,
+    "n": 28,
+    "pct": 96.4
+  },
+  "fuel_score_in_range": {
+    "ok": 16,
+    "n": 20
+  },
+  "label_score_in_range": {
+    "ok": 2,
+    "n": 7
+  },
+  "kcal_in_range": {
+    "ok": 12,
+    "n": 20
+  },
+  "mean_component_recall": 1.0,
+  "latency": {
+    "n": 28,
+    "p50": 7.8,
+    "p90": 11.72,
+    "min": 5.41,
+    "max": 14.11
+  },
+  "per_image": [
+    {
+      "image": "m01_grilled_salmon_quinoa",
+      "category": "meal_healthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.13,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Grilled Salmon with Quinoa and Asparagus",
+      "confidence": 0.77,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        85,
+        100
+      ],
+      "calories": 505.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        400,
+        750
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "salmon fillet",
+        "quinoa",
+        "asparagus",
+        "lemon",
+        "salt",
+        "salmon fillet",
+        "quinoa",
+        "asparagus",
+        "lemon",
+        "salt",
+        "grilled salmon with quinoa and asparagus"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m02_chicken_avocado_salad",
+      "category": "meal_healthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.8,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Chicken Salad",
+      "confidence": 0.82,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        85,
+        100
+      ],
+      "calories": 435.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        350,
+        700
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "grilled chicken breast",
+        "avocado",
+        "spinach",
+        "arugula",
+        "cucumber",
+        "cherry tomatoes",
+        "grilled chicken breast",
+        "avocado",
+        "spinach",
+        "arugula",
+        "cucumber",
+        "cherry tomatoes"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m03_steak_sweet_potato",
+      "category": "meal_healthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 6.76,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Steak with Sweet Potato and Broccoli",
+      "confidence": 0.8,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        78,
+        100
+      ],
+      "calories": 466.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        500,
+        900
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "steak",
+        "sweet potato",
+        "butter",
+        "broccoli",
+        "steak",
+        "sweet potato",
+        "butter",
+        "broccoli",
+        "salt",
+        "pepper",
+        "steak with sweet potato and broccoli"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m04_sushi_platter",
+      "category": "meal_mixed",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.85,
+      "fuel_score": 70.0,
+      "fuel_tier": null,
+      "meal_label": "Sushi Platter",
+      "confidence": 0.671,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        55,
+        88
+      ],
+      "calories": 1130.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        350,
+        700
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "sushi rice",
+        "salmon nigiri",
+        "tuna nigiri",
+        "sushi roll",
+        "avocado",
+        "cucumber",
+        "soy sauce",
+        "wasabi",
+        "pickled ginger",
+        "sushi rice",
+        "salmon nigiri",
+        "tuna nigiri"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m05_turkey_sandwich",
+      "category": "meal_mixed",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.66,
+      "fuel_score": 35.0,
+      "fuel_tier": null,
+      "meal_label": "Turkey and Cheese Sandwich with Carrots",
+      "confidence": 0.73,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": false,
+      "fuel_expected": [
+        40,
+        75
+      ],
+      "calories": 570.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        300,
+        650
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "whole wheat bread",
+        "turkey breast slices",
+        "cheese slices",
+        "lettuce",
+        "tomato slices",
+        "baby carrots",
+        "whole wheat bread",
+        "turkey breast slices",
+        "cheese slices",
+        "lettuce",
+        "tomato slices",
+        "baby carrots"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m06_spaghetti_meatballs",
+      "category": "meal_mixed",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.13,
+      "fuel_score": 40.0,
+      "fuel_tier": null,
+      "meal_label": "Spaghetti and Meatballs with Garlic Bread",
+      "confidence": 0.75,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        40,
+        72
+      ],
+      "calories": 600.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        550,
+        1000
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "spaghetti",
+        "meatballs",
+        "tomato sauce",
+        "parmesan cheese",
+        "garlic bread",
+        "spaghetti",
+        "meatballs",
+        "tomato sauce",
+        "parmesan cheese",
+        "garlic bread",
+        "spaghetti and meatballs with garlic bread"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m07_fried_chicken_fries",
+      "category": "meal_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.16,
+      "fuel_score": 40.0,
+      "fuel_tier": null,
+      "meal_label": "Fried Chicken and Fries",
+      "confidence": 0.77,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        15,
+        45
+      ],
+      "calories": 420.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        700,
+        1300
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "fried chicken",
+        "french fries",
+        "ranch dressing",
+        "fried chicken",
+        "french fries",
+        "ranch dressing",
+        "fried chicken and fries"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m08_loaded_nachos",
+      "category": "meal_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.82,
+      "fuel_score": 40.0,
+      "fuel_tier": null,
+      "meal_label": "Nachos",
+      "confidence": 0.62,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        10,
+        42
+      ],
+      "calories": 1025.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        700,
+        1400
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "tortilla chips",
+        "melted cheese",
+        "ground beef",
+        "sour cream",
+        "jalapenos",
+        "black olives",
+        "tortilla chips",
+        "melted cheese",
+        "ground beef",
+        "sour cream",
+        "jalapenos",
+        "black olives"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m09_hotdogs_and_ramen",
+      "category": "meal_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.13,
+      "fuel_score": 25.0,
+      "fuel_tier": null,
+      "meal_label": "Instant Ramen with Sausage",
+      "confidence": 0.39,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        0,
+        30
+      ],
+      "calories": 610.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        450,
+        900
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "instant ramen noodles",
+        "sausage slices",
+        "broth",
+        "instant ramen noodles",
+        "sausage slices",
+        "broth",
+        "instant ramen with sausage"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "m10_fastfood_burger_meal",
+      "category": "meal_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.94,
+      "fuel_score": 35.0,
+      "fuel_tier": null,
+      "meal_label": "Cheeseburger Meal",
+      "confidence": 0.76,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        5,
+        38
+      ],
+      "calories": 985.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        800,
+        1500
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "sesame seed bun",
+        "beef",
+        "processed cheese",
+        "pickles",
+        "onion",
+        "ketchup",
+        "french fries",
+        "soda",
+        "sesame seed bun",
+        "beef",
+        "processed cheese",
+        "pickles"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "d01_fruit_salad",
+      "category": "dessert_healthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.16,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Fruit Salad",
+      "confidence": 0.81,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        75,
+        100
+      ],
+      "calories": 395.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        80,
+        260
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "watermelon",
+        "kiwi",
+        "strawberries",
+        "blueberries",
+        "grapes",
+        "watermelon",
+        "kiwi",
+        "strawberries",
+        "blueberries",
+        "grapes",
+        "fruit salad"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "d02_yogurt_berry_parfait",
+      "category": "dessert_healthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.7,
+      "fuel_score": 70.0,
+      "fuel_tier": null,
+      "meal_label": "Yogurt Parfait",
+      "confidence": 0.68,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        55,
+        88
+      ],
+      "calories": 515.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        180,
+        420
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "yogurt",
+        "raspberries",
+        "blueberries",
+        "granola",
+        "honey",
+        "yogurt",
+        "raspberries",
+        "blueberries",
+        "granola",
+        "honey",
+        "yogurt parfait"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "d03_dark_chocolate_squares",
+      "category": "dessert_mixed",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "label",
+      "classification_ok": false,
+      "duration_s": 12.3,
+      "label_score": 59.0,
+      "tier": "mixed",
+      "product_name": "CACAO 86% CHOCOLATE",
+      "confidence": 0.2
+    },
+    {
+      "image": "d04_apple_pie_slice",
+      "category": "dessert_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.22,
+      "fuel_score": 55.0,
+      "fuel_tier": null,
+      "meal_label": "Apple pie with ice cream",
+      "confidence": 0.86,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": false,
+      "fuel_expected": [
+        10,
+        48
+      ],
+      "calories": 400.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        300,
+        700
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "apple pie crust",
+        "apple filling",
+        "ice cream",
+        "apple pie crust",
+        "apple filling",
+        "ice cream",
+        "apple pie with ice cream"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "d05_glazed_donuts",
+      "category": "dessert_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 9.28,
+      "fuel_score": 28.0,
+      "fuel_tier": null,
+      "meal_label": "Donuts and Coffee",
+      "confidence": 0.73,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        0,
+        30
+      ],
+      "calories": 470.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        350,
+        850
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "glazed donut",
+        "chocolate frosted donut with sprinkles",
+        "coffee",
+        "glazed donut",
+        "chocolate frosted donut with sprinkles",
+        "coffee",
+        "donuts and coffee"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "d06_icecream_sundae",
+      "category": "dessert_unhealthy",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.65,
+      "fuel_score": 28.0,
+      "fuel_tier": null,
+      "meal_label": "Ice Cream Sundae",
+      "confidence": 0.82,
+      "source_model": "gemini-2.5-flash",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        0,
+        30
+      ],
+      "calories": 203.5,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        400,
+        950
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "ice cream",
+        "chocolate ice cream",
+        "whipped cream",
+        "chocolate syrup",
+        "sprinkles",
+        "maraschino cherry",
+        "ice cream",
+        "chocolate ice cream",
+        "whipped cream",
+        "chocolate syrup",
+        "sprinkles",
+        "maraschino cherry"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "l01_canned_black_beans",
+      "category": "label_clean",
+      "expected_types": [
+        "label"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 10.94,
+      "label_score": 100.0,
+      "tier": "whole_food",
+      "product_name": "Prepared Black Beans",
+      "confidence": 0.9,
+      "score_in_range": true,
+      "score_expected": [
+        65,
+        100
+      ],
+      "product_hint_ok": true
+    },
+    {
+      "image": "l02_cola_soda_label",
+      "category": "label_ultra",
+      "expected_types": [
+        "label"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 11.72,
+      "label_score": 34.9,
+      "tier": "ultra_processed",
+      "product_name": "Facouard 1% tanseorgh",
+      "confidence": 0.9,
+      "score_in_range": false,
+      "score_expected": [
+        0,
+        25
+      ],
+      "product_hint_ok": false
+    },
+    {
+      "image": "l03_healthwashed_smoothie",
+      "category": "label_healthwashed",
+      "expected_types": [
+        "label"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 14.11,
+      "label_score": 100.0,
+      "tier": "whole_food",
+      "product_name": "ALL NATURAL SUPERFOOD SMOOTIE",
+      "confidence": 0.8,
+      "score_in_range": false,
+      "score_expected": [
+        15,
+        55
+      ],
+      "product_hint_ok": false
+    },
+    {
+      "image": "l04_instant_noodle_cup",
+      "category": "label_ultra",
+      "expected_types": [
+        "label"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 12.58,
+      "label_score": 34.9,
+      "tier": "ultra_processed",
+      "product_name": "TURBO NOODLE",
+      "confidence": 0.8,
+      "score_in_range": false,
+      "score_expected": [
+        0,
+        25
+      ],
+      "product_hint_ok": true
+    },
+    {
+      "image": "l05_rolled_oats_label",
+      "category": "label_clean",
+      "expected_types": [
+        "label"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 10.47,
+      "label_score": 100.0,
+      "tier": "whole_food",
+      "product_name": "Whole Grain Rolled Oats",
+      "confidence": 0.9,
+      "score_in_range": true,
+      "score_expected": [
+        75,
+        100
+      ],
+      "product_hint_ok": true
+    },
+    {
+      "image": "g01_banana_bunch",
+      "category": "grocery_produce",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 6.98,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Mixed Fruit",
+      "confidence": 0.89,
+      "source_model": "gemini-2.5-flash",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        85,
+        100
+      ],
+      "calories": 241.8,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        80,
+        600
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "banana",
+        "apple",
+        "grapes",
+        "orange",
+        "banana",
+        "apple",
+        "grapes",
+        "orange",
+        "mixed fruit"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "g02_avocado_halves",
+      "category": "grocery_produce",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 5.41,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Avocado",
+      "confidence": 0.8,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        85,
+        100
+      ],
+      "calories": 96.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        120,
+        600
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "avocado",
+        "avocado",
+        "avocado"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "g03_potato_chips_bag",
+      "category": "grocery_packaged",
+      "expected_types": [
+        "label",
+        "meal"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 9.73,
+      "label_score": 59.0,
+      "tier": "mixed",
+      "product_name": "Crunchy Cheese Puffs",
+      "confidence": 0.3,
+      "score_in_range": false,
+      "score_expected": [
+        0,
+        35
+      ],
+      "product_hint_ok": true
+    },
+    {
+      "image": "g04_toaster_pastry_box",
+      "category": "grocery_packaged",
+      "expected_types": [
+        "label",
+        "meal"
+      ],
+      "actual_type": "label",
+      "classification_ok": true,
+      "duration_s": 8.8,
+      "label_score": 59.0,
+      "tier": "mixed",
+      "product_name": "FROSTED STRAWBERRY TOASTER PASTRIES",
+      "confidence": 0.65,
+      "score_in_range": false,
+      "score_expected": [
+        0,
+        35
+      ],
+      "product_hint_ok": true
+    },
+    {
+      "image": "g05_rotisserie_chicken",
+      "category": "grocery_prepared",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 6.45,
+      "fuel_score": 100.0,
+      "fuel_tier": null,
+      "meal_label": "Rotisserie Chicken",
+      "confidence": 0.8,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": false,
+      "fuel_expected": [
+        55,
+        92
+      ],
+      "calories": 450.0,
+      "kcal_in_range": false,
+      "kcal_expected": [
+        500,
+        1500
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "whole chicken",
+        "chicken juices",
+        "whole chicken",
+        "chicken juices",
+        "salt",
+        "pepper",
+        "rotisserie chicken"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "e01_indian_thali",
+      "category": "edge_multidish",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 10.24,
+      "fuel_score": 40.0,
+      "fuel_tier": null,
+      "meal_label": "Indian Thali",
+      "confidence": 0.86,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": false,
+      "fuel_expected": [
+        55,
+        92
+      ],
+      "calories": 775.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        500,
+        1000
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "roti",
+        "rice",
+        "dal",
+        "palak",
+        "raita",
+        "onion and tomato salad",
+        "roti",
+        "rice",
+        "dal",
+        "palak",
+        "raita",
+        "onion and tomato salad"
+      ],
+      "components_missed": []
+    },
+    {
+      "image": "e02_birthday_dessert_plate",
+      "category": "edge_multidessert",
+      "expected_types": [
+        "meal"
+      ],
+      "actual_type": "meal",
+      "classification_ok": true,
+      "duration_s": 7.41,
+      "fuel_score": 28.0,
+      "fuel_tier": null,
+      "meal_label": "Dessert Plate",
+      "confidence": 0.74,
+      "source_model": "gemini-2.5-flash-lite",
+      "degraded": false,
+      "fuel_in_range": true,
+      "fuel_expected": [
+        0,
+        28
+      ],
+      "calories": 890.0,
+      "kcal_in_range": true,
+      "kcal_expected": [
+        400,
+        1000
+      ],
+      "component_recall": 1.0,
+      "components_found": [
+        "cake",
+        "cookie",
+        "gummy candy",
+        "chocolate candies",
+        "cake",
+        "cookie",
+        "gummy candy",
+        "chocolate candies",
+        "dessert plate"
+      ],
+      "components_missed": []
+    }
+  ]
+}

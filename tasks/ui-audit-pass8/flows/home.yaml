@@ -1,0 +1,28 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L01-home-top"
+- swipe:
+    start: "50%,72%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L02-home-mid"
+- swipe:
+    start: "50%,72%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L03-home-lower"
+- swipe:
+    start: "50%,72%"
+    end: "50%,32%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L04-home-bottom"

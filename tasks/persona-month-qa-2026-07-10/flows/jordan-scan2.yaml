@@ -1,0 +1,10 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "359,814"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: ".*Meal or product.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-24-scan-cam"

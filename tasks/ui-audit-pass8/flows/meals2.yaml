@@ -1,0 +1,59 @@
+appId: host.exp.Exponent
+---
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L05-meals-hub"
+- tapOn: "Full recipes"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L06-browse-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L06b-browse-scrolled"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Sweet treats"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L07-desserts"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L07b-desserts-scrolled"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Components"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L08-components"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "On this device"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L09-saved"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Shopping list"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L10-grocery"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Weekly plan"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L11-myplan"

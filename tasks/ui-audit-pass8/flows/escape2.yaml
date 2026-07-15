@@ -1,0 +1,7 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "36,82"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/escape2"

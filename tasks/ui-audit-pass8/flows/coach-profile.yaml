@@ -1,0 +1,61 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "281,813"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L22-coach"
+- tapOn:
+    point: "50,813"
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "91%,12%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L23-profile"
+- tapOn: "Quests & Streaks"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L24-quests"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L25-quests-scrolled"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "91%,10%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L26-settings-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L27-settings-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L28-settings-lower"
+- scrollUntilVisible:
+    element: "Health Context"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Health Context"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L29-health-context"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/L30-health-context-2"

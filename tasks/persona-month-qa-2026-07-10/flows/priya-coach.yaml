@@ -1,0 +1,14 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    point: "281,813"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/priya-03-coach-gate"
+- tapOn:
+    point: "204,813"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/priya-04-track"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/priya-05-track2"

@@ -1,0 +1,83 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Cola",
+    "raw_product_name": "Cola",
+    "brand": null,
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Carbonated Water, High Fructose Corn Syrup, Caramel Color, Phosphoric Acid, Natural Flavors, Caffeine",
+    "confidence": 0.9,
+    "confidence_breakdown": {
+      "ocr": 0.9,
+      "ingredients": 0.9,
+      "nutrition": 0.9,
+      "metadata": 0.8
+    },
+    "recoverable": false,
+    "notes": [
+      "contains high fructose corn syrup",
+      "ultra-processed beverage",
+      "contains artificial color (caramel color)"
+    ],
+    "score": 0.0,
+    "tier": "ultra_processed",
+    "verdict": "Not a great fit",
+    "summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "recommended_action": "Best used rarely. Look for a version with fewer ingredients and less processing.",
+    "highlights": [],
+    "concerns": [
+      "Sweetened beverage: ultra-processed regardless of ingredient count.",
+      "Contains added sugars.",
+      "Contains artificial additives or preservatives.",
+      "High sugar load per serving."
+    ],
+    "reasoning": [
+      "Beverage override: Beverage category (cola); added sugars detected",
+      "Added sugar ingredients found: high fructose corn syrup.",
+      "Artificial additives found: caramel color."
+    ],
+    "ingredient_count": 6,
+    "nutrition_snapshot": {
+      "calories": 140.0,
+      "protein_g": 0.0,
+      "fiber_g": 0.0,
+      "sugar_g": 39.0,
+      "carbs_g": 0.0,
+      "sodium_mg": 45.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [
+        "high fructose corn syrup"
+      ],
+      "refined_flours": [],
+      "artificial_additives": [
+        "caramel color"
+      ],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [
+      {
+        "title": "Added Sugars",
+        "explanation": "Added sugars spike blood glucose, leading to energy crashes and increased hunger. They appear under many names \u2014 corn syrup, dextrose, maltodextrin, and more. Short ingredient lists with no sugar variants are the goal.",
+        "look_for": "Products sweetened with whole fruit, honey (in small amounts), or no sweetener",
+        "detected": [
+          "high fructose corn syrup"
+        ]
+      },
+      {
+        "title": "Artificial Additives",
+        "explanation": "Artificial colors, flavors, and preservatives are synthetic compounds your body doesn't need. Some (like BHT, BHA, certain dyes) have been linked to health concerns in research. Simpler ingredient lists avoid these.",
+        "look_for": "Products using natural preservatives like vitamin E (tocopherols) or citric acid",
+        "detected": [
+          "caramel color"
+        ]
+      }
+    ],
+    "scan_id": "ecc8e95e-955f-4195-b670-0ce403813e73",
+    "image": null
+  }
+}

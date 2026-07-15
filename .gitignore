@@ -34,3 +34,4 @@ backend/*.db
 
 # Scratch / dev harness scripts
 frontend/tmp_*.js
+.claude/worktrees/

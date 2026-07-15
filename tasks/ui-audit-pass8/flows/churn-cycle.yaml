@@ -1,0 +1,35 @@
+appId: host.exp.Exponent
+# Wedge regression probe: rapid tab churn + modal open/close.
+# Run repeatedly from tasks/ui-audit-pass8/run_churn.sh with blank-frame
+# detection between runs. Tab points: Home(50,813) Meals(127,813)
+# Track(204,813) Coach(281,813) FAB(359,814). Profile via avatar (91%,12%).
+---
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          point: "127,813"
+      - tapOn:
+          point: "204,813"
+      - tapOn:
+          point: "281,813"
+      - tapOn:
+          point: "50,813"
+      - tapOn:
+          point: "91%,12%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn:
+          point: "9%,8%"
+      - tapOn:
+          point: "204,813"
+      - tapOn:
+          point: "359,814"
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "359,814"
+      - tapOn:
+          point: "50,813"
+- waitForAnimationToEnd:
+    timeout: 2500

@@ -1,0 +1,8 @@
+appId: host.exp.Exponent
+---
+- swipe:
+    start: "50%,12%"
+    end: "50%,80%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/escape-check"

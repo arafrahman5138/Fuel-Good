@@ -1,0 +1,92 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "29c41e00-4009-4b51-98d4-da45c1d6f237",
+    "meal_label": "Apple pie with ice cream",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Apple Pie Crust",
+      "Apple Filling",
+      "Ice Cream"
+    ],
+    "normalized_ingredients": [
+      "apple pie crust",
+      "apple filling",
+      "ice cream"
+    ],
+    "nutrition_estimate": {
+      "calories": 400.0,
+      "protein": 4.0,
+      "carbs": 78.0,
+      "fat": 10.0,
+      "fiber": 8.0,
+      "sugar_g": 22.0,
+      "ingredients": [
+        "apple pie crust",
+        "apple filling",
+        "ice cream"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "recovery_plan": [
+      "Let your next meal do the heavy lifting with a real protein anchor.",
+      "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs.",
+      "Keep the rest of the day a little cleaner so you preserve your remaining 200g carb room."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.86,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.8,
+      "grounding": 0.85,
+      "nutrition": 0.85,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 55.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221221).",
+      "Contains a processed sweet component.",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

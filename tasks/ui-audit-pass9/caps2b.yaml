@@ -1,0 +1,35 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- tapOn: "Open profile"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P06-profile"
+- tapOn: ".*Quests.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P07-quests"
+- tapOn:
+    point: "9%,8%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn: "Open settings"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P08-settings-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P09-settings-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P10-settings-lower"

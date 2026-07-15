@@ -1,0 +1,104 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "7358c14b-80ed-4992-81ac-f7d8f7f4a857",
+    "meal_label": "Yogurt Parfait",
+    "meal_type": "breakfast",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Yogurt",
+      "Raspberries",
+      "Blueberries",
+      "Granola",
+      "Honey"
+    ],
+    "normalized_ingredients": [
+      "yogurt",
+      "raspberries",
+      "blueberries",
+      "granola",
+      "honey"
+    ],
+    "nutrition_estimate": {
+      "calories": 515.0,
+      "protein": 16.5,
+      "carbs": 85.0,
+      "fat": 14.0,
+      "fiber": 11.0,
+      "sugar_g": 15.3,
+      "ingredients": [
+        "yogurt",
+        "raspberries",
+        "blueberries",
+        "granola",
+        "honey"
+      ],
+      "whole_food_summary": "This is fairly clean, but there are a few things worth watching."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "warn",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Add a more protein-forward base next time so the meal holds you longer.",
+      "Trim the starch portion slightly or swap part of it for vegetables if you want a higher MES."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "A 10-minute walk after this meal can help flatten the glycemic hit."
+    ],
+    "mes": {
+      "score": 46.9,
+      "tier": "low",
+      "sub_scores": {
+        "gis": 24.4,
+        "pas": 16.0,
+        "fs": 92.0,
+        "fas": 75.0
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.68,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.9,
+      "grounding": 0.75,
+      "nutrition": 0.75,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This is fairly clean, but there are a few things worth watching.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 70.0,
+    "fuel_reasoning": [
+      "Some processed components bring the score down (\u22128)."
+    ],
+    "image": null
+  }
+}

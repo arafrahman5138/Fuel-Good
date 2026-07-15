@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    text: "you@example.com"
+- inputText: "scanqa20260710@example.com"
+- tapOn:
+    text: "Enter password"
+- inputText: "ScanQA!2026x"
+- hideKeyboard
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 20000
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/signin-done"

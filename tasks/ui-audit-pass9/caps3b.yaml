@@ -1,0 +1,17 @@
+appId: host.exp.Exponent
+---
+- scrollUntilVisible:
+    element: ".*Health Context.*"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P10b-settings-health-row"
+- tapOn: ".*Health Context.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P11-health-context"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass9/captures/P12-health-context-2"

@@ -1,0 +1,86 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "cfa936d0-10d7-4e6d-85fe-7e0bf059b6fc",
+    "meal_label": "Rotisserie Chicken",
+    "meal_type": "dinner",
+    "meal_context": "meal_component_protein",
+    "portion_size": "large",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Whole Chicken",
+      "Chicken Juices"
+    ],
+    "normalized_ingredients": [
+      "whole chicken",
+      "chicken juices",
+      "salt",
+      "pepper"
+    ],
+    "nutrition_estimate": {
+      "calories": 450.0,
+      "protein": 75.0,
+      "carbs": 0.0,
+      "fat": 17.5,
+      "fiber": 0.0,
+      "sugar_g": 0.0,
+      "ingredients": [
+        "whole chicken",
+        "chicken juices",
+        "salt",
+        "pepper"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Add a bean, lentil, or vegetable side to raise fiber."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia."
+    ],
+    "mes": null,
+    "snack_profile": null,
+    "confidence": 0.8,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.7,
+      "grounding": 0.85,
+      "nutrition": 0.85,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 100.0,
+    "fuel_reasoning": [
+      "Every component is whole-food grade \u2014 honest 100."
+    ],
+    "image": null
+  }
+}

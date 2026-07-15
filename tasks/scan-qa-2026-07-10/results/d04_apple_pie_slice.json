@@ -1,0 +1,117 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "ba622c4c-48bf-4eeb-a8a7-ee5391c49e5e",
+    "meal_label": "Apple Pie \u00e0 la Mode",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Apple Pie",
+      "Ice Cream"
+    ],
+    "normalized_ingredients": [
+      "apple pie",
+      "ice cream"
+    ],
+    "components": [
+      {
+        "name": "apple pie",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.7,
+        "estimated_grams": 150,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [
+          "baked"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "ice cream",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.3,
+        "estimated_grams": 70,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 330.0,
+      "protein": 4.0,
+      "carbs": 53.0,
+      "fat": 10.0,
+      "fiber": 4.0,
+      "sugar_g": 22.0,
+      "ingredients": [
+        "apple pie",
+        "ice cream"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "recovery_plan": [
+      "Let your next meal do the heavy lifting with a real protein anchor.",
+      "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.78,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.9,
+      "grounding": 0.6,
+      "nutrition": 0.6,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": true
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 28.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221234).",
+      "Contains a processed sweet component."
+    ],
+    "image": null
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "55afff5b-4d22-45c2-b389-531d61274b18",
+    "meal_label": "Cheeseburger Meal",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Sesame Seed Bun",
+      "Beef",
+      "Processed Cheese",
+      "Pickles",
+      "Onion",
+      "Ketchup",
+      "French Fries",
+      "Soda"
+    ],
+    "normalized_ingredients": [
+      "sesame seed bun",
+      "beef",
+      "processed cheese",
+      "pickles",
+      "onion",
+      "ketchup",
+      "french fries",
+      "soda"
+    ],
+    "nutrition_estimate": {
+      "calories": 985.0,
+      "protein": 50.0,
+      "carbs": 114.0,
+      "fat": 37.0,
+      "fiber": 12.0,
+      "sugar_g": 20.5,
+      "glycemic_profile": {
+        "primary_carb_source": "refined_grain",
+        "processing_level": "refined",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "sesame seed bun",
+        "beef",
+        "processed cheese",
+        "pickles",
+        "onion",
+        "ketchup",
+        "french fries",
+        "soda"
+      ],
+      "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "refined_grain",
+      "processing_level": "refined",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "fail",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Ask for grilled, roasted, or olive-oil based prep instead of fryer oil."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": {
+      "score": 72.5,
+      "tier": "good",
+      "sub_scores": {
+        "gis": 8.6,
+        "pas": 89.1,
+        "fs": 94.0,
+        "fas": 97.6
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.76,
+    "confidence_breakdown": {
+      "extraction": 0.8,
+      "portion": 0.9,
+      "grounding": 0.66,
+      "nutrition": 0.66,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This product is heavily processed and does not align well with a whole-food approach.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 35.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221232).",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

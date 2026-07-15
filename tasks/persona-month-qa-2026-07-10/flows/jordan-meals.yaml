@@ -1,0 +1,8 @@
+appId: host.exp.Exponent
+---
+- tapOn: ".*Meals.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-12-meals"
+- scroll
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/jordan-13-meals2"

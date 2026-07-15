@@ -1,0 +1,105 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "3186ca37-774c-4e12-a623-7ebe4fe4b7d5",
+    "meal_label": "Chicken Salad",
+    "meal_type": "lunch",
+    "meal_context": "full_meal",
+    "portion_size": "medium",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Grilled Chicken Breast",
+      "Avocado",
+      "Spinach",
+      "Arugula",
+      "Cucumber",
+      "Cherry Tomatoes"
+    ],
+    "normalized_ingredients": [
+      "grilled chicken breast",
+      "avocado",
+      "spinach",
+      "arugula",
+      "cucumber",
+      "cherry tomatoes",
+      "dressing"
+    ],
+    "nutrition_estimate": {
+      "calories": 435.0,
+      "protein": 40.0,
+      "carbs": 29.0,
+      "fat": 19.0,
+      "fiber": 14.0,
+      "sugar_g": 5.2,
+      "ingredients": [
+        "grilled chicken breast",
+        "avocado",
+        "spinach",
+        "arugula",
+        "cucumber",
+        "cherry tomatoes",
+        "dressing"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia."
+    ],
+    "mes": {
+      "score": 86.7,
+      "tier": "optimal",
+      "sub_scores": {
+        "gis": 94.0,
+        "pas": 67.3,
+        "fs": 98.0,
+        "fas": 83.2
+      },
+      "ingredient_gis_adjustment": 0.0,
+      "ingredient_gis_reasons": []
+    },
+    "snack_profile": null,
+    "confidence": 0.82,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.8,
+      "grounding": 0.77,
+      "nutrition": 0.77,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false
+    },
+    "source_model": "gemini-2.5-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v4_consensus",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 100.0,
+    "fuel_reasoning": [
+      "Every component is whole-food grade \u2014 honest 100."
+    ],
+    "image": null
+  }
+}

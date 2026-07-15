@@ -1,0 +1,54 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- tapOn:
+    point: "91%,12%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- extendedWaitUntil:
+    visible: ".*Level.*"
+    timeout: 8000
+- tapOn:
+    point: "91%,10%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: ".*Appearance.*|.*Settings.*|.*Preferences.*"
+    timeout: 8000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S01-settings-top"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S02-settings-mid"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S03-settings-lower"
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S04-settings-bottom"
+- scrollUntilVisible:
+    element: ".*Health Context.*"
+    direction: UP
+    timeout: 12000
+- tapOn: ".*Health Context.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S05-health-context"
+- swipe:
+    start: "50%,70%"
+    end: "50%,35%"
+- waitForAnimationToEnd:
+    timeout: 1200
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/ui-audit-pass8/captures/S06-health-context-2"

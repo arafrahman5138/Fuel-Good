@@ -1,0 +1,21 @@
+appId: host.exp.Exponent
+env:
+  EMAIL: "jordan.qa.20260710@example.com"
+  PASS: "JordanQA!2026x"
+  SHOT: "jordan-01-home"
+---
+- extendedWaitUntil:
+    visible: "you@example.com"
+    timeout: 25000
+- tapOn: "you@example.com"
+- inputText: ${EMAIL}
+- tapOn: "Enter password"
+- inputText: ${PASS}
+- tapOn:
+    point: "50%,25%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn: "Sign In"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/${SHOT}"

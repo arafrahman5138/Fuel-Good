@@ -1,0 +1,118 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "09a6bca3-0581-4c02-a59d-6263116c2101",
+    "meal_label": "Dark Chocolate and Coffee",
+    "meal_type": "snack",
+    "meal_context": "snack",
+    "portion_size": "small",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Chocolate",
+      "Black Coffee"
+    ],
+    "normalized_ingredients": [
+      "chocolate",
+      "black coffee"
+    ],
+    "components": [
+      {
+        "name": "chocolate",
+        "role": "dessert",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.6,
+        "estimated_grams": 40,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "black coffee",
+        "role": "other",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.4,
+        "estimated_grams": 200,
+        "item_count": 1,
+        "nova": 1,
+        "methods": [
+          "brewed"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 288.0,
+      "protein": 5.6,
+      "carbs": 30.4,
+      "fat": 12.8,
+      "fiber": 3.2,
+      "sugar_g": 13.6,
+      "ingredients": [
+        "chocolate",
+        "black coffee"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": null,
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "This looks like a reasonable estimate, but review ingredients and portion before logging.",
+      "Pair fruit or other quick carbs with yogurt, cottage cheese, eggs, or nuts so the snack lasts longer."
+    ],
+    "recovery_plan": [
+      "Let your next meal do the heavy lifting with a real protein anchor.",
+      "If this snack was mostly carbs, keep your next meal steadier with protein, fiber, and slower carbs."
+    ],
+    "mes": null,
+    "snack_profile": {
+      "is_snack": true,
+      "is_healthy_snack": false,
+      "label": "Snack"
+    },
+    "confidence": 0.74,
+    "confidence_breakdown": {
+      "extraction": 0.9,
+      "portion": 0.8,
+      "grounding": 0.6,
+      "nutrition": 0.6,
+      "ensemble_applied": false,
+      "estimate_mode": "medium",
+      "review_required": false,
+      "sanity_clamped": true
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 55.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221217).",
+      "Contains a processed sweet component.",
+      "High-severity processing flags cap this below whole-food tier."
+    ],
+    "image": null
+  }
+}

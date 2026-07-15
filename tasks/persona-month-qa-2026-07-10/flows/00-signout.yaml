@@ -1,0 +1,12 @@
+appId: host.exp.Exponent
+---
+# Dismiss stale scan result if present (X button top-left)
+- runFlow:
+    when:
+      visible: "Nutrition snapshot"
+    commands:
+      - tapOn:
+          point: "9%,7%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: "tasks/persona-month-qa-2026-07-10/captures/signout-1-current"

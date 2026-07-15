@@ -1,0 +1,56 @@
+{
+  "scan_type": "label",
+  "label": {
+    "product_name": "Black Beans",
+    "raw_product_name": "Black Beans",
+    "brand": "Cascadan Farm Organic",
+    "barcode": null,
+    "source": "label_image",
+    "capture_type": "front_label",
+    "ingredients_text": "Prepared Black Beans, Water, Sea Salt",
+    "confidence": 0.95,
+    "confidence_breakdown": {
+      "ocr": 0.95,
+      "ingredients": 1.0,
+      "nutrition": 0.9,
+      "metadata": 0.95
+    },
+    "recoverable": false,
+    "notes": [
+      "Simple, clean ingredient list",
+      "Classified as NOVA 3 due to being a canned, processed vegetable product"
+    ],
+    "score": 93.0,
+    "tier": "whole_food",
+    "verdict": "Great choice",
+    "summary": "This looks very close to a real-food product with minimal processing.",
+    "recommended_action": "This is a strong pantry pick for a whole-food lifestyle.",
+    "highlights": [
+      "Very short ingredient list.",
+      "Reasonable sugar level per serving.",
+      "Starts with a recognizable whole-food ingredient."
+    ],
+    "concerns": [],
+    "reasoning": [],
+    "ingredient_count": 3,
+    "nutrition_snapshot": {
+      "calories": 110.0,
+      "protein_g": 7.0,
+      "fiber_g": 0.0,
+      "sugar_g": 0.0,
+      "carbs_g": 20.0,
+      "sodium_mg": 130.0
+    },
+    "processing_flags": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "flag_explanations": [],
+    "scan_id": "d0593d2f-3dba-4cb8-8e01-e8036fac8a27",
+    "image": null
+  }
+}

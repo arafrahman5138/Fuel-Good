@@ -1,0 +1,15 @@
+appId: host.exp.Exponent
+---
+- tapOn: ".*A few times a day.*"
+- tapOn: ".*Continue.*"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/ob-04-next"
+- runFlow:
+    when:
+      visible: ".*Continue.*"
+    commands:
+      - tapOn: ".*Continue.*"
+      - waitForAnimationToEnd:
+          timeout: 3500
+- takeScreenshot: "/Users/arafrahman/Fuel-Good/tasks/persona-month-qa-2026-07-10/captures/ob-05-next"

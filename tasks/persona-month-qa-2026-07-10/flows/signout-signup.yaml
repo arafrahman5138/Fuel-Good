@@ -1,0 +1,12 @@
+appId: host.exp.Exponent
+---
+# Dismiss stale scan screen if present, sign out, and begin fresh signup
+- runFlow:
+    when:
+      visible: "Nutrition snapshot"
+    commands:
+      - tapOn:
+          point: "9%,7%"
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000

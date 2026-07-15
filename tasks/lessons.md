@@ -4,6 +4,64 @@ Self-improvement log per the CLAUDE.md workflow. Add rules for future sessions s
 
 ---
 
+## 2026-07-14 (pass-8 remediation)
+
+### Capture harnesses need a foreground assertion, not just md5 checks
+
+**Observation**: The pass-9 reviewer found P01-P04 were iOS SPRINGBOARD screenshots — Expo Go had crashed mid-batch and simctl screenshots happily captured the home screen. Maestro steps even reported COMPLETED for taps in the same window. md5-dupe checking (the pass-8 lesson) caught the P03==P04 duplicate but not the wrong-app frames.
+
+**Rule**: Before every capture batch, assert the foreground app: `xcrun simctl spawn booted launchctl list | grep -q UIKitApplication:host.exp.Exponent` or cheaper — screenshot + assert the glass tab bar's pixel band exists. Add it to the harness, don't rely on reviewers to catch it. And when a Maestro flow reports success but screenshots look wrong, believe the screenshots.
+
+### The drift-guard allowlist ratchet works
+
+The `__tests__/design-system-guards.test.ts` pattern (hex-grep + primary allowlist that agents must empty + staleness ratchet that fails when an allowlisted file becomes clean) turned "migration complete" into a machine-checkable state and caught a NEW file (RecipeCard.tsx) introducing hardcoded hexes DURING the migration itself. Reuse this pattern for any consolidate-N-implementations refactor.
+
+### Parallel same-repo agents: expect transient tsc/jest noise
+
+With 6 agents editing disjoint files, each agent's full-repo tsc/jest runs see siblings' in-flight states (duplicate identifiers, missing imports, guard failures naming other files). Brief agents to report-but-not-chase failures in files they don't own; the coordinator runs the authoritative gate after ALL agents land. Every "failure" in this pass resolved at the gate (tsc 0, 62/62).
+
+---
+
+## 2026-07-13 (UI audit pass 8)
+
+### md5-check capture sets before review — silent tap failures produce stale duplicates
+
+**Observation**: A reviewer agent md5-hashed its batch and proved 4 "different" screens were byte-identical (settings captures were actually the quests screen; dark profile was home-mid). Maestro taps on unlabeled icon buttons fail SILENTLY and the flow keeps screenshotting the old screen.
+
+**Rule**: (a) After any multi-screen capture flow, run `md5 -q *.png | sort | uniq -d` and re-capture duplicates; (b) anchor every post-nav screenshot with an `extendedWaitUntil` on screen-distinctive text; (c) tell reviewer agents to md5-check their batch first. Also: icon-only controls with no accessibilityLabel (builder ✕, settings gear) are unautomatable AND unreviewable — file them as a11y P1s, not automation nuisances.
+
+### The blank-screen wedge is reproducible via navigation churn
+
+Rapid profile↔settings↔tab cycles (esp. dark mode) can wedge the app into tab-bar-alive/content-blank — survives further navigation, ErrorBoundary silent. If a capture comes back blank, don't assume a load race: screenshot twice a few seconds apart; a persistent blank is the bug itself (filed as pass-8 P1 #1).
+
+---
+
+## 2026-07-11 (5-persona month QA campaign)
+
+### The dev DB is shared mutable state — capture everything at generation time
+
+**Observation**: A parallel session's pytest run wiped dev Postgres mid-campaign, deleting all 5 persona accounts and 411 logs hours after creation. Nothing was lost because the driver had dumped every API response to `runs/*_month.json` at call time, and the analysis agent ran before the wipe. The wipe even *surfaced* a bug (empty meal plans when `recipe_embeddings=0` after re-seed).
+
+**Rule**: Any QA campaign that provisions DB state must treat the dev DB as ephemeral: (a) dump every response to JSON as you go, never plan a "second pass" over live accounts; (b) run analysis agents early, on files not accounts; (c) after any restore/re-seed, check auxiliary tables too (`recipe_embeddings`, MES backfills) — `restore_meals.py` rebuilds recipes only, and plan generation degrades silently to an empty plan.
+
+### Simulator month-simulation methodology that worked
+
+- Backdating via the `date` field on POST /nutrition/logs (≤90 days) + behavior-modeled RNG per persona gives a realistic month in ~10 min for 5 users. Throttle to <120 req/min (server rate limit) and retry 429s.
+- `source_type: "scan"` requires a real `source_id` — backfill historical scans as manual logs; exercise the real scan path live only.
+- Scan quota counts *today's* requests regardless of the log's backdate — burn quota via API, then capture the wall UI on the 4th attempt.
+- Premium per-user via `access_override_level='premium'` (survives `ALLOW_OPEN_PREMIUM_IN_NON_PRODUCTION=false`, which is required to see any freemium behavior).
+- Expo Go signup password field silently rejects Maestro `inputText` (iOS strong-password overlay on `newPassword` fields). Register via API, sign in via the login form (which accepts input fine). Login≠signup for automation.
+- Maestro text matchers collide with page content for tab-bar taps ("Meals" matches "Today's Meals") — use fixed points: Home (50,813), Meals (127,813), Track (204,813), Coach (281,813), FAB (359,814) on iPhone 17 Pro. The FAB overlay swallows tab taps if left open.
+- Keyboard-avoidance scrolling invalidates coordinate taps mid-form; dismiss the keyboard between fields by tapping a static title area, then tap the next placeholder.
+
+### Cross-account leak testing requires sequential logins on one device
+
+**Observation**: The P0 store-leak (Priya seeing Jordan's macros) is only visible when two accounts sign in back-to-back in one app install. Fresh-account-per-pass hygiene (the 04-29 lesson) would have *hidden* it.
+
+**Rule**: In any multi-persona pass, deliberately include at least one A→logout→B sequence and diff B's rendered numbers against A's session data. Zustand stores + logout is a standing suspect.
+
+---
+
 ## 2026-05-02 (Native modules cannot ship via OTA — verify before pushing)
 
 ### `eas update` cannot add a native module to an existing binary
@@ -503,3 +561,20 @@ showing model + ingredient count. Took ~10 seconds.
    inputs + the scoring code. If this becomes a recurring debugging need,
    add a `logger.info("fuel_score.computed score=%s reasoning=%s")` line
    after the `compute_fuel_score` call.
+
+---
+
+## 2026-07-11 (Multi-file pytest runs can wipe the dev Postgres DB)
+
+### DB-backed test files are import-order dependent — running several together binds drop_all to the WRONG database
+
+**Observation**: Running `pytest tests/test_meal_scan_envelope.py tests/test_scan_cache_consistency.py ...` wiped the local Postgres dev DB (users, 117 seeded recipes — everything). Cause: the first collected file imported `app.services.meal_scan` → `app.db` WITHOUT setting `DATABASE_URL`, so `SessionLocal` bound to the Postgres URL from `backend/.env`. The later test file's module-level `os.environ["DATABASE_URL"] = sqlite:...` came too late — its `setUp` ran `Base.metadata.drop_all(bind=SessionLocal.kw["bind"])` against Postgres.
+
+**Rules**:
+1. Any new backend test file that imports ANYTHING from `app.*` must set `os.environ["DATABASE_URL"] = "sqlite:///..."` BEFORE the first app import — even if the test itself never touches the DB (it poisons/binds the engine for every file collected after it).
+2. Prefer running DB-backed test files individually, or export `DATABASE_URL=sqlite:///test.sqlite3` on the pytest command line for multi-file runs.
+3. Recovery: `alembic upgrade heads`, `python seed_db.py` (117 recipes), `scripts/seed_common_foods.py`, `scripts/seed_food_catalog.py`, re-register QA accounts.
+
+### Alembic env.py silently skipped migrations (fixed 2026-07-11, check prod)
+
+`_bootstrap_existing_schema` left an auto-begun transaction open → Alembic never committed (DDL rolled back); `_normalize_alembic_version` then stamped the head on ANY alembic run (even `alembic current`), marking unapplied migrations as applied. Fixed in backend/alembic/env.py. If a deploy "ran" a migration but the column is missing, this is why — audit prod schema vs alembic_version.

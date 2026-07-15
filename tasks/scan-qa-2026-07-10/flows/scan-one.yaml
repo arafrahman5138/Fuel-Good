@@ -1,0 +1,60 @@
+appId: host.exp.Exponent
+---
+- openLink: exp://192.168.1.161:8081/--/scan
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Sign In"
+    commands:
+      - tapOn:
+          text: "you@example.com"
+      - inputText: "scanqa20260710@example.com"
+      - tapOn:
+          text: "Enter password"
+      - inputText: "ScanQA!2026x"
+      - hideKeyboard
+      - tapOn: "Sign In"
+      - waitForAnimationToEnd:
+          timeout: 20000
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - openLink: exp://192.168.1.161:8081/--/scan
+      - waitForAnimationToEnd:
+          timeout: 8000
+- extendedWaitUntil:
+    visible: "Choose photo from library"
+    timeout: 15000
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-scan-screen"
+- tapOn: "Choose photo from library"
+- waitForAnimationToEnd:
+    timeout: 6000
+- runFlow:
+    when:
+      visible: "Allow Full Access"
+    commands:
+      - tapOn: "Allow Full Access"
+      - waitForAnimationToEnd:
+          timeout: 6000
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-picker"
+- tapOn:
+    point: "17%,25%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-analyzing"
+- extendedWaitUntil:
+    visible: "Log to Chronometer"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-result"
+- scroll
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-result-scroll1"
+- scroll
+- takeScreenshot: "tasks/scan-qa-2026-07-10/screenshots/${SLUG}-result-scroll2"
+- tapOn:
+    id: "scan-close"
+    optional: true

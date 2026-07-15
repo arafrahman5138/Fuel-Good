@@ -1,0 +1,175 @@
+{
+  "scan_type": "meal",
+  "meal": {
+    "id": "64212870-50d7-4b0b-a216-1060d52047ea",
+    "meal_label": "Beef Nachos",
+    "meal_type": "dinner",
+    "meal_context": "meal_component_protein",
+    "portion_size": "large",
+    "source_context": "home",
+    "estimated_ingredients": [
+      "Corn Tortilla Chips",
+      "Ground Beef",
+      "Nacho Cheese Sauce",
+      "Sour Cream",
+      "Jalapenos And Black Olives"
+    ],
+    "normalized_ingredients": [
+      "corn tortilla chips",
+      "ground beef",
+      "nacho cheese sauce",
+      "sour cream",
+      "jalapenos and black olives"
+    ],
+    "components": [
+      {
+        "name": "corn tortilla chips",
+        "role": "carb",
+        "portion_factor": 1.2,
+        "mass_fraction": 0.4,
+        "estimated_grams": 200,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [
+          "fried"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "ground beef",
+        "role": "protein",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.3,
+        "estimated_grams": 150,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [
+          "cooked"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "nacho cheese sauce",
+        "role": "fat",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.2,
+        "estimated_grams": 100,
+        "item_count": 1,
+        "nova": 4,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "sour cream",
+        "role": "fat",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.05,
+        "estimated_grams": 25,
+        "item_count": 5,
+        "nova": 3,
+        "methods": [],
+        "visible": true,
+        "confidence": 0.95
+      },
+      {
+        "name": "jalapenos and black olives",
+        "role": "veg",
+        "portion_factor": 1.0,
+        "mass_fraction": 0.05,
+        "estimated_grams": 25,
+        "item_count": 1,
+        "nova": 3,
+        "methods": [
+          "pickled"
+        ],
+        "visible": true,
+        "confidence": 0.95
+      }
+    ],
+    "nutrition_estimate": {
+      "calories": 997.5,
+      "protein": 49.8,
+      "carbs": 53.5,
+      "fat": 67.2,
+      "fiber": 6.8,
+      "sugar_g": 9.6,
+      "glycemic_profile": {
+        "primary_carb_source": "refined_grain",
+        "processing_level": "refined",
+        "resistant_starch_prep": "none",
+        "override_inference": false,
+        "notes": null
+      },
+      "ingredients": [
+        "corn tortilla chips",
+        "ground beef",
+        "nacho cheese sauce",
+        "sour cream",
+        "jalapenos and black olives"
+      ],
+      "whole_food_summary": "This looks very close to a real-food product with minimal processing."
+    },
+    "glycemic_profile": {
+      "primary_carb_source": "refined_grain",
+      "processing_level": "refined",
+      "resistant_starch_prep": "none",
+      "override_inference": false,
+      "notes": null
+    },
+    "whole_food_status": "pass",
+    "whole_food_flags": [],
+    "suggested_swaps": {
+      "seed_oils": [],
+      "added_sugars": [],
+      "refined_flours": [],
+      "artificial_additives": [],
+      "gums_or_emulsifiers": [],
+      "protein_isolates": []
+    },
+    "upgrade_suggestions": [
+      "Add a bean, lentil, or vegetable side to raise fiber.",
+      "Start with a salad or vegetables before the starch so the meal hits more gently."
+    ],
+    "recovery_plan": [
+      "Aim for about 40g protein at your next meal.",
+      "Add at least 12g fiber with vegetables, beans, lentils, or chia.",
+      "Keep your next meal lower-glycemic so you protect the remaining 200g carb room."
+    ],
+    "mes": null,
+    "snack_profile": null,
+    "confidence": 0.722,
+    "confidence_breakdown": {
+      "extraction": 0.95,
+      "portion": 0.9,
+      "grounding": 0.75,
+      "nutrition": 0.75,
+      "ensemble_applied": false,
+      "estimate_mode": "high",
+      "review_required": false,
+      "sanity_clamped": false
+    },
+    "source_model": "gemini-3.1-flash-lite",
+    "grounding_source": null,
+    "grounding_candidates": [],
+    "prompt_version": "meal_scan_v5_grams",
+    "matched_recipe_id": null,
+    "matched_recipe_confidence": 0.0,
+    "logged_to_chronometer": false,
+    "whole_food_summary": "This looks very close to a real-food product with minimal processing.",
+    "pairing_opportunity": false,
+    "pairing_recommended_recipe_id": null,
+    "pairing_recommended_title": null,
+    "pairing_projected_mes": null,
+    "pairing_projected_delta": null,
+    "pairing_reasons": [],
+    "pairing_timing": null,
+    "fuel_score": 40.0,
+    "fuel_reasoning": [
+      "Contains heavily processed components (NOVA-weighted penalty \u221225)."
+    ],
+    "image": null
+  }
+}

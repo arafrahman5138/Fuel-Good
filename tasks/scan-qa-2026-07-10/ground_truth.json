@@ -1,0 +1,684 @@
+{
+  "m01_grilled_salmon_quinoa": {
+    "category": "meal_healthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "salmon",
+        "fish"
+      ],
+      [
+        "quinoa"
+      ],
+      [
+        "asparagus"
+      ]
+    ],
+    "kcal_range": [
+      400,
+      750
+    ],
+    "fuel_range": [
+      85,
+      100
+    ],
+    "notes": "All NOVA-1, home-cooked. Should hit whole_food tier."
+  },
+  "m02_chicken_avocado_salad": {
+    "category": "meal_healthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "chicken"
+      ],
+      [
+        "avocado"
+      ],
+      [
+        "salad",
+        "greens",
+        "lettuce"
+      ],
+      [
+        "tomato"
+      ]
+    ],
+    "kcal_range": [
+      350,
+      700
+    ],
+    "fuel_range": [
+      85,
+      100
+    ],
+    "notes": "Whole-food salad with lean protein."
+  },
+  "m03_steak_sweet_potato": {
+    "category": "meal_healthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "steak",
+        "beef",
+        "sirloin"
+      ],
+      [
+        "sweet potato"
+      ],
+      [
+        "broccoli"
+      ]
+    ],
+    "kcal_range": [
+      500,
+      900
+    ],
+    "fuel_range": [
+      78,
+      100
+    ],
+    "notes": "Butter is minor; still whole-food dominant."
+  },
+  "m04_sushi_platter": {
+    "category": "meal_mixed",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "sushi",
+        "nigiri",
+        "roll"
+      ],
+      [
+        "rice"
+      ],
+      [
+        "salmon",
+        "tuna",
+        "fish",
+        "crab"
+      ]
+    ],
+    "kcal_range": [
+      350,
+      700
+    ],
+    "fuel_range": [
+      55,
+      88
+    ],
+    "notes": "White rice + imitation crab in California roll drag it below whole_food."
+  },
+  "m05_turkey_sandwich": {
+    "category": "meal_mixed",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "turkey"
+      ],
+      [
+        "bread",
+        "sandwich"
+      ],
+      [
+        "carrot"
+      ]
+    ],
+    "kcal_range": [
+      300,
+      650
+    ],
+    "fuel_range": [
+      40,
+      75
+    ],
+    "notes": "Deli turkey = processed meat, commercial bread NOVA-3/4."
+  },
+  "m06_spaghetti_meatballs": {
+    "category": "meal_mixed",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "spaghetti",
+        "pasta"
+      ],
+      [
+        "meatball"
+      ],
+      [
+        "marinara",
+        "tomato sauce",
+        "sauce"
+      ]
+    ],
+    "kcal_range": [
+      550,
+      1000
+    ],
+    "fuel_range": [
+      40,
+      72
+    ],
+    "notes": "Refined pasta + garlic bread; homemade-style otherwise."
+  },
+  "m07_fried_chicken_fries": {
+    "category": "meal_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "fried chicken",
+        "chicken"
+      ],
+      [
+        "fries",
+        "french fries"
+      ]
+    ],
+    "kcal_range": [
+      700,
+      1300
+    ],
+    "fuel_range": [
+      15,
+      45
+    ],
+    "notes": "Deep-fried methods should trigger fried penalty + flags."
+  },
+  "m08_loaded_nachos": {
+    "category": "meal_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "nacho",
+        "chips",
+        "tortilla"
+      ],
+      [
+        "cheese"
+      ],
+      [
+        "beef"
+      ],
+      [
+        "sour cream"
+      ],
+      [
+        "jalape"
+      ]
+    ],
+    "kcal_range": [
+      700,
+      1400
+    ],
+    "fuel_range": [
+      10,
+      42
+    ],
+    "notes": "Nacho cheese sauce = NOVA-4."
+  },
+  "m09_hotdogs_and_ramen": {
+    "category": "meal_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "ramen",
+        "noodle"
+      ],
+      [
+        "hot dog",
+        "sausage",
+        "frankfurter"
+      ]
+    ],
+    "kcal_range": [
+      450,
+      900
+    ],
+    "fuel_range": [
+      0,
+      30
+    ],
+    "notes": "NOVA-4 majority \u2014 hard cap 25 should apply."
+  },
+  "m10_fastfood_burger_meal": {
+    "category": "meal_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "burger",
+        "cheeseburger"
+      ],
+      [
+        "fries"
+      ],
+      [
+        "soda",
+        "cola",
+        "drink"
+      ]
+    ],
+    "kcal_range": [
+      800,
+      1500
+    ],
+    "fuel_range": [
+      5,
+      38
+    ],
+    "notes": "Classic fast-food tray."
+  },
+  "d01_fruit_salad": {
+    "category": "dessert_healthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "watermelon",
+        "fruit"
+      ],
+      [
+        "strawberr"
+      ],
+      [
+        "blueberr"
+      ],
+      [
+        "kiwi"
+      ],
+      [
+        "grape"
+      ]
+    ],
+    "kcal_range": [
+      80,
+      260
+    ],
+    "fuel_range": [
+      75,
+      100
+    ],
+    "notes": "Pure whole fruit; dessert framing should NOT tank the score."
+  },
+  "d02_yogurt_berry_parfait": {
+    "category": "dessert_healthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "yogurt"
+      ],
+      [
+        "berr"
+      ],
+      [
+        "honey"
+      ],
+      [
+        "granola"
+      ]
+    ],
+    "kcal_range": [
+      180,
+      420
+    ],
+    "fuel_range": [
+      55,
+      88
+    ],
+    "notes": "Honey + granola add sugar but base is clean."
+  },
+  "d03_dark_chocolate_squares": {
+    "category": "dessert_mixed",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "chocolate"
+      ]
+    ],
+    "kcal_range": [
+      120,
+      380
+    ],
+    "fuel_range": [
+      20,
+      60
+    ],
+    "notes": "85% dark; small portion. Coffee may be detected as beverage component."
+  },
+  "d04_apple_pie_slice": {
+    "category": "dessert_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "pie",
+        "apple"
+      ],
+      [
+        "ice cream"
+      ]
+    ],
+    "kcal_range": [
+      300,
+      700
+    ],
+    "fuel_range": [
+      10,
+      48
+    ],
+    "notes": "Refined crust + sugar + ice cream; dessert penalty expected."
+  },
+  "d05_glazed_donuts": {
+    "category": "dessert_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "donut",
+        "doughnut"
+      ]
+    ],
+    "kcal_range": [
+      350,
+      850
+    ],
+    "fuel_range": [
+      0,
+      30
+    ],
+    "notes": "Three donuts, ultra-processed."
+  },
+  "d06_icecream_sundae": {
+    "category": "dessert_unhealthy",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "ice cream",
+        "sundae"
+      ],
+      [
+        "whipped cream"
+      ],
+      [
+        "fudge",
+        "chocolate"
+      ],
+      [
+        "cherry"
+      ]
+    ],
+    "kcal_range": [
+      400,
+      950
+    ],
+    "fuel_range": [
+      0,
+      30
+    ],
+    "notes": "Peak dessert; should land ultra_processed/processed."
+  },
+  "l01_canned_black_beans": {
+    "category": "label_clean",
+    "expected_types": [
+      "label"
+    ],
+    "product_hint": "black beans",
+    "score_range": [
+      65,
+      100
+    ],
+    "notes": "3 clean ingredients; minimal processing."
+  },
+  "l02_cola_soda_label": {
+    "category": "label_ultra",
+    "expected_types": [
+      "label"
+    ],
+    "product_hint": "cola",
+    "score_range": [
+      0,
+      25
+    ],
+    "notes": "HFCS + caramel color + phosphoric acid."
+  },
+  "l03_healthwashed_smoothie": {
+    "category": "label_healthwashed",
+    "expected_types": [
+      "label"
+    ],
+    "product_hint": "smoothie",
+    "score_range": [
+      15,
+      55
+    ],
+    "notes": "53g sugar from juice concentrates behind 'no added sugar' claim. Should NOT score high."
+  },
+  "l04_instant_noodle_cup": {
+    "category": "label_ultra",
+    "expected_types": [
+      "label"
+    ],
+    "product_hint": "noodle",
+    "score_range": [
+      0,
+      25
+    ],
+    "notes": "Palm oil, MSG, TBHQ, artificial color."
+  },
+  "l05_rolled_oats_label": {
+    "category": "label_clean",
+    "expected_types": [
+      "label"
+    ],
+    "product_hint": "oats",
+    "score_range": [
+      75,
+      100
+    ],
+    "notes": "Single ingredient, whole grain."
+  },
+  "g01_banana_bunch": {
+    "category": "grocery_produce",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "banana"
+      ]
+    ],
+    "kcal_range": [
+      80,
+      600
+    ],
+    "fuel_range": [
+      85,
+      100
+    ],
+    "notes": "Raw produce. Portion ambiguity accepted (1 vs 5 bananas)."
+  },
+  "g02_avocado_halves": {
+    "category": "grocery_produce",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "avocado"
+      ]
+    ],
+    "kcal_range": [
+      120,
+      600
+    ],
+    "fuel_range": [
+      85,
+      100
+    ],
+    "notes": "Raw produce."
+  },
+  "g03_potato_chips_bag": {
+    "category": "grocery_packaged",
+    "expected_types": [
+      "label",
+      "meal"
+    ],
+    "product_hint": "cheese puff",
+    "fuel_range": [
+      0,
+      35
+    ],
+    "kcal_range": [
+      100,
+      1300
+    ],
+    "components": [
+      [
+        "cheese puff",
+        "chips",
+        "snack"
+      ]
+    ],
+    "notes": "Front-of-pack only, no ingredients visible. Tests how smart scan handles packaged front. As of 2026-07-11 the backend returns tier=unscored + needs_better_capture instead of a made-up score.",
+    "expect_needs_better_capture": true
+  },
+  "g04_toaster_pastry_box": {
+    "category": "grocery_packaged",
+    "expected_types": [
+      "label",
+      "meal"
+    ],
+    "product_hint": "pastr",
+    "fuel_range": [
+      0,
+      35
+    ],
+    "kcal_range": [
+      100,
+      1700
+    ],
+    "components": [
+      [
+        "pastr",
+        "pop tart",
+        "toaster"
+      ]
+    ],
+    "notes": "Front-of-box only. As of 2026-07-11 the backend returns tier=unscored + needs_better_capture instead of a made-up score.",
+    "expect_needs_better_capture": true
+  },
+  "g05_rotisserie_chicken": {
+    "category": "grocery_prepared",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "chicken",
+        "rotisserie"
+      ]
+    ],
+    "kcal_range": [
+      500,
+      1500
+    ],
+    "fuel_range": [
+      55,
+      92
+    ],
+    "notes": "Whole bird in container; seasoning unknown."
+  },
+  "e01_indian_thali": {
+    "category": "edge_multidish",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "dal",
+        "lentil"
+      ],
+      [
+        "rice"
+      ],
+      [
+        "roti",
+        "chapati",
+        "flatbread"
+      ],
+      [
+        "paneer",
+        "palak",
+        "spinach"
+      ],
+      [
+        "raita",
+        "yogurt"
+      ]
+    ],
+    "kcal_range": [
+      500,
+      1000
+    ],
+    "fuel_range": [
+      55,
+      92
+    ],
+    "notes": "Multi-dish detection test; expect multi_dish=true or >=4 components."
+  },
+  "e02_birthday_dessert_plate": {
+    "category": "edge_multidessert",
+    "expected_types": [
+      "meal"
+    ],
+    "components": [
+      [
+        "cake"
+      ],
+      [
+        "cookie"
+      ],
+      [
+        "candy",
+        "gummy",
+        "chocolate"
+      ]
+    ],
+    "kcal_range": [
+      400,
+      1000
+    ],
+    "fuel_range": [
+      0,
+      28
+    ],
+    "notes": "All-dessert plate; ultra_processed expected."
+  }
+}
