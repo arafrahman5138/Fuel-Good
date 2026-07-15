@@ -56,24 +56,32 @@ T2D_USER = MetabolicProfileInput(
 
 
 class TestProteinTargets(unittest.TestCase):
-    """All users get >= 1g/lb; muscle gain gets >= 1.2g/lb."""
+    """Goal-specific base ratios apply; muscle gain keeps a 1.2 g/lb floor.
 
-    def test_sedentary_woman_at_least_1g_per_lb(self):
+    2026-07-11 calibration: the old 1.0 g/lb floor for non-muscle goals made
+    protein always equal bodyweight, swallowing the 0.73/0.82 base ratios.
+    Non-muscle goals now use a 0.7 g/lb safety floor, so the assertions below
+    check the ratio-driven values instead of the old flat bodyweight numbers.
+    """
+
+    def test_sedentary_woman_maintenance_ratio_applies(self):
         target = calc_protein_target_g(SEDENTARY_WOMAN)
-        self.assertGreaterEqual(target, 120.0)
+        # 120 lb * 0.73 (maintenance) = 87.6 — above the 0.7 floor (84)
+        self.assertAlmostEqual(target, 87.6, delta=0.1)
 
     def test_athletic_man_muscle_gain_at_least_1_2g_per_lb(self):
         target = calc_protein_target_g(ATHLETIC_MAN)
         self.assertGreaterEqual(target, 240.0)  # 200 * 1.2
 
-    def test_ir_user_at_least_1g_per_lb(self):
+    def test_ir_user_fat_loss_ratio_applies(self):
         target = calc_protein_target_g(IR_USER)
-        self.assertGreaterEqual(target, 180.0)
+        # 180 lb * (0.82 fat-loss + 0.02 age-40 bonus) = 151.2
+        self.assertAlmostEqual(target, 151.2, delta=0.1)
 
     def test_t2d_user_age_bonus(self):
         target = calc_protein_target_g(T2D_USER)
-        # 160lb * (0.82 + 0.07) = 142.4, floor is 160 * 1.0 = 160
-        self.assertGreaterEqual(target, 160.0)
+        # 160 lb * (0.82 metabolic + 0.07 age-50 bonus) = 142.4
+        self.assertAlmostEqual(target, 142.4, delta=0.1)
 
     def test_derive_protein_matches_calc(self):
         """derive_protein_target_g (dict) should match calc_protein_target_g (dataclass)."""

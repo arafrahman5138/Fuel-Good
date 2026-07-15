@@ -9,7 +9,7 @@ class NutritionTarget(Base):
     __tablename__ = "nutrition_targets"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     calories_target = Column(Float, default=2200)
     protein_g_target = Column(Float, default=130)
@@ -29,7 +29,7 @@ class FoodLog(Base):
     __tablename__ = "food_logs"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     meal_type = Column(String, default="meal")  # breakfast/lunch/dinner/snack
 
@@ -56,7 +56,7 @@ class DailyNutritionSummary(Base):
     __tablename__ = "daily_nutrition_summary"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
 
     totals_json = Column(JSON, default=dict)

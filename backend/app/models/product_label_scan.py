@@ -11,7 +11,7 @@ class ProductLabelScan(Base):
     __tablename__ = "product_label_scans"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     capture_type = Column(String, nullable=True)
     barcode = Column(String, nullable=True, index=True)
     image_url = Column(String, nullable=True)

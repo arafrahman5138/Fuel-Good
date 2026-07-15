@@ -21,7 +21,7 @@ class MetabolicBudget(Base):
     __tablename__ = "metabolic_budgets"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     # ── Guardrails ──
     protein_target_g = Column(Float, default=130.0)
@@ -52,12 +52,12 @@ class MetabolicScore(Base):
     __tablename__ = "metabolic_scores"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     scope = Column(String, nullable=False)  # "meal" | "daily"
 
     # Source info (nullable for daily scope)
-    food_log_id = Column(GUID, ForeignKey("food_logs.id"), nullable=True)
+    food_log_id = Column(GUID, ForeignKey("food_logs.id", ondelete="SET NULL"), nullable=True)
 
     # Sub-scores
     protein_score = Column(Float, default=0)
@@ -95,7 +95,7 @@ class MetabolicStreak(Base):
     __tablename__ = "metabolic_streaks"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     last_qualifying_date = Column(Date, nullable=True)

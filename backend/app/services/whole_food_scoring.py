@@ -51,6 +51,17 @@ ADDED_SUGARS = {
     "galactose",
 }
 
+# Added sugars that hide behind ingredient-specific names. Real labels say
+# "apple juice concentrate" / "white grape juice concentrate" — never the
+# literal "fruit juice concentrate" the term set can match. Kept narrow to
+# avoid false positives on non-sweetener phrases.
+ADDED_SUGAR_PATTERNS = [
+    re.compile(r"\b\w+(?:\s\w+)?\s+juice\s+concentrate\b"),
+    re.compile(r"\bconcentrated\s+\w+\s+juice\b"),
+    re.compile(r"\b\w+\s+nectar\b"),
+    re.compile(r"\bsweetened\s+condensed\b"),
+]
+
 REFINED_FLOURS = {
     "enriched wheat flour",
     "bleached wheat flour",
@@ -355,6 +366,9 @@ _ARTIFICIAL_SWEETENER_TOKENS = (
 )
 ULTRA_PROCESSED_BEVERAGE_PENALTY = -55
 ULTRA_PROCESSED_BEVERAGE_CEILING = 19  # guaranteed below "mixed" tier (50)
+# Label-path analogue of the beverage ceiling: additive-stacked sweetened
+# products cap here and dig lower per extra additive (see analyze_whole_food_product).
+ULTRA_PROCESSED_LABEL_CEILING = 25.0
 
 
 def _is_sweetened_beverage(
@@ -403,12 +417,19 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
 
     seed_oils = _find_matches(ingredients, SEED_OILS)
     added_sugars = _find_matches(ingredients, ADDED_SUGARS)
+    for item in ingredients:
+        if item not in added_sugars and any(p.search(item) for p in ADDED_SUGAR_PATTERNS):
+            added_sugars.append(item)
     refined_flours = _find_matches(ingredients, REFINED_FLOURS)
     additives = _find_matches(ingredients, ARTIFICIAL_ADDITIVES)
     gums = _find_matches(ingredients, EMULSIFIERS_AND_GUMS)
     isolates = _find_matches(ingredients, PROTEIN_ISOLATES)
 
-    score = 92.0
+    # Base + capped bonus pool. The old base of 92 plus uncapped bonuses meant
+    # any label with no matched red flag clamped to exactly 100 — clean-looking
+    # products were indistinguishable and health-washed ones scored perfect.
+    score = 80.0
+    bonus = 0.0
     highlights: list[str] = []
     concerns: list[str] = []
     reasoning: list[str] = []
@@ -442,10 +463,10 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
         score -= 14
         concerns.append("Ingredient list is missing, so the product is harder to trust.")
     elif ingredient_count <= 5 and not has_major_red_flag:
-        score += 6
+        bonus += 6
         highlights.append("Very short ingredient list.")
     elif ingredient_count <= 10 and not has_major_red_flag:
-        score += 3
+        bonus += 3
         highlights.append("Relatively short ingredient list.")
     elif ingredient_count > 20:
         score -= 12
@@ -485,27 +506,34 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
         concerns.append("Uses protein isolates rather than mostly intact foods.")
 
     if fiber_g >= 5:
-        score += 8
+        bonus += 8
         highlights.append("Good fiber per serving.")
     elif fiber_g >= 3:
-        score += 5
+        bonus += 5
         highlights.append("Decent fiber per serving.")
 
     if protein_g >= 15:
-        score += 6
+        bonus += 6
         highlights.append("Strong protein per serving.")
     elif protein_g >= 8:
-        score += 3
+        bonus += 3
         highlights.append("Moderate protein per serving.")
 
-    if sugar_g > 20:
-        score -= 12
-        concerns.append("High sugar load per serving.")
-    elif sugar_g > 12:
-        score -= 6
-        concerns.append("Moderate sugar load per serving.")
+    # Continuous sugar ramp (replaces the old −6/−12 steps): every gram past
+    # 8 g/serving costs 1.3 points, up to 30. Matched added-sugar ingredients
+    # make the same grams 20% worse. This is what catches "no added sugar*"
+    # products whose panel still shows 40-50 g of sugar.
+    if sugar_g > 8:
+        sugar_penalty = min(30.0, 1.3 * (sugar_g - 8.0))
+        if added_sugars:
+            sugar_penalty = min(34.0, sugar_penalty * 1.2)
+        score -= sugar_penalty
+        if sugar_g > 20:
+            concerns.append("High sugar load per serving.")
+        elif sugar_g > 12:
+            concerns.append("Moderate sugar load per serving.")
     elif sugar_g <= 6 and ingredient_count > 0:
-        score += 3
+        bonus += 3
         highlights.append("Reasonable sugar level per serving.")
 
     if sodium_mg > 800:
@@ -518,17 +546,26 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
         score -= 4
 
     if carbs_g > 0 and fiber_g > 0 and fiber_g / max(carbs_g, 1.0) >= 0.18:
-        score += 4
+        bonus += 4
         highlights.append("Carbs come with meaningful fiber.")
 
     first_ingredient = ingredients[0] if ingredients else ""
     if first_ingredient and any(re.search(r"\b" + re.escape(hint) + r"\b", first_ingredient) for hint in WHOLE_FOOD_FIRST_INGREDIENT_HINTS):
-        score += 4
+        bonus += 4
         highlights.append("Starts with a recognizable whole-food ingredient.")
 
     if calories > 0 and protein_g >= 10 and sugar_g <= 8 and not additives and not seed_oils:
-        score += 4
+        bonus += 4
         highlights.append("Macros are relatively aligned with a whole-food product.")
+
+    score += min(bonus, 16.0)
+
+    # A score in whole_food territory requires evidence: without a readable
+    # nutrition panel the sugar/sodium checks above never ran, so an
+    # ingredient-list-only scan can't honestly claim ≥90.
+    panel_readable = calories > 0 or protein_g > 0
+    if not panel_readable:
+        score = min(score, 89.0)
 
     # Batch 4: sweetened beverages always land ultra_processed even if some
     # redeeming macros sneak in (e.g., 15 g protein from a sugary recovery
@@ -547,14 +584,42 @@ def analyze_whole_food_product(payload: dict[str, Any]) -> dict[str, Any]:
     # is ultra-processed and capped in the 30s.
     serious_flags = bool(isolates or additives or seed_oils)
     also_sweetened = bool(added_sugars or refined_flours)
+
+    # Band projection instead of flat min() caps. The old caps collapsed every
+    # flagged product onto exactly the cap value (34.9 / 59.9 / 69.9 / 84.9),
+    # so a mild granola bar and a TBHQ+HFCS snack read identically. Instead,
+    # map the raw score linearly into the flag-selected band so within-band
+    # ordering survives. Products that already penalized themselves below the
+    # band's ceiling keep their (lower) raw score.
+    raw = max(0.0, min(100.0, score))
     if serious_flags and also_sweetened:
-        score = min(score, 34.9)  # ultra_processed tier
+        band = (10.0, 34.9)  # ultra_processed tier
     elif serious_flags:
-        score = min(score, 59.9)  # below whole_food (85) and solid (70) tiers
+        band = (36.0, 59.9)  # below whole_food (85) and solid (70) tiers
     elif added_sugars or refined_flours:
-        score = min(score, 69.9)  # below solid (70)
+        band = (45.0, 69.9)  # below solid (70)
     elif concerns:
-        score = min(score, 84.9)  # below whole_food (85)
+        band = (55.0, 84.9)  # below whole_food (85)
+    else:
+        band = None
+    if band is not None and raw > band[1]:
+        lo, hi = band
+        score = lo + (hi - lo) * (raw / 100.0)
+
+    # Ultra-processed ceiling (parity with ULTRA_PROCESSED_BEVERAGE_CEILING):
+    # heavy additive stacks or serious sugar loads shouldn't pile up at the
+    # top of the ultra band — each additive beyond the second digs deeper.
+    if serious_flags and also_sweetened and (len(additives) >= 2 or sugar_g >= 25):
+        ceiling = ULTRA_PROCESSED_LABEL_CEILING - 3.0 * max(0, len(additives) - 2)
+        score = min(score, max(5.0, ceiling))
+
+    # Sugar-dominance caps fire even when ingredient matching saw nothing —
+    # a readable panel showing 40 g+ of sugar is disqualifying on its own.
+    if sugar_g >= 40:
+        score = min(score, 30.0)
+        concerns.append("Sugar dominates this product's nutrition.")
+    elif sugar_g >= 25 and fiber_g < 3:
+        score = min(score, 45.0)
 
     score = max(0.0, min(100.0, round(score, 1)))
 

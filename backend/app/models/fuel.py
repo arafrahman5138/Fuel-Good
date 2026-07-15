@@ -11,7 +11,7 @@ class DailyFuelSummary(Base):
     __tablename__ = "daily_fuel_summaries"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
 
     avg_fuel_score = Column(Float, default=0.0)
@@ -32,7 +32,7 @@ class WeeklyFuelSummary(Base):
     __tablename__ = "weekly_fuel_summaries"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     week_start = Column(Date, nullable=False, index=True)
 
     avg_fuel_score = Column(Float, default=0.0)

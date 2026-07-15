@@ -53,6 +53,7 @@ class FlexBudgetResponse(BaseModel):
     room_total: int = 0
     room_used: int = 0
     room_remaining: int = 0
+    room_overflow: int = 0
     # Legacy points fields
     flex_points_total: float = 0.0
     flex_points_used: float = 0.0
@@ -92,17 +93,26 @@ class WeeklyFuelResponse(BaseModel):
 
 
 class FuelStreakResponse(BaseModel):
+    # Headline daily streak (User.current_streak) — day units only.
     current_streak: int
     longest_streak: int
     fuel_target: int
+    # 2026-07-11 (QA E3): weekly fuel-target drill-down — consecutive WEEKS
+    # whose average fuel score met the target (the weekly recap reports the
+    # same number as weeks_at_goal_streak). Week units, kept separate from
+    # the day-unit headline fields so the two never get max()'d together.
+    fuel_target_streak: int = 0
+    fuel_target_longest: int = 0
 
 
 # ── Health Pulse ─────────────────────────────────────────────────────
 
 class HealthPulseDimension(BaseModel):
-    score: float
+    # score is null when the dimension is unavailable — e.g. the metabolic
+    # dimension for free-tier users (2026-07-11 QA D3 premium gate).
+    score: Optional[float] = None
     label: str
-    tier: str  # "excellent" | "good" | "fair" | "poor"
+    tier: str  # "excellent" | "good" | "fair" | "poor" | "locked"
     available: bool = True
 
 class HealthPulseResponse(BaseModel):

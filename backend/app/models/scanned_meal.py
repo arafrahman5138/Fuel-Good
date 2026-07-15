@@ -11,7 +11,7 @@ class ScannedMealLog(Base):
     __tablename__ = "scanned_meal_logs"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     image_url = Column(String, nullable=True)
     image_bucket = Column(String, nullable=True)
@@ -27,6 +27,9 @@ class ScannedMealLog(Base):
     estimated_ingredients = Column(JSON, default=list)
     normalized_ingredients = Column(JSON, default=list)
     nutrition_estimate = Column(JSON, default=dict)
+    # Full extractor components (name/role/nova/methods/mass_fraction/...) —
+    # required to recompute an identical fuel score on ingredient-cache hits.
+    components = Column(JSON, default=list)
 
     whole_food_status = Column(String, nullable=True)
     whole_food_flags = Column(JSON, default=list)
@@ -54,7 +57,7 @@ class ScannedMealLog(Base):
     matched_recipe_id = Column(String, nullable=True)
     matched_recipe_confidence = Column(Float, nullable=True)
     fuel_score = Column(Float, nullable=True)
-    logged_food_log_id = Column(GUID, ForeignKey("food_logs.id"), nullable=True)
+    logged_food_log_id = Column(GUID, ForeignKey("food_logs.id", ondelete="SET NULL"), nullable=True)
     logged_to_chronometer = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)

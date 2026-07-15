@@ -91,6 +91,7 @@ def compute_fuel_score(
     source_model: str | None = None,
     is_beverage: bool = False,
     normalized_ingredients: list[str] | None = None,
+    recipe_role: str | None = None,
 ) -> FuelScoreResult:
     """Compute a Fuel Score (0–100) for a meal.
 
@@ -105,8 +106,17 @@ def compute_fuel_score(
     - ``meal_label`` / ``dishes``: used by the dish-classifier to inject implicit flags
     - ``confidence`` / ``source_model``: gate the honest 100-ceiling
     - ``is_beverage``: drinks score on a separate truncated scale
+    - ``recipe_role``: for recipe sources — "dessert" recipes are scored from
+      their actual ingredients instead of the vetted-100 shortcut (missing role
+      is treated as "full_meal")
     """
     if source_type in ("recipe", "meal_plan", "cook_mode"):
+        if (recipe_role or "full_meal").strip().lower() == "dessert":
+            return _score_dessert_recipe(
+                ingredients=ingredients,
+                ingredients_text=ingredients_text,
+                nutrition=nutrition,
+            )
         return _score_recipe(ingredients)
     elif source_type == "scan":
         return _score_scan(
@@ -140,6 +150,79 @@ def _score_recipe(ingredients: list[dict[str, Any]] | None) -> FuelScoreResult:
         flags=[],
         reasoning=["Curated whole-food recipe."],
         source_path="recipe",
+    )
+
+
+def flatten_ingredient_names(
+    ingredients: list[Any] | None,
+    ingredients_text: str | None = None,
+) -> list[str]:
+    """Flatten a recipe ingredients JSON list into plain names.
+
+    Accepts the official_meals.json shape (dicts with a "name" key), plain
+    strings, or a raw comma-separated ``ingredients_text`` fallback.
+    """
+    names: list[str] = []
+    for ing in ingredients or []:
+        if isinstance(ing, str):
+            name = ing
+        elif isinstance(ing, dict):
+            name = ing.get("name") or ing.get("item") or ""
+        else:
+            continue
+        name = str(name).strip()
+        if name:
+            names.append(name)
+    if not names and ingredients_text:
+        names = [tok.strip() for tok in ingredients_text.split(",") if tok.strip()]
+    return names
+
+
+def _score_dessert_recipe(
+    *,
+    ingredients: list[Any] | None,
+    ingredients_text: str | None,
+    nutrition: dict[str, Any] | None,
+) -> FuelScoreResult:
+    """Dessert recipes (2026-07-11 honest-scoring fix): no vetted-100 shortcut.
+
+    Score from the recipe's actual ingredients via the NOVA dictionary —
+    "100 only if all real-food/unprocessed ingredients, else scored
+    accurately." An all-whole-food dessert (banana + milk) still earns the
+    honest 100; a sweetened baked dessert lands on its actual profile.
+
+    Macro heuristics are deliberately excluded: desserts are macro-sweet by
+    nature, so sugar-gram penalties would tank legit whole-food desserts.
+    The ingredient red-flag scan (added sugar, refined flour, seed oils …)
+    carries the signal instead.
+    """
+    names = flatten_ingredient_names(ingredients, ingredients_text)
+    if names:
+        # meal_label is intentionally omitted — dessert titles ("cake",
+        # "scones") would trigger dish-classifier NOVA floors and title-hint
+        # penalties regardless of what the dessert is actually made of.
+        result = _score_scan(
+            components=None,
+            source_context="home",
+            nutrition=None,
+            whole_food_status=None,
+            whole_food_flags=None,
+            normalized_ingredients=names,
+        )
+    else:
+        # No ingredient data at all — fall back to the manual path without
+        # title hints (dessert titles read as "processed" regardless of
+        # ingredients).
+        result = _score_manual(nutrition=nutrition, ingredients_text=None, title=None)
+
+    reasoning = ["Dessert recipe — scored from its actual ingredients."] + result.reasoning
+    return FuelScoreResult(
+        score=result.score,
+        tier=result.tier,
+        tier_label=result.tier_label,
+        flags=result.flags,
+        reasoning=reasoning[:6],
+        source_path="recipe_dessert",
     )
 
 
@@ -240,7 +323,29 @@ def _score_scan(
         model_nova = _coerce_nova(comp.get("nova"))
         dict_nova = lookup["nova"]
         role_floor = nova_floor_by_role.get(role or "", 0)
-        final_nova = max(model_nova or 0, dict_nova, role_floor) if (model_nova or dict_nova) else (role_floor or dict_nova)
+        # An EXACT dictionary hit bounds the model's "err higher" bias, which
+        # systematically over-classes plainly-named staples (scan QA saw
+        # roti/dal/raita arrive as NOVA 3 and a home thali score like fast
+        # food). The model may still push ONE level above the curated entry,
+        # and keeps full authority when the component carries processing
+        # evidence (fried/battered/cured methods) — a deep-fried "tortilla
+        # chips" is not the dict's plain entry. Containment/fuzzy hits keep
+        # the plain max() since the matched entry may describe only part of
+        # the food.
+        comp_name_norm = re.sub(r"\s+", " ", str(comp.get("name") or "").strip().lower())
+        exact_dict_match = bool(lookup.get("matched")) and lookup["matched"] == comp_name_norm
+        has_processing_method = any(
+            hint in str(m).lower()
+            for m in (comp.get("methods") or [])
+            for hint in ("fried", "battered", "breaded", "cured", "processed")
+        )
+        if exact_dict_match and not has_processing_method and model_nova:
+            bounded_model = min(model_nova, dict_nova + 1)
+            final_nova = max(dict_nova, bounded_model, role_floor)
+        elif model_nova or dict_nova:
+            final_nova = max(model_nova or 0, dict_nova, role_floor)
+        else:
+            final_nova = role_floor or dict_nova
         final_nova = max(1, min(4, final_nova or 1))
 
         weight_raw = comp.get("mass_fraction")
@@ -720,8 +825,9 @@ class FlexBudget:
     real_food_goal: int = 0       # alias of clean_meals_target
     logged_meals: int = 0         # main meals + below-target snacks (slots consumed)
     room_total: int = 0           # alias of flex_budget
-    room_used: int = 0            # ALL logs below target (mains + snacks/desserts)
+    room_used: int = 0            # ALL logs below target, clamped to the effective budget
     room_remaining: int = 0       # effective room left after shrinkage
+    room_overflow: int = 0        # below-target logs beyond the budget (2026-07-11 cap fix)
     # Legacy fields kept for backward compat
     flex_points_total: float = 0.0
     flex_points_used: float = 0.0
@@ -786,7 +892,12 @@ def compute_flex_budget(
     # toward neither the meal count nor room — they only lift the average.
     snack_scores = snack_scores or []
     snacks_below = sum(1 for s in snack_scores if s < fuel_target)
-    room_used = flex_used + snacks_below
+    # 2026-07-11 cap fix: room_used is clamped to the effective budget so the
+    # UI never claims "5 of 4 room-for-life meals fit" — the excess is
+    # reported separately as room_overflow.
+    room_used_raw = flex_used + snacks_below
+    room_used = min(room_used_raw, effective_budget)
+    room_overflow = max(0, room_used_raw - effective_budget)
     room_remaining = max(0, effective_budget - room_used)
 
     # Legacy points-based fields (backward compat)
@@ -822,6 +933,7 @@ def compute_flex_budget(
         room_total=flex_budget_total,
         room_used=room_used,
         room_remaining=room_remaining,
+        room_overflow=room_overflow,
         flex_points_total=round(flex_total, 1),
         flex_points_used=round(spent, 1),
         flex_points_remaining=round(flex_remaining, 1),

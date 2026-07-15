@@ -59,6 +59,7 @@ from app.services.metabolic_engine import (
     build_threshold_context,
     BASE_TIER_THRESHOLDS,
     DEFAULT_COMPUTED_BUDGET,
+    HYPERTENSION_SODIUM_CEILING_MG,
 )
 from app.schemas.metabolic import SubScores, WeightsUsed
 
@@ -79,7 +80,12 @@ def build_threshold_context_from_computed(computed) -> dict | None:
         return {"shift": str(shift), "reason": "Athletic profile — thresholds relaxed for metabolic fitness.", "leniency": "more_lenient"}
 
 
-def _sync_nutrition_targets_from_computed(db: Session, user_id: str, computed) -> None:
+def _sync_nutrition_targets_from_computed(
+    db: Session,
+    user_id: str,
+    computed,
+    profile: MetabolicProfile | None = None,
+) -> None:
     target = db.query(NutritionTarget).filter(NutritionTarget.user_id == user_id).first()
     if not target:
         target = NutritionTarget(user_id=user_id)
@@ -89,6 +95,21 @@ def _sync_nutrition_targets_from_computed(db: Session, user_id: str, computed) -
     target.carbs_g_target = round(float(computed.carb_ceiling_g or 0), 1)
     target.fat_g_target = round(float(computed.fat_g or 0), 1)
     target.fiber_g_target = round(float(computed.fiber_g or 0), 1)
+
+    # 2026-07-11 (QA C1): the AHA 1500 mg/day sodium ceiling for hypertensive
+    # users previously only applied on the lazy targets-read path in
+    # app/routers/nutrition.py — profile SAVE left the generic 2300 mg default
+    # in place. Apply the micronutrient override here too so the ceiling takes
+    # effect the moment the HTN flag is saved. Other micros are preserved
+    # (start from the user's existing micros or the essential defaults).
+    if profile is None:
+        profile = db.query(MetabolicProfile).filter(MetabolicProfile.user_id == user_id).first()
+    if profile is not None and getattr(profile, "hypertension", False):
+        from app.routers.nutrition import ESSENTIAL_MICROS_DEFAULTS
+
+        micros = dict(target.micronutrient_targets or ESSENTIAL_MICROS_DEFAULTS)
+        micros["sodium_mg"] = HYPERTENSION_SODIUM_CEILING_MG
+        target.micronutrient_targets = micros
 
 
 def _parse_date(value: str | None) -> date:
@@ -275,9 +296,13 @@ async def save_profile(
         if val is not None:
             setattr(profile, field, val)
 
-    # Auto-derive height_cm from height_ft/height_in if not explicitly provided
-    if not profile.height_cm and profile.height_ft:
-        h_in = (profile.height_ft * 12) + (profile.height_in or 0)
+    # Auto-derive height_cm from height_ft/height_in if not explicitly provided.
+    # 2026-07-11 (QA C1 fix 2): the schema documents three height shapes —
+    # height_cm, height_ft(+in), or height_in alone (total inches). The old
+    # guard required height_ft, so height_in-only profiles never got a
+    # height_cm and downstream target syncs treated them as incomplete.
+    if not profile.height_cm and (profile.height_ft or profile.height_in):
+        h_in = ((profile.height_ft or 0) * 12) + (profile.height_in or 0)
         profile.height_cm = round(h_in * 2.54, 1)
 
     # Auto-derive weight_lb from weight_kg if not explicitly provided
@@ -302,7 +327,7 @@ async def save_profile(
 
     # Sync all derived targets into the user's metabolic budget
     computed = sync_budget_from_profile(db, current_user.id)
-    _sync_nutrition_targets_from_computed(db, current_user.id, computed)
+    _sync_nutrition_targets_from_computed(db, current_user.id, computed, profile=profile)
     db.commit()
 
     return _profile_response(profile)
@@ -344,7 +369,7 @@ async def recalculate_profile(
     db.refresh(profile)
 
     computed = sync_budget_from_profile(db, current_user.id)
-    _sync_nutrition_targets_from_computed(db, current_user.id, computed)
+    _sync_nutrition_targets_from_computed(db, current_user.id, computed, profile=profile)
     db.commit()
 
     return _profile_response(profile)
@@ -417,6 +442,9 @@ async def patch_profile(
     if profile.height_ft:
         h_in = (profile.height_ft * 12) + (profile.height_in or 0)
         profile.height_cm = round(h_in * 2.54, 1)
+    elif not profile.height_cm and profile.height_in:
+        # 2026-07-11 (QA C1 fix 2): height_in alone = total inches
+        profile.height_cm = round(profile.height_in * 2.54, 1)
 
     # Derive targets
     p_dict = {
@@ -436,7 +464,7 @@ async def patch_profile(
 
     # Sync all derived targets into the user's metabolic budget
     computed = sync_budget_from_profile(db, current_user.id)
-    _sync_nutrition_targets_from_computed(db, current_user.id, computed)
+    _sync_nutrition_targets_from_computed(db, current_user.id, computed, profile=profile)
     db.commit()
 
     return _profile_response(profile)
@@ -836,6 +864,30 @@ async def get_meal_suggestions(
 
     # Fetch all recipes
     recipes = db.query(Recipe).limit(200).all()
+
+    # 2026-07-11 (QA F1): suggestions previously scored EVERY recipe with no
+    # dietary filtering — vegetarians were offered chicken bowls. Filter the
+    # candidate pool by the user's dietary preferences / allergies / dislikes
+    # using the same helpers browse and the planner share.
+    from app.agents.meal_planner_fallback import _matches_dietary
+    from app.services.allergen_utils import expand_allergies
+
+    user_dietary = [d for d in (current_user.dietary_preferences or []) if d]
+    expanded_allergies = expand_allergies(current_user.allergies or [])
+    user_disliked = {d.lower() for d in (current_user.disliked_ingredients or [])}
+
+    def _recipe_allowed(candidate: Recipe) -> bool:
+        ing_text = " ".join(
+            (ing.get("name") or "") for ing in (candidate.ingredients or [])
+        ).lower()
+        combined = f"{(candidate.title or '').lower()} {ing_text}"
+        if any(a in combined for a in expanded_allergies):
+            return False
+        if any(d in combined for d in user_disliked):
+            return False
+        return _matches_dietary(candidate, user_dietary)
+
+    recipes = [r for r in recipes if _recipe_allowed(r)]
 
     suggestions: list[dict] = []
     for recipe in recipes:

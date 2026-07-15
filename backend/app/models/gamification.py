@@ -24,7 +24,7 @@ class UserAchievement(Base):
     __tablename__ = "user_achievements"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     achievement_id = Column(GUID, ForeignKey("achievements.id"), nullable=False)
     unlocked_at = Column(DateTime, default=datetime.utcnow)
 
@@ -36,7 +36,7 @@ class XPTransaction(Base):
     __tablename__ = "xp_transactions"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     amount = Column(Integer, nullable=False)
     reason = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -47,7 +47,7 @@ class NutritionStreak(Base):
     __tablename__ = "nutrition_streaks"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     last_qualifying_date = Column(Date, nullable=True)
@@ -63,7 +63,7 @@ class DailyQuest(Base):
     __tablename__ = "daily_quests"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     quest_type = Column(String, nullable=False)       # general / logging / quality
     title = Column(String, nullable=False)

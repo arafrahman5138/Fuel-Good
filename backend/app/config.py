@@ -68,13 +68,22 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     chat_model: str = "gemini-2.5-flash"
-    scan_model: str = "gemini-2.5-flash"
-    # Phase 2: fallback model + retry/timeout budget for resilience. When
-    # scan_model returns 5xx or times out, the pipeline retries once and then
-    # switches to this smaller / usually-less-overloaded model.
+    # 2026-07-11 upgrade: gemini-3.1-flash-lite benchmarked 2.4x faster than
+    # gemini-2.5-flash (4.3s vs 10.5s per scan) with equal component
+    # extraction on the eval suite, and it's a stable GA model (the 3.1 "pro"
+    # is preview-only). The previous-generation lite stays as the fallback so
+    # a 3.1-family outage degrades across model families.
+    scan_model: str = "gemini-3.1-flash-lite"
+    # Fallback model + retry/timeout budget for resilience. When scan_model
+    # returns 5xx or times out, the pipeline retries once and then switches
+    # to this usually-less-overloaded model.
     scan_fallback_model: str = "gemini-2.5-flash-lite"
     scan_per_call_timeout_s: float = 8.0
     scan_race_threshold_ms: int = 3000
+    # When the fallback wins the race while the primary is still running, hold
+    # the fallback result and give the primary this long to finish — prompts
+    # are tuned on the primary model, so prefer its answer when it's close.
+    scan_primary_grace_ms: int = 2000
     scan_max_retries: int = 1
     embedding_provider: str = "gemini"
     embedding_model: str = "gemini-embedding-001"

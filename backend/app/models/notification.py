@@ -11,7 +11,7 @@ class UserPushToken(Base):
     __tablename__ = "user_push_tokens"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     expo_push_token = Column(String, nullable=False, unique=True, index=True)
     device_id = Column(String, nullable=True, index=True)
     platform = Column(String, default="unknown")
@@ -29,7 +29,7 @@ class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     push_enabled = Column(Boolean, default=True)
     timezone = Column(String, default="UTC")
     quiet_hours_start = Column(String, default="21:30")
@@ -61,7 +61,7 @@ class NotificationEvent(Base):
     __tablename__ = "notification_events"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     event_type = Column(String, nullable=False, index=True)
     source = Column(String, default="system")
     properties = Column(JSON, default=dict)
@@ -75,8 +75,8 @@ class NotificationDelivery(Base):
     __tablename__ = "notification_deliveries"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
-    push_token_id = Column(GUID, ForeignKey("user_push_tokens.id"), nullable=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    push_token_id = Column(GUID, ForeignKey("user_push_tokens.id", ondelete="SET NULL"), nullable=True, index=True)
     category = Column(String, nullable=False, index=True)
     status = Column(String, default="pending", index=True)
     title = Column(String, default="")

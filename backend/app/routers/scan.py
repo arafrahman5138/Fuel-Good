@@ -26,7 +26,12 @@ from app.models.scan_favorite import ScanFavorite
 from app.models.scanned_meal import ScannedMealLog
 from app.models.user import User
 from app.routers.nutrition import _compute_daily
-from app.services.meal_scan import analyze_meal_scan, recompute_meal_scan
+from app.services.meal_scan import (
+    analyze_meal_scan,
+    recompute_meal_scan,
+    rescale_meal_scan_result,
+    _normalize_name as _normalize_ingredient_name,
+)
 from app.services.metabolic_engine import build_glycemic_nutrition_input, on_food_log_created
 from app.services.product_label_scan import analyze_product_label_image
 from app.services.supabase_storage import (
@@ -52,6 +57,31 @@ settings = get_settings()
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 
 
+def _count_ai_scans_today(db: Session, user_id: str) -> int:
+    """Count today's AI scans (UTC midnight cutoff): meal-photo scans plus
+    non-barcode product-label scans. Barcode lookups never count."""
+    from sqlalchemy import func as sa_func
+
+    day_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    meal_scans = (
+        db.query(sa_func.count(ScannedMealLog.id))
+        .filter(ScannedMealLog.user_id == user_id, ScannedMealLog.created_at >= day_start)
+        .scalar()
+        or 0
+    )
+    label_scans = (
+        db.query(sa_func.count(ProductLabelScan.id))
+        .filter(
+            ProductLabelScan.user_id == user_id,
+            ProductLabelScan.created_at >= day_start,
+            (ProductLabelScan.capture_type.is_(None)) | (ProductLabelScan.capture_type != "barcode"),
+        )
+        .scalar()
+        or 0
+    )
+    return int(meal_scans) + int(label_scans)
+
+
 async def enforce_ai_scan_quota(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -61,7 +91,6 @@ async def enforce_ai_scan_quota(
     Premium users are unlimited. Barcode lookups never pass through this
     dependency — they're DB lookups and stay uncapped for everyone.
     """
-    from sqlalchemy import func as sa_func
     from app.services.billing import build_entitlement_info
 
     entitlement = build_entitlement_info(current_user)
@@ -69,24 +98,7 @@ async def enforce_ai_scan_quota(
         return current_user
 
     limit = max(0, settings.free_daily_ai_scans)
-    day_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-    meal_scans = (
-        db.query(sa_func.count(ScannedMealLog.id))
-        .filter(ScannedMealLog.user_id == current_user.id, ScannedMealLog.created_at >= day_start)
-        .scalar()
-        or 0
-    )
-    label_scans = (
-        db.query(sa_func.count(ProductLabelScan.id))
-        .filter(
-            ProductLabelScan.user_id == current_user.id,
-            ProductLabelScan.created_at >= day_start,
-            (ProductLabelScan.capture_type.is_(None)) | (ProductLabelScan.capture_type != "barcode"),
-        )
-        .scalar()
-        or 0
-    )
-    if meal_scans + label_scans >= limit:
+    if _count_ai_scans_today(db, current_user.id) >= limit:
         raise HTTPException(
             status_code=402,
             detail={
@@ -99,6 +111,40 @@ async def enforce_ai_scan_quota(
             },
         )
     return current_user
+
+
+class ScanQuotaResponse(BaseModel):
+    """Contract the frontend scan screen codes against — do not rename fields."""
+
+    limit: int
+    used_today: int
+    remaining: Optional[int] = None  # null for premium (unlimited)
+    is_premium: bool
+
+
+@router.get("/quota", response_model=ScanQuotaResponse)
+async def get_scan_quota(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ScanQuotaResponse:
+    """Read-only view of today's AI-scan quota (never quota-enforced itself).
+
+    2026-07-11 (QA D1): the frontend previously had no way to show "2 of 3
+    scans left" without triggering a scan. Premium users get is_premium=true
+    and remaining=null (unlimited).
+    """
+    from app.services.billing import build_entitlement_info
+
+    entitlement = build_entitlement_info(current_user)
+    is_premium = entitlement.access_level == "premium" and not entitlement.requires_paywall
+    limit = max(0, settings.free_daily_ai_scans)
+    used_today = _count_ai_scans_today(db, current_user.id)
+    return ScanQuotaResponse(
+        limit=limit,
+        used_today=used_today,
+        remaining=None if is_premium else max(0, limit - used_today),
+        is_premium=is_premium,
+    )
 
 
 def _validate_image_magic_bytes(data: bytes) -> str | None:
@@ -258,6 +304,7 @@ def _serialize_scan(scan: ScannedMealLog) -> dict[str, Any]:
         "source_context": scan.source_context,
         "estimated_ingredients": scan.estimated_ingredients or [],
         "normalized_ingredients": scan.normalized_ingredients or [],
+        "components": scan.components or [],
         "nutrition_estimate": scan.nutrition_estimate or {},
         "glycemic_profile": (scan.nutrition_estimate or {}).get("glycemic_profile"),
         "whole_food_status": scan.whole_food_status,
@@ -889,6 +936,7 @@ async def scan_meal(
         source_context=result["source_context"],
         estimated_ingredients=result["estimated_ingredients"],
         normalized_ingredients=result["normalized_ingredients"],
+        components=result.get("components") or [],
         nutrition_estimate={
             **(result["nutrition_estimate"] or {}),
             "whole_food_summary": result.get("whole_food_summary"),
@@ -1191,6 +1239,7 @@ async def scan_smart(
         source_context=result["source_context"],
         estimated_ingredients=result["estimated_ingredients"],
         normalized_ingredients=result["normalized_ingredients"],
+        components=result.get("components") or [],
         nutrition_estimate={
             **(result["nutrition_estimate"] or {}),
             "whole_food_summary": result.get("whole_food_summary"),
@@ -1239,6 +1288,274 @@ def _sse_event(event: str, payload: dict[str, Any]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(payload)}\n\n".encode("utf-8")
 
 
+async def _smart_scan_stream_events(
+    *,
+    db: Session,
+    current_user: User,
+    image_bytes: bytes,
+    detected_mime: str,
+    meal_type: Optional[str],
+    portion_size: Optional[str],
+    source_context: Optional[str],
+    force_scan_type: Optional[str] = None,
+    capture_type: str = "photo",
+):
+    """Shared SSE generator behind /scan/meal/stream and /scan/smart/stream.
+
+    Emits named events at natural pipeline boundaries so the client can
+    render progress incrementally instead of waiting for one blob. Events:
+      * ``quality``     — instant local probe (brightness/blur).
+      * ``cached``      — fired only when the result came from the LRU cache.
+      * ``components``  — extracted ingredients + roles once Gemini returns.
+      * ``final``       — full scored meal payload matching the blocking endpoint.
+      * ``label``       — persisted product-label payload when the classifier
+                          routes the image to the label pipeline.
+      * ``degraded``    — AI failed after retry + fallback.
+      * ``not_food`` / ``beverage`` — lightweight short-circuit responses.
+
+    The body of each event mirrors the blocking endpoints so clients can
+    share their result parsers.
+    """
+    # Fan-out: quality + upload + extraction all kick off in parallel.
+    cached = scan_cache.get_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION)
+    quality_task = asyncio.ensure_future(asyncio.to_thread(probe_image_quality, image_bytes))
+
+    storage_task: asyncio.Future | None = None
+    if not cached and is_supabase_storage_configured():
+        storage_task = asyncio.ensure_future(
+            _store_scan_image_safely(
+                user_id=current_user.id,
+                namespace="meal-scans",
+                bucket=settings.supabase_storage_meal_scans_bucket,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+            )
+        )
+
+    # Quality finishes almost instantly (~30ms) — emit it first so the
+    # client has something to render before Gemini responds.
+    quality = await quality_task
+    yield _sse_event("quality", quality)
+
+    if cached:
+        yield _sse_event("cached", {"prompt_version": MEAL_SCAN_PROMPT_VERSION})
+        result = cached
+    else:
+        try:
+            result = await analyze_meal_scan(
+                db=db,
+                user_id=current_user.id,
+                image_bytes=image_bytes,
+                mime_type=detected_mime,
+                context={
+                    "meal_type": meal_type,
+                    "portion_size": portion_size,
+                    "source_context": source_context,
+                    "force_scan_type": force_scan_type,
+                },
+            )
+        except Exception:
+            logger.exception("LLM meal scan failed in stream, returning degraded result")
+            result = _build_degraded_meal_scan_result(
+                meal_type=meal_type,
+                portion_size=portion_size,
+                source_context=source_context,
+            )
+        else:
+            if (
+                not result.get("is_degraded")
+                and not result.get("is_not_food")
+                and result.get("scan_type") != "label"
+            ):
+                scan_cache.set_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION, result)
+
+    # Attenuate AI confidence by image quality (same logic as blocking endpoint).
+    if quality.get("confidence_multiplier", 1.0) < 1.0:
+        raw_conf = float(result.get("confidence") or 0)
+        result["confidence"] = round(raw_conf * quality["confidence_multiplier"], 3)
+        result["image_quality"] = quality
+        if quality.get("review_required"):
+            result["review_required"] = True
+
+
+    # ── label: the classifier routed a packaged product here. Persist via the
+    # label pipeline and emit a single terminal `label` event. (Pre-refactor
+    # this fell through to the meal persistence block and crashed.)
+    if str(result.get("scan_type") or "").strip().lower() == "label":
+        label_result = result.get("label") or {}
+        label_storage_ref = None
+        if is_supabase_storage_configured():
+            try:
+                label_storage_ref = await _store_scan_image(
+                    user_id=current_user.id,
+                    namespace="label-scans",
+                    bucket=settings.supabase_storage_label_scans_bucket,
+                    image_bytes=image_bytes,
+                    mime_type=detected_mime,
+                )
+            except Exception:
+                logger.warning("Label re-upload failed in stream; continuing without stored image", exc_info=True)
+        if storage_task is not None:
+            try:
+                await storage_task
+            except Exception:
+                pass
+        persisted = await _persist_label_from_analysis(
+            db=db,
+            user_id=str(current_user.id),
+            storage_ref=label_storage_ref,
+            result=label_result,
+            capture_type=capture_type,
+        )
+        yield _sse_event("label", persisted)
+        return
+
+    # Short-circuit events for the non-meal branches.
+    if result.get("is_not_food"):
+        yield _sse_event("not_food", {
+            "not_food_reason": result.get("not_food_reason", "No food detected in image"),
+        })
+        return
+
+    if result.get("is_beverage"):
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            components=result.get("components") or [],
+            source_context=result.get("source_context"),
+            meal_label=result.get("meal_label"),
+            nutrition=result.get("nutrition_estimate"),
+            confidence=result.get("confidence"),
+            source_model=result.get("source_model"),
+            is_beverage=True,
+        )
+        yield _sse_event("beverage", {
+            "meal_label": result.get("meal_label", "Beverage"),
+            "fuel_score": fuel_result.score,
+            "fuel_tier": fuel_result.tier,
+            "fuel_reasoning": fuel_result.reasoning,
+            "confidence": result.get("confidence"),
+        })
+        return
+
+    if result.get("is_degraded"):
+        yield _sse_event("degraded", {
+            "meal_label": result.get("meal_label", "Scanned meal"),
+            "degraded_reason": result.get("degraded_reason", "AI analysis temporarily unavailable."),
+            "retry_options": {
+                "retry_same_photo": True,
+                "describe_instead": True,
+            },
+        })
+        return
+
+    # Emit components as a progress checkpoint so the client can populate
+    # the skeleton card before the full Fuel scoring pass runs.
+    yield _sse_event("components", {
+        "meal_label": result.get("meal_label"),
+        "components": result.get("components") or [],
+        "confidence": result.get("confidence"),
+    })
+
+    # Fuel scoring + persistence.
+    scan_fuel_score = None
+    scan_fuel_reasoning: list[str] = []
+    try:
+        fuel_result = compute_fuel_score(
+            source_type="scan",
+            nutrition=result.get("nutrition_estimate"),
+            components=result.get("components") or [],
+            source_context=result.get("source_context"),
+            whole_food_status=result.get("whole_food_status"),
+            whole_food_flags=result.get("whole_food_flags"),
+            meal_label=result.get("meal_label"),
+            dishes=result.get("dishes"),
+            confidence=result.get("confidence"),
+            source_model=result.get("source_model"),
+        )
+        scan_fuel_score = fuel_result.score
+        scan_fuel_reasoning = fuel_result.reasoning
+    except Exception:
+        logger.warning("Fuel score computation failed in stream", exc_info=True)
+
+    storage_ref = None
+    if storage_task is not None:
+        try:
+            storage_ref = await storage_task
+        except Exception:
+            logger.exception("Stream storage task failed; continuing without stored image")
+
+    scan = ScannedMealLog(
+        user_id=current_user.id,
+        image_url=(storage_ref or {}).get("signed_url"),
+        image_bucket=(storage_ref or {}).get("bucket"),
+        image_path=(storage_ref or {}).get("path"),
+        image_mime_type=(storage_ref or {}).get("mime_type"),
+        meal_label=result["meal_label"],
+        scan_mode="meal",
+        meal_context=result["meal_context"],
+        meal_type=result["meal_type"],
+        portion_size=result["portion_size"],
+        source_context=result["source_context"],
+        estimated_ingredients=result["estimated_ingredients"],
+        normalized_ingredients=result["normalized_ingredients"],
+        components=result.get("components") or [],
+        nutrition_estimate={
+            **(result["nutrition_estimate"] or {}),
+            "whole_food_summary": result.get("whole_food_summary"),
+        },
+        whole_food_status=result["whole_food_status"],
+        whole_food_flags=result["whole_food_flags"],
+        suggested_swaps=result["suggested_swaps"],
+        upgrade_suggestions=result["upgrade_suggestions"],
+        recovery_plan=result["recovery_plan"],
+        mes_score=(result["mes"] or {}).get("score"),
+        mes_tier=(result["mes"] or {}).get("tier"),
+        mes_sub_scores=(result["mes"] or {}).get("sub_scores") or {},
+        pairing_opportunity=bool(result.get("pairing_opportunity")),
+        pairing_recommended_recipe_id=result.get("pairing_recommended_recipe_id"),
+        pairing_recommended_title=result.get("pairing_recommended_title"),
+        pairing_projected_mes=result.get("pairing_projected_mes"),
+        pairing_projected_delta=result.get("pairing_projected_delta"),
+        pairing_reasons=result.get("pairing_reasons") or [],
+        pairing_timing=result.get("pairing_timing"),
+        confidence=result["confidence"],
+        confidence_breakdown=result["confidence_breakdown"],
+        source_model=result["source_model"],
+        grounding_source=result.get("grounding_source"),
+        grounding_candidates=result.get("grounding_candidates") or [],
+        prompt_version=result.get("prompt_version"),
+        matched_recipe_id=result.get("matched_recipe_id"),
+        matched_recipe_confidence=result.get("matched_recipe_confidence"),
+        fuel_score=scan_fuel_score,
+    )
+    db.add(scan)
+    db.commit()
+    db.refresh(scan)
+    serialized = _serialize_scan(scan)
+    serialized["fuel_reasoning"] = scan_fuel_reasoning
+    serialized["image"] = await _storage_reference_async(
+        bucket=scan.image_bucket,
+        path=scan.image_path,
+        mime_type=scan.image_mime_type,
+        fallback_url=scan.image_url,
+    )
+    yield _sse_event("final", serialized)
+
+
+def _read_and_validate_scan_image(image_bytes: bytes) -> str:
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
+    detected_mime = _validate_image_magic_bytes(image_bytes)
+    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
+        )
+    return detected_mime
+
+
 @router.post("/meal/stream", dependencies=[Depends(enforce_ai_scan_quota)])
 async def scan_meal_stream(
     image: UploadFile = File(...),
@@ -1248,222 +1565,60 @@ async def scan_meal_stream(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Phase 3: SSE streaming endpoint for meal scans.
-
-    Emits named events at natural pipeline boundaries so the client can
-    render progress incrementally instead of waiting for one blob. Events:
-      * ``quality``     — instant local probe (brightness/blur).
-      * ``cached``      — fired only when the result came from the LRU cache.
-      * ``components``  — extracted ingredients + roles once Gemini returns.
-      * ``final``       — full scored payload matching the blocking endpoint.
-      * ``degraded``    — AI failed after retry + fallback.
-      * ``not_food`` / ``beverage`` — lightweight short-circuit responses.
-
-    The body of each event mirrors the blocking endpoint so clients can
-    share their result parser.
-    """
+    """SSE streaming meal scan. See _smart_scan_stream_events for the events."""
     image_bytes = await image.read()
     await image.close()
-    if not image_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
-    if len(image_bytes) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Image is too large. Keep it under 8MB.")
+    detected_mime = _read_and_validate_scan_image(image_bytes)
+    return StreamingResponse(
+        _smart_scan_stream_events(
+            db=db,
+            current_user=current_user,
+            image_bytes=image_bytes,
+            detected_mime=detected_mime,
+            meal_type=meal_type,
+            portion_size=portion_size,
+            source_context=source_context,
+        ),
+        media_type="text/event-stream",
+    )
 
-    detected_mime = _validate_image_magic_bytes(image_bytes)
-    if detected_mime is None or detected_mime not in ALLOWED_IMAGE_MIME_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail="Meal scan requires an image upload (JPEG, PNG, WEBP, or HEIC).",
-        )
 
-    async def stream():
-        # Fan-out: quality + upload + extraction all kick off in parallel.
-        cached = scan_cache.get_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION)
-        quality_task = asyncio.ensure_future(asyncio.to_thread(probe_image_quality, image_bytes))
+@router.post("/smart/stream", dependencies=[Depends(enforce_ai_scan_quota)])
+async def scan_smart_stream(
+    image: UploadFile = File(...),
+    meal_type: Optional[str] = Form(default=None),
+    portion_size: Optional[str] = Form(default=None),
+    source_context: Optional[str] = Form(default=None),
+    force_scan_type: Optional[str] = Form(default=None),
+    capture_type: Optional[str] = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Streaming variant of /scan/smart: server-side classification with
+    progressive SSE events (quality → components → final | label | beverage |
+    not_food | degraded). Event bodies mirror the blocking /scan/smart
+    discriminated payloads."""
+    image_bytes = await image.read()
+    await image.close()
+    detected_mime = _read_and_validate_scan_image(image_bytes)
+    force = (force_scan_type or "").strip().lower() or None
+    if force not in (None, "meal", "label"):
+        raise HTTPException(status_code=422, detail="force_scan_type must be 'meal' or 'label'.")
+    return StreamingResponse(
+        _smart_scan_stream_events(
+            db=db,
+            current_user=current_user,
+            image_bytes=image_bytes,
+            detected_mime=detected_mime,
+            meal_type=meal_type,
+            portion_size=portion_size,
+            source_context=source_context,
+            force_scan_type=force,
+            capture_type=(capture_type or "photo").strip().lower() or "photo",
+        ),
+        media_type="text/event-stream",
+    )
 
-        storage_task: asyncio.Future | None = None
-        if not cached and is_supabase_storage_configured():
-            storage_task = asyncio.ensure_future(
-                _store_scan_image_safely(
-                    user_id=current_user.id,
-                    namespace="meal-scans",
-                    bucket=settings.supabase_storage_meal_scans_bucket,
-                    image_bytes=image_bytes,
-                    mime_type=detected_mime,
-                )
-            )
-
-        # Quality finishes almost instantly (~30ms) — emit it first so the
-        # client has something to render before Gemini responds.
-        quality = await quality_task
-        yield _sse_event("quality", quality)
-
-        if cached:
-            yield _sse_event("cached", {"prompt_version": MEAL_SCAN_PROMPT_VERSION})
-            result = cached
-        else:
-            try:
-                result = await analyze_meal_scan(
-                    db=db,
-                    user_id=current_user.id,
-                    image_bytes=image_bytes,
-                    mime_type=detected_mime,
-                    context={
-                        "meal_type": meal_type,
-                        "portion_size": portion_size,
-                        "source_context": source_context,
-                    },
-                )
-            except Exception:
-                logger.exception("LLM meal scan failed in stream, returning degraded result")
-                result = _build_degraded_meal_scan_result(
-                    meal_type=meal_type,
-                    portion_size=portion_size,
-                    source_context=source_context,
-                )
-            else:
-                if not result.get("is_degraded") and not result.get("is_not_food"):
-                    scan_cache.set_meal_scan(image_bytes, MEAL_SCAN_PROMPT_VERSION, result)
-
-        # Attenuate AI confidence by image quality (same logic as blocking endpoint).
-        if quality.get("confidence_multiplier", 1.0) < 1.0:
-            raw_conf = float(result.get("confidence") or 0)
-            result["confidence"] = round(raw_conf * quality["confidence_multiplier"], 3)
-            result["image_quality"] = quality
-            if quality.get("review_required"):
-                result["review_required"] = True
-
-        # Short-circuit events for the non-meal branches.
-        if result.get("is_not_food"):
-            yield _sse_event("not_food", {
-                "not_food_reason": result.get("not_food_reason", "No food detected in image"),
-            })
-            return
-
-        if result.get("is_beverage"):
-            fuel_result = compute_fuel_score(
-                source_type="scan",
-                components=result.get("components") or [],
-                source_context=result.get("source_context"),
-                meal_label=result.get("meal_label"),
-                nutrition=result.get("nutrition_estimate"),
-                confidence=result.get("confidence"),
-                source_model=result.get("source_model"),
-                is_beverage=True,
-            )
-            yield _sse_event("beverage", {
-                "meal_label": result.get("meal_label", "Beverage"),
-                "fuel_score": fuel_result.score,
-                "fuel_tier": fuel_result.tier,
-                "fuel_reasoning": fuel_result.reasoning,
-                "confidence": result.get("confidence"),
-            })
-            return
-
-        if result.get("is_degraded"):
-            yield _sse_event("degraded", {
-                "meal_label": result.get("meal_label", "Scanned meal"),
-                "degraded_reason": result.get("degraded_reason", "AI analysis temporarily unavailable."),
-                "retry_options": {
-                    "retry_same_photo": True,
-                    "describe_instead": True,
-                },
-            })
-            return
-
-        # Emit components as a progress checkpoint so the client can populate
-        # the skeleton card before the full Fuel scoring pass runs.
-        yield _sse_event("components", {
-            "meal_label": result.get("meal_label"),
-            "components": result.get("components") or [],
-            "confidence": result.get("confidence"),
-        })
-
-        # Fuel scoring + persistence.
-        scan_fuel_score = None
-        scan_fuel_reasoning: list[str] = []
-        try:
-            fuel_result = compute_fuel_score(
-                source_type="scan",
-                nutrition=result.get("nutrition_estimate"),
-                components=result.get("components") or [],
-                source_context=result.get("source_context"),
-                whole_food_status=result.get("whole_food_status"),
-                whole_food_flags=result.get("whole_food_flags"),
-                meal_label=result.get("meal_label"),
-                dishes=result.get("dishes"),
-                confidence=result.get("confidence"),
-                source_model=result.get("source_model"),
-            )
-            scan_fuel_score = fuel_result.score
-            scan_fuel_reasoning = fuel_result.reasoning
-        except Exception:
-            logger.warning("Fuel score computation failed in stream", exc_info=True)
-
-        storage_ref = None
-        if storage_task is not None:
-            try:
-                storage_ref = await storage_task
-            except Exception:
-                logger.exception("Stream storage task failed; continuing without stored image")
-
-        scan = ScannedMealLog(
-            user_id=current_user.id,
-            image_url=(storage_ref or {}).get("signed_url"),
-            image_bucket=(storage_ref or {}).get("bucket"),
-            image_path=(storage_ref or {}).get("path"),
-            image_mime_type=(storage_ref or {}).get("mime_type"),
-            meal_label=result["meal_label"],
-            scan_mode="meal",
-            meal_context=result["meal_context"],
-            meal_type=result["meal_type"],
-            portion_size=result["portion_size"],
-            source_context=result["source_context"],
-            estimated_ingredients=result["estimated_ingredients"],
-            normalized_ingredients=result["normalized_ingredients"],
-            nutrition_estimate={
-                **(result["nutrition_estimate"] or {}),
-                "whole_food_summary": result.get("whole_food_summary"),
-            },
-            whole_food_status=result["whole_food_status"],
-            whole_food_flags=result["whole_food_flags"],
-            suggested_swaps=result["suggested_swaps"],
-            upgrade_suggestions=result["upgrade_suggestions"],
-            recovery_plan=result["recovery_plan"],
-            mes_score=(result["mes"] or {}).get("score"),
-            mes_tier=(result["mes"] or {}).get("tier"),
-            mes_sub_scores=(result["mes"] or {}).get("sub_scores") or {},
-            pairing_opportunity=bool(result.get("pairing_opportunity")),
-            pairing_recommended_recipe_id=result.get("pairing_recommended_recipe_id"),
-            pairing_recommended_title=result.get("pairing_recommended_title"),
-            pairing_projected_mes=result.get("pairing_projected_mes"),
-            pairing_projected_delta=result.get("pairing_projected_delta"),
-            pairing_reasons=result.get("pairing_reasons") or [],
-            pairing_timing=result.get("pairing_timing"),
-            confidence=result["confidence"],
-            confidence_breakdown=result["confidence_breakdown"],
-            source_model=result["source_model"],
-            grounding_source=result.get("grounding_source"),
-            grounding_candidates=result.get("grounding_candidates") or [],
-            prompt_version=result.get("prompt_version"),
-            matched_recipe_id=result.get("matched_recipe_id"),
-            matched_recipe_confidence=result.get("matched_recipe_confidence"),
-            fuel_score=scan_fuel_score,
-        )
-        db.add(scan)
-        db.commit()
-        db.refresh(scan)
-        serialized = _serialize_scan(scan)
-        serialized["fuel_reasoning"] = scan_fuel_reasoning
-        serialized["image"] = await _storage_reference_async(
-            bucket=scan.image_bucket,
-            path=scan.image_path,
-            mime_type=scan.image_mime_type,
-            fallback_url=scan.image_url,
-        )
-        yield _sse_event("final", serialized)
-
-    return StreamingResponse(stream(), media_type="text/event-stream")
 
 
 @router.patch("/meal/{scan_id}")
@@ -1477,16 +1632,35 @@ async def update_meal_scan(
     if not scan:
         raise HTTPException(status_code=404, detail="Meal scan not found.")
 
-    result = await recompute_meal_scan(
-        db=db,
-        user_id=current_user.id,
-        meal_label=body.meal_label,
-        meal_type=body.meal_type,
-        portion_size=body.portion_size,
-        source_context=body.source_context,
-        ingredients=body.ingredients,
-        existing_source_model=scan.source_model,
-    )
+    # Portion/label-only updates keep the original grounded analysis and just
+    # rescale — rebuilding from bare ingredient names discards USDA grounding
+    # and component grams (a portion tap collapsed 1170 kcal to 137 pre-fix).
+    requested_norm = [_normalize_ingredient_name(x) for x in (body.ingredients or []) if str(x).strip()]
+    # Compare against estimated_ingredients — that's what clients echo back.
+    # (normalized_ingredients also contains merged hidden ingredients like
+    # "salt", which the client never sends.)
+    stored_norm = [_normalize_ingredient_name(str(x)) for x in (scan.estimated_ingredients or [])]
+    ingredients_unchanged = requested_norm == stored_norm
+    if ingredients_unchanged and (scan.components or []):
+        result = rescale_meal_scan_result(
+            db,
+            scan,
+            meal_label=body.meal_label,
+            meal_type=body.meal_type,
+            portion_size=body.portion_size,
+            source_context=body.source_context,
+        )
+    else:
+        result = await recompute_meal_scan(
+            db=db,
+            user_id=current_user.id,
+            meal_label=body.meal_label,
+            meal_type=body.meal_type,
+            portion_size=body.portion_size,
+            source_context=body.source_context,
+            ingredients=body.ingredients,
+            existing_source_model=scan.source_model,
+        )
 
     scan.meal_label = result["meal_label"]
     scan.meal_context = result["meal_context"]

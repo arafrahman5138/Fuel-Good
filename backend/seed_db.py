@@ -13,6 +13,7 @@ Optional:
 import json
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from app.db import SessionLocal, init_db
@@ -114,6 +115,18 @@ def _load_seed_meals() -> list[dict]:
     raise RuntimeError(f"Unsupported SEED_SOURCE={SEED_SOURCE!r}. Use official or library.")
 
 
+def _parse_created_at(value):
+    """official_meals.json stores created_at as ISO strings; SQLite's DateTime
+    column rejects raw strings (2026-07-11 — this only ever worked when the
+    engine happened to bind to Postgres, which parses them server-side)."""
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    return value
+
+
 def _build_recipe(meal: dict) -> Recipe:
     health = meal.get("health_benefits") or compute_health_benefits(meal.get("ingredients", []))
     return Recipe(
@@ -146,7 +159,7 @@ def _build_recipe(meal: dict) -> Recipe:
         is_mes_scoreable=meal.get("is_mes_scoreable", True),
         pairing_synergy_profile=meal.get("pairing_synergy_profile"),
         glycemic_profile=meal.get("glycemic_profile"),
-        created_at=meal.get("created_at"),
+        created_at=_parse_created_at(meal.get("created_at")),
         fuel_score=meal.get("fuel_score", 100.0),
     )
 

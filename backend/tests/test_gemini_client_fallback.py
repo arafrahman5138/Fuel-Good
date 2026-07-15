@@ -165,6 +165,78 @@ class GeminiClientFallbackTests(unittest.TestCase):
         result = asyncio.run(run())
         self.assertEqual(result.model, "fallback")
 
+    def test_race_prefers_primary_that_finishes_within_grace(self) -> None:
+        """When the fallback wins the race, the primary gets a grace window —
+        if it completes in time, its (better-tuned) answer is preferred."""
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            model = _model_from_url(request)
+            if model == "primary":
+                await asyncio.sleep(0.15)
+            else:
+                await asyncio.sleep(0.08)
+            return httpx.Response(200, json=_ok_response(model))
+
+        async def run() -> gemini_client.GeminiCallResult:
+            with _with_mock_httpx(handler):
+                return await gemini_client.call_gemini_with_fallback(
+                    payload=_fake_payload(),
+                    primary_model="primary",
+                    fallback_model="fallback",
+                    race=True,
+                )
+
+        with patch.dict(os.environ, {"SCAN_RACE_THRESHOLD_MS": "50", "SCAN_PRIMARY_GRACE_MS": "500"}):
+            get_settings.cache_clear()
+            result = asyncio.run(run())
+        self.assertEqual(result.model, "primary")
+
+    def test_race_serves_fallback_when_primary_outlives_grace(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            model = _model_from_url(request)
+            if model == "primary":
+                await asyncio.sleep(2.0)
+            else:
+                await asyncio.sleep(0.05)
+            return httpx.Response(200, json=_ok_response(model))
+
+        async def run() -> gemini_client.GeminiCallResult:
+            with _with_mock_httpx(handler):
+                return await gemini_client.call_gemini_with_fallback(
+                    payload=_fake_payload(),
+                    primary_model="primary",
+                    fallback_model="fallback",
+                    race=True,
+                )
+
+        with patch.dict(os.environ, {"SCAN_RACE_THRESHOLD_MS": "50", "SCAN_PRIMARY_GRACE_MS": "100"}):
+            get_settings.cache_clear()
+            result = asyncio.run(run())
+        self.assertEqual(result.model, "fallback")
+
+    def test_race_serves_fallback_when_primary_errors_during_grace(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            model = _model_from_url(request)
+            if model == "primary":
+                await asyncio.sleep(0.12)
+                return httpx.Response(400, json={"error": "bad request"})
+            await asyncio.sleep(0.06)
+            return httpx.Response(200, json=_ok_response(model))
+
+        async def run() -> gemini_client.GeminiCallResult:
+            with _with_mock_httpx(handler):
+                return await gemini_client.call_gemini_with_fallback(
+                    payload=_fake_payload(),
+                    primary_model="primary",
+                    fallback_model="fallback",
+                    race=True,
+                )
+
+        with patch.dict(os.environ, {"SCAN_RACE_THRESHOLD_MS": "50", "SCAN_PRIMARY_GRACE_MS": "500"}):
+            get_settings.cache_clear()
+            result = asyncio.run(run())
+        self.assertEqual(result.model, "fallback")
+
     def test_non_retryable_4xx_skips_retry_goes_to_fallback(self) -> None:
         calls: list[str] = []
 

@@ -12,7 +12,10 @@ from app.services.metabolic_engine import (
 
 
 class MetabolicEngineTargetTests(unittest.TestCase):
-    def test_protein_target_never_drops_below_body_weight(self) -> None:
+    def test_protein_target_uses_goal_ratio_with_safety_floor(self) -> None:
+        # 2026-07-11 calibration: maintenance uses the 0.73 g/lb base ratio
+        # with a 0.7 g/lb floor (old behavior floored everything at 1.0 g/lb,
+        # so protein always equaled bodyweight regardless of goal).
         profile = MetabolicProfileInput(
             weight_lb=165,
             height_ft=5,
@@ -22,7 +25,9 @@ class MetabolicEngineTargetTests(unittest.TestCase):
             activity_level=ActivityLevel.MODERATE,
             goal=Goal.MAINTENANCE,
         )
-        self.assertGreaterEqual(calc_protein_target_g(profile), 165.0)
+        target = calc_protein_target_g(profile)
+        self.assertAlmostEqual(target, 165 * 0.73, delta=0.1)
+        self.assertGreaterEqual(target, 165 * 0.7)
 
     def test_derived_and_computed_protein_targets_match(self) -> None:
         profile = MetabolicProfileInput(

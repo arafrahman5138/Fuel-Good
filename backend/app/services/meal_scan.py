@@ -32,7 +32,7 @@ from app.services.whole_food_scoring import analyze_whole_food_product
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
-MEAL_SCAN_PROMPT_VERSION = "meal_scan_v4_consensus"
+MEAL_SCAN_PROMPT_VERSION = "meal_scan_v5_grams"
 
 SNACK_CALORIE_CEILING = 250.0
 SNACK_CARB_CEILING = 18.0
@@ -484,6 +484,8 @@ Return strict JSON only with this exact shape:
           "role": "protein|carb|veg|fat|sauce|dessert|other|fruit",
           "portion_factor": 1.0,
           "mass_fraction": 0.0,
+          "estimated_grams": 0,
+          "item_count": 1,
           "nova": 1,
           "methods": [],
           "visible": true,
@@ -515,6 +517,8 @@ Return strict JSON only with this exact shape:
       "role": "protein|carb|veg|fat|sauce|dessert|other|fruit",
       "portion_factor": 1.0,
       "mass_fraction": 0.0,
+      "estimated_grams": 0,
+      "item_count": 1,
       "nova": 1,
       "methods": [],
       "visible": true,
@@ -551,6 +555,8 @@ Rules:
 - prefer concrete food names over vague labels (e.g. "grilled chicken breast" not "meat"; "pizza dough" not "crust"; "pepperoni" not "cured meat topping")
 - use 0.25 to 1.5 for portion_factor
 - mass_fraction: estimate each component's share of the meal by weight (0.0-1.0). The sum of mass_fractions across top-level components should be close to 1.0. If unsure, leave at 0.0 and the server will default to equal weighting.
+- estimated_grams: estimate each component's absolute weight in grams as served. Anchor to visible references: a standard dinner plate is ~27 cm across, a fork is ~18 cm. Typical anchors — chicken breast 150-220 g, one cooked rice scoop 150-200 g, a fast-food beef patty 90-120 g, one donut 60-80 g, a scoop of ice cream 65-90 g, one fried chicken piece 100-160 g, a whole rotisserie chicken 900-1200 g (edible ~700-900 g). COUNT REPEATED ITEMS: three donuts is 3 × one donut's grams. Do not shrink grams because the food is unhealthy — report what is physically present.
+- item_count: how many discrete units of this component are visible (3 donuts → 3, one salmon fillet → 1). Use 1 for amorphous foods (rice, sauce, salad).
 - nova: assign a NOVA processing level per component:
     1 = unprocessed / minimally processed whole food (grilled chicken, broccoli, brown rice, plain yogurt, raw fruit)
     2 = processed culinary ingredient (olive oil, butter, honey, salt, table sugar, vinegar)
@@ -1173,6 +1179,74 @@ def _calibrated_guidance(
     return upgrade_suggestions[:3], recovery_plan[:3]
 
 
+def _aggregate_nutrition(
+    components: list[dict[str, Any]],
+    _usda_results: dict[int, dict[str, float]] | None = None,
+    portion_multiplier: float = 1.0,
+) -> dict[str, float]:
+    """Heuristic macro totals for a component list (per-dish breakdowns).
+
+    Uses COMPONENT_MACROS / role fallbacks only — per-dish rows don't get the
+    USDA pass. (This was referenced by the multi-dish branch without existing:
+    any multi-dish photo crashed the scan into the degraded path.)
+    """
+    totals: dict[str, float] = {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0, "fiber": 0.0, "sugar_g": 0.0}
+    for component in components:
+        try:
+            factor = float(component.get("portion_factor", 1.0) or 1.0)
+        except (TypeError, ValueError):
+            factor = 1.0
+        macros = _lookup_component_macros(str(component.get("name", "")))
+        if not macros:
+            role = str(component.get("role", "other") or "other").lower()
+            macros = _ROLE_FALLBACK_MACROS.get(role, _ROLE_FALLBACK_MACROS["other"])
+        for key in totals:
+            totals[key] += float(macros.get(key, 0.0) or 0.0) * factor
+    for key in totals:
+        totals[key] = round(totals[key] * portion_multiplier, 1)
+    if totals["sugar_g"] == 0.0:
+        totals["sugar_g"] = _estimate_sugar_g(totals)
+    return totals
+
+
+def _apply_energy_density_envelope(
+    totals: dict[str, float],
+    components: list[dict[str, Any]],
+    portion_multiplier: float,
+) -> bool:
+    """Bound total calories by what the estimated plate mass can physically hold.
+
+    Scan QA 2026-07-10: visually-estimated calories drifted −55% to +105%
+    (fried chicken baskets low, sushi platters high). When the extractor
+    supplied component weights, clamp calories to a plausible kcal/g band
+    for the plate and report the clamp instead of silently shipping an
+    impossible number. Returns True when a clamp fired.
+    """
+    envelope_grams = sum(
+        float(c.get("estimated_grams") or 0) for c in components
+        if float(c.get("estimated_grams") or 0) > 0
+    )
+    if envelope_grams < 100:
+        return False
+    rich_plate = any(
+        c.get("role") == "dessert"
+        or any("fried" in str(m).lower() or "battered" in str(m).lower() for m in (c.get("methods") or []))
+        for c in components
+    )
+    effective_grams = envelope_grams * portion_multiplier
+    # Fried/dessert plates run ~2-4 kcal/g; they are never salad-density.
+    # Plain plates span steamed veg (~0.4) up to oily mains (~3).
+    kcal_lo = effective_grams * (1.5 if rich_plate else 0.5)
+    kcal_hi = effective_grams * (4.5 if rich_plate else 3.2)
+    if totals["calories"] < kcal_lo:
+        totals["calories"] = round(kcal_lo, 1)
+        return True
+    if totals["calories"] > kcal_hi:
+        totals["calories"] = round(kcal_hi, 1)
+        return True
+    return False
+
+
 def _check_ingredient_cache(
     db: Session,
     user_id: str,
@@ -1202,6 +1276,9 @@ def _check_ingredient_cache(
             ScannedMealLog.user_id == user_id,
             ScannedMealLog.created_at >= cutoff,
             ScannedMealLog.fuel_score.isnot(None),
+            # Prompt bumps change component semantics — treat older scans as
+            # cold misses rather than rescoring stale extractions.
+            ScannedMealLog.prompt_version == MEAL_SCAN_PROMPT_VERSION,
         )
         .order_by(ScannedMealLog.created_at.desc())
         .limit(20)
@@ -1211,6 +1288,11 @@ def _check_ingredient_cache(
     for scan in recent_scans:
         cached_ingredients = set(scan.normalized_ingredients or [])
         if not cached_ingredients:
+            continue
+        # Without persisted components the fuel score would be recomputed from
+        # bare ingredient names (no nova/methods/mass_fraction) and drift from
+        # the fresh scan's score — skip such rows (pre-migration data).
+        if not scan.components:
             continue
 
         # Jaccard-like overlap: intersection / union
@@ -1276,7 +1358,7 @@ def _check_ingredient_cache(
                 "pairing_projected_delta": float(scan.pairing_projected_delta) if scan.pairing_projected_delta is not None else None,
                 "pairing_reasons": scan.pairing_reasons or [],
                 "pairing_timing": scan.pairing_timing,
-                "components": [],
+                "components": scan.components or [],
             }
 
     return None
@@ -1450,8 +1532,13 @@ async def analyze_meal_scan(
         factor = float(component.get("portion_factor", 1.0) or 1.0)
 
         if usda_result:
+            # USDA values are per 100 g. When the extractor supplied an
+            # absolute weight estimate, scale by it — the LLM only identifies
+            # and weighs the food; the nutrition math comes from the database.
+            grams = float(component.get("estimated_grams") or 0)
+            scale = (grams / 100.0) if grams > 0 else factor
             for key in totals:
-                totals[key] += usda_result.get(key, 0.0) * factor
+                totals[key] += usda_result.get(key, 0.0) * scale
             usda_grounded_count += 1
             matched += 1
         else:
@@ -1496,6 +1583,8 @@ async def analyze_meal_scan(
     if totals["sugar_g"] == 0.0:
         totals["sugar_g"] = _estimate_sugar_g(totals)
 
+    sanity_clamped = _apply_energy_density_envelope(totals, components, portion_multiplier)
+
     # Grounding confidence
     if matched == 0 and components:
         grounding_confidence = 0.25
@@ -1504,6 +1593,10 @@ async def analyze_meal_scan(
         usda_bonus = 0.1 * (usda_grounded_count / max(len(components), 1))
         ensemble_bonus = 0.05 if ensemble_used else 0.0
         grounding_confidence = min(0.95, base_conf + usda_bonus + ensemble_bonus)
+    if sanity_clamped:
+        # The clamp corrected the number but the underlying estimate was off —
+        # reflect that in the nutrition confidence the client displays.
+        grounding_confidence = min(grounding_confidence, 0.6)
 
     heuristic_nutrition = totals
 
@@ -1569,6 +1662,7 @@ async def analyze_meal_scan(
         "ensemble_applied": ensemble_used,
         "estimate_mode": estimate_mode,
         "review_required": estimate_mode == "low",
+        "sanity_clamped": sanity_clamped,
     }
     confidence = round(
         (
@@ -1760,6 +1854,79 @@ def _apply_correction_heuristic(ingredients: list[str], correction_text: str) ->
         return result
 
     return result
+
+
+def rescale_meal_scan_result(
+    db: Session,
+    scan: Any,
+    *,
+    meal_label: str,
+    meal_type: str,
+    portion_size: str,
+    source_context: str,
+) -> dict[str, Any]:
+    """Portion/label-only update: rescale the stored, grounded scan.
+
+    ``recompute_meal_scan`` rebuilds nutrition from bare ingredient names,
+    discarding USDA grounding and component grams — QA 2026-07-11: tapping
+    "Large" turned a 1170 kcal grounded scan into 137 kcal. When ingredients
+    are unchanged, scale the stored nutrition by the portion-multiplier ratio
+    and keep everything the original analysis earned.
+    """
+    old_mult = PORTION_MULTIPLIERS.get((scan.portion_size or "medium").lower(), 1.0)
+    new_mult = PORTION_MULTIPLIERS.get((portion_size or "medium").lower(), 1.0)
+    ratio = (new_mult / old_mult) if old_mult else 1.0
+
+    nutrition = dict(scan.nutrition_estimate or {})
+    for key in ("calories", "protein", "carbs", "fat", "fiber", "sugar", "sugar_g"):
+        if nutrition.get(key):
+            nutrition[key] = round(float(nutrition[key]) * ratio, 1)
+
+    meal_context = scan.meal_context or "full_meal"
+    mes = None
+    if should_score_meal(meal_context):
+        budget = load_budget_for_user(db, str(scan.user_id))
+        mes_result = compute_meal_mes(nutrition, budget)
+        mes = {
+            "score": mes_result["display_score"],
+            "tier": mes_result["display_tier"],
+            "sub_scores": mes_result.get("sub_scores") or {},
+            "ingredient_gis_adjustment": mes_result.get("ingredient_gis_adjustment"),
+            "ingredient_gis_reasons": mes_result.get("ingredient_gis_reasons") or [],
+        }
+
+    return {
+        "meal_label": (meal_label or scan.meal_label or "Scanned meal").strip() or "Scanned meal",
+        "meal_context": meal_context,
+        "meal_type": (meal_type or scan.meal_type or "lunch").lower(),
+        "portion_size": (portion_size or scan.portion_size or "medium").lower(),
+        "source_context": (source_context or scan.source_context or "home").lower(),
+        "estimated_ingredients": scan.estimated_ingredients or [],
+        "normalized_ingredients": scan.normalized_ingredients or [],
+        "components": scan.components or [],
+        "nutrition_estimate": nutrition,
+        "whole_food_status": scan.whole_food_status,
+        "whole_food_flags": scan.whole_food_flags or [],
+        "suggested_swaps": scan.suggested_swaps or {},
+        "upgrade_suggestions": scan.upgrade_suggestions or [],
+        "recovery_plan": scan.recovery_plan or [],
+        "mes": mes,
+        "confidence": float(scan.confidence or 0),
+        "confidence_breakdown": scan.confidence_breakdown or {},
+        "grounding_source": scan.grounding_source,
+        "grounding_candidates": scan.grounding_candidates or [],
+        "prompt_version": scan.prompt_version,
+        "matched_recipe_id": scan.matched_recipe_id,
+        "matched_recipe_confidence": scan.matched_recipe_confidence,
+        "whole_food_summary": (scan.nutrition_estimate or {}).get("whole_food_summary"),
+        "pairing_opportunity": bool(scan.pairing_opportunity),
+        "pairing_recommended_recipe_id": scan.pairing_recommended_recipe_id,
+        "pairing_recommended_title": scan.pairing_recommended_title,
+        "pairing_projected_mes": scan.pairing_projected_mes,
+        "pairing_projected_delta": scan.pairing_projected_delta,
+        "pairing_reasons": scan.pairing_reasons or [],
+        "pairing_timing": scan.pairing_timing,
+    }
 
 
 async def recompute_meal_scan(

@@ -264,7 +264,9 @@ class MealPlanAudit(unittest.TestCase):
                 print(f"\n  [{key}] TDEE={ref.tdee} | Protein={ref.protein_g}g | Carbs={ref.carb_ceiling_g}g | Fat={ref.fat_g}g | Cal={ref.calorie_target_kcal}")
 
                 # Protein >= weight_lb * floor_ratio
-                floor_ratio = 1.2 if p["goal"] == "muscle_gain" else 1.0
+                # 2026-07-11 calibration: non-muscle goals now floor at 0.7
+                # g/lb so goal-specific base ratios (0.73/0.82) take effect.
+                floor_ratio = 1.2 if p["goal"] == "muscle_gain" else 0.7
                 protein_floor = p["weight_lb"] * floor_ratio
                 api_protein = float(budget.get("protein_target_g", 0))
                 self.assertGreaterEqual(

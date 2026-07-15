@@ -77,12 +77,21 @@ def _load_shipped_dict() -> list[NovaEntry]:
         nova = int(row.get("nova") or 2)
         if not name or nova not in NOVA_PENALTY:
             continue
-        entries.append(NovaEntry(
+        entry = NovaEntry(
             name=name,
             nova=nova,
             role=(row.get("role") or None),
             tags=list(row.get("tags") or []),
-        ))
+        )
+        entries.append(entry)
+        # Aliases index extra lookup names onto the same classification
+        # ("chapati" → roti, "daal" → dal) without duplicating full entries.
+        for alias in row.get("aliases") or []:
+            alias_name = _normalize(alias)
+            if alias_name and alias_name != name:
+                entries.append(NovaEntry(
+                    name=alias_name, nova=nova, role=entry.role, tags=entry.tags,
+                ))
     return entries
 
 

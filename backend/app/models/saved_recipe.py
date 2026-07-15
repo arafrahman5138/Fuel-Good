@@ -8,6 +8,6 @@ class SavedRecipe(Base):
     __tablename__ = "saved_recipes"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     recipe_id = Column(GUID, ForeignKey("recipes.id"), nullable=False)
     saved_at = Column(DateTime, default=datetime.utcnow)

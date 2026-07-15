@@ -243,6 +243,54 @@ LABEL_GOLDEN = [
         },
         (50, 75),
     ),
+    # ---- 2026-07-11 recalibration regression cases (scan QA findings) ----
+    (
+        "healthwashed_smoothie_juice_concentrates",  # scored a perfect 100 pre-fix
+        {
+            "product_name": "All Natural Superfood Smoothie",
+            "ingredients_text": (
+                "Apple Juice Concentrate, Banana Puree, Mango Puree, "
+                "White Grape Juice Concentrate, Spinach Powder, Natural Flavors, "
+                "Citric Acid, Ascorbic Acid"
+            ),
+            "protein_g": 2, "fiber_g": 2, "sugar_g": 53, "carbs_g": 64, "sodium_mg": 30, "calories": 270,
+        },
+        (0, 45),
+    ),
+    (
+        "cola_hfcs",  # scored 34.9 pre-fix; belongs at the bottom
+        {
+            "product_name": "Cola",
+            "ingredients_text": (
+                "Carbonated Water, High Fructose Corn Syrup, Caramel Color, "
+                "Phosphoric Acid, Natural Flavors, Caffeine"
+            ),
+            "protein_g": 0, "fiber_g": 0, "sugar_g": 39, "carbs_g": 39, "sodium_mg": 45, "calories": 140,
+        },
+        (0, 25),
+    ),
+    (
+        "instant_noodles_tbhq",  # scored 34.9 pre-fix
+        {
+            "product_name": "Instant Noodle Cup",
+            "ingredients_text": (
+                "Enriched Wheat Flour, Palm Oil, Salt, Monosodium Glutamate, "
+                "Hydrolyzed Soy Protein, Sugar, Dehydrated Vegetables, "
+                "Disodium Inosinate, Disodium Guanylate, TBHQ, Yellow 6"
+            ),
+            "protein_g": 6, "fiber_g": 1, "sugar_g": 2, "carbs_g": 40, "sodium_mg": 1160, "calories": 290, "fat_g": 12,
+        },
+        (0, 25),
+    ),
+    (
+        "clean_bean_can_not_pinned_at_100",  # clean labels spread 74-96, never 100
+        {
+            "product_name": "Black Beans",
+            "ingredients_text": "Prepared Black Beans, Water, Sea Salt",
+            "protein_g": 7, "fiber_g": 7, "sugar_g": 0, "carbs_g": 20, "sodium_mg": 130, "calories": 110,
+        },
+        (74, 96),
+    ),
 ]
 
 
@@ -293,6 +341,133 @@ def test_ocr_fuzzy_catches_misspelled_isolate():
     assert result["processing_flags"]["protein_isolates"], (
         "OCR-garbled 'Soy Wey Protein Isolate' was not caught by fuzzy match"
     )
+
+
+def test_home_thali_scores_like_home_cooking_not_fast_food():
+    """Scan QA 2026-07-10: dal/rice/roti/paneer thali fresh-scanned at 40 —
+    the same as a fried-chicken basket — because none of the staples were in
+    the NOVA dict. With the South Asian entries they resolve as home cooking."""
+    result = compute_fuel_score(
+        source_type="scan",
+        meal_label="Indian Thali",
+        components=[
+            {"name": "dal", "role": "protein", "mass_fraction": 0.2},
+            {"name": "rice", "role": "carb", "mass_fraction": 0.25},
+            {"name": "roti", "role": "carb", "mass_fraction": 0.2},
+            {"name": "palak paneer", "role": "protein", "mass_fraction": 0.2},
+            {"name": "raita", "role": "sauce", "mass_fraction": 0.1},
+            {"name": "onion and tomato salad", "role": "veg", "mass_fraction": 0.05},
+        ],
+        source_context="home",
+        confidence=0.9,
+    )
+    # The defect was scoring 40 — fried-chicken territory. Home-cooked NOVA 1-2
+    # staples should land solidly above the "mixed" tier. (Glycemic load is the
+    # Metabolic pillar's job, not Fuel's.)
+    assert 55 <= result.score <= 98, (
+        f"home thali scored {result.score} (tier={result.tier}) — expected 55-98"
+    )
+
+
+def test_dict_bounds_model_nova_but_processing_methods_keep_authority():
+    """The extractor's err-higher NOVA hints are bounded to dict+1 on exact
+    dictionary matches (fixes over-classed staples like roti/dal), but a
+    component with processing methods (fried chips) keeps the model's class."""
+    thali = compute_fuel_score(
+        source_type="scan", meal_label="Indian Thali", source_context="home", confidence=0.9,
+        components=[
+            {"name": "roti", "role": "carb", "mass_fraction": 0.25, "nova": 3, "methods": []},
+            {"name": "dal", "role": "protein", "mass_fraction": 0.25, "nova": 3, "methods": []},
+            {"name": "rice", "role": "carb", "mass_fraction": 0.25, "nova": 3, "methods": []},
+            {"name": "raita", "role": "other", "mass_fraction": 0.25, "nova": 3, "methods": []},
+        ],
+    )
+    # The defect: pre-fix this scored 40 — the same as a fried-chicken basket.
+    # dict+1 bounding keeps it clearly above fast food even on this
+    # deliberately harsh equal-mass fixture.
+    assert thali.score >= 55, f"model nova-3 hints tanked a home thali to {thali.score}"
+
+    nachos = compute_fuel_score(
+        source_type="scan", meal_label="Loaded Nachos", source_context="restaurant", confidence=0.85,
+        components=[
+            {"name": "tortilla chips", "role": "carb", "mass_fraction": 0.35, "nova": 3, "methods": ["fried"]},
+            {"name": "nacho cheese sauce", "role": "sauce", "mass_fraction": 0.25, "nova": 4, "methods": []},
+            {"name": "ground beef", "role": "protein", "mass_fraction": 0.25, "nova": 3, "methods": ["cooked"]},
+            {"name": "sour cream", "role": "sauce", "mass_fraction": 0.15, "nova": 3, "methods": []},
+        ],
+    )
+    assert nachos.score <= 55, f"dict bounding must not lift loaded nachos to {nachos.score}"
+
+
+def test_rotisserie_chicken_is_not_a_whole_food_pass():
+    """Scan QA 2026-07-10: a supermarket rotisserie chicken scored 100 with a
+    Whole-Food Pass. Sodium-injected prepared birds are NOVA 3."""
+    result = compute_fuel_score(
+        source_type="scan",
+        meal_label="Rotisserie Chicken",
+        components=[{"name": "rotisserie chicken", "role": "protein", "mass_fraction": 1.0}],
+        source_context="home",
+        confidence=0.9,
+    )
+    assert result.score <= 85, f"rotisserie chicken scored {result.score} — honest-100 must not fire"
+
+
+def test_label_scores_are_not_quantized():
+    """Scan QA 2026-07-10: every label scored exactly 34.9, 59.0, or 100.0.
+    The band-projection recalibration must produce a spread of distinct scores
+    across a varied basket of products."""
+    scores = {
+        analyze_whole_food_product(payload)["score"]
+        for _, payload, _ in LABEL_GOLDEN
+    }
+    assert len(scores) >= 5, f"label scores still quantized: {sorted(scores)}"
+    assert 100.0 not in scores, "a label scored a perfect 100 — bonuses must be capped"
+
+
+# ---- 2026-07-11 honest dessert scoring (recipe_role="dessert") ----
+
+def test_whole_food_dessert_recipe_scores_high():
+    """A dessert made of nothing but whole foods keeps an honest 95-100 —
+    the NOVA dict, not the vetted-100 recipe shortcut, gets it there."""
+    result = compute_fuel_score(
+        source_type="recipe",
+        recipe_role="dessert",
+        title="Creamy Banana Milk",
+        ingredients=[
+            {"name": "banana", "quantity": "1", "unit": ""},
+            {"name": "milk", "quantity": "1", "unit": "cup"},
+        ],
+    )
+    assert result.score >= 90, (
+        f"whole-food dessert scored {result.score} (reasoning={result.reasoning}) — expected >= 90"
+    )
+
+
+def test_sugary_baked_dessert_recipe_scores_actual_profile():
+    """A sweetened baked dessert must land on its actual ingredient profile,
+    not the vetted-100 shortcut."""
+    result = compute_fuel_score(
+        source_type="recipe",
+        recipe_role="dessert",
+        title="Banana Cake with Frosting",
+        ingredients=[
+            {"name": "cassava flour", "quantity": "1", "unit": "cup"},
+            {"name": "sugar", "quantity": "0.5", "unit": "cup"},
+            {"name": "butter", "quantity": "4", "unit": "tablespoons"},
+            {"name": "eggs", "quantity": "2", "unit": ""},
+            {"name": "banana", "quantity": "2", "unit": ""},
+        ],
+    )
+    assert 40 <= result.score <= 88, (
+        f"sugary baked dessert scored {result.score} (flags={result.flags}) — expected 40-88"
+    )
+
+
+def test_full_meal_recipe_keeps_vetted_100():
+    """Non-dessert recipe roles (and missing roles) keep the curated-100 path."""
+    for role in (None, "full_meal", "component"):
+        result = compute_fuel_score(source_type="recipe", recipe_role=role)
+        assert result.score == 100.0, f"recipe_role={role!r} broke the vetted-100 shortcut"
 
 
 def test_beverage_never_reaches_100():

@@ -264,7 +264,7 @@ def _matches_dietary(recipe: Recipe, dietary: list[str]) -> bool:
     return True
 
 
-def _is_breakfast_safe(recipe: Recipe, context: dict | None = None) -> bool:
+def _is_breakfast_safe(recipe: Recipe, context: dict | None = None, relaxation: int = 0) -> bool:
     if "breakfast" not in (recipe.tags or []):
         return False
     if (recipe.recipe_role or "full_meal") != "full_meal" or bool(recipe.is_component):
@@ -272,28 +272,38 @@ def _is_breakfast_safe(recipe: Recipe, context: dict | None = None) -> bool:
     if recipe.is_mes_scoreable is False:
         return False
 
-    # Derive limits from personalized budget when available
-    budget = context.get("budget") if context else None
-    if budget:
-        carb_ceiling = getattr(budget, "carb_ceiling_g", 0) or getattr(budget, "sugar_ceiling_g", 0) or 0
-        cal_target = getattr(budget, "calorie_target_kcal", 0) or 0
-        if carb_ceiling > 0 and cal_target > 0:
-            max_carbs = round(carb_ceiling / MEALS_PER_DAY * 0.4)
-            max_cals = round(cal_target / MEALS_PER_DAY * 0.85)
+    # 2026-07-11 (QA E4) relaxation ladder: level >=3 keeps only the tag /
+    # role / scoreability requirements above so an empty pool can still fill.
+    if relaxation >= 3:
+        return True
+
+    # Level >=2 drops the carb/calorie size caps (the planner's per-slot
+    # "fit" limits) but keeps the sweet-flavor exclusion.
+    if relaxation < 2:
+        # Derive limits from personalized budget when available
+        budget = context.get("budget") if context else None
+        if budget:
+            carb_ceiling = getattr(budget, "carb_ceiling_g", 0) or getattr(budget, "sugar_ceiling_g", 0) or 0
+            cal_target = getattr(budget, "calorie_target_kcal", 0) or 0
+            if carb_ceiling > 0 and cal_target > 0:
+                max_carbs = round(carb_ceiling / MEALS_PER_DAY * 0.4)
+                max_cals = round(cal_target / MEALS_PER_DAY * 0.85)
+            else:
+                max_carbs = BREAKFAST_MAX_CARBS_DEFAULT
+                max_cals = BREAKFAST_MAX_CALORIES_DEFAULT
         else:
             max_carbs = BREAKFAST_MAX_CARBS_DEFAULT
             max_cals = BREAKFAST_MAX_CALORIES_DEFAULT
-    else:
-        max_carbs = BREAKFAST_MAX_CARBS_DEFAULT
-        max_cals = BREAKFAST_MAX_CALORIES_DEFAULT
 
-    nutrition = _recipe_nutrition(recipe)
-    if nutrition["carbs"] > max_carbs or nutrition["calories"] > max_cals:
-        return False
+        nutrition = _recipe_nutrition(recipe)
+        if nutrition["carbs"] > max_carbs or nutrition["calories"] > max_cals:
+            return False
 
-    flavor_tags = {tag.lower() for tag in (recipe.flavor_profile or [])}
-    if "sweet" in flavor_tags:
-        return False
+    # Level >=1 drops flavor-based exclusions.
+    if relaxation < 1:
+        flavor_tags = {tag.lower() for tag in (recipe.flavor_profile or [])}
+        if "sweet" in flavor_tags:
+            return False
     return True
 
 
@@ -385,7 +395,18 @@ def _candidate_pool(
     budget: Any,
     cooking_time_budget: dict[str, int] | None = None,
     meals_per_day: int = MEALS_PER_DAY,
+    relaxation: int = 0,
 ) -> list[dict[str, Any]]:
+    """Rank slot candidates. ``relaxation`` (2026-07-11 QA E4) progressively
+    loosens soft filters when a slot's strict pool comes back empty:
+
+    - 0: strict (previous behavior)
+    - 1: drop flavor-preference exclusions (breakfast "sweet" filter)
+    - 2: also drop per-slot size caps (breakfast carb/calorie fit)
+    - 3: also accept any full_meal passing dietary + allergy + dislike
+         filters — untagged full_meals become eligible for lunch/dinner
+         (is_mes_scoreable, role, avoided-recipe filters always stay on)
+    """
     allergy_lower = _expand_allergies(allergies)
     disliked_ingredients_lower = {d.lower() for d in disliked_ingredients}
     disliked_proteins_lower = {p.lower() for p in disliked_proteins}
@@ -393,7 +414,12 @@ def _candidate_pool(
     ranked: list[dict[str, Any]] = []
     for recipe in all_recipes:
         if meal_type not in (recipe.tags or []):
-            continue
+            # Relaxation step 3: recipes lacking slot tags (a known seed-data
+            # gap) become eligible for lunch/dinner rather than zeroing the
+            # pool. Breakfast keeps requiring its tag — dinner-for-breakfast
+            # is not a substitution users expect.
+            if not (relaxation >= 3 and meal_type in ("lunch", "dinner")):
+                continue
         if (recipe.recipe_role or "full_meal") != "full_meal" or bool(recipe.is_component):
             continue
         if recipe.is_mes_scoreable is False:
@@ -402,7 +428,7 @@ def _candidate_pool(
             continue
         if str(recipe.id) in avoided_recipe_ids:
             continue
-        if meal_type == "breakfast" and not _is_breakfast_safe(recipe, {"budget": budget}):
+        if meal_type == "breakfast" and not _is_breakfast_safe(recipe, {"budget": budget}, relaxation=relaxation):
             continue
 
         ingredient_names = " ".join(ing.get("name", "") for ing in (recipe.ingredients or [])).lower()
@@ -476,6 +502,27 @@ def _candidate_pool(
         reverse=True,
     )
     return ranked
+
+
+_RELAXATION_NOTES = {
+    1: "flavor filters",
+    2: "flavor and meal-size filters",
+    3: "flavor, meal-size, and meal-slot tag filters",
+}
+
+
+def _candidate_pool_with_relaxation(**kwargs: Any) -> tuple[list[dict[str, Any]], int]:
+    """Strict pool first, then progressively relaxed retries (2026-07-11 QA E4).
+
+    Returns (pool, relaxation_level_used). Level 0 means no relaxation was
+    needed; a non-empty pool at level N means levels < N were all empty.
+    """
+    pool: list[dict[str, Any]] = []
+    for level in (0, 1, 2, 3):
+        pool = _candidate_pool(relaxation=level, **kwargs)
+        if pool:
+            return pool, level
+    return pool, 3
 
 
 def _top_unique_candidates(
@@ -860,8 +907,9 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
         active_slots = list(MEAL_SLOTS)
 
     slot_pools: dict[str, list[dict[str, Any]]] = {}
+    warnings: list[str] = []
     for slot in active_slots:
-        pool = _candidate_pool(
+        pool, relaxation_used = _candidate_pool_with_relaxation(
             all_recipes=all_recipes,
             recipe_index=recipe_index,
             meal_type=slot,
@@ -878,6 +926,13 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
             cooking_time_budget=context["cooking_time_budget"],
             meals_per_day=context.get("meals_per_day", MEALS_PER_DAY),
         )
+        if pool and relaxation_used > 0:
+            # Honesty note (QA E4): tell the user which filters were relaxed
+            # instead of silently skipping the slot.
+            warnings.append(
+                f"{slot.capitalize()} picks relaxed your "
+                f"{_RELAXATION_NOTES[relaxation_used]} to fill the plan."
+            )
 
         # If pool is too small and user needs keto/paleo, supplement with composed meals
         if needs_composition and len(pool) < 3:
@@ -897,7 +952,6 @@ def generate_fallback_meal_plan(db: Session, preferences: dict, user_id: str | N
 
     days_map: dict[str, list[dict[str, Any]]] = {day: [] for day in DAYS}
     prep_timeline: list[dict[str, Any]] = []
-    warnings: list[str] = []
 
     for slot in active_slots:
         unique_limit = VARIETY_LIMITS.get(context["variety_mode"], VARIETY_LIMITS["balanced"]).get(slot, 3)

@@ -11,7 +11,7 @@ class ScanFavorite(Base):
     __tablename__ = "scan_favorites"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     scan_type = Column(String, nullable=False)  # "meal" or "product"
     source_scan_id = Column(GUID, nullable=False)  # original scan ID

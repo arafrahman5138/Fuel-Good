@@ -30,6 +30,7 @@ from app.services.metabolic_engine import (
     recompute_daily_score,
     update_metabolic_streak,
     load_budget_for_user,
+    HYPERTENSION_SODIUM_CEILING_MG,
 )
 from app.models.metabolic import MetabolicScore
 from app.services.notifications import record_notification_event
@@ -93,13 +94,21 @@ def _default_targets() -> NutritionTarget:
 
 
 def _profile_has_core_setup(profile: MetabolicProfile | None) -> bool:
+    # 2026-07-11 (QA C1 fix 2): accept ALL height shapes the Pydantic schema
+    # documents — height_cm, height_ft(+in), or height_in alone (total inches).
+    # The old check ignored height_in-only profiles, so their targets never
+    # synced from the computed budget.
     return bool(
         profile
         and profile.sex
         and profile.goal
         and profile.activity_level
         and profile.weight_lb is not None
-        and (profile.height_cm is not None or getattr(profile, "height_ft", None) is not None)
+        and (
+            profile.height_cm is not None
+            or getattr(profile, "height_ft", None) is not None
+            or getattr(profile, "height_in", None) is not None
+        )
     )
 
 
@@ -132,9 +141,12 @@ def _sync_targets_from_profile_if_needed(
     # Batch 2 (QA N2): hypertension caps sodium at AHA's 1500 mg/day — override
     # the generic 2300 mg default when the profile carries the HTN flag. Clone
     # the dict first so we don't mutate ESSENTIAL_MICROS_DEFAULTS in place.
+    # 2026-07-11 (QA C1): use the engine's named constant instead of a
+    # duplicated literal; the same override now also fires on profile save
+    # (app/routers/metabolic.py::_sync_nutrition_targets_from_computed).
     if getattr(profile, "hypertension", False):
         current = dict(target.micronutrient_targets or ESSENTIAL_MICROS_DEFAULTS)
-        current["sodium_mg"] = 1500.0
+        current["sodium_mg"] = HYPERTENSION_SODIUM_CEILING_MG
         target.micronutrient_targets = current
     return target
 
@@ -190,13 +202,19 @@ def _merge_nutrition_metadata(base_nutrition: dict | None, nutrition_snapshot: d
     return merged
 
 
-def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str, dict]:
+def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str, dict, dict]:
+    """Resolve (title, nutrition, recipe_meta) for a log payload.
+
+    ``recipe_meta`` carries {"recipe_role", "ingredients"} for recipe-backed
+    sources so dessert recipes can be fuel-scored from their real ingredients
+    instead of the vetted-100 shortcut (2026-07-11 honest-scoring fix).
+    """
     source_type = (payload.source_type or "manual").lower()
 
     if source_type == "manual":
         if not payload.nutrition:
             raise HTTPException(status_code=400, detail="Manual log requires nutrition payload")
-        return payload.title or "Manual Entry", payload.nutrition
+        return payload.title or "Manual Entry", payload.nutrition, {}
 
     if source_type in {"recipe", "cook_mode"}:
         if not payload.source_id:
@@ -204,7 +222,8 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
         recipe = db.query(Recipe).filter(Recipe.id == payload.source_id).first()
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
-        return recipe.title, build_glycemic_nutrition_input(recipe.nutrition_info or {}, source=recipe)
+        recipe_meta = {"recipe_role": recipe.recipe_role, "ingredients": recipe.ingredients}
+        return recipe.title, build_glycemic_nutrition_input(recipe.nutrition_info or {}, source=recipe), recipe_meta
 
     if source_type == "meal_plan":
         if not payload.source_id:
@@ -214,10 +233,17 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
             raise HTTPException(status_code=404, detail="Meal plan item not found")
         title = (item.recipe_data or {}).get("title") or "Meal Plan Item"
         nutrition = (item.recipe_data or {}).get("nutrition_info") or {}
-        if not nutrition and item.recipe_id:
+        recipe_meta = {
+            "recipe_role": (item.recipe_data or {}).get("recipe_role"),
+            "ingredients": (item.recipe_data or {}).get("ingredients"),
+        }
+        if item.recipe_id and (not nutrition or recipe_meta["recipe_role"] is None or not recipe_meta["ingredients"]):
             recipe = db.query(Recipe).filter(Recipe.id == item.recipe_id).first()
-            nutrition = recipe.nutrition_info if recipe else {}
-        return title, build_glycemic_nutrition_input(nutrition or {}, source={"nutrition_info": nutrition or {}, "ingredients": (item.recipe_data or {}).get("ingredients"), "carb_type": (item.recipe_data or {}).get("carb_type")})
+            if recipe:
+                nutrition = nutrition or recipe.nutrition_info or {}
+                recipe_meta["recipe_role"] = recipe_meta["recipe_role"] or recipe.recipe_role
+                recipe_meta["ingredients"] = recipe_meta["ingredients"] or recipe.ingredients
+        return title, build_glycemic_nutrition_input(nutrition or {}, source={"nutrition_info": nutrition or {}, "ingredients": (item.recipe_data or {}).get("ingredients"), "carb_type": (item.recipe_data or {}).get("carb_type")}), recipe_meta
 
     if source_type == "food_db":
         if not payload.source_id:
@@ -230,7 +256,7 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
             serving_option_id=payload.serving_option_id,
             grams=payload.grams,
         )
-        return food.name, selected
+        return food.name, selected, {}
 
     if source_type == "scan":
         if not payload.source_id:
@@ -238,7 +264,7 @@ def _resolve_source_nutrition(db: Session, payload: FoodLogCreate) -> tuple[str,
         scan = db.query(ScannedMealLog).filter(ScannedMealLog.id == payload.source_id).first()
         if not scan:
             raise HTTPException(status_code=404, detail="Scanned meal not found")
-        return scan.meal_label, build_glycemic_nutrition_input(scan.nutrition_estimate or {})
+        return scan.meal_label, build_glycemic_nutrition_input(scan.nutrition_estimate or {}), {}
 
     raise HTTPException(status_code=400, detail="Unsupported source_type")
 
@@ -279,16 +305,16 @@ def _compute_daily(db: Session, user_id: str, day: date):
         for micro in micros.keys():
             micros[micro] += float(snap.get(micro, 0) or 0)
 
-    # Scale targets based on meals logged vs expected
-    main_meal_types_logged = {log.meal_type for log in logs if log.meal_type in {"breakfast", "lunch", "dinner"}}
-    meals_logged_count = len(main_meal_types_logged) or (1 if logs else 0)
-    target_scale = meals_logged_count / 3.0 if meals_logged_count < 3 else 1.0
-
-    scaled_cal = float(targets.calories_target or 0) * target_scale
-    scaled_pro = float(targets.protein_g_target or 0) * target_scale
-    scaled_carb = float(targets.carbs_g_target or 0) * target_scale
-    scaled_fat = float(targets.fat_g_target or 0) * target_scale
-    scaled_fiber = float(targets.fiber_g_target or 0) * target_scale
+    # 2026-07-11 (QA E1): comparison targets are FULL-DAY targets. The old
+    # code scaled them by meals-logged/3, so /nutrition/daily reported
+    # per-meal-ish targets (e.g. 798 cal for a 2394 budget after one meal) —
+    # disagreeing with GET /nutrition/targets and confusing every consumer.
+    # Progress percentages are now honest fractions of the whole day.
+    scaled_cal = float(targets.calories_target or 0)
+    scaled_pro = float(targets.protein_g_target or 0)
+    scaled_carb = float(targets.carbs_g_target or 0)
+    scaled_fat = float(targets.fat_g_target or 0)
+    scaled_fiber = float(targets.fiber_g_target or 0)
 
     comparison = {
         "calories": {
@@ -415,12 +441,15 @@ async def create_log(
             FoodLog.user_id == current_user.id,
             FoodLog.source_id == payload.source_id,
             FoodLog.date == day,
+            # Same recipe as a different meal (e.g. lunch AND dinner) is a
+            # legitimate double-log — only block same-meal_type duplicates.
+            FoodLog.meal_type == payload.meal_type,
             FoodLog.created_at >= cutoff,
         ).first()
         if existing:
             return _serialize_log(existing)
 
-    title, base_nutrition = _resolve_source_nutrition(db, payload)
+    title, base_nutrition, recipe_meta = _resolve_source_nutrition(db, payload)
 
     # ── Auto-upgrade manual logs that match a curated recipe ──
     # Only upgrade when the user did NOT provide custom nutrition data.
@@ -438,6 +467,10 @@ async def create_log(
             normalized_source_type = "recipe"
             payload.source_type = "recipe"
             payload.source_id = str(matched_recipe.id)
+            recipe_meta = {
+                "recipe_role": matched_recipe.recipe_role,
+                "ingredients": matched_recipe.ingredients,
+            }
             logger.info(
                 "Auto-upgraded manual log '%s' to recipe (id=%s)",
                 payload.title, matched_recipe.id,
@@ -454,6 +487,8 @@ async def create_log(
         fuel_result = compute_fuel_score(
             source_type=normalized_source_type,
             nutrition=nutrition_snapshot,
+            ingredients=recipe_meta.get("ingredients"),
+            recipe_role=recipe_meta.get("recipe_role"),
             ingredients_text=(payload.nutrition or {}).get("ingredients_text") if payload.nutrition else None,
             title=payload.title or title,
         )
@@ -541,22 +576,28 @@ async def create_log(
     # Recalculate streak from actual logged dates instead of tracking incrementally.
     # This handles backdated logs, out-of-order logs, and any data inconsistencies.
     from datetime import date as _date_type
-    from sqlalchemy import func as sa_func
 
     log_date = day if isinstance(day, _date_type) else datetime.strptime(str(day), "%Y-%m-%d").date()
 
-    # Query all unique dates with food logs for this user, ordered descending
+    # Query all unique dates with food logs for this user, ordered descending.
+    # Use a plain column query (not sa_func.distinct) so SQLAlchemy keeps the
+    # Date type — func-wrapped columns come back as raw strings on SQLite.
     logged_dates = (
-        db.query(sa_func.distinct(FoodLog.date))
+        db.query(FoodLog.date)
         .filter(FoodLog.user_id == current_user.id)
-        .order_by(FoodLog.date.desc())
+        .distinct()
         .all()
     )
-    unique_dates = sorted([row[0] for row in logged_dates], reverse=True)
+    unique_dates = sorted({row[0] for row in logged_dates if row[0] is not None}, reverse=True)
 
-    # Calculate streak: count consecutive days from most recent
+    # Calculate streak: count consecutive days ending at the most recent
+    # logged date — but only when that run is still alive (its last day is
+    # today or yesterday). 2026-07-11 (QA E3): the old code seeded streak=1
+    # whenever ANY logged dates existed, so a 5-day run that ended a week ago
+    # still reported current_streak=5.
+    today_utc = datetime.now(UTC).date()
     streak = 0
-    if unique_dates:
+    if unique_dates and (today_utc - unique_dates[0]).days <= 1:
         streak = 1
         for i in range(len(unique_dates) - 1):
             if (unique_dates[i] - unique_dates[i + 1]).days == 1:
@@ -564,9 +605,19 @@ async def create_log(
             else:
                 break
 
+    # Longest streak still honors historical runs (even ones no longer alive).
+    longest_run = 1 if unique_dates else 0
+    run = longest_run
+    for i in range(len(unique_dates) - 1):
+        if (unique_dates[i] - unique_dates[i + 1]).days == 1:
+            run += 1
+        else:
+            run = 1
+        longest_run = max(longest_run, run)
+
     current_user.current_streak = streak
-    if streak > (current_user.longest_streak or 0):
-        current_user.longest_streak = streak
+    if longest_run > (current_user.longest_streak or 0):
+        current_user.longest_streak = longest_run
     current_user.last_active_date = datetime.combine(
         unique_dates[0] if unique_dates else log_date, datetime.min.time()
     )
@@ -802,6 +853,41 @@ async def get_nutrition_gaps(
         "Eggs": {"protein": 6, "vitamin_b12_mcg": 0.5},
     }
 
+    # 2026-07-11 (QA F1): gap suggestions were byte-identical for every user
+    # and offered chicken to vegetarians. Filter both the recipe pool and the
+    # static food staples by the user's dietary preferences / allergies /
+    # dislikes, reusing the planner's dietary-inference helper so an untagged
+    # "Chicken Breast" is still caught by ingredient keywords.
+    from types import SimpleNamespace
+
+    from app.agents.meal_planner_fallback import _matches_dietary
+    from app.services.allergen_utils import expand_allergies
+
+    user_dietary = [d for d in (current_user.dietary_preferences or []) if d]
+    expanded_allergies = expand_allergies(current_user.allergies or [])
+    user_disliked = {d.lower() for d in (current_user.disliked_ingredients or [])}
+
+    def _candidate_allowed(candidate) -> bool:
+        ing_text = " ".join(
+            (ing.get("name") or "") for ing in (candidate.ingredients or [])
+        ).lower()
+        combined = f"{(getattr(candidate, 'title', '') or '').lower()} {ing_text}"
+        if any(a in combined for a in expanded_allergies):
+            return False
+        if any(d in combined for d in user_disliked):
+            return False
+        return _matches_dietary(candidate, user_dietary)
+
+    def _food_allowed(food_name: str) -> bool:
+        # Wrap the plain food name in a recipe-shaped candidate so the shared
+        # dietary inference (keyword + tag based) applies to staples too.
+        return _candidate_allowed(SimpleNamespace(
+            title=food_name,
+            ingredients=[{"name": food_name}],
+            dietary_tags=[],
+            nutrition_info=default_food_profiles.get(food_name, {}),
+        ))
+
     suggestions_meals: list[dict] = []
     suggestions_foods: list[dict] = []
 
@@ -812,7 +898,11 @@ async def get_nutrition_gaps(
         hint_tags = gap_to_recipe_hint.get(key, [])
         if hint_tags:
             all_recipes = db.query(Recipe).limit(180).all()
-            filtered = [r for r in all_recipes if any(tag in (r.health_benefits or []) for tag in hint_tags)]
+            filtered = [
+                r for r in all_recipes
+                if any(tag in (r.health_benefits or []) for tag in hint_tags)
+                and _candidate_allowed(r)
+            ]
             if filtered:
                 candidate_recipe = filtered[0]
                 suggestions_meals.append({
@@ -823,7 +913,8 @@ async def get_nutrition_gaps(
                 })
 
         # Food suggestions (ensuring they exist in local DB)
-        for food_name in gap_to_foods.get(key, [])[:2]:
+        allowed_foods = [f for f in gap_to_foods.get(key, []) if _food_allowed(f)]
+        for food_name in allowed_foods[:2]:
             row = db.query(LocalFood).filter(LocalFood.name == food_name).first()
             if not row:
                 row = LocalFood(

@@ -16,7 +16,7 @@ class MetabolicProfile(Base):
     __tablename__ = "metabolic_profiles"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     # ── Core biometrics (U.S. units) ──
     sex = Column(String, nullable=True)                 # male / female / other

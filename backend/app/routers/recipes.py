@@ -347,9 +347,15 @@ async def browse_recipes(
 
     needs_pref_filter = bool(user_allergies or user_dietary or user_disliked)
 
+    # 2026-07-11 (QA F4): default ordering is photo-first — recipes with an
+    # image_url sort ahead of imageless ones, preserving the existing order
+    # within each group. There are no explicit sort params on this endpoint
+    # today; if one is added it should take precedence over this default.
+    photo_first = (func.coalesce(Recipe.image_url, "") == "").asc()
+
     if needs_pref_filter:
         expanded = expand_allergies(user_allergies)
-        all_recipes = query.all()
+        all_recipes = query.order_by(photo_first).all()
         filtered = [
             r for r in all_recipes
             if recipe_matches_user_preferences(
@@ -368,7 +374,7 @@ async def browse_recipes(
         # No preference filtering needed — paginate at DB level
         total = query.count()
         offset = (page - 1) * page_size
-        page_items = query.offset(offset).limit(page_size).all()
+        page_items = query.order_by(photo_first).offset(offset).limit(page_size).all()
 
     return {
         "items": [_serialize_recipe_card(r, db, current_user) for r in page_items],

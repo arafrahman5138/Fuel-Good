@@ -121,7 +121,9 @@ async def search_usda_food(food_name: str) -> dict[str, float] | None:
     or None if not found / API unavailable.
     """
     api_key = settings.usda_api_key
-    if not api_key:
+    if not api_key or api_key.startswith("your-"):
+        # Placeholder key (local dev) — skip instead of burning ~0.5s per
+        # component on guaranteed 403s.
         return None
 
     query = _normalize_query(food_name)

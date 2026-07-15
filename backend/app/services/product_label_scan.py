@@ -128,12 +128,22 @@ async def _call_gemini_product_label_extractor(
 
 
 def _recoverable_score_override(result: dict[str, Any]) -> dict[str, Any]:
+    """Replace the score with an explicit "unscored" state.
+
+    Scan QA 2026-07-10: front-of-pack photos with no readable ingredient list
+    were shown as a confident 59/"mixed" — a made-up number with no evidence
+    behind it (and the health-washing vector: a wrong-but-confident score
+    reads as an endorsement). Route the user to a capture that can actually
+    be scored instead.
+    """
     adjusted = {**result}
-    adjusted["score"] = min(float(adjusted.get("score", 0) or 0), 59.0)
-    adjusted["tier"] = "mixed"
-    adjusted["verdict"] = "Needs review"
-    adjusted["summary"] = "We could not confidently read enough of the ingredient list to give a trusted verdict yet."
-    adjusted["recommended_action"] = "Retake the label photo, try barcode, or fix the extracted text before deciding."
+    adjusted["score"] = None
+    adjusted["tier"] = "unscored"
+    adjusted["needs_better_capture"] = True
+    adjusted["suggested_captures"] = ["barcode", "ingredients_panel"]
+    adjusted["verdict"] = "Needs a closer look"
+    adjusted["summary"] = "We could not read enough of the ingredient list to score this product honestly."
+    adjusted["recommended_action"] = "Scan the barcode or the ingredients panel to get a real score."
     concerns = list(adjusted.get("concerns") or [])
     concerns.insert(0, "The ingredient list could not be read confidently from the label photo.")
     adjusted["concerns"] = concerns[:5]
@@ -175,8 +185,14 @@ async def analyze_product_label_image(
     if recoverable:
         score_result = _recoverable_score_override(score_result)
 
+    # Low-confidence OCR often produces garbled brand text — don't present it
+    # as the product title. Keep the raw name so correction UIs can prefill it.
+    raw_product_name = payload["product_name"]
+    display_product_name = "Packaged product" if recoverable else raw_product_name
+
     return {
-        "product_name": payload["product_name"],
+        "product_name": display_product_name,
+        "raw_product_name": raw_product_name,
         "brand": payload["brand"],
         "barcode": None,
         "source": "label_image",

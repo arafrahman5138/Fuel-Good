@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from enum import Enum
 from typing import Any, Optional
 
@@ -868,7 +868,11 @@ def calc_protein_target_g(profile: MetabolicProfileInput) -> float:
     age_bonus = 0.07 if profile.age >= 50 else (0.02 if profile.age >= 40 else 0)
 
     target = profile.weight_lb * (base_ratio + age_bonus)
-    floor_ratio = 1.2 if profile.goal == Goal.MUSCLE_GAIN else 1.0
+    # 2026-07-11 calibration: the old 1.0 g/lb floor for every non-muscle goal
+    # swallowed the goal-specific base ratios (0.73/0.82) — protein was always
+    # bodyweight regardless of goal. Muscle gain keeps its 1.2 floor; all other
+    # goals use a 0.7 safety floor so the base ratios actually take effect.
+    floor_ratio = 1.2 if profile.goal == Goal.MUSCLE_GAIN else 0.7
     floor = profile.weight_lb * floor_ratio
     return round(max(target, floor), 1)
 
@@ -2002,7 +2006,7 @@ def derive_target_weight_lb(profile: dict[str, Any]) -> float:
 
 
 def derive_protein_target_g(profile: dict[str, Any]) -> float:
-    """Protein target mirrors the profile-aware engine with a 1 g/lb floor."""
+    """Protein target mirroring calc_protein_target_g (dict-shaped profile)."""
     current_weight = float(profile.get("weight_lb") or 0)
     if current_weight <= 0:
         return round(DEFAULT_PROFILE.weight_lb, 1)
@@ -2017,7 +2021,9 @@ def derive_protein_target_g(profile: dict[str, Any]) -> float:
     else:
         ratio = PROTEIN_RATIO_MAINTENANCE
     age_bonus = 0.07 if age >= 50 else (0.02 if age >= 40 else 0)
-    floor_ratio = 1.2 if goal in ("gain", "bulk", "muscle_gain") else 1.0
+    # 2026-07-11 calibration: floors mirror calc_protein_target_g (1.2 for
+    # muscle gain, 0.7 otherwise) so the goal-specific base ratios apply.
+    floor_ratio = 1.2 if goal in ("gain", "bulk", "muscle_gain") else 0.7
     return round(max(current_weight * (ratio + age_bonus), current_weight * floor_ratio), 1)
 
 
@@ -2557,21 +2563,55 @@ def update_metabolic_streak(
     daily_mes: float,
     day: date,
 ) -> MetabolicStreak:
-    """Update the metabolic streak after a daily MES recomputation."""
-    streak = get_or_create_streak(db, user_id)
-    yesterday = day - timedelta(days=1)
+    """Recompute the metabolic streak from the full set of qualifying days.
 
-    if daily_mes >= streak.threshold:
-        if streak.last_qualifying_date == yesterday or streak.current_streak == 0:
-            streak.current_streak += 1
-        elif streak.last_qualifying_date != day:
-            streak.current_streak = 1
-        streak.last_qualifying_date = day
-        if streak.current_streak > streak.longest_streak:
-            streak.longest_streak = streak.current_streak
-    else:
-        if streak.last_qualifying_date != day:
-            streak.current_streak = 0
+    2026-07-11 (QA E3): the previous incremental last-date-delta logic
+    corrupted the streak on backdated logs (logging yesterday after today
+    reset current_streak to 1) and could keep counting runs that ended long
+    ago. Mirror the fuel-streak approach instead: derive the streak from all
+    distinct daily-score dates at/above threshold, and only report a current
+    streak when the run is still alive (ends today or yesterday).
+
+    ``daily_mes``/``day`` are kept for signature compatibility — the caller
+    (recompute_daily_score) has already persisted the day's score, so the
+    date set queried below includes it.
+    """
+    streak = get_or_create_streak(db, user_id)
+
+    rows = (
+        db.query(MetabolicScore.date)
+        .filter(
+            MetabolicScore.user_id == user_id,
+            MetabolicScore.scope == "daily",
+            MetabolicScore.total_score >= streak.threshold,
+        )
+        .all()
+    )
+    qualifying_dates = sorted({row[0] for row in rows if row[0] is not None}, reverse=True)
+
+    today = datetime.now(UTC).date()
+    current = 0
+    if qualifying_dates and (today - qualifying_dates[0]).days <= 1:
+        current = 1
+        for i in range(len(qualifying_dates) - 1):
+            if (qualifying_dates[i] - qualifying_dates[i + 1]).days == 1:
+                current += 1
+            else:
+                break
+
+    # Longest streak scans every historical run (not just the live one).
+    longest = 1 if qualifying_dates else 0
+    run = longest
+    for i in range(len(qualifying_dates) - 1):
+        if (qualifying_dates[i] - qualifying_dates[i + 1]).days == 1:
+            run += 1
+        else:
+            run = 1
+        longest = max(longest, run)
+
+    streak.current_streak = current
+    streak.longest_streak = max(int(streak.longest_streak or 0), longest)
+    streak.last_qualifying_date = qualifying_dates[0] if qualifying_dates else None
 
     db.commit()
     db.refresh(streak)

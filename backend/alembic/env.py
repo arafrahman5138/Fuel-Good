@@ -56,6 +56,13 @@ def run_migrations_online() -> None:
     connectable = create_engine(url, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         _bootstrap_existing_schema(connection)
+        # The bootstrap inspector auto-begins a transaction (SQLAlchemy 2.x).
+        # If it's left open, Alembic assumes the caller owns the transaction
+        # and never commits — migrations silently roll back while
+        # _normalize_alembic_version later stamps the head anyway. End it so
+        # Alembic starts and commits its own transaction.
+        if connection.in_transaction():
+            connection.rollback()
         context.configure(connection=connection, target_metadata=target_metadata, render_item=render_item)
         with context.begin_transaction():
             context.run_migrations()
@@ -97,6 +104,12 @@ def _normalize_alembic_version(connection) -> None:
     version_rows = connection.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num")).fetchall()
     current_versions = [row[0] for row in version_rows]
     if current_versions == heads:
+        return
+    # Only repair the legacy multiple-branch-stamps case described below.
+    # A single non-head version is a legitimate state (mid-history database,
+    # intentional downgrade) — force-stamping it to head would mark migrations
+    # as applied that never ran.
+    if len(current_versions) <= 1:
         return
 
     # Some legacy databases were stamped with multiple branch heads before those

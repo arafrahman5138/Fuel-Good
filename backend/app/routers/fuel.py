@@ -256,6 +256,11 @@ async def get_weekly_fuel(
 
 # ── Weekly Recap ─────────────────────────────────────────────────────
 
+def _plural(count: int, noun: str) -> str:
+    """Count + noun with honest pluralization: '1 real-food meal', '3 real-food meals'."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
 def _recap_tier_label(avg: float) -> str:
     if avg >= 90:
         return "Elite"
@@ -317,18 +322,22 @@ async def get_weekly_recap(
     goal_met = budget.real_food_meals >= budget.real_food_goal
     streak = compute_fuel_streak(db, current_user.id, fuel_target, week_end)
 
-    room_word = "room-for-life meal" if budget.room_used == 1 else "room-for-life meals"
-    if goal_met and budget.room_used > 0:
-        headline = f"{budget.real_food_meals} real-food meals — and {budget.room_used} {room_word} fit."
+    if goal_met and budget.room_overflow > 0:
+        # room_used is clamped to the budget; never claim more meals "fit"
+        # than the week had room for (2026-07-11 cap fix).
+        headline = f"{_plural(budget.real_food_meals, 'real-food meal')} — used all {_plural(budget.room_total, 'room-for-life meal')}, and the week still won."
+        body = f"Weekly Fuel {avg:g}. This is the proof: a strong baseline makes room for real life."
+    elif goal_met and budget.room_used > 0:
+        headline = f"{_plural(budget.real_food_meals, 'real-food meal')} — and {_plural(budget.room_used, 'room-for-life meal')} fit."
         body = f"Weekly Fuel {avg:g}. This is the proof: a strong baseline makes room for real life."
     elif goal_met:
-        headline = f"{budget.real_food_meals} real-food meals. A fully clean week."
+        headline = f"{_plural(budget.real_food_meals, 'real-food meal')}. A fully clean week."
         body = f"Weekly Fuel {avg:g}. You've banked room for life whenever you want it."
     elif avg >= fuel_target:
         headline = f"Weekly Fuel {avg:g} — a strong average."
-        body = f"{budget.real_food_meals} of {budget.real_food_goal} real-food meals logged. The baseline held."
+        body = f"{budget.real_food_meals} of {_plural(budget.real_food_goal, 'real-food meal')} logged. The baseline held."
     else:
-        headline = f"A mixed week — {budget.real_food_meals} real-food meals logged."
+        headline = f"A mixed week — {_plural(budget.real_food_meals, 'real-food meal')} logged."
         body = "No spiral needed. Your next clean meal starts rebuilding the baseline."
 
     return WeeklyRecapResponse(
@@ -366,16 +375,17 @@ async def get_fuel_streak(
     # looking at "streak" as a single concept, three counters disagreeing
     # is broken. Canonicalize on `User.current_streak` (app-open / meal-log
     # streak — matches the README's framing of "show up every day"). The
-    # fuel-target-specific streak math is still returned for drill-down as
-    # `fuel_target_streak` / `fuel_target_longest` — UI can surface it in
-    # a fuel-specific card without competing with the headline number.
+    # fuel-target weekly streak math is returned for drill-down as
+    # `fuel_target_streak` / `fuel_target_longest` (weeks at goal — the same
+    # number the weekly recap calls weeks_at_goal_streak). 2026-07-11 (QA E3):
+    # longest_streak previously max()'d day-units with week-units; it is now
+    # days-only, and the weekly numbers live in their own fields.
     return FuelStreakResponse(
         current_streak=int(current_user.current_streak or 0),
-        longest_streak=max(
-            int(current_user.longest_streak or 0),
-            int(streak_data.get("longest_streak") or 0),
-        ),
+        longest_streak=int(current_user.longest_streak or 0),
         fuel_target=fuel_target,
+        fuel_target_streak=int(streak_data.get("current_streak") or 0),
+        fuel_target_longest=int(streak_data.get("longest_streak") or 0),
     )
 
 
@@ -433,32 +443,50 @@ async def get_health_pulse(
         available=len(fuel_scores) > 0,
     )
 
-    # ── 2. MES (metabolic optimization) ──────────────────────────────
+    # ── 2. MES (metabolic optimization) — premium pillar ─────────────
+    # 2026-07-11 (QA D3): the metabolic dimension belongs to the premium
+    # pillar. For free users the dimension is omitted (available=false,
+    # score=null) and the composite reweights over fuel + nutrition only —
+    # same entitlement check require_premium_user uses, without raising.
+    from app.services.billing import build_entitlement_info
+
+    entitlement = build_entitlement_info(current_user)
+    has_premium = entitlement.access_level == "premium" and not entitlement.requires_paywall
+
     mes_score = 0.0
     mes_available = False
-    try:
-        from app.models.metabolic import MetabolicScore
-        daily_mes = (
-            db.query(MetabolicScore)
-            .filter(
-                MetabolicScore.user_id == current_user.id,
-                MetabolicScore.date == day,
-                MetabolicScore.scope == "daily",
+    if has_premium:
+        try:
+            from app.models.metabolic import MetabolicScore
+            daily_mes = (
+                db.query(MetabolicScore)
+                .filter(
+                    MetabolicScore.user_id == current_user.id,
+                    MetabolicScore.date == day,
+                    MetabolicScore.scope == "daily",
+                )
+                .first()
             )
-            .first()
+            if daily_mes and daily_mes.total_score is not None:
+                mes_score = round(float(daily_mes.total_score), 1)
+                mes_available = True
+        except Exception:
+            pass
+    if has_premium:
+        mes_tier_key, mes_tier_label = _pulse_tier(mes_score)
+        metabolic_dim = HealthPulseDimension(
+            score=mes_score,
+            label="Metabolic Score",
+            tier=mes_tier_key,
+            available=mes_available,
         )
-        if daily_mes and daily_mes.total_score is not None:
-            mes_score = round(float(daily_mes.total_score), 1)
-            mes_available = True
-    except Exception:
-        pass
-    mes_tier_key, mes_tier_label = _pulse_tier(mes_score)
-    metabolic_dim = HealthPulseDimension(
-        score=mes_score,
-        label="Metabolic Score",
-        tier=mes_tier_key,
-        available=mes_available,
-    )
+    else:
+        metabolic_dim = HealthPulseDimension(
+            score=None,
+            label="Metabolic Score",
+            tier="locked",
+            available=False,
+        )
 
     # ── 3. Nutrition Score (macro/micro coverage) ────────────────────
     nutrition_score = 0.0

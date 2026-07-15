@@ -9,7 +9,7 @@ class MealPlan(Base):
     __tablename__ = "meal_plans"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     week_start = Column(Date, nullable=False)
     preferences_snapshot = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -23,7 +23,7 @@ class MealPlanItem(Base):
     __tablename__ = "meal_plan_items"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    meal_plan_id = Column(GUID, ForeignKey("meal_plans.id"), nullable=False)
+    meal_plan_id = Column(GUID, ForeignKey("meal_plans.id", ondelete="CASCADE"), nullable=False)
     recipe_id = Column(GUID, ForeignKey("recipes.id"), nullable=True)
     day_of_week = Column(String, nullable=False)
     meal_type = Column(String, nullable=False)
@@ -40,7 +40,7 @@ class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String, default="New Chat")
     messages = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)

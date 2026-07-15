@@ -232,23 +232,51 @@ async def call_gemini_with_fallback(
         # Loop until one task succeeds or both have failed. We don't cancel
         # the pending task on the first completion — if it failed, we still
         # need the other as our only chance at a successful response.
+        #
+        # The primary is preferred even when the fallback resolves first:
+        # prompts are tuned on the primary model, so a fallback win holds its
+        # result and grants the primary a short grace window to finish.
+        grace_s = float(settings.scan_primary_grace_ms) / 1000.0
         remaining = {primary_task, fallback_task}
         while remaining:
-            done, pending = await asyncio.wait(
+            done, _pending = await asyncio.wait(
                 remaining, return_when=asyncio.FIRST_COMPLETED
             )
-            for task in done:
+
+            if primary_task in done:
                 try:
-                    data = task.result()
+                    data = primary_task.result()
+                    if not fallback_task.done():
+                        fallback_task.cancel()
+                    return GeminiCallResult(json=data, model=primary, attempts=attempts)
                 except Exception:
-                    # This model failed — keep waiting on the other one.
-                    continue
-                winner_model = primary if task is primary_task else fallback
-                # Cancel the still-pending task only after we have a winner.
-                for pending_task in pending:
-                    pending_task.cancel()
-                return GeminiCallResult(json=data, model=winner_model, attempts=attempts)
-            remaining = pending
+                    # Primary failed — the fallback (done or pending) is the
+                    # only remaining chance; fall through to inspect it.
+                    pass
+
+            if fallback_task in done:
+                try:
+                    fallback_data = fallback_task.result()
+                except Exception:
+                    fallback_data = None
+                if fallback_data is not None:
+                    if not primary_task.done() and grace_s > 0:
+                        grace_done, _ = await asyncio.wait(
+                            {primary_task}, timeout=grace_s
+                        )
+                        if primary_task in grace_done:
+                            try:
+                                data = primary_task.result()
+                                return GeminiCallResult(json=data, model=primary, attempts=attempts)
+                            except Exception:
+                                pass
+                    if not primary_task.done():
+                        primary_task.cancel()
+                    return GeminiCallResult(json=fallback_data, model=fallback, attempts=attempts)
+
+            remaining = {
+                task for task in (primary_task, fallback_task) if not task.done()
+            }
         raise GeminiCallFailed("both primary and fallback failed after race")
     finally:
         for task in (primary_task, fallback_task):

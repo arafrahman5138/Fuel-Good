@@ -32,9 +32,18 @@ class FoodLogCreate(BaseModel):
     group_mes_score: Optional[float] = None
     group_mes_tier: Optional[str] = None
     title: Optional[str] = None
-    servings: float = 1.0
-    quantity: float = 1.0
+    servings: float = Field(default=1.0, gt=0, le=20)
+    quantity: float = Field(default=1.0, gt=0, le=20)
     nutrition: Optional[Dict[str, Any]] = None
+
+    @field_validator("title")
+    @classmethod
+    def truncate_title(cls, v: Optional[str]) -> Optional[str]:
+        # Scan titles can legitimately run long — truncate rather than reject
+        # (2026-07-11 input-bounds fix).
+        if v is not None and len(v) > 200:
+            return v[:200]
+        return v
 
     @field_validator("date")
     @classmethod

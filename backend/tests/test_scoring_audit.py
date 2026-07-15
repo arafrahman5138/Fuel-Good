@@ -755,10 +755,31 @@ class TestRealFoodTracker:
         assert result.logged_meals == 0
 
     def test_room_never_negative_with_snacks(self):
-        """Blowout week: room bottoms out at 0, never negative."""
+        """Blowout week: room bottoms out at 0, never negative.
+
+        2026-07-11 cap fix: room_used is now clamped to the (shrunken)
+        effective budget; the excess moves to room_overflow so UI copy can
+        never claim more meals "fit" than the week had room for.
+        """
         result = self._budget([30] * 8, snack_scores=[20, 25, 15])
-        assert result.room_used == 11
+        assert result.room_used == 0          # effective budget shrank to 0
+        assert result.room_overflow == 11     # was room_used == 11 pre-fix
         assert result.room_remaining == 0
+
+    def test_room_used_clamped_to_budget_with_overflow(self):
+        """2026-07-11 cap fix: 6 below-target logs against a 4-slot budget
+        report room_used=4 + room_overflow=2 — never '6 of 4 meals fit'."""
+        result = self._budget([100] * 17 + [35] * 4, snack_scores=[25, 30])
+        assert result.room_total == 4
+        assert result.room_used == 4
+        assert result.room_overflow == 2
+        assert result.room_remaining == 0
+
+    def test_no_overflow_within_budget(self):
+        result = self._budget([100] * 10 + [35] * 2, snack_scores=[95])
+        assert result.room_used == 2
+        assert result.room_overflow == 0
+        assert result.room_remaining == 2
 
     def test_legacy_fields_keep_mains_only_semantics(self):
         """Old flex fields ignore snacks so the legacy UI stays consistent."""
